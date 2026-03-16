@@ -1,0 +1,227 @@
+import React, { useState } from 'react';
+import { useData } from './DataContext';
+
+interface CbNeptingProps {
+  month: number;
+  year: number;
+  onBack: () => void;
+}
+
+const getDaysInMonth = (month: number, year: number) => {
+  return new Date(year, month + 1, 0).getDate();
+};
+
+const formatDate = (day: number, month: number, year: number) => {
+  const date = new Date(year, month, day);
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
+const CurrencyInput = ({ value, onChange, className = "" }: { value: string, onChange: (val: string) => void, className?: string }) => {
+  const [isFocused, setIsFocused] = useState(false);
+
+  let displayValue = value;
+  if (!isFocused && value) {
+    const num = parseFloat(value.replace(',', '.'));
+    if (!isNaN(num)) {
+      displayValue = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
+    }
+  }
+
+  return (
+    <input
+      type="text"
+      className={`w-full h-full p-2 bg-transparent outline-none text-center transition-colors focus:bg-white focus:ring-2 focus:ring-blue-400 rounded-md ${className}`}
+      value={displayValue}
+      onChange={(e) => {
+        const val = e.target.value.replace(/[^0-9.,-]/g, '');
+        onChange(val);
+      }}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
+    />
+  );
+};
+
+type DayData = {
+  saisie_reel_nepting: string;
+  pourboire_sunday: string;
+  commentaire: string;
+};
+
+const NAV = '#1e293b';
+
+export default function CbNepting({ month, year, onBack }: CbNeptingProps) {
+  const { data: globalData, updateNepting } = useData();
+  const daysInMonth = getDaysInMonth(month, year);
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const theoriqueData = globalData[month]?.theorique || {};
+  const data = globalData[month]?.nepting || {};
+
+  const handleDataChange = (day: number, field: keyof DayData, value: string) => {
+    updateNepting(month, day, field, value);
+  };
+
+  const formatCurrency = (num: number) => {
+    if (num === 0) return '0,00 €';
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
+  };
+
+  const getVal = (day: number, field: keyof DayData) => {
+    const val = parseFloat((data[day]?.[field] || '').replace(',', '.'));
+    return isNaN(val) ? 0 : val;
+  };
+
+  const getTheoriqueVal = (day: number, field: 'cb') => {
+    const val = parseFloat((theoriqueData[day]?.[field] || '').replace(',', '.'));
+    return isNaN(val) ? 0 : val;
+  };
+
+  const getColTotal = (field: keyof DayData) => {
+    return days.reduce((sum, day) => sum + getVal(day, field), 0);
+  };
+
+  const getTheoriqueColTotal = (field: 'cb') => {
+    return days.reduce((sum, day) => sum + getTheoriqueVal(day, field), 0);
+  };
+
+  const sumCbTheorique = getTheoriqueColTotal('cb');
+  const sumSaisieReel = getColTotal('saisie_reel_nepting');
+  const sumPourboire = getColTotal('pourboire_sunday');
+  
+  const sumTotalNepting = sumSaisieReel;
+  const sumTotalPourboire = sumPourboire;
+  const sumTotalEcartCorrect = sumSaisieReel - sumCbTheorique - sumTotalPourboire;
+
+  return (
+    <div className="h-screen bg-slate-50 font-sans flex flex-col overflow-hidden" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none}`}</style>
+
+      {/* Header */}
+      <header style={{
+        background: NAV, height: 64, padding: '0 36px', display: 'flex',
+        alignItems: 'center', justifyContent: 'space-between',
+        position: 'sticky', top: 0, zIndex: 50,
+        boxShadow: '0 1px 0 rgba(255,255,255,.05)',
+        flexShrink: 0
+      }}>
+        <button 
+          onClick={onBack} 
+          style={{ 
+            display: 'flex', alignItems: 'center', gap: 8, color: '#cbd5e1', 
+            cursor: 'pointer', background: 'none', border: 'none', padding: '8px 0', 
+            fontSize: 14, fontWeight: 600, fontFamily: 'inherit', transition: 'color 0.2s',
+            textTransform: 'uppercase', letterSpacing: '0.05em'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Retour Synthèse
+        </button>
+        <div style={{ color: '#fff', fontSize: 18, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          CB Nepting & Pourboires Sunday
+        </div>
+        <div style={{ width: 140 }} /> {/* Spacer for balance */}
+      </header>
+
+      {/* Table Container */}
+      <div className="w-full px-6 flex flex-col flex-1 min-h-0 py-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="overflow-y-auto flex-1">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200 sticky top-0 z-20">
+                <tr>
+                  <th className="px-4 py-4 font-bold text-center w-24 sticky left-0 z-30 bg-slate-100 border-r border-slate-200">Date</th>
+                  <th className="px-4 py-4 font-bold text-center w-32 bg-blue-50/50">CB Théorique</th>
+                  <th className="px-4 py-4 font-bold text-center w-32">Saisie Réel Nepting</th>
+                  <th className="px-4 py-4 font-bold text-center w-32">Pourboire Sunday</th>
+                  <th className="px-4 py-4 font-bold text-center w-32">Total Nepting (avec pourboire)</th>
+                  <th className="px-4 py-4 font-bold text-center w-32">Total Pourboire</th>
+                  <th className="px-4 py-4 font-bold text-center w-32">Écart</th>
+                  <th className="px-4 py-4 font-bold min-w-[200px]">Commentaire</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {days.map((day) => {
+                  const dayData = data[day] || { saisie_reel_nepting: '', pourboire_sunday: '', commentaire: '' };
+                  
+                  const cbTheorique = getTheoriqueVal(day, 'cb');
+                  const saisieReel = getVal(day, 'saisie_reel_nepting');
+                  const pourboire = getVal(day, 'pourboire_sunday');
+                  
+                  const totalNepting = saisieReel;
+                  const totalPourboire = pourboire;
+                  const ecart = saisieReel - cbTheorique - totalPourboire;
+
+                  const ecartColor = ecart < -0.001 ? 'text-rose-600 bg-rose-50/50' : ecart > 0.001 ? 'text-emerald-600 bg-emerald-50/50' : 'text-slate-400';
+
+                  return (
+                    <tr key={day} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-4 py-2 text-center font-medium text-slate-600 sticky left-0 z-10 bg-white border-r border-slate-100">
+                        {formatDate(day, month, year)}
+                      </td>
+                      <td className="px-4 py-2 text-center font-semibold text-slate-700 bg-blue-50/30">
+                        {cbTheorique !== 0 ? formatCurrency(cbTheorique) : '-'}
+                      </td>
+                      <td className="px-2 py-2">
+                        <div className="bg-amber-50/50 rounded-lg border border-amber-100/50 group-hover:border-amber-200 transition-colors">
+                          <CurrencyInput 
+                            value={dayData.saisie_reel_nepting} 
+                            onChange={(val) => handleDataChange(day, 'saisie_reel_nepting', val)} 
+                            className="text-slate-700 font-medium"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-2 py-2">
+                        <div className="bg-amber-50/50 rounded-lg border border-amber-100/50 group-hover:border-amber-200 transition-colors">
+                          <CurrencyInput 
+                            value={dayData.pourboire_sunday} 
+                            onChange={(val) => handleDataChange(day, 'pourboire_sunday', val)} 
+                            className="text-slate-700 font-medium"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 text-center font-medium text-slate-600 bg-slate-50/30 border-r border-slate-100">
+                        {totalNepting !== 0 ? formatCurrency(totalNepting) : '-'}
+                      </td>
+                      <td className="px-4 py-2 text-center font-medium text-slate-600 bg-slate-50/30 border-r border-slate-100">
+                        {totalPourboire !== 0 ? formatCurrency(totalPourboire) : '-'}
+                      </td>
+                      <td className={`px-4 py-2 text-center font-bold ${ecartColor}`}>
+                        {(saisieReel !== 0 || cbTheorique !== 0) ? formatCurrency(ecart) : '-'}
+                      </td>
+                      <td className="px-2 py-2">
+                        <input 
+                          type="text" 
+                          className="w-full p-2 bg-transparent outline-none text-slate-600 focus:bg-white focus:ring-2 focus:ring-blue-400 rounded-md transition-colors border border-transparent hover:border-slate-200" 
+                          value={dayData.commentaire}
+                          onChange={(e) => handleDataChange(day, 'commentaire', e.target.value)}
+                          placeholder="Ajouter une note..."
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot className="bg-slate-800 text-white font-bold sticky bottom-0 z-20">
+                <tr>
+                  <td className="px-4 py-4 text-center rounded-bl-2xl sticky left-0 z-30 bg-slate-800 border-r border-slate-700">TOTAL</td>
+                  <td className="px-4 py-4 text-center text-blue-200">{formatCurrency(sumCbTheorique)}</td>
+                  <td className="px-4 py-4 text-center">{formatCurrency(sumSaisieReel)}</td>
+                  <td className="px-4 py-4 text-center text-amber-200">{formatCurrency(sumPourboire)}</td>
+                  <td className="px-4 py-4 text-center">{formatCurrency(sumTotalNepting)}</td>
+                  <td className="px-4 py-4 text-center">{formatCurrency(sumTotalPourboire)}</td>
+                  <td className={`px-4 py-4 text-center ${sumTotalEcartCorrect < -0.001 ? 'text-rose-400' : sumTotalEcartCorrect > 0.001 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                    {formatCurrency(sumTotalEcartCorrect)}
+                  </td>
+                  <td className="px-4 py-4 rounded-br-2xl"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

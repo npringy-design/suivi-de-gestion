@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .bg-hatched {
+    background: repeating-linear-gradient(
+      -45deg,
+      #bfbfbf,
+      #bfbfbf 2px,
+      #ffffff 2px,
+      #ffffff 4px
+    );
+  }
+}

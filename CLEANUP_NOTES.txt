@@ -1,0 +1,35 @@
+Projet nettoyé pour déploiement GitHub / Vercel
+
+Conservé :
+- .env.example
+- .gitignore
+- README.md
+- index.html
+- package.json
+- tsconfig.json
+- vite.config.ts
+- src/
+
+Supprimé car doublons / versions parasites :
+- clean/
+- final_output/
+- fixed_output/
+- zip_fixed/
+- fichiers *-1.* à la racine
+- metadata.json / metadata-1.json
+- fix_tables.cjs
+- replace.cjs
+- tous les .tsx présents à la racine (hors src/)
+- src/DepensesPetitesCaisse.tsx (non utilisé)
+
+Dépendances package.json retirées car non utilisées par le front Vite :
+- @google/genai
+- better-sqlite3
+- dotenv
+- express
+- motion
+- @types/express
+- @types/node
+- tsx
+
+package-lock.json retiré volontairement pour repartir proprement à l'installation.
