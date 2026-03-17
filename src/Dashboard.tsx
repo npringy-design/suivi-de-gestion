@@ -162,35 +162,17 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       updateHeader(81, 'niv3',     'NIV III\nSALLE');
       updateHeader(82, 'apprenti', 'APPRENTI\nCUISINE');
       updateHeader(83, 'apprenti', 'APPRENTI\nSALLE');
-
-      // FRAIS PERSONNEL RÉALISÉ — même taux, indices 89-98
-      const updateRealHeader = (idx: number, category: string, label: string) => {
-        const rows = salariesConfig[category] || [];
-        let totalCoutHoraire = 0;
-        let validRowsCount = 0;
-        rows.forEach((row: any) => {
-          const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
-          const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
-          const provision = coutGlobal * 1.10;
-          const coutHoraire = heures > 0 ? provision / heures : 0;
-          if (coutHoraire > 0) { totalCoutHoraire += coutHoraire; validRowsCount++; }
-        });
-        const avg = validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
-        const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
-        cols[idx] = [...cols[idx]];
-        cols[idx][1] = 'FRAIS PERSONNEL REALISE';
-        cols[idx][2] = `${label}${avgStr}`;
-      };
-      updateRealHeader(89, 'cadre',    'CADRE\nCUISINE');
-      updateRealHeader(90, 'cadre',    'CADRE\nSALLE');
-      updateRealHeader(91, 'maitrise', 'MAITRISE\nCUISINE');
-      updateRealHeader(92, 'maitrise', 'MAITRISE\nSALLE');
-      updateRealHeader(93, 'niv12',    'NIV I ET II\nCUISINE');
-      updateRealHeader(94, 'niv12',    'NIV I ET II\nSALLE');
-      updateRealHeader(95, 'niv3',     'NIV III\nCUISINE');
-      updateRealHeader(96, 'niv3',     'NIV III\nSALLE');
-      updateRealHeader(97, 'apprenti', 'APPRENTI\nCUISINE');
-      updateRealHeader(98, 'apprenti', 'APPRENTI\nSALLE');
+      // FRAIS PERSONNEL RÉALISÉ — mêmes taux, indices 89-98
+      updateHeader(89, 'cadre',    'CADRE\nCUISINE');
+      updateHeader(90, 'cadre',    'CADRE\nSALLE');
+      updateHeader(91, 'maitrise', 'MAITRISE\nCUISINE');
+      updateHeader(92, 'maitrise', 'MAITRISE\nSALLE');
+      updateHeader(93, 'niv12',    'NIV I ET II\nCUISINE');
+      updateHeader(94, 'niv12',    'NIV I ET II\nSALLE');
+      updateHeader(95, 'niv3',     'NIV III\nCUISINE');
+      updateHeader(96, 'niv3',     'NIV III\nSALLE');
+      updateHeader(97, 'apprenti', 'APPRENTI\nCUISINE');
+      updateHeader(98, 'apprenti', 'APPRENTI\nSALLE');
     }
     return cols;
   }, [C, globalData, month]);
