@@ -129,38 +129,56 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const cols = [...C];
     const salariesConfig = globalData[month]?.salariesConfig?.categories;
     if (salariesConfig) {
-      // Update FRAIS DE PERSONNEL PROJECTION headers
-      const updateHeader = (idx: number, category: string, label: string) => {
+      // Calcule le montant total mensuel d'une catégorie (somme des coutGlobal)
+      const getCatTotal = (category: string): number => {
         const rows = salariesConfig[category] || [];
-        let totalCoutHoraire = 0;
-        let validRowsCount = 0;
-        rows.forEach((row: any) => {
-          const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
-          const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
-          const provision = coutGlobal * 1.10;
-          const coutHoraire = heures > 0 ? provision / heures : 0;
-          if (coutHoraire > 0) {
-            totalCoutHoraire += coutHoraire;
-            validRowsCount += 1;
-          }
-        });
-        const avg = validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
-        const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
-        cols[idx] = [...cols[idx]];
-        cols[idx][1] = 'PROJECTION S/C';
-        cols[idx][2] = `${label}${avgStr}`;
+        return rows.reduce((sum: number, row: any) => {
+          return sum + (parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0);
+        }, 0);
       };
 
-      updateHeader(74, 'cadre', 'CADRE\nCUISINE');
-      updateHeader(75, 'cadre', 'CADRE\nSALLE');
-      updateHeader(76, 'maitrise', 'MAITRISE\nCUISINE');
-      updateHeader(77, 'maitrise', 'MAITRISE\nSALLE');
-      updateHeader(78, 'niv12', 'NIV I ET II\nCUISINE');
-      updateHeader(79, 'niv12', 'NIV I ET II\nSALLE');
-      updateHeader(80, 'niv3', 'NIV III\nCUISINE');
-      updateHeader(81, 'niv3', 'NIV III\nSALLE');
-      updateHeader(82, 'apprenti', 'APPRENTI\nCUISINE');
-      updateHeader(83, 'apprenti', 'APPRENTI\nSALLE');
+      const formatEur = (v: number) =>
+        v > 0 ? `\n${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v)}` : '';
+
+      // Met à jour l'en-tête d'une colonne PROJECTION avec le montant mensuel
+      const updateProjHeader = (idx: number, category: string, label: string) => {
+        const total = getCatTotal(category);
+        cols[idx] = [...cols[idx]];
+        cols[idx][1] = 'PROJECTION S/C';
+        cols[idx][2] = `${label}${formatEur(total)}`;
+      };
+
+      // Met à jour l'en-tête d'une colonne RÉALISÉ avec le montant mensuel
+      const updateRealHeader = (idx: number, category: string, label: string) => {
+        const total = getCatTotal(category);
+        cols[idx] = [...cols[idx]];
+        cols[idx][1] = 'FRAIS PERSONNEL REALISE';
+        cols[idx][2] = `${label}${formatEur(total)}`;
+      };
+
+      // PROJECTION S/C (indices 74-83)
+      updateProjHeader(74, 'cadre',    'CADRE\nCUISINE');
+      updateProjHeader(75, 'cadre',    'CADRE\nSALLE');
+      updateProjHeader(76, 'maitrise', 'MAITRISE\nCUISINE');
+      updateProjHeader(77, 'maitrise', 'MAITRISE\nSALLE');
+      updateProjHeader(78, 'niv12',    'NIV I ET II\nCUISINE');
+      updateProjHeader(79, 'niv12',    'NIV I ET II\nSALLE');
+      updateProjHeader(80, 'niv3',     'NIV III\nCUISINE');
+      updateProjHeader(81, 'niv3',     'NIV III\nSALLE');
+      updateProjHeader(82, 'apprenti', 'APPRENTI\nCUISINE');
+      updateProjHeader(83, 'apprenti', 'APPRENTI\nSALLE');
+
+      // FRAIS PERSONNEL RÉALISÉ (indices 89-98)
+      updateRealHeader(89, 'cadre',    'CADRE\nCUISINE');
+      updateRealHeader(90, 'cadre',    'CADRE\nSALLE');
+      updateRealHeader(91, 'maitrise', 'MAITRISE\nCUISINE');
+      updateRealHeader(92, 'maitrise', 'MAITRISE\nSALLE');
+      updateRealHeader(93, 'niv12',    'NIV I ET II\nCUISINE');
+      updateRealHeader(94, 'niv12',    'NIV I ET II\nSALLE');
+      updateRealHeader(95, 'niv3',     'NIV III\nCUISINE');
+      updateRealHeader(96, 'niv3',     'NIV III\nSALLE');
+      updateRealHeader(97, 'apprenti', 'APPRENTI\nCUISINE');
+      updateRealHeader(98, 'apprenti', 'APPRENTI\nSALLE');
     }
     return cols;
   }, [C, globalData, month]);
@@ -420,7 +438,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         ];
 
         for (let i = 0; i < 10; i++) {
-          const colIdx = 74 + i; // PROJECTION S/C columns start at 74
+          const colIdx = 76 + i; // PROJECTION S/C columns start at 76
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresProj += val;
@@ -430,13 +448,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
         
         if (hasProjData) {
-          data[`${rIdx}-73`] = totalHeuresProj.toFixed(2);
-          data[`${rIdx}-84`] = coutGlobalProj.toFixed(2);
+          data[`${rIdx}-77`] = totalHeuresProj.toFixed(2);
+          data[`${rIdx}-88`] = coutGlobalProj.toFixed(2);
           if (totalHeuresProj > 0) {
-            data[`${rIdx}-85`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
+            data[`${rIdx}-89`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
           }
           if (realiseTotalJour > 0) {
-            data[`${rIdx}-86`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-90`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
           }
         }
 
@@ -446,7 +464,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let hasRealData = false;
         
         for (let i = 0; i < 10; i++) {
-          const colIdx = 89 + i;
+          const colIdx = 93 + i;
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresReal += val;
@@ -456,22 +474,22 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
         
         if (hasRealData) {
-          data[`${rIdx}-88`] = totalHeuresReal.toFixed(2);
-          data[`${rIdx}-99`] = coutGlobalReal.toFixed(2);
+          data[`${rIdx}-92`] = totalHeuresReal.toFixed(2);
+          data[`${rIdx}-103`] = coutGlobalReal.toFixed(2);
           if (totalHeuresReal > 0) {
-            data[`${rIdx}-100`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
+            data[`${rIdx}-104`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
           }
           if (realiseTotalJour > 0) {
-            data[`${rIdx}-101`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-105`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
           }
           
           // Ecarts
           if (hasProjData) {
-            data[`${rIdx}-103`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
+            data[`${rIdx}-107`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
             if (realiseTotalJour > 0) {
               const pctReal = (coutGlobalReal / realiseTotalJour) * 100;
               const pctProj = (coutGlobalProj / realiseTotalJour) * 100;
-              data[`${rIdx}-104`] = (pctReal - pctProj).toFixed(2) + '%';
+              data[`${rIdx}-108`] = (pctReal - pctProj).toFixed(2) + '%';
             }
           }
         }
@@ -491,7 +509,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 85, 86, 87, 100, 101, 102, 103, 104].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -529,27 +547,27 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const realiseCAW = parseFloat(data[`${rIdx}-24`] || '0');
         if (realiseCAW > 0) data[`${rIdx}-72`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
 
-        const totalHeuresProjW = parseFloat(data[`${rIdx}-73`] || '0');
-        const coutGlobalProjW = parseFloat(data[`${rIdx}-84`] || '0');
-        if (totalHeuresProjW > 0) data[`${rIdx}-85`] = (realiseCAW / totalHeuresProjW).toFixed(2);
+        const totalHeuresProjW = parseFloat(data[`${rIdx}-77`] || '0');
+        const coutGlobalProjW = parseFloat(data[`${rIdx}-88`] || '0');
+        if (totalHeuresProjW > 0) data[`${rIdx}-89`] = (realiseCAW / totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
-          data[`${rIdx}-86`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-87`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-90`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-91`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        const totalHeuresRealW = parseFloat(data[`${rIdx}-88`] || '0');
-        const coutGlobalRealW = parseFloat(data[`${rIdx}-99`] || '0');
-        if (totalHeuresRealW > 0) data[`${rIdx}-100`] = (realiseCAW / totalHeuresRealW).toFixed(2);
+        const totalHeuresRealW = parseFloat(data[`${rIdx}-92`] || '0');
+        const coutGlobalRealW = parseFloat(data[`${rIdx}-103`] || '0');
+        if (totalHeuresRealW > 0) data[`${rIdx}-104`] = (realiseCAW / totalHeuresRealW).toFixed(2);
         if (realiseCAW > 0) {
-          data[`${rIdx}-101`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-102`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-105`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-106`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        data[`${rIdx}-103`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
+        data[`${rIdx}-107`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
           const pctRealW = (coutGlobalRealW / realiseCAW) * 100;
           const pctProjW = (coutGlobalProjW / realiseCAW) * 100;
-          data[`${rIdx}-104`] = (pctRealW - pctProjW).toFixed(2) + '%';
+          data[`${rIdx}-108`] = (pctRealW - pctProjW).toFixed(2) + '%';
         }
       }
     });
@@ -563,7 +581,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 85, 86, 87, 100, 101, 102, 103, 104].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -601,64 +619,27 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const realiseCAM = parseFloat(data[`${monthTotalIdx}-24`] || '0');
       if (realiseCAM > 0) data[`${monthTotalIdx}-72`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
 
-      const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-73`] || '0');
-      const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-84`] || '0');
-      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-85`] = (realiseCAM / totalHeuresProjM).toFixed(2);
+      const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-77`] || '0');
+      const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-88`] || '0');
+      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-89`] = (realiseCAM / totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-86`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-87`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-90`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-91`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-88`] || '0');
-      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-99`] || '0');
-      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-100`] = (realiseCAM / totalHeuresRealM).toFixed(2);
+      const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-92`] || '0');
+      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-103`] || '0');
+      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-104`] = (realiseCAM / totalHeuresRealM).toFixed(2);
       if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-101`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-102`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-105`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-106`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      data[`${monthTotalIdx}-103`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
+      data[`${monthTotalIdx}-107`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
         const pctRealM = (coutGlobalRealM / realiseCAM) * 100;
         const pctProjM = (coutGlobalProjM / realiseCAM) * 100;
-        data[`${monthTotalIdx}-104`] = (pctRealM - pctProjM).toFixed(2) + '%';
-      }
-
-      // ── Injection des coûts salariaux depuis ConfigSalaires ────────────────
-      // Même montant dans CUISINE et SALLE pour chaque catégorie.
-      // Ex: cadre = 3500€ → Cadre Cuisine = 3500€ ET Cadre Salle = 3500€ (PROJ + RÉALISÉ)
-      const salConfig = globalData[month]?.salariesConfig?.categories;
-      const getSalCost = (category: string): number => {
-        if (!salConfig) return 0;
-        return (salConfig[category] || []).reduce((sum: number, row: any) => {
-          return sum + (parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0);
-        }, 0);
-      };
-      const coutCadre    = getSalCost('cadre');
-      const coutMaitrise = getSalCost('maitrise');
-      const coutNiv12    = getSalCost('niv12');
-      const coutNiv3     = getSalCost('niv3');
-      const coutApprenti = getSalCost('apprenti');
-
-      // PROJECTION : 74=CADRE CUISINE, 75=CADRE SALLE, 76=MAITRISE CUISINE, 77=MAITRISE SALLE...
-      if (coutCadre    > 0) { data[`${monthTotalIdx}-74`] = coutCadre.toFixed(2);    data[`${monthTotalIdx}-75`] = coutCadre.toFixed(2); }
-      if (coutMaitrise > 0) { data[`${monthTotalIdx}-76`] = coutMaitrise.toFixed(2); data[`${monthTotalIdx}-77`] = coutMaitrise.toFixed(2); }
-      if (coutNiv12    > 0) { data[`${monthTotalIdx}-78`] = coutNiv12.toFixed(2);    data[`${monthTotalIdx}-79`] = coutNiv12.toFixed(2); }
-      if (coutNiv3     > 0) { data[`${monthTotalIdx}-80`] = coutNiv3.toFixed(2);     data[`${monthTotalIdx}-81`] = coutNiv3.toFixed(2); }
-      if (coutApprenti > 0) { data[`${monthTotalIdx}-82`] = coutApprenti.toFixed(2); data[`${monthTotalIdx}-83`] = coutApprenti.toFixed(2); }
-
-      // RÉALISÉ : 89=CADRE CUISINE, 90=CADRE SALLE, 91=MAITRISE CUISINE, 92=MAITRISE SALLE...
-      if (coutCadre    > 0) { data[`${monthTotalIdx}-89`] = coutCadre.toFixed(2);    data[`${monthTotalIdx}-90`] = coutCadre.toFixed(2); }
-      if (coutMaitrise > 0) { data[`${monthTotalIdx}-91`] = coutMaitrise.toFixed(2); data[`${monthTotalIdx}-92`] = coutMaitrise.toFixed(2); }
-      if (coutNiv12    > 0) { data[`${monthTotalIdx}-93`] = coutNiv12.toFixed(2);    data[`${monthTotalIdx}-94`] = coutNiv12.toFixed(2); }
-      if (coutNiv3     > 0) { data[`${monthTotalIdx}-95`] = coutNiv3.toFixed(2);     data[`${monthTotalIdx}-96`] = coutNiv3.toFixed(2); }
-      if (coutApprenti > 0) { data[`${monthTotalIdx}-97`] = coutApprenti.toFixed(2); data[`${monthTotalIdx}-98`] = coutApprenti.toFixed(2); }
-
-      // COUT GLOBAL : somme de toutes les catégories (même valeur PROJ et RÉALISÉ)
-      const coutGlobalFromSal = coutCadre + coutMaitrise + coutNiv12 + coutNiv3 + coutApprenti;
-      if (coutGlobalFromSal > 0) {
-        data[`${monthTotalIdx}-84`] = coutGlobalFromSal.toFixed(2); // COUT GLOBAL PROJECTION
-        data[`${monthTotalIdx}-99`] = coutGlobalFromSal.toFixed(2); // COUT GLOBAL RÉALISÉ
+        data[`${monthTotalIdx}-108`] = (pctRealM - pctProjM).toFixed(2) + '%';
       }
 
       // Calculate FRAIS GENERAUX box totals
@@ -683,7 +664,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     }
 
     return data;
-  }, [cellData, globalData[month]?.salariesConfig]);
+  }, [cellData]);
 
   const formatValue = (val: any, c: string[]) => {
     if (val === '' || val === undefined || val === null) return '';
