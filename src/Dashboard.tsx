@@ -129,34 +129,44 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const cols = [...C];
     const salariesConfig = globalData[month]?.salariesConfig?.categories;
     if (salariesConfig) {
-      // Calcule le montant total mensuel d'une catégorie (somme des coutGlobal)
-      const getCatTotal = (category: string): number => {
+      // Calcule le taux horaire moyen d'une catégorie (même calcul que ConfigSalaires)
+      const getAvgRate = (category: string): number => {
         const rows = salariesConfig[category] || [];
-        return rows.reduce((sum: number, row: any) => {
-          return sum + (parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0);
-        }, 0);
+        let totalCoutHoraire = 0;
+        let validRowsCount = 0;
+        rows.forEach((row: any) => {
+          const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
+          const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
+          const provision = coutGlobal * 1.10;
+          const coutHoraire = heures > 0 ? provision / heures : 0;
+          if (coutHoraire > 0) {
+            totalCoutHoraire += coutHoraire;
+            validRowsCount += 1;
+          }
+        });
+        return validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
       };
 
-      const formatEur = (v: number) =>
-        v > 0 ? `\n${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v)}` : '';
+      const fmtRate = (v: number) =>
+        v > 0 ? `\n${v.toFixed(2).replace('.', ',')} €` : '';
 
-      // Met à jour l'en-tête d'une colonne PROJECTION avec le montant mensuel
+      // Met à jour l'en-tête d'une colonne PROJECTION
       const updateProjHeader = (idx: number, category: string, label: string) => {
-        const total = getCatTotal(category);
+        const avg = getAvgRate(category);
         cols[idx] = [...cols[idx]];
         cols[idx][1] = 'PROJECTION S/C';
-        cols[idx][2] = `${label}${formatEur(total)}`;
+        cols[idx][2] = `${label}${fmtRate(avg)}`;
       };
 
-      // Met à jour l'en-tête d'une colonne RÉALISÉ avec le montant mensuel
+      // Met à jour l'en-tête d'une colonne RÉALISÉ (même taux)
       const updateRealHeader = (idx: number, category: string, label: string) => {
-        const total = getCatTotal(category);
+        const avg = getAvgRate(category);
         cols[idx] = [...cols[idx]];
         cols[idx][1] = 'FRAIS PERSONNEL REALISE';
-        cols[idx][2] = `${label}${formatEur(total)}`;
+        cols[idx][2] = `${label}${fmtRate(avg)}`;
       };
 
-      // PROJECTION S/C (indices 74-83)
+      // PROJECTION S/C — indices corrigés (74-83)
       updateProjHeader(74, 'cadre',    'CADRE\nCUISINE');
       updateProjHeader(75, 'cadre',    'CADRE\nSALLE');
       updateProjHeader(76, 'maitrise', 'MAITRISE\nCUISINE');
@@ -168,7 +178,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       updateProjHeader(82, 'apprenti', 'APPRENTI\nCUISINE');
       updateProjHeader(83, 'apprenti', 'APPRENTI\nSALLE');
 
-      // FRAIS PERSONNEL RÉALISÉ (indices 89-98)
+      // FRAIS PERSONNEL RÉALISÉ — indices 89-98
       updateRealHeader(89, 'cadre',    'CADRE\nCUISINE');
       updateRealHeader(90, 'cadre',    'CADRE\nSALLE');
       updateRealHeader(91, 'maitrise', 'MAITRISE\nCUISINE');
