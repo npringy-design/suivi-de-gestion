@@ -129,66 +129,54 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const cols = [...C];
     const salariesConfig = globalData[month]?.salariesConfig?.categories;
     if (salariesConfig) {
-      // Calcule le taux horaire moyen d'une catégorie (même calcul que ConfigSalaires)
-      const getAvgRate = (category: string): number => {
+      // Update FRAIS DE PERSONNEL PROJECTION headers
+      // Calcule le taux horaire moyen (même calcul que ConfigSalaires)
+      const getAvgRateForHeader = (category: string): number => {
         const rows = salariesConfig[category] || [];
         let totalCoutHoraire = 0;
-        let validRowsCount = 0;
+        let validCount = 0;
         rows.forEach((row: any) => {
           const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
           const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
           const provision = coutGlobal * 1.10;
           const coutHoraire = heures > 0 ? provision / heures : 0;
-          if (coutHoraire > 0) {
-            totalCoutHoraire += coutHoraire;
-            validRowsCount += 1;
-          }
+          if (coutHoraire > 0) { totalCoutHoraire += coutHoraire; validCount++; }
         });
-        return validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
+        return validCount > 0 ? totalCoutHoraire / validCount : 0;
       };
 
-      const fmtRate = (v: number) =>
-        v > 0 ? `\n${v.toFixed(2).replace('.', ',')} €` : '';
+      const fmtRate = (v: number) => v > 0 ? `\n${v.toFixed(2).replace('.', ',')} €` : '';
 
-      // Met à jour l'en-tête d'une colonne PROJECTION
-      const updateProjHeader = (idx: number, category: string, label: string) => {
-        const avg = getAvgRate(category);
+      const setHeader = (idx: number, subGroup: string, category: string, label: string) => {
+        const avg = getAvgRateForHeader(category);
         cols[idx] = [...cols[idx]];
-        cols[idx][1] = 'PROJECTION S/C';
+        cols[idx][1] = subGroup;
         cols[idx][2] = `${label}${fmtRate(avg)}`;
       };
 
-      // Met à jour l'en-tête d'une colonne RÉALISÉ (même taux)
-      const updateRealHeader = (idx: number, category: string, label: string) => {
-        const avg = getAvgRate(category);
-        cols[idx] = [...cols[idx]];
-        cols[idx][1] = 'FRAIS PERSONNEL REALISE';
-        cols[idx][2] = `${label}${fmtRate(avg)}`;
-      };
-
-      // PROJECTION S/C — indices corrigés (74-83)
-      updateProjHeader(74, 'cadre',    'CADRE\nCUISINE');
-      updateProjHeader(75, 'cadre',    'CADRE\nSALLE');
-      updateProjHeader(76, 'maitrise', 'MAITRISE\nCUISINE');
-      updateProjHeader(77, 'maitrise', 'MAITRISE\nSALLE');
-      updateProjHeader(78, 'niv12',    'NIV I ET II\nCUISINE');
-      updateProjHeader(79, 'niv12',    'NIV I ET II\nSALLE');
-      updateProjHeader(80, 'niv3',     'NIV III\nCUISINE');
-      updateProjHeader(81, 'niv3',     'NIV III\nSALLE');
-      updateProjHeader(82, 'apprenti', 'APPRENTI\nCUISINE');
-      updateProjHeader(83, 'apprenti', 'APPRENTI\nSALLE');
+      // PROJECTION S/C — indices corrects 74-83
+      setHeader(74, 'PROJECTION S/C',       'cadre',    'CADRE\nCUISINE');
+      setHeader(75, 'PROJECTION S/C',       'cadre',    'CADRE\nSALLE');
+      setHeader(76, 'PROJECTION S/C',       'maitrise', 'MAITRISE\nCUISINE');
+      setHeader(77, 'PROJECTION S/C',       'maitrise', 'MAITRISE\nSALLE');
+      setHeader(78, 'PROJECTION S/C',       'niv12',    'NIV I ET II\nCUISINE');
+      setHeader(79, 'PROJECTION S/C',       'niv12',    'NIV I ET II\nSALLE');
+      setHeader(80, 'PROJECTION S/C',       'niv3',     'NIV III\nCUISINE');
+      setHeader(81, 'PROJECTION S/C',       'niv3',     'NIV III\nSALLE');
+      setHeader(82, 'PROJECTION S/C',       'apprenti', 'APPRENTI\nCUISINE');
+      setHeader(83, 'PROJECTION S/C',       'apprenti', 'APPRENTI\nSALLE');
 
       // FRAIS PERSONNEL RÉALISÉ — indices 89-98
-      updateRealHeader(89, 'cadre',    'CADRE\nCUISINE');
-      updateRealHeader(90, 'cadre',    'CADRE\nSALLE');
-      updateRealHeader(91, 'maitrise', 'MAITRISE\nCUISINE');
-      updateRealHeader(92, 'maitrise', 'MAITRISE\nSALLE');
-      updateRealHeader(93, 'niv12',    'NIV I ET II\nCUISINE');
-      updateRealHeader(94, 'niv12',    'NIV I ET II\nSALLE');
-      updateRealHeader(95, 'niv3',     'NIV III\nCUISINE');
-      updateRealHeader(96, 'niv3',     'NIV III\nSALLE');
-      updateRealHeader(97, 'apprenti', 'APPRENTI\nCUISINE');
-      updateRealHeader(98, 'apprenti', 'APPRENTI\nSALLE');
+      setHeader(89, 'FRAIS PERSONNEL REALISE', 'cadre',    'CADRE\nCUISINE');
+      setHeader(90, 'FRAIS PERSONNEL REALISE', 'cadre',    'CADRE\nSALLE');
+      setHeader(91, 'FRAIS PERSONNEL REALISE', 'maitrise', 'MAITRISE\nCUISINE');
+      setHeader(92, 'FRAIS PERSONNEL REALISE', 'maitrise', 'MAITRISE\nSALLE');
+      setHeader(93, 'FRAIS PERSONNEL REALISE', 'niv12',    'NIV I ET II\nCUISINE');
+      setHeader(94, 'FRAIS PERSONNEL REALISE', 'niv12',    'NIV I ET II\nSALLE');
+      setHeader(95, 'FRAIS PERSONNEL REALISE', 'niv3',     'NIV III\nCUISINE');
+      setHeader(96, 'FRAIS PERSONNEL REALISE', 'niv3',     'NIV III\nSALLE');
+      setHeader(97, 'FRAIS PERSONNEL REALISE', 'apprenti', 'APPRENTI\nCUISINE');
+      setHeader(98, 'FRAIS PERSONNEL REALISE', 'apprenti', 'APPRENTI\nSALLE');
     }
     return cols;
   }, [C, globalData, month]);
@@ -415,7 +403,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let coutGlobalProj = 0;
         let hasProjData = false;
         
-        const salariesConfig = data[month]?.salariesConfig?.categories;
+        const salariesConfig = globalData[month]?.salariesConfig?.categories;
         const getAvgRate = (category: string) => {
           if (!salariesConfig) return 0;
           const rows = salariesConfig[category] || [];
@@ -448,7 +436,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         ];
 
         for (let i = 0; i < 10; i++) {
-          const colIdx = 76 + i; // PROJECTION S/C columns start at 76
+          const colIdx = 74 + i; // PROJECTION S/C columns start at 74
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresProj += val;
@@ -458,13 +446,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
         
         if (hasProjData) {
-          data[`${rIdx}-77`] = totalHeuresProj.toFixed(2);
-          data[`${rIdx}-88`] = coutGlobalProj.toFixed(2);
+          data[`${rIdx}-73`] = totalHeuresProj.toFixed(2);
+          data[`${rIdx}-84`] = coutGlobalProj.toFixed(2);
           if (totalHeuresProj > 0) {
-            data[`${rIdx}-89`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
+            data[`${rIdx}-85`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
           }
           if (realiseTotalJour > 0) {
-            data[`${rIdx}-90`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-86`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
           }
         }
 
@@ -474,7 +462,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let hasRealData = false;
         
         for (let i = 0; i < 10; i++) {
-          const colIdx = 93 + i;
+          const colIdx = 89 + i;
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresReal += val;
@@ -484,22 +472,22 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
         
         if (hasRealData) {
-          data[`${rIdx}-92`] = totalHeuresReal.toFixed(2);
-          data[`${rIdx}-103`] = coutGlobalReal.toFixed(2);
+          data[`${rIdx}-88`] = totalHeuresReal.toFixed(2);
+          data[`${rIdx}-99`] = coutGlobalReal.toFixed(2);
           if (totalHeuresReal > 0) {
-            data[`${rIdx}-104`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
+            data[`${rIdx}-100`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
           }
           if (realiseTotalJour > 0) {
-            data[`${rIdx}-105`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-101`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
           }
           
           // Ecarts
           if (hasProjData) {
-            data[`${rIdx}-107`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
+            data[`${rIdx}-103`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
             if (realiseTotalJour > 0) {
               const pctReal = (coutGlobalReal / realiseTotalJour) * 100;
               const pctProj = (coutGlobalProj / realiseTotalJour) * 100;
-              data[`${rIdx}-108`] = (pctReal - pctProj).toFixed(2) + '%';
+              data[`${rIdx}-104`] = (pctReal - pctProj).toFixed(2) + '%';
             }
           }
         }
@@ -519,7 +507,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 85, 86, 87, 100, 101, 102, 103, 104].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -557,27 +545,27 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const realiseCAW = parseFloat(data[`${rIdx}-24`] || '0');
         if (realiseCAW > 0) data[`${rIdx}-72`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
 
-        const totalHeuresProjW = parseFloat(data[`${rIdx}-77`] || '0');
-        const coutGlobalProjW = parseFloat(data[`${rIdx}-88`] || '0');
-        if (totalHeuresProjW > 0) data[`${rIdx}-89`] = (realiseCAW / totalHeuresProjW).toFixed(2);
+        const totalHeuresProjW = parseFloat(data[`${rIdx}-73`] || '0');
+        const coutGlobalProjW = parseFloat(data[`${rIdx}-84`] || '0');
+        if (totalHeuresProjW > 0) data[`${rIdx}-85`] = (realiseCAW / totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
-          data[`${rIdx}-90`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-91`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-86`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-87`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        const totalHeuresRealW = parseFloat(data[`${rIdx}-92`] || '0');
-        const coutGlobalRealW = parseFloat(data[`${rIdx}-103`] || '0');
-        if (totalHeuresRealW > 0) data[`${rIdx}-104`] = (realiseCAW / totalHeuresRealW).toFixed(2);
+        const totalHeuresRealW = parseFloat(data[`${rIdx}-88`] || '0');
+        const coutGlobalRealW = parseFloat(data[`${rIdx}-99`] || '0');
+        if (totalHeuresRealW > 0) data[`${rIdx}-100`] = (realiseCAW / totalHeuresRealW).toFixed(2);
         if (realiseCAW > 0) {
-          data[`${rIdx}-105`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-106`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-101`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-102`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        data[`${rIdx}-107`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
+        data[`${rIdx}-103`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
           const pctRealW = (coutGlobalRealW / realiseCAW) * 100;
           const pctProjW = (coutGlobalProjW / realiseCAW) * 100;
-          data[`${rIdx}-108`] = (pctRealW - pctProjW).toFixed(2) + '%';
+          data[`${rIdx}-104`] = (pctRealW - pctProjW).toFixed(2) + '%';
         }
       }
     });
@@ -591,7 +579,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 85, 86, 87, 100, 101, 102, 103, 104].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -629,27 +617,27 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const realiseCAM = parseFloat(data[`${monthTotalIdx}-24`] || '0');
       if (realiseCAM > 0) data[`${monthTotalIdx}-72`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
 
-      const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-77`] || '0');
-      const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-88`] || '0');
-      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-89`] = (realiseCAM / totalHeuresProjM).toFixed(2);
+      const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-73`] || '0');
+      const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-84`] || '0');
+      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-85`] = (realiseCAM / totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-90`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-91`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-86`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-87`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-92`] || '0');
-      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-103`] || '0');
-      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-104`] = (realiseCAM / totalHeuresRealM).toFixed(2);
+      const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-88`] || '0');
+      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-99`] || '0');
+      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-100`] = (realiseCAM / totalHeuresRealM).toFixed(2);
       if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-105`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-106`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-101`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-102`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      data[`${monthTotalIdx}-107`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
+      data[`${monthTotalIdx}-103`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
         const pctRealM = (coutGlobalRealM / realiseCAM) * 100;
         const pctProjM = (coutGlobalProjM / realiseCAM) * 100;
-        data[`${monthTotalIdx}-108`] = (pctRealM - pctProjM).toFixed(2) + '%';
+        data[`${monthTotalIdx}-104`] = (pctRealM - pctProjM).toFixed(2) + '%';
       }
 
       // Calculate FRAIS GENERAUX box totals
@@ -674,7 +662,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     }
 
     return data;
-  }, [cellData]);
+  }, [cellData, globalData[month]?.salariesConfig]);
 
   const formatValue = (val: any, c: string[]) => {
     if (val === '' || val === undefined || val === null) return '';
