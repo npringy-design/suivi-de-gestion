@@ -5,7 +5,7 @@ import { DASHBOARD_COLUMNS as C, DAYS as days, MONTH_NAMES as monthNames, DASHBO
 import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import domtoimage from 'dom-to-image-more';
 
 // Helper to check if a date is within a range
 const isDateInRange = (date: Date, startStr: string, endStr: string) => {
@@ -125,6 +125,46 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
+  const dynamicColumns = useMemo(() => {
+    const cols = [...C];
+    const salariesConfig = globalData[month]?.salariesConfig?.categories;
+    if (salariesConfig) {
+      // Update FRAIS DE PERSONNEL PROJECTION headers
+      const updateHeader = (idx: number, category: string, label: string) => {
+        const rows = salariesConfig[category] || [];
+        let totalCoutHoraire = 0;
+        let validRowsCount = 0;
+        rows.forEach((row: any) => {
+          const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
+          const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
+          const provision = coutGlobal * 1.10;
+          const coutHoraire = heures > 0 ? provision / heures : 0;
+          if (coutHoraire > 0) {
+            totalCoutHoraire += coutHoraire;
+            validRowsCount += 1;
+          }
+        });
+        const avg = validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
+        const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
+        cols[idx] = [...cols[idx]];
+        cols[idx][1] = 'PROJECTION S/C';
+        cols[idx][2] = `${label}${avgStr}`;
+      };
+
+      updateHeader(76, 'cadre', 'CADRE\nCUISINE');
+      updateHeader(77, 'cadre', 'CADRE\nSALLE');
+      updateHeader(78, 'maitrise', 'MAITRISE\nCUISINE');
+      updateHeader(79, 'maitrise', 'MAITRISE\nSALLE');
+      updateHeader(80, 'niv12', 'NIV I ET II\nCUISINE');
+      updateHeader(81, 'niv12', 'NIV I ET II\nSALLE');
+      updateHeader(82, 'niv3', 'NIV III\nCUISINE');
+      updateHeader(83, 'niv3', 'NIV III\nSALLE');
+      updateHeader(84, 'apprenti', 'APPRENTI\nCUISINE');
+      updateHeader(85, 'apprenti', 'APPRENTI\nSALLE');
+    }
+    return cols;
+  }, [C, globalData, month]);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -230,7 +270,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   ];
 
   const handleCellChange = (rIdx: number, cIdx: number, value: string) => {
-    const colName = C[cIdx][2] || C[cIdx][1];
+    const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
     const isTextCol = cIdx === 49 || cIdx === 50 || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName);
     
     if (isTextCol) {
@@ -347,9 +387,40 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let coutGlobalProj = 0;
         let hasProjData = false;
         
-        const projRates = [38.54, 38.54, 20.85, 20.85, 16.04, 16.04, 18.35, 18.35, 8.39, 8.39];
+        const salariesConfig = data[month]?.salariesConfig?.categories;
+        const getAvgRate = (category: string) => {
+          if (!salariesConfig) return 0;
+          const rows = salariesConfig[category] || [];
+          let totalCoutHoraire = 0;
+          let validRowsCount = 0;
+          rows.forEach((row: any) => {
+            const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
+            const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
+            const provision = coutGlobal * 1.10;
+            const coutHoraire = heures > 0 ? provision / heures : 0;
+            if (coutHoraire > 0) {
+              totalCoutHoraire += coutHoraire;
+              validRowsCount += 1;
+            }
+          });
+          return validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
+        };
+
+        const projRates = [
+          getAvgRate('cadre') || 38.54,
+          getAvgRate('cadre') || 38.54,
+          getAvgRate('maitrise') || 20.85,
+          getAvgRate('maitrise') || 20.85,
+          getAvgRate('niv12') || 16.04,
+          getAvgRate('niv12') || 16.04,
+          getAvgRate('niv3') || 18.35,
+          getAvgRate('niv3') || 18.35,
+          getAvgRate('apprenti') || 8.39,
+          getAvgRate('apprenti') || 8.39
+        ];
+
         for (let i = 0; i < 10; i++) {
-          const colIdx = 78 + i;
+          const colIdx = 76 + i; // PROJECTION S/C columns start at 76
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresProj += val;
@@ -417,10 +488,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           .filter(r => r.type === 'day' && r.weekIndex === weekIdx);
 
         // Sum up each column for the week
-        C.forEach((_, cIdx) => {
+        dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
-          const colName = C[cIdx][2] || C[cIdx][1];
-          if (C[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
+          const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -490,9 +561,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         .map((r, idx) => ({ ...r, originalIdx: idx }))
         .filter(r => r.type === 'day');
 
-      C.forEach((_, cIdx) => {
-        const colName = C[cIdx][2] || C[cIdx][1];
-        if (C[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
+      dynamicColumns.forEach((_, cIdx) => {
+        const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -538,8 +609,49 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         data[`${monthTotalIdx}-91`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
+      // ── Injection des coûts salariaux réels depuis ConfigSalaires ──────────
+      // Pour chaque catégorie, on somme les coutGlobal de tous les salariés
+      // et on répartit 50/50 entre CUISINE et SALLE sur la ligne TOTAL mensuel.
+      const salConfig = globalData[month]?.salariesConfig?.categories;
+      const getSalCost = (category: string): number => {
+        if (!salConfig) return 0;
+        return (salConfig[category] || []).reduce((sum: number, row: any) => {
+          return sum + (parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0);
+        }, 0);
+      };
+
+      const coutCadre    = getSalCost('cadre');
+      const coutMaitrise = getSalCost('maitrise');
+      const coutNiv12    = getSalCost('niv12');
+      const coutNiv3     = getSalCost('niv3');
+      const coutApprenti = getSalCost('apprenti');
+
+      // Même montant dans CUISINE et SALLE pour chaque catégorie
+      // (ex: cadre = 35€ → cadre cuisine = 35€ ET cadre salle = 35€)
+      // col 91 = CADRE CUISINE, 92 = CADRE SALLE
+      // col 93 = MAITRISE CUISINE, 94 = MAITRISE SALLE
+      // col 95 = NIV I-II CUISINE, 96 = NIV I-II SALLE
+      // col 97 = NIV III CUISINE, 98 = NIV III SALLE
+      // col 99 = APPRENTI CUISINE, 100 = APPRENTI SALLE
+      if (coutCadre    > 0) { data[`${monthTotalIdx}-91`]  = coutCadre.toFixed(2);    data[`${monthTotalIdx}-92`]  = coutCadre.toFixed(2); }
+      if (coutMaitrise > 0) { data[`${monthTotalIdx}-93`]  = coutMaitrise.toFixed(2); data[`${monthTotalIdx}-94`]  = coutMaitrise.toFixed(2); }
+      if (coutNiv12    > 0) { data[`${monthTotalIdx}-95`]  = coutNiv12.toFixed(2);    data[`${monthTotalIdx}-96`]  = coutNiv12.toFixed(2); }
+      if (coutNiv3     > 0) { data[`${monthTotalIdx}-97`]  = coutNiv3.toFixed(2);     data[`${monthTotalIdx}-98`]  = coutNiv3.toFixed(2); }
+      if (coutApprenti > 0) { data[`${monthTotalIdx}-99`]  = coutApprenti.toFixed(2); data[`${monthTotalIdx}-100`] = coutApprenti.toFixed(2); }
+
+      // Recalcul du coût global réel à partir des montants salariaux injectés
+      const coutGlobalRealFromSal = coutCadre + coutMaitrise + coutNiv12 + coutNiv3 + coutApprenti;
+
       const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-92`] || '0');
-      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-103`] || '0');
+      // Si on a des données salaires, on prend le total salarial, sinon l'ancien calcul heures×taux
+      const coutGlobalRealM = coutGlobalRealFromSal > 0
+        ? coutGlobalRealFromSal
+        : parseFloat(data[`${monthTotalIdx}-103`] || '0');
+
+      if (coutGlobalRealFromSal > 0) {
+        data[`${monthTotalIdx}-103`] = coutGlobalRealFromSal.toFixed(2);
+      }
+
       if (totalHeuresRealM > 0) data[`${monthTotalIdx}-104`] = (realiseCAM / totalHeuresRealM).toFixed(2);
       if (realiseCAM > 0) {
         data[`${monthTotalIdx}-105`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
@@ -575,7 +687,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     }
 
     return data;
-  }, [cellData]);
+  }, [cellData, globalData[month]?.salariesConfig]);
 
   const formatValue = (val: any, c: string[]) => {
     if (val === '' || val === undefined || val === null) return '';
@@ -608,7 +720,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const visibleColumns = useMemo(() => {
-    return C.map((c, index) => ({ ...c, originalIndex: index })).filter(c => {
+    return dynamicColumns.map((c, index) => ({ ...c, originalIndex: index })).filter(c => {
       const group = c[0];
       const subGroup = c[1];
       
@@ -616,9 +728,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         case 'CA':
           return ['CA', 'RESTAURANTS', 'LIMONADE'].includes(group);
         case 'REALISE':
-          return group === 'REALISE';
-        case 'EVENEMENTS':
-          return ['EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL', 'DEMARQUES'].includes(group);
+          return ['REALISE', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(group);
+        case 'DEMARQUES':
+          return group === 'DEMARQUES';
         case 'COUT_MATIERE':
           return group === 'COUT MATIERE';
         case 'FRAIS_PERSONNEL':
@@ -728,17 +840,17 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       // Add a temporary class to optimize for printing if needed
       element.classList.add('pdf-exporting');
       
-      const canvas = await html2canvas(element, {
-        scale: 2, // Higher resolution
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
+      const imgData = await domtoimage.toPng(element, {
+        bgcolor: '#ffffff',
+        quality: 1,
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left'
+        }
       });
       
       element.classList.remove('pdf-exporting');
 
-      const imgData = canvas.toDataURL('image/png');
-      
       // A4 dimensions in mm: 210 x 297
       // We'll use landscape mode since dashboards are wide
       const pdf = new jsPDF({
@@ -750,8 +862,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
+      // Create a temporary image to get dimensions
+      const img = new Image();
+      img.src = imgData;
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+
+      const imgWidth = img.width;
+      const imgHeight = img.height;
       
       const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
       
@@ -955,30 +1074,51 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           </div>
 
           {/* Section Tabs */}
-          <div style={{ display: 'flex', gap: isMobile ? 16 : 32, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 0 }}>
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  padding: '0 0 16px 0',
-                  background: 'transparent',
-                  color: activeTab === tab.id ? '#3b82f6' : '#64748b',
-                  border: 'none',
-                  borderBottom: activeTab === tab.id ? '3px solid #3b82f6' : '3px solid transparent',
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  fontWeight: activeTab === tab.id ? 700 : 600,
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.2s',
-                  marginBottom: -1
-                }}
-                onMouseEnter={e => { if (activeTab !== tab.id) e.currentTarget.style.color = '#0f172a'; }}
-                onMouseLeave={e => { if (activeTab !== tab.id) e.currentTarget.style.color = '#64748b'; }}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div style={{ padding: '12px 28px', display: 'flex', gap: 8, background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {tabs.map(tab => {
+              const isActive = activeTab === tab.id;
+              let icon = '📁';
+              let accentBg = '#475569';
+              let accentColor = '#fff';
+              
+              switch (tab.id) {
+                case 'SYNTHESE': icon = '📊'; accentBg = '#3b82f6'; break;
+                case 'CA': icon = '🎯'; accentBg = '#92400e'; break;
+                case 'REALISE': icon = '📈'; accentBg = '#1e40af'; break;
+                case 'DEMARQUES': icon = '📉'; accentBg = '#047857'; break;
+                case 'COUT_MATIERE': icon = '🛒'; accentBg = '#166534'; break;
+                case 'FRAIS_PERSONNEL': icon = '👥'; accentBg = '#6b21a8'; break;
+                case 'FRAIS_GENERAUX': icon = '📋'; accentBg = '#b45309'; break;
+                case 'CONTRAT': icon = '📝'; accentBg = '#0f766e'; break;
+                case 'RESULTATS': icon = '🏆'; accentBg = '#be123c'; break;
+              }
+
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '9px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+                    background: isActive ? accentBg : '#f8fafc',
+                    border: `1.5px solid ${isActive ? accentBg : '#e2e8f0'}`,
+                    boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                    transition: 'all .15s',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>{icon}</span>
+                  <span style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? accentColor : '#334155', letterSpacing: '.02em', lineHeight: 1.3 }}>{tab.label}</span>
+                  </span>
+                  {isActive && (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 2 }}>
+                      <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </header>
 
@@ -986,69 +1126,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         <div id="dashboard-content-area" style={{ flex: 1, overflow: 'auto', padding: isMobile ? 12 : 32, display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: 1, background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
-              {activeTab === 'SYNTHÈSE' ? (
-                <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 32, minHeight: '100%' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 32 }}>
-                    
-                    {/* CA Chart */}
-                    <div style={{ background: '#f8fafc', padding: 24, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                      <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <TrendingUp size={20} color="#3b82f6" />
-                        Évolution du CA (Réalisé vs Budget)
-                      </h3>
-                      <div style={{ height: 300 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={chartDataCA} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}€`} />
-                            <RechartsTooltip 
-                              formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
-                              contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
-                            />
-                            <Legend wrapperStyle={{ paddingTop: 20 }} />
-                            <Line type="monotone" dataKey="CA_Realise" name="CA Réalisé" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                            <Line type="monotone" dataKey="CA_Budget" name="CA Budget" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* FG Pie Chart */}
-                    <div style={{ background: '#f8fafc', padding: 24, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                      <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <PieChartIcon size={20} color="#f59e0b" />
-                        Répartition des Frais Généraux
-                      </h3>
-                      <div style={{ height: 300 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={chartDataFG}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={60}
-                              outerRadius={100}
-                              paddingAngle={2}
-                              dataKey="value"
-                            >
-                              {chartDataFG.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <RechartsTooltip 
-                              formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
-                              contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
-                            />
-                            <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: 12 }} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-              ) : (
                 <table id="dashboard-table" style={{ borderCollapse: 'separate', borderSpacing: 0, width: 'max-content', minWidth: '100%' }}>
                 <thead>
             {/* ── ROW 1 : super-sections ── */}
@@ -1570,7 +1647,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             })}
           </tbody>
         </table>
-              )}
             </div>
           </div>
         </div>

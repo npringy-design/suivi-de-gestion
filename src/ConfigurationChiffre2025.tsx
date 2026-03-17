@@ -325,40 +325,39 @@ export default function ConfigurationChiffre2025({ onBack, hideHeader = false }:
         </header>
       )}
 
-      <div style={{ padding: '16px 28px', display: 'flex', gap: 10, background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
-        <button
-          onClick={() => setActiveTab('mensuel')}
-          style={{
-            padding: '8px 16px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            background: activeTab === 'mensuel' ? BLUE : '#f1f5f9',
-            color: activeTab === 'mensuel' ? '#fff' : '#64748b',
-            border: 'none', transition: 'all .2s'
-          }}
-        >
-          SUIVI DE GESTION ET BUDGET (Mensuel)
-        </button>
-        <button
-          onClick={() => setActiveTab('hebdo_ca')}
-          style={{
-            padding: '8px 16px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            background: activeTab === 'hebdo_ca' ? BLUE : '#f1f5f9',
-            color: activeTab === 'hebdo_ca' ? '#fff' : '#64748b',
-            border: 'none', transition: 'all .2s'
-          }}
-        >
-          SEMAINES 2025 (CA & Couverts)
-        </button>
-        <button
-          onClick={() => setActiveTab('hebdo_rh')}
-          style={{
-            padding: '8px 16px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            background: activeTab === 'hebdo_rh' ? BLUE : '#f1f5f9',
-            color: activeTab === 'hebdo_rh' ? '#fff' : '#64748b',
-            border: 'none', transition: 'all .2s'
-          }}
-        >
-          FRAIS DE PERSONNEL REALISES (Hebdo)
-        </button>
+      <div style={{ padding: '12px 28px', display: 'flex', gap: 8, background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+        {[
+          { key: 'mensuel' as const, label: 'Suivi de gestion & budget', icon: '📅', accentBg: '#3b82f6', accentColor: '#fff' },
+          { key: 'hebdo_ca' as const, label: 'CA & Couverts', icon: '📊', accentBg: '#92400e', accentColor: '#fff' },
+          { key: 'hebdo_rh' as const, label: 'Frais de personnel réalisés', icon: '👥', accentBg: '#6b21a8', accentColor: '#fff' },
+        ].map(tab => {
+          const isActive = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '9px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+                background: isActive ? tab.accentBg : '#f8fafc',
+                border: `1.5px solid ${isActive ? tab.accentBg : '#e2e8f0'}`,
+                boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all .15s',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <span style={{ fontSize: 14 }}>{tab.icon}</span>
+              <span style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? tab.accentColor : '#334155', letterSpacing: '.02em', lineHeight: 1.3 }}>{tab.label}</span>
+              </span>
+              {isActive && (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 2 }}>
+                  <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>

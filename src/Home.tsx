@@ -1,16 +1,19 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { 
   BarChart3, Calendar, Calculator, FileText, 
-  Settings, CreditCard, TrendingUp, PieChart, 
+  Settings, CreditCard, TrendingUp, PieChart as PieChartIcon, 
   FileSpreadsheet, Receipt, Building2, ChevronRight,
   Briefcase, Utensils, Menu, X, DollarSign, Users, Activity,
   Sun, Cloud, CloudRain, CloudSnow, CloudLightning, CloudFog
 } from 'lucide-react';
 import { useData } from './DataContext';
 import { getDashboardRowIndices } from './utils';
+import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Line, PieChart, Pie, Cell } from 'recharts';
 
 interface HomeProps {
   year: number;
+  month: number;
+  setMonth: (month: number) => void;
   onMonthSelect: (month: number) => void;
   onSyntheseCA: () => void;
   onRecapAnnuel: () => void;
@@ -35,7 +38,7 @@ const n = (v?: string | number) => {
 const fe = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
 
 export default function Home({ 
-  year, onMonthSelect, onSyntheseCA, onRecapAnnuel, onReporting, 
+  year, month, setMonth, onMonthSelect, onSyntheseCA, onRecapAnnuel, onReporting, 
   onEdgMensuel, onBudgetEdgAnnuel, onVsBudget, onVsN1, onRealiseEdgAnneeFiscale, 
   onMiseEnPaiement, onFactureDevis, onConfigSalaires, onCalculetteSalaires, 
   onVisuelVacances 
@@ -43,6 +46,13 @@ export default function Home({
   const { data, setSelectedYear } = useData();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weather, setWeather] = useState<{ temp: number, code: number } | null>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     // Fetch weather for Paris (can be adjusted to the restaurant's location)
@@ -70,36 +80,38 @@ export default function Home({
   };
 
   const today = new Date();
-  const currentMonth = today.getMonth();
   const currentDay = today.getDate();
 
   const kpis = useMemo(() => {
-    const md = data[currentMonth]?.dashboard || {};
-    const indices = getDashboardRowIndices(currentMonth, year);
+    const md = data[month]?.dashboard || {};
+    const indices = getDashboardRowIndices(month, year);
     
     let caMois = 0;
     let couvertsMois = 0;
 
-    // Calculate up to today
-    for (let d = 1; d <= currentDay; d++) {
+    // Calculate up to today (if we are in the current month/year)
+    const isCurrentMonth = month === today.getMonth() && year === today.getFullYear();
+    const maxDay = isCurrentMonth ? currentDay : new Date(year, month + 1, 0).getDate();
+
+    for (let d = 1; d <= maxDay; d++) {
       const rIdx = indices[d];
       if (rIdx) {
-        caMois += n(md[`${rIdx}-1`]) + n(md[`${rIdx}-2`]);
-        couvertsMois += n(md[`${rIdx}-3`]) + n(md[`${rIdx}-4`]);
+        caMois += n(md[`${rIdx}-17`]) + n(md[`${rIdx}-18`]) + n(md[`${rIdx}-20`]) + n(md[`${rIdx}-22`]);
+        couvertsMois += n(md[`${rIdx}-33`]) + n(md[`${rIdx}-35`]) + n(md[`${rIdx}-43`]);
       }
     }
 
-    const todayRowIdx = indices[currentDay];
+    const todayRowIdx = indices[isCurrentMonth ? currentDay : 1]; // Fallback to 1st if not current month
     let caJour = 0;
     let couvertsJour = 0;
     if (todayRowIdx) {
-      caJour = n(md[`${todayRowIdx}-1`]) + n(md[`${todayRowIdx}-2`]);
-      couvertsJour = n(md[`${todayRowIdx}-3`]) + n(md[`${todayRowIdx}-4`]);
+      caJour = n(md[`${todayRowIdx}-17`]) + n(md[`${todayRowIdx}-18`]) + n(md[`${todayRowIdx}-20`]) + n(md[`${todayRowIdx}-22`]);
+      couvertsJour = n(md[`${todayRowIdx}-33`]) + n(md[`${todayRowIdx}-35`]) + n(md[`${todayRowIdx}-43`]);
     }
 
     const tmJour = couvertsJour > 0 ? caJour / couvertsJour : 0;
 
-    const edgData = data[currentMonth]?.edgMensuel || {};
+    const edgData = data[month]?.edgMensuel || {};
     const budgetCaMois = n(edgData['ca_total_ht']);
     const budgetCouvert = budgetCaMois > 0 ? (caMois / budgetCaMois) * 100 : 0;
 
@@ -111,7 +123,56 @@ export default function Home({
       couvertsJour,
       tmJour
     };
-  }, [data, currentMonth, currentDay, year]);
+  }, [data, month, year, currentDay, today]);
+
+  const chartDataCA = useMemo(() => {
+    const md = data[month]?.dashboard || {};
+    const indices = getDashboardRowIndices(month, year);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const chartData = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const rIdx = indices[d];
+      if (rIdx) {
+        const CA_Realise = n(md[`${rIdx}-17`]) + n(md[`${rIdx}-18`]) + n(md[`${rIdx}-20`]) + n(md[`${rIdx}-22`]);
+        const CA_Budget = n(md[`${rIdx}-0`]) + n(md[`${rIdx}-1`]) + n(md[`${rIdx}-2`]);
+        chartData.push({
+          name: d.toString(),
+          CA_Realise,
+          CA_Budget
+        });
+      }
+    }
+    return chartData;
+  }, [data, month, year]);
+
+  const chartDataFG = useMemo(() => {
+    const md = data[month]?.dashboard || {};
+    const fg = (b: number, g: number) => {
+      let total = 0;
+      for (let dIdx = 0; dIdx < 10; dIdx++) {
+        total += n(md[`fg-data-${b}-${g}-${dIdx}-3`]);
+      }
+      return total;
+    };
+    
+    return [
+      { name: 'Entretien', value: fg(0,0) },
+      { name: 'Ecolab', value: fg(0,1) },
+      { name: 'Marketing', value: fg(0,2) },
+      { name: 'Petit matériel', value: fg(1,0) },
+      { name: 'HACCP', value: fg(1,1) },
+      { name: 'Autres', value: fg(1,2) },
+      { name: 'Tenue', value: fg(2,0) },
+      { name: 'Bureau', value: fg(2,1) },
+      { name: 'Énergie', value: fg(2,2) },
+      { name: 'Animation', value: fg(3,0) },
+      { name: 'Transport', value: fg(3,1) },
+      { name: 'Divers', value: fg(3,2) }
+    ].filter(item => item.value > 0);
+  }, [data, month]);
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1', '#a4de6c', '#d0ed57', '#ffc0cb', '#f4a460'];
 
   const NavGroup = ({ title, icon: Icon, children }: { title: string, icon: any, children: React.ReactNode }) => (
     <div className="mb-6">
@@ -158,19 +219,19 @@ export default function Home({
 
         <div className="flex-1 overflow-y-auto py-6 scrollbar-hide">
           <NavGroup title="Suivi Quotidien" icon={BarChart3}>
-            <NavItem label="Accéder au Suivi Quotidien" onClick={() => onMonthSelect(currentMonth)} />
+            <NavItem label="Accéder au Suivi Quotidien" onClick={() => onMonthSelect(month)} />
             <NavItem label="Synthèse CA" onClick={onSyntheseCA} />
             <NavItem label="Récapitulatif annuel" onClick={onRecapAnnuel} />
             <NavItem label="Reporting annuel détaillé" onClick={onReporting} />
           </NavGroup>
 
-          <NavGroup title="État de Gestion (EDG)" icon={PieChart}>
-            <NavItem label="Accéder à l'EDG Mensuel" onClick={() => onEdgMensuel(currentMonth)} />
+          <NavGroup title="État de Gestion (EDG)" icon={PieChartIcon}>
+            <NavItem label="Accéder à l'EDG Mensuel" onClick={() => onEdgMensuel(month)} />
             <NavItem label="EDG Annuel (Budget/Réalisé/VS)" onClick={onBudgetEdgAnnuel} />
           </NavGroup>
 
           <NavGroup title="Paiements" icon={CreditCard}>
-            <NavItem label="Accéder aux Paiements" onClick={() => onMiseEnPaiement(currentMonth)} />
+            <NavItem label="Accéder aux Paiements" onClick={() => onMiseEnPaiement(month)} />
             <NavItem label="Établir une facture ou un devis" onClick={onFactureDevis} />
           </NavGroup>
 
@@ -201,6 +262,18 @@ export default function Home({
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:block pl-2">Mois</span>
+              <select
+                value={month}
+                onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+                className="px-2 py-1 text-sm font-bold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
+              >
+                {['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'].map((m, i) => (
+                  <option key={i} value={i}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:block pl-2">Année</span>
               <select
                 value={year}
@@ -219,34 +292,34 @@ export default function Home({
         </header>
 
         {/* DASHBOARD CONTENT */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 bg-slate-50">
           <div className="max-w-screen-2xl mx-auto">
             
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 sm:mb-6">Aperçu du mois en cours</h2>
+            <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4">Aperçu du mois en cours</h2>
             
             {/* KPI GRID */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
               
               {/* CA Mois */}
-              <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm flex flex-col">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+              <div className="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm flex flex-col">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[10px] sm:text-sm font-bold text-slate-500 uppercase tracking-wider truncate">CA Réalisé (Mois)</div>
-                    <div className="text-[10px] sm:text-xs text-slate-400 truncate">Depuis le 1er du mois</div>
+                    <div className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">CA Réalisé (Mois)</div>
+                    <div className="text-[9px] sm:text-[10px] text-slate-400 truncate">Depuis le 1er du mois</div>
                   </div>
                 </div>
-                <div className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-800 mb-2 truncate">{fe(kpis.caMois)}</div>
-                <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <span className="text-[10px] sm:text-sm text-slate-500 truncate">Budget: {fe(kpis.budgetCaMois)}</span>
-                  <span className={`text-[10px] sm:text-sm font-bold shrink-0 ${kpis.budgetCouvert >= 100 ? 'text-emerald-600' : 'text-amber-500'}`}>
+                <div className="text-lg sm:text-xl lg:text-2xl font-black text-slate-800 mb-1 truncate">{fe(kpis.caMois)}</div>
+                <div className="mt-auto pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <span className="text-[9px] sm:text-xs text-slate-500 truncate">Budget: {fe(kpis.budgetCaMois)}</span>
+                  <span className={`text-[9px] sm:text-xs font-bold shrink-0 ${kpis.budgetCouvert >= 100 ? 'text-emerald-600' : 'text-amber-500'}`}>
                     {kpis.budgetCouvert.toFixed(1)}%
                   </span>
                 </div>
                 {/* Progress bar */}
-                <div className="w-full h-1.5 sm:h-2 bg-slate-100 rounded-full mt-3 overflow-hidden">
+                <div className="w-full h-1 sm:h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden">
                   <div 
                     className={`h-full rounded-full ${kpis.budgetCouvert >= 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
                     style={{ width: `${Math.min(kpis.budgetCouvert, 100)}%` }}
@@ -255,88 +328,116 @@ export default function Home({
               </div>
 
               {/* CA Jour */}
-              <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm flex flex-col">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                    <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+              <div className="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm flex flex-col">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[10px] sm:text-sm font-bold text-slate-500 uppercase tracking-wider truncate">CA du Jour</div>
-                    <div className="text-[10px] sm:text-xs text-slate-400 truncate">Aujourd'hui</div>
+                    <div className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">CA du Jour</div>
+                    <div className="text-[9px] sm:text-[10px] text-slate-400 truncate">Aujourd'hui</div>
                   </div>
                 </div>
-                <div className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-800 mb-2 truncate">{fe(kpis.caJour)}</div>
+                <div className="text-lg sm:text-xl lg:text-2xl font-black text-slate-800 mb-1 truncate">{fe(kpis.caJour)}</div>
               </div>
 
               {/* TM Jour */}
-              <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm flex flex-col">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                    <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
+              <div className="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm flex flex-col">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                    <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[10px] sm:text-sm font-bold text-slate-500 uppercase tracking-wider truncate">Ticket Moyen</div>
-                    <div className="text-[10px] sm:text-xs text-slate-400 truncate">Aujourd'hui</div>
+                    <div className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Ticket Moyen</div>
+                    <div className="text-[9px] sm:text-[10px] text-slate-400 truncate">Aujourd'hui</div>
                   </div>
                 </div>
-                <div className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-800 mb-2 truncate">{fe(kpis.tmJour)}</div>
-                <div className="mt-auto pt-4 border-t border-slate-100 flex items-center gap-2">
-                  <Users className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 shrink-0" />
-                  <span className="text-[10px] sm:text-sm text-slate-500 truncate">{kpis.couvertsJour} couverts</span>
+                <div className="text-lg sm:text-xl lg:text-2xl font-black text-slate-800 mb-1 truncate">{fe(kpis.tmJour)}</div>
+                <div className="mt-auto pt-2 border-t border-slate-100 flex items-center gap-1">
+                  <Users className="w-3 h-3 text-slate-400 shrink-0" />
+                  <span className="text-[9px] sm:text-xs text-slate-500 truncate">{kpis.couvertsJour} couverts</span>
                 </div>
               </div>
 
               {/* Météo */}
-              <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm flex flex-col">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center shrink-0">
-                    {weather ? getWeatherIcon(weather.code, "w-4 h-4 sm:w-5 sm:h-5") : <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />}
+              <div className="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm flex flex-col">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center shrink-0">
+                    {weather ? getWeatherIcon(weather.code, "w-3.5 h-3.5 sm:w-4 sm:h-4") : <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[10px] sm:text-sm font-bold text-slate-500 uppercase tracking-wider truncate">Météo</div>
-                    <div className="text-[10px] sm:text-xs text-slate-400 truncate">Paris</div>
+                    <div className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Météo</div>
+                    <div className="text-[9px] sm:text-[10px] text-slate-400 truncate">Paris</div>
                   </div>
                 </div>
-                <div className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-800 mb-2 truncate">
+                <div className="text-lg sm:text-xl lg:text-2xl font-black text-slate-800 mb-1 truncate">
                   {weather ? `${weather.temp}°C` : '--°C'}
                 </div>
-                <div className="mt-auto pt-4 border-t border-slate-100 flex items-center gap-2">
-                  <span className="text-[10px] sm:text-sm text-slate-500 truncate">Conditions actuelles</span>
+                <div className="mt-auto pt-2 border-t border-slate-100 flex items-center gap-1">
+                  <span className="text-[9px] sm:text-xs text-slate-500 truncate">Conditions actuelles</span>
                 </div>
               </div>
 
             </div>
 
-            {/* Quick Actions Grid */}
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 sm:mb-6">Accès Rapides</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <button onClick={() => onMonthSelect(currentMonth)} className="flex flex-col items-center justify-center p-4 sm:p-6 bg-white border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-md transition-all group">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-                  <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
+            {/* SYNTHESE VISUELLE */}
+            <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4">Synthèse Visuelle du mois</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-6">
+              {/* CA Chart */}
+              <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm">
+                <h3 className="text-xs sm:text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-blue-500" />
+                  Évolution du CA (Réalisé vs Budget)
+                </h3>
+                <div className="h-[180px] sm:h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartDataCA} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}€`} />
+                      <RechartsTooltip 
+                        formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
+                        contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: 12 }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: 10, fontSize: 10 }} />
+                      <Line type="monotone" dataKey="CA_Realise" name="CA Réalisé" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                      <Line type="monotone" dataKey="CA_Budget" name="CA Budget" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
-                <span className="text-[10px] sm:text-sm font-bold text-slate-700 text-center">Saisir la journée</span>
-              </button>
-              
-              <button onClick={() => onEdgMensuel(currentMonth)} className="flex flex-col items-center justify-center p-4 sm:p-6 bg-white border border-slate-200 rounded-2xl hover:border-emerald-300 hover:shadow-md transition-all group">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-                  <PieChart className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <span className="text-[10px] sm:text-sm font-bold text-slate-700 text-center">Voir l'EDG du mois</span>
-              </button>
+              </div>
 
-              <button onClick={() => onMiseEnPaiement(currentMonth)} className="flex flex-col items-center justify-center p-4 sm:p-6 bg-white border border-slate-200 rounded-2xl hover:border-amber-300 hover:shadow-md transition-all group">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-                  <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
+              {/* FG Pie Chart */}
+              <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm">
+                <h3 className="text-xs sm:text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <PieChartIcon className="w-4 h-4 text-amber-500" />
+                  Répartition des Frais Généraux
+                </h3>
+                <div className="h-[180px] sm:h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartDataFG}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={isMobile ? 30 : 50}
+                        outerRadius={isMobile ? 60 : 80}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {chartDataFG.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip 
+                        formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
+                        contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: 12 }}
+                      />
+                      <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: 10 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-                <span className="text-[10px] sm:text-sm font-bold text-slate-700 text-center">Gérer les paiements</span>
-              </button>
-
-              <button onClick={onSyntheseCA} className="flex flex-col items-center justify-center p-4 sm:p-6 bg-white border border-slate-200 rounded-2xl hover:border-purple-300 hover:shadow-md transition-all group">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-                  <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <span className="text-[10px] sm:text-sm font-bold text-slate-700 text-center">Synthèse CA</span>
-              </button>
+              </div>
             </div>
 
           </div>

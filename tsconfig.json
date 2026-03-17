@@ -23,8 +23,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "exclude": [],
-  "include": [
-    "src"
-  ]
+  "exclude": ["final_output", "fixed_output", "zip_fixed"],
+  "include": ["src"]
 }

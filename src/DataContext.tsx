@@ -160,6 +160,11 @@ export type CustomEvent = {
   label: string;
 };
 
+export type MonthDataSalariesConfig = {
+  locked: boolean;
+  categories: Record<string, any[]>;
+};
+
 type MonthData = {
   theorique: Record<number, DayDataTheorique>;
   nepting: Record<number, DayDataNepting>;
@@ -180,11 +185,14 @@ type MonthData = {
   edgMensuelRealise?: Record<string, string>;
   edgMensuelN1?: Record<string, string>;
   miseEnPaiement?: MonthDataMiseEnPaiement;
+  salariesConfig?: MonthDataSalariesConfig;
 };
 
 type DataContextType = {
   selectedYear: number;
   setSelectedYear: (year: number) => void;
+  selectedMonth: number;
+  setSelectedMonth: (month: number) => void;
   data: Record<number, MonthData>; // key is month index (0-11)
   allData: Record<number, Record<number, MonthData>>;
   updateTheorique: (month: number, day: number, field: keyof DayDataTheorique, value: string) => void;
@@ -206,6 +214,7 @@ type DataContextType = {
   updateEdgMensuelRealise: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuelN1: (month: number, cellKey: string, value: string) => void;
   updateMiseEnPaiement: (month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | boolean) => void;
+  updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
   config2025: Config2025Data;
   updateConfig2025: (type: 'mensuel' | 'hebdo', index: number, field: string, value: string) => void;
   customEvents: CustomEvent[];
@@ -244,6 +253,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [allData, setAllData] = useState<Record<number, Record<number, MonthData>>>(loadFromStorage);
   const [selectedYear, setSelectedYear] = useState(2026);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const data = allData[selectedYear] || {};
 
   const updateDataForYear = useCallback((updater: (prevYearData: Record<number, MonthData>) => Record<number, MonthData>) => {
@@ -536,6 +546,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
+  const updateSalariesConfig = useCallback((month: number, configData: MonthDataSalariesConfig) => {
+    updateDataForYear(prev => {
+      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {} };
+      return {
+        ...prev,
+        [month]: {
+          ...monthData,
+          salariesConfig: configData
+        }
+      };
+    });
+  }, []);
+
   const updateBilanSynthese = useCallback((month: number, day: number, field: keyof DayDataBilanSynthese, value: string) => {
     updateDataForYear(prev => {
       const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {} };
@@ -720,7 +743,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <DataContext.Provider value={{ selectedYear, setSelectedYear, data, allData, updateTheorique, updateNepting, updateEspeces, updateConecs, updateAncvPapiers, updateSaisieTR, updateVisuTRPapiers, updateSunday, updateUber, updateAmexAncv, updateDeliveroo, updateClickCollect, updateBilanSynthese, updateDepensesPetiteCaisse, updateDashboard, updateEdgMensuel, updateEdgMensuelRealise, updateEdgMensuelN1, updateMiseEnPaiement, config2025, updateConfig2025, customEvents, addCustomEvent, removeCustomEvent }}>
+    <DataContext.Provider value={{ selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, data, allData, updateTheorique, updateNepting, updateEspeces, updateConecs, updateAncvPapiers, updateSaisieTR, updateVisuTRPapiers, updateSunday, updateUber, updateAmexAncv, updateDeliveroo, updateClickCollect, updateBilanSynthese, updateDepensesPetiteCaisse, updateDashboard, updateEdgMensuel, updateEdgMensuelRealise, updateEdgMensuelN1, updateMiseEnPaiement, updateSalariesConfig, config2025, updateConfig2025, customEvents, addCustomEvent, removeCustomEvent }}>
       {children}
     </DataContext.Provider>
   );

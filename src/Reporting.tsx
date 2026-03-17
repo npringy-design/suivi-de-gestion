@@ -340,11 +340,11 @@ export default function Reporting({ onBack, hideHeader = false }: ReportingProps
         </header>
       )}
 
-      <div style={{ padding: '12px 28px', display: 'flex', gap: 8, background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center' }}>
+      <div style={{ padding: '12px 28px', display: 'flex', gap: 8, background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
         {([
-          { key: 'mensuel' as const, label: 'Suivi de gestion & budget', sub: 'Mensuel', icon: '📅' },
-          { key: 'hebdo_ca' as const, label: 'CA & Couverts', sub: `Semaines ${YEAR}`, icon: '📊' },
-          { key: 'hebdo_rh' as const, label: 'Frais de personnel réalisés', sub: 'Hebdomadaire', icon: '👥' },
+          { key: 'mensuel' as const, label: 'Suivi de gestion & budget', icon: '📅', accentBg: '#3b82f6', accentColor: '#fff' },
+          { key: 'hebdo_ca' as const, label: 'CA & Couverts', icon: '📊', accentBg: '#92400e', accentColor: '#fff' },
+          { key: 'hebdo_rh' as const, label: 'Frais de personnel réalisés', icon: '👥', accentBg: '#6b21a8', accentColor: '#fff' },
         ]).map(tab => {
           const isActive = activeTab === tab.key;
           return (
@@ -352,18 +352,18 @@ export default function Reporting({ onBack, hideHeader = false }: ReportingProps
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 16px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
-                background: isActive ? BLUE : '#f8fafc',
-                border: `1.5px solid ${isActive ? BLUE : '#e2e8f0'}`,
-                boxShadow: isActive ? '0 2px 8px rgba(59,130,246,0.2)' : 'none',
-                transition: 'all .18s',
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '9px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+                background: isActive ? tab.accentBg : '#f8fafc',
+                border: `1.5px solid ${isActive ? tab.accentBg : '#e2e8f0'}`,
+                boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all .15s',
+                whiteSpace: 'nowrap'
               }}
             >
-              <span style={{ fontSize: 16 }}>{tab.icon}</span>
+              <span style={{ fontSize: 14 }}>{tab.icon}</span>
               <span style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? '#fff' : '#334155', letterSpacing: '.02em', lineHeight: 1.3 }}>{tab.label}</span>
-                <span style={{ fontSize: 9.5, fontWeight: 500, color: isActive ? 'rgba(255,255,255,.75)' : '#94a3b8', letterSpacing: '.04em', textTransform: 'uppercase' }}>{tab.sub}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? tab.accentColor : '#334155', letterSpacing: '.02em', lineHeight: 1.3 }}>{tab.label}</span>
               </span>
               {isActive && (
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 2 }}>

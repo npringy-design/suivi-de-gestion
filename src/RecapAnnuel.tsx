@@ -415,7 +415,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
               <span style={{ fontSize: 14 }}>{sec.icon}</span>
               <span style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? sec.accentColor : '#334155', letterSpacing: '.02em', lineHeight: 1.3 }}>{sec.label}</span>
-                <span style={{ fontSize: 9, fontWeight: 500, color: isActive ? 'rgba(255,255,255,.7)' : '#94a3b8', letterSpacing: '.04em', textTransform: 'uppercase' }}>{activeSection.cols.length === sec.cols.length && isActive ? `${sec.cols.length} colonnes` : `${sec.cols.length} col.`}</span>
               </span>
               {isActive && (
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 2 }}>

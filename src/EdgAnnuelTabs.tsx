@@ -44,28 +44,6 @@ export default function EdgAnnuelTabs({ onBack, initialTab = 'budget' }: EdgAnnu
               </div>
             </div>
 
-            {/* Desktop Tabs */}
-            <nav className="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                      isActive 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </nav>
-
             <div className="flex items-center gap-3">
               <div className="hidden sm:block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold border border-blue-100 uppercase tracking-wide">
                 Année Fiscale
@@ -74,28 +52,47 @@ export default function EdgAnnuelTabs({ onBack, initialTab = 'budget' }: EdgAnnu
           </div>
         </div>
 
-        {/* Mobile Tabs */}
-        <div className="md:hidden border-t border-slate-100 overflow-x-auto scrollbar-hide">
-          <div className="flex p-1 min-w-max">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-all border-b-2 ${
-                    isActive 
-                      ? 'border-blue-600 text-blue-600' 
-                      : 'border-transparent text-slate-500'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+        {/* Section Tabs */}
+        <div style={{ padding: '12px 28px', display: 'flex', gap: 8, background: '#fff', borderTop: '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+          {tabs.map(tab => {
+            const isActive = activeTab === tab.id;
+            let icon = '📁';
+            let accentBg = '#475569';
+            let accentColor = '#fff';
+            
+            switch (tab.id) {
+              case 'budget': icon = '📊'; accentBg = '#3b82f6'; break;
+              case 'realise': icon = '🎯'; accentBg = '#92400e'; break;
+              case 'vs_budget': icon = '📈'; accentBg = '#1e40af'; break;
+              case 'vs_n1': icon = 'History'; accentBg = '#047857'; break;
+            }
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '9px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+                  background: isActive ? accentBg : '#f8fafc',
+                  border: `1.5px solid ${isActive ? accentBg : '#e2e8f0'}`,
+                  boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                  transition: 'all .15s',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <span style={{ fontSize: 14 }}>{icon === 'History' ? '🔄' : icon}</span>
+                <span style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? accentColor : '#334155', letterSpacing: '.02em', lineHeight: 1.3 }}>{tab.label}</span>
+                </span>
+                {isActive && (
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 2 }}>
+                    <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </button>
+            );
+          })}
         </div>
       </header>
 
