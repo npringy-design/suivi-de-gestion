@@ -151,16 +151,16 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         cols[idx][2] = `${label}${avgStr}`;
       };
 
-      updateHeader(76, 'cadre', 'CADRE\nCUISINE');
-      updateHeader(77, 'cadre', 'CADRE\nSALLE');
-      updateHeader(78, 'maitrise', 'MAITRISE\nCUISINE');
-      updateHeader(79, 'maitrise', 'MAITRISE\nSALLE');
-      updateHeader(80, 'niv12', 'NIV I ET II\nCUISINE');
-      updateHeader(81, 'niv12', 'NIV I ET II\nSALLE');
-      updateHeader(82, 'niv3', 'NIV III\nCUISINE');
-      updateHeader(83, 'niv3', 'NIV III\nSALLE');
-      updateHeader(84, 'apprenti', 'APPRENTI\nCUISINE');
-      updateHeader(85, 'apprenti', 'APPRENTI\nSALLE');
+      updateHeader(74, 'cadre', 'CADRE\nCUISINE');
+      updateHeader(75, 'cadre', 'CADRE\nSALLE');
+      updateHeader(76, 'maitrise', 'MAITRISE\nCUISINE');
+      updateHeader(77, 'maitrise', 'MAITRISE\nSALLE');
+      updateHeader(78, 'niv12', 'NIV I ET II\nCUISINE');
+      updateHeader(79, 'niv12', 'NIV I ET II\nSALLE');
+      updateHeader(80, 'niv3', 'NIV III\nCUISINE');
+      updateHeader(81, 'niv3', 'NIV III\nSALLE');
+      updateHeader(82, 'apprenti', 'APPRENTI\nCUISINE');
+      updateHeader(83, 'apprenti', 'APPRENTI\nSALLE');
     }
     return cols;
   }, [C, globalData, month]);
@@ -420,7 +420,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         ];
 
         for (let i = 0; i < 10; i++) {
-          const colIdx = 76 + i; // PROJECTION S/C columns start at 76
+          const colIdx = 74 + i; // PROJECTION S/C columns start at 74
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresProj += val;
@@ -430,13 +430,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
         
         if (hasProjData) {
-          data[`${rIdx}-77`] = totalHeuresProj.toFixed(2);
-          data[`${rIdx}-88`] = coutGlobalProj.toFixed(2);
+          data[`${rIdx}-73`] = totalHeuresProj.toFixed(2);
+          data[`${rIdx}-84`] = coutGlobalProj.toFixed(2);
           if (totalHeuresProj > 0) {
-            data[`${rIdx}-89`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
+            data[`${rIdx}-85`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
           }
           if (realiseTotalJour > 0) {
-            data[`${rIdx}-90`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-86`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
           }
         }
 
@@ -446,7 +446,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let hasRealData = false;
         
         for (let i = 0; i < 10; i++) {
-          const colIdx = 93 + i;
+          const colIdx = 89 + i;
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresReal += val;
@@ -456,22 +456,22 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
         
         if (hasRealData) {
-          data[`${rIdx}-92`] = totalHeuresReal.toFixed(2);
-          data[`${rIdx}-103`] = coutGlobalReal.toFixed(2);
+          data[`${rIdx}-88`] = totalHeuresReal.toFixed(2);
+          data[`${rIdx}-99`] = coutGlobalReal.toFixed(2);
           if (totalHeuresReal > 0) {
-            data[`${rIdx}-104`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
+            data[`${rIdx}-100`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
           }
           if (realiseTotalJour > 0) {
-            data[`${rIdx}-105`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-101`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
           }
           
           // Ecarts
           if (hasProjData) {
-            data[`${rIdx}-107`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
+            data[`${rIdx}-103`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
             if (realiseTotalJour > 0) {
               const pctReal = (coutGlobalReal / realiseTotalJour) * 100;
               const pctProj = (coutGlobalProj / realiseTotalJour) * 100;
-              data[`${rIdx}-108`] = (pctReal - pctProj).toFixed(2) + '%';
+              data[`${rIdx}-104`] = (pctReal - pctProj).toFixed(2) + '%';
             }
           }
         }
@@ -491,7 +491,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 85, 86, 87, 100, 101, 102, 103, 104].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -529,27 +529,27 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const realiseCAW = parseFloat(data[`${rIdx}-24`] || '0');
         if (realiseCAW > 0) data[`${rIdx}-72`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
 
-        const totalHeuresProjW = parseFloat(data[`${rIdx}-77`] || '0');
-        const coutGlobalProjW = parseFloat(data[`${rIdx}-88`] || '0');
-        if (totalHeuresProjW > 0) data[`${rIdx}-89`] = (realiseCAW / totalHeuresProjW).toFixed(2);
+        const totalHeuresProjW = parseFloat(data[`${rIdx}-73`] || '0');
+        const coutGlobalProjW = parseFloat(data[`${rIdx}-84`] || '0');
+        if (totalHeuresProjW > 0) data[`${rIdx}-85`] = (realiseCAW / totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
-          data[`${rIdx}-90`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-91`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-86`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-87`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        const totalHeuresRealW = parseFloat(data[`${rIdx}-92`] || '0');
-        const coutGlobalRealW = parseFloat(data[`${rIdx}-103`] || '0');
-        if (totalHeuresRealW > 0) data[`${rIdx}-104`] = (realiseCAW / totalHeuresRealW).toFixed(2);
+        const totalHeuresRealW = parseFloat(data[`${rIdx}-88`] || '0');
+        const coutGlobalRealW = parseFloat(data[`${rIdx}-99`] || '0');
+        if (totalHeuresRealW > 0) data[`${rIdx}-100`] = (realiseCAW / totalHeuresRealW).toFixed(2);
         if (realiseCAW > 0) {
-          data[`${rIdx}-105`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-106`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-101`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-102`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        data[`${rIdx}-107`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
+        data[`${rIdx}-103`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
           const pctRealW = (coutGlobalRealW / realiseCAW) * 100;
           const pctProjW = (coutGlobalProjW / realiseCAW) * 100;
-          data[`${rIdx}-108`] = (pctRealW - pctProjW).toFixed(2) + '%';
+          data[`${rIdx}-104`] = (pctRealW - pctProjW).toFixed(2) + '%';
         }
       }
     });
@@ -563,7 +563,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 85, 86, 87, 100, 101, 102, 103, 104].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -601,17 +601,32 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const realiseCAM = parseFloat(data[`${monthTotalIdx}-24`] || '0');
       if (realiseCAM > 0) data[`${monthTotalIdx}-72`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
 
-      const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-77`] || '0');
-      const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-88`] || '0');
-      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-89`] = (realiseCAM / totalHeuresProjM).toFixed(2);
+      const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-73`] || '0');
+      const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-84`] || '0');
+      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-85`] = (realiseCAM / totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-90`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-91`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-86`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-87`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      // ── Injection des coûts salariaux réels depuis ConfigSalaires ──────────
-      // Pour chaque catégorie, on somme les coutGlobal de tous les salariés
-      // et on répartit 50/50 entre CUISINE et SALLE sur la ligne TOTAL mensuel.
+      const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-88`] || '0');
+      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-99`] || '0');
+      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-100`] = (realiseCAM / totalHeuresRealM).toFixed(2);
+      if (realiseCAM > 0) {
+        data[`${monthTotalIdx}-101`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-102`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+      }
+      
+      data[`${monthTotalIdx}-103`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
+      if (realiseCAM > 0) {
+        const pctRealM = (coutGlobalRealM / realiseCAM) * 100;
+        const pctProjM = (coutGlobalProjM / realiseCAM) * 100;
+        data[`${monthTotalIdx}-104`] = (pctRealM - pctProjM).toFixed(2) + '%';
+      }
+
+      // ── Injection des coûts salariaux depuis ConfigSalaires ────────────────
+      // Même montant dans CUISINE et SALLE pour chaque catégorie.
+      // Ex: cadre = 3500€ → Cadre Cuisine = 3500€ ET Cadre Salle = 3500€ (PROJ + RÉALISÉ)
       const salConfig = globalData[month]?.salariesConfig?.categories;
       const getSalCost = (category: string): number => {
         if (!salConfig) return 0;
@@ -619,50 +634,31 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           return sum + (parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0);
         }, 0);
       };
-
       const coutCadre    = getSalCost('cadre');
       const coutMaitrise = getSalCost('maitrise');
       const coutNiv12    = getSalCost('niv12');
       const coutNiv3     = getSalCost('niv3');
       const coutApprenti = getSalCost('apprenti');
 
-      // Même montant dans CUISINE et SALLE pour chaque catégorie
-      // (ex: cadre = 35€ → cadre cuisine = 35€ ET cadre salle = 35€)
-      // col 91 = CADRE CUISINE, 92 = CADRE SALLE
-      // col 93 = MAITRISE CUISINE, 94 = MAITRISE SALLE
-      // col 95 = NIV I-II CUISINE, 96 = NIV I-II SALLE
-      // col 97 = NIV III CUISINE, 98 = NIV III SALLE
-      // col 99 = APPRENTI CUISINE, 100 = APPRENTI SALLE
-      if (coutCadre    > 0) { data[`${monthTotalIdx}-91`]  = coutCadre.toFixed(2);    data[`${monthTotalIdx}-92`]  = coutCadre.toFixed(2); }
-      if (coutMaitrise > 0) { data[`${monthTotalIdx}-93`]  = coutMaitrise.toFixed(2); data[`${monthTotalIdx}-94`]  = coutMaitrise.toFixed(2); }
-      if (coutNiv12    > 0) { data[`${monthTotalIdx}-95`]  = coutNiv12.toFixed(2);    data[`${monthTotalIdx}-96`]  = coutNiv12.toFixed(2); }
-      if (coutNiv3     > 0) { data[`${monthTotalIdx}-97`]  = coutNiv3.toFixed(2);     data[`${monthTotalIdx}-98`]  = coutNiv3.toFixed(2); }
-      if (coutApprenti > 0) { data[`${monthTotalIdx}-99`]  = coutApprenti.toFixed(2); data[`${monthTotalIdx}-100`] = coutApprenti.toFixed(2); }
+      // PROJECTION : 74=CADRE CUISINE, 75=CADRE SALLE, 76=MAITRISE CUISINE, 77=MAITRISE SALLE...
+      if (coutCadre    > 0) { data[`${monthTotalIdx}-74`] = coutCadre.toFixed(2);    data[`${monthTotalIdx}-75`] = coutCadre.toFixed(2); }
+      if (coutMaitrise > 0) { data[`${monthTotalIdx}-76`] = coutMaitrise.toFixed(2); data[`${monthTotalIdx}-77`] = coutMaitrise.toFixed(2); }
+      if (coutNiv12    > 0) { data[`${monthTotalIdx}-78`] = coutNiv12.toFixed(2);    data[`${monthTotalIdx}-79`] = coutNiv12.toFixed(2); }
+      if (coutNiv3     > 0) { data[`${monthTotalIdx}-80`] = coutNiv3.toFixed(2);     data[`${monthTotalIdx}-81`] = coutNiv3.toFixed(2); }
+      if (coutApprenti > 0) { data[`${monthTotalIdx}-82`] = coutApprenti.toFixed(2); data[`${monthTotalIdx}-83`] = coutApprenti.toFixed(2); }
 
-      // Recalcul du coût global réel à partir des montants salariaux injectés
-      const coutGlobalRealFromSal = coutCadre + coutMaitrise + coutNiv12 + coutNiv3 + coutApprenti;
+      // RÉALISÉ : 89=CADRE CUISINE, 90=CADRE SALLE, 91=MAITRISE CUISINE, 92=MAITRISE SALLE...
+      if (coutCadre    > 0) { data[`${monthTotalIdx}-89`] = coutCadre.toFixed(2);    data[`${monthTotalIdx}-90`] = coutCadre.toFixed(2); }
+      if (coutMaitrise > 0) { data[`${monthTotalIdx}-91`] = coutMaitrise.toFixed(2); data[`${monthTotalIdx}-92`] = coutMaitrise.toFixed(2); }
+      if (coutNiv12    > 0) { data[`${monthTotalIdx}-93`] = coutNiv12.toFixed(2);    data[`${monthTotalIdx}-94`] = coutNiv12.toFixed(2); }
+      if (coutNiv3     > 0) { data[`${monthTotalIdx}-95`] = coutNiv3.toFixed(2);     data[`${monthTotalIdx}-96`] = coutNiv3.toFixed(2); }
+      if (coutApprenti > 0) { data[`${monthTotalIdx}-97`] = coutApprenti.toFixed(2); data[`${monthTotalIdx}-98`] = coutApprenti.toFixed(2); }
 
-      const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-92`] || '0');
-      // Si on a des données salaires, on prend le total salarial, sinon l'ancien calcul heures×taux
-      const coutGlobalRealM = coutGlobalRealFromSal > 0
-        ? coutGlobalRealFromSal
-        : parseFloat(data[`${monthTotalIdx}-103`] || '0');
-
-      if (coutGlobalRealFromSal > 0) {
-        data[`${monthTotalIdx}-103`] = coutGlobalRealFromSal.toFixed(2);
-      }
-
-      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-104`] = (realiseCAM / totalHeuresRealM).toFixed(2);
-      if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-105`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-106`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
-      }
-      
-      data[`${monthTotalIdx}-107`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
-      if (realiseCAM > 0) {
-        const pctRealM = (coutGlobalRealM / realiseCAM) * 100;
-        const pctProjM = (coutGlobalProjM / realiseCAM) * 100;
-        data[`${monthTotalIdx}-108`] = (pctRealM - pctProjM).toFixed(2) + '%';
+      // COUT GLOBAL : somme de toutes les catégories (même valeur PROJ et RÉALISÉ)
+      const coutGlobalFromSal = coutCadre + coutMaitrise + coutNiv12 + coutNiv3 + coutApprenti;
+      if (coutGlobalFromSal > 0) {
+        data[`${monthTotalIdx}-84`] = coutGlobalFromSal.toFixed(2); // COUT GLOBAL PROJECTION
+        data[`${monthTotalIdx}-99`] = coutGlobalFromSal.toFixed(2); // COUT GLOBAL RÉALISÉ
       }
 
       // Calculate FRAIS GENERAUX box totals
