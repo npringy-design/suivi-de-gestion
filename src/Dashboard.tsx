@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from './DataContext';
 import { ChevronLeft, Save, Download, Upload, Calendar, Calculator, FileText, Settings, CreditCard, TrendingUp, PieChart as PieChartIcon, FileSpreadsheet, Receipt, Building2, Briefcase, Utensils, Menu, X, FileDown } from 'lucide-react';
-// ── Constantes Dashboard (inline) ────────────────────────────────────────────
-const C = [
+// ── Constantes Dashboard (inline — taux fixes supprimés, injectés dynamiquement) ──
+const C: string[][] = [
   ['CA', 'Midi Saisie', 'CA HT MIDI', 'bg-[#ffe699]'],
   ['CA', 'Soir Saisie', 'CA HT SOIR', 'bg-[#ffe699]'],
   ['CA', 'Limonade Saisie', 'CA HT LIMONADE', 'bg-[#ffe699]'],
@@ -77,31 +77,31 @@ const C = [
   ['COUT MATIERE', 'ACHAT HT', 'CUMUL HT', 'bg-[#a9d08e]'],
   ['COUT MATIERE', 'RATIO', 'SANS LE\nSTOCK', 'bg-[#e2efda]'],
   ['FRAIS DE PERSONNEL PROJECTION', '', 'TOTAL HEURES\nTRAVAILLEES', 'bg-white'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'CADRE\nCUISINE\n38,54 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'CADRE\nSALLE\n38,54 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'MAITRISE\nCUISINE\n20,85 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'MAITRISE\nSALLE\n20,85 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV I ET II\nCUISINE\n16,04 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV I ET II\nSALLE\n16,04 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV III\nCUISINE\n18,35 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV III\nSALLE\n18,35 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'APPRENTI\nCUISINE\n8,39 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'APPRENTI\nSALLE\n8,39 €', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'CADRE\nCUISINE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'CADRE\nSALLE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'MAITRISE\nCUISINE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'MAITRISE\nSALLE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV I ET II\nCUISINE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV I ET II\nSALLE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV III\nCUISINE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV III\nSALLE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'APPRENTI\nCUISINE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'APPRENTI\nSALLE', 'bg-[#fce4d6]'],
   ['FRAIS DE PERSONNEL PROJECTION', '', 'COUT GLOBAL', 'bg-white'],
   ['FRAIS DE PERSONNEL PROJECTION', 'PRODUCTIVITE\nCIBLE\n50,00', 'PRODUCTIVITE\nREELLE', 'bg-white'],
   ['FRAIS DE PERSONNEL PROJECTION', 'BUDGET FRAIS\nPERSONNEL\n35,00%', 'FRAIS PERSONNEL\n%', 'bg-white'],
   ['FRAIS DE PERSONNEL PROJECTION', '', 'RATIO HEBDO %', 'bg-white'],
   ['FRAIS DE PERSONNEL REALISE', '', 'TOTAL HEURES\nTRAVAILLEES', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'CADRE\nCUISINE\n38,54 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'CADRE\nSALLE\n38,54 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'MAITRISE\nCUISINE\n20,85 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'MAITRISE\nSALLE\n20,85 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV I ET II\nCUISINE\n16,04 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV I ET II\nSALLE\n16,04 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV III\nCUISINE\n18,35 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV III\nSALLE\n18,35 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'APPRENT\nI CUISINE\n8,39 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'APPRENT\nI SALLE\n8,39 €', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'CADRE\nCUISINE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'CADRE\nSALLE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'MAITRISE\nCUISINE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'MAITRISE\nSALLE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV I ET II\nCUISINE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV I ET II\nSALLE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV III\nCUISINE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV III\nSALLE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'APPRENT\nI CUISINE', 'bg-[#fce4d6]'],
+  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'APPRENT\nI SALLE', 'bg-[#fce4d6]'],
   ['FRAIS DE PERSONNEL REALISE', '', 'COUT GLOBAL', 'bg-white'],
   ['FRAIS DE PERSONNEL REALISE', 'PRODUCTIVITE\nCIBLE\n50,00', 'PRODUCTIVITE\nREELLE', 'bg-white'],
   ['FRAIS DE PERSONNEL REALISE', 'BUDGET FRAIS\nPERSONNEL\n35,00%', 'FRAIS PERSONNEL\n%', 'bg-white'],
@@ -126,9 +126,9 @@ const C = [
   ['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Indicateur', 'bg-[#fff2cc]'],
   ['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Valeur', 'bg-white']
 ];
-const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-const tabs = [
+const days: string[] = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const monthNames: string[] = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const tabs: { id: string; label: string }[] = [
   { id: 'CA', label: 'CA & Couverts' },
   { id: 'REALISE', label: 'Réalisé & Événements' },
   { id: 'DEMARQUES', label: 'Démarques' },
@@ -138,7 +138,7 @@ const tabs = [
   { id: 'CONTRAT', label: 'Contrats' },
   { id: 'RESULTATS', label: 'Résultats Mensuels' },
 ];
-const editableCols = [
+const editableCols: number[] = [
   6, 7, 8, 9, 14, 15,
   17, 18, 20, 22,
   49, 50,
@@ -146,7 +146,7 @@ const editableCols = [
   74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
   89, 90, 91, 92, 93, 94, 95, 96, 97, 98
 ];
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import jsPDF from 'jspdf';
@@ -296,7 +296,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         cols[idx][2] = `${label}${avgStr}`;
       };
 
-      // PROJECTION S/C — indices corrects 74-83
+      // PROJECTION S/C (74-83)
       updateHeader(74, 'cadre',    'CADRE\nCUISINE');
       updateHeader(75, 'cadre',    'CADRE\nSALLE');
       updateHeader(76, 'maitrise', 'MAITRISE\nCUISINE');
@@ -307,7 +307,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       updateHeader(81, 'niv3',     'NIV III\nSALLE');
       updateHeader(82, 'apprenti', 'APPRENTI\nCUISINE');
       updateHeader(83, 'apprenti', 'APPRENTI\nSALLE');
-      // FRAIS PERSONNEL RÉALISÉ — mêmes taux, indices 89-98
+      // FRAIS PERSONNEL RÉALISÉ (89-98)
       updateHeader(89, 'cadre',    'CADRE\nCUISINE');
       updateHeader(90, 'cadre',    'CADRE\nSALLE');
       updateHeader(91, 'maitrise', 'MAITRISE\nCUISINE');
