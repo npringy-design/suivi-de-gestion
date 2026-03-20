@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from './DataContext';
 import { ChevronLeft, Save, Download, Upload, Calendar, Calculator, FileText, Settings, CreditCard, TrendingUp, PieChart as PieChartIcon, FileSpreadsheet, Receipt, Building2, Briefcase, Utensils, Menu, X, FileDown } from 'lucide-react';
-// ── Constantes Dashboard (inline — taux fixes supprimés, injectés dynamiquement) ──
+// ── Constantes Dashboard inline ──────────────────────────────────────────────
 const C: string[][] = [
   ['CA', 'Midi Saisie', 'CA HT MIDI', 'bg-[#ffe699]'],
   ['CA', 'Soir Saisie', 'CA HT SOIR', 'bg-[#ffe699]'],
@@ -139,14 +139,12 @@ const tabs: { id: string; label: string }[] = [
   { id: 'RESULTATS', label: 'Résultats Mensuels' },
 ];
 const editableCols: number[] = [
-  6, 7, 8, 9, 14, 15,
-  17, 18, 20, 22,
-  49, 50,
+  6, 7, 8, 9, 14, 15, 17, 18, 20, 22, 49, 50,
   57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
   74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
   89, 90, 91, 92, 93, 94, 95, 96, 97, 98
 ];
-// ────────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import jsPDF from 'jspdf';
@@ -270,57 +268,20 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  const dynamicColumns = useMemo(() => {
-    const cols = [...C];
-    const salariesConfig = globalData[month]?.salariesConfig?.categories;
-    if (salariesConfig) {
-      // Update FRAIS DE PERSONNEL PROJECTION headers
-      const updateHeader = (idx: number, category: string, label: string) => {
-        const rows = salariesConfig[category] || [];
-        let totalCoutHoraire = 0;
-        let validRowsCount = 0;
-        rows.forEach((row: any) => {
-          const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
-          const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
-          const provision = coutGlobal * 1.10;
-          const coutHoraire = heures > 0 ? provision / heures : 0;
-          if (coutHoraire > 0) {
-            totalCoutHoraire += coutHoraire;
-            validRowsCount += 1;
-          }
-        });
-        const avg = validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
-        const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
-        cols[idx] = [...cols[idx]];
-        cols[idx][1] = 'PROJECTION S/C';
-        cols[idx][2] = `${label}${avgStr}`;
-      };
+  // Taux horaire moyen par catégorie pour le mois sélectionné (=tableau ConfigSalaires)
+  const getSalaryRate = (category: string): number => {
+    const rows = globalData[month]?.salariesConfig?.categories?.[category] || [];
+    let total = 0, count = 0;
+    rows.forEach((row: any) => {
+      const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
+      const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
+      const taux = heures > 0 ? (coutGlobal * 1.10) / heures : 0;
+      if (taux > 0) { total += taux; count++; }
+    });
+    return count > 0 ? total / count : 0;
+  };
 
-      // PROJECTION S/C (74-83)
-      updateHeader(74, 'cadre',    'CADRE\nCUISINE');
-      updateHeader(75, 'cadre',    'CADRE\nSALLE');
-      updateHeader(76, 'maitrise', 'MAITRISE\nCUISINE');
-      updateHeader(77, 'maitrise', 'MAITRISE\nSALLE');
-      updateHeader(78, 'niv12',    'NIV I ET II\nCUISINE');
-      updateHeader(79, 'niv12',    'NIV I ET II\nSALLE');
-      updateHeader(80, 'niv3',     'NIV III\nCUISINE');
-      updateHeader(81, 'niv3',     'NIV III\nSALLE');
-      updateHeader(82, 'apprenti', 'APPRENTI\nCUISINE');
-      updateHeader(83, 'apprenti', 'APPRENTI\nSALLE');
-      // FRAIS PERSONNEL RÉALISÉ (89-98)
-      updateHeader(89, 'cadre',    'CADRE\nCUISINE');
-      updateHeader(90, 'cadre',    'CADRE\nSALLE');
-      updateHeader(91, 'maitrise', 'MAITRISE\nCUISINE');
-      updateHeader(92, 'maitrise', 'MAITRISE\nSALLE');
-      updateHeader(93, 'niv12',    'NIV I ET II\nCUISINE');
-      updateHeader(94, 'niv12',    'NIV I ET II\nSALLE');
-      updateHeader(95, 'niv3',     'NIV III\nCUISINE');
-      updateHeader(96, 'niv3',     'NIV III\nSALLE');
-      updateHeader(97, 'apprenti', 'APPRENTI\nCUISINE');
-      updateHeader(98, 'apprenti', 'APPRENTI\nSALLE');
-    }
-    return cols;
-  }, [C, globalData, month]);
+  const dynamicColumns = C;
 
   useEffect(() => {
     const handleResize = () => {
@@ -1317,7 +1278,18 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
                 return (
                   <th key={`c-${i}`} style={{ ...thBase, background: getBgColor(c[3]), color: '#374151', top: 90, height: 60, minWidth: minW, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : isSectionEnd ? '2px solid #94a3b8' : '1px solid #cbd5e1', borderBottom: '3px solid #374151' }}>
-                    {isEvt ? c[0] : c[2]}
+                    {(() => {
+                      const label = isEvt ? c[0] : c[2];
+                      const salCatMap: Record<number,string> = {74:'cadre',75:'cadre',76:'maitrise',77:'maitrise',78:'niv12',79:'niv12',80:'niv3',81:'niv3',82:'apprenti',83:'apprenti',89:'cadre',90:'cadre',91:'maitrise',92:'maitrise',93:'niv12',94:'niv12',95:'niv3',96:'niv3',97:'apprenti',98:'apprenti'};
+                      const cat = salCatMap[c.originalIndex];
+                      const rate = cat ? getSalaryRate(cat) : 0;
+                      return (
+                        <span style={{display:'flex',flexDirection:'column',alignItems:'center',gap:1}}>
+                          <span style={{whiteSpace:'pre-line',textAlign:'center'}}>{label}</span>
+                          {rate > 0 && <span style={{color:'#1e40af',fontWeight:800,fontSize:9,marginTop:2}}>{rate.toFixed(2).replace('.',',')} €</span>}
+                        </span>
+                      );
+                    })()}
                   </th>
                 );
               })}
