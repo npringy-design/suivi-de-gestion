@@ -268,13 +268,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  // Taux horaire moyen par catégorie pour le mois sélectionné (=tableau ConfigSalaires)
+  // Taux horaire moyen par catégorie (=tableau ConfigSalaires) pour le mois actif
   const getSalaryRate = (category: string): number => {
     const rows = globalData[month]?.salariesConfig?.categories?.[category] || [];
     let total = 0, count = 0;
     rows.forEach((row: any) => {
       const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
-      const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
+      const heures    = parseFloat((row.heures    || '0').replace(',', '.')) || 0;
       const taux = heures > 0 ? (coutGlobal * 1.10) / heures : 0;
       if (taux > 0) { total += taux; count++; }
     });
@@ -524,7 +524,17 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           return validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
         };
 
-        const projRates = [
+        const projRatesProj = [
+          getAvgRate('maitrise') || 20.85,
+          getAvgRate('maitrise') || 20.85,
+          getAvgRate('niv12') || 16.04,
+          getAvgRate('niv12') || 16.04,
+          getAvgRate('niv3') || 18.35,
+          getAvgRate('niv3') || 18.35,
+          getAvgRate('apprenti') || 8.39,
+          getAvgRate('apprenti') || 8.39
+        ];
+        const projRatesReal = [
           getAvgRate('cadre') || 38.54,
           getAvgRate('cadre') || 38.54,
           getAvgRate('maitrise') || 20.85,
@@ -536,9 +546,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           getAvgRate('apprenti') || 8.39,
           getAvgRate('apprenti') || 8.39
         ];
+        const projRates = projRatesProj;
 
-        for (let i = 0; i < 10; i++) {
-          const colIdx = 74 + i; // PROJECTION S/C columns start at 74
+        for (let i = 0; i < 8; i++) {
+          const colIdx = 76 + i; // PROJECTION S/C: MAITRISE→APPRENTI (76-83)
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresProj += val;
@@ -565,6 +576,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         
         for (let i = 0; i < 10; i++) {
           const colIdx = 89 + i;
+          const projRates = projRatesReal;
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresReal += val;
@@ -1280,7 +1292,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   <th key={`c-${i}`} style={{ ...thBase, background: getBgColor(c[3]), color: '#374151', top: 90, height: 60, minWidth: minW, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : isSectionEnd ? '2px solid #94a3b8' : '1px solid #cbd5e1', borderBottom: '3px solid #374151' }}>
                     {(() => {
                       const label = isEvt ? c[0] : c[2];
-                      const salCatMap: Record<number,string> = {74:'cadre',75:'cadre',76:'maitrise',77:'maitrise',78:'niv12',79:'niv12',80:'niv3',81:'niv3',82:'apprenti',83:'apprenti',89:'cadre',90:'cadre',91:'maitrise',92:'maitrise',93:'niv12',94:'niv12',95:'niv3',96:'niv3',97:'apprenti',98:'apprenti'};
+                      // Afficher le taux depuis ConfigSalaires sous le nom de la colonne
+                      const salCatMap: Record<number,string> = {
+                        74:'cadre',75:'cadre',
+                        76:'maitrise',77:'maitrise',78:'niv12',79:'niv12',
+                        80:'niv3',81:'niv3',82:'apprenti',83:'apprenti',
+                        89:'cadre',90:'cadre',
+                        91:'maitrise',92:'maitrise',93:'niv12',94:'niv12',
+                        95:'niv3',96:'niv3',97:'apprenti',98:'apprenti'
+                      };
                       const cat = salCatMap[c.originalIndex];
                       const rate = cat ? getSalaryRate(cat) : 0;
                       return (
