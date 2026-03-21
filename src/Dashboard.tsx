@@ -333,8 +333,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           data[`${rIdx}-12`] = cumulCvts;
         }
 
-        // REALISE CA HT calculations
-        // idx: 17=VAE, 18=MIDI, 19=SOIR, 20=LIMO, 21=TOTAL, 22=ECART, 23=CUMUL, 24=VAR N-1
+        // REALISE CA HT — idx: 17=VAE,18=MIDI,19=SOIR,20=LIMO,21=TOTAL,22=ECART,23=CUMUL
         const realiseVae  = parseFloat(data[`${rIdx}-17`] || '0');
         const realiseMidi = parseFloat(data[`${rIdx}-18`] || '0');
         const realiseSoir = parseFloat(data[`${rIdx}-19`] || '0');
@@ -342,15 +341,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
         const realiseTotalJour = realiseVae + realiseMidi + realiseSoir + realiseLimo;
         if (realiseTotalJour > 0 || data[`${rIdx}-17`] || data[`${rIdx}-18`] || data[`${rIdx}-19`] || data[`${rIdx}-20`]) {
-          data[`${rIdx}-21`] = realiseTotalJour.toFixed(2);   // TOTAL JOUR
-          const ecartJour = realiseTotalJour - totalJour;
-          data[`${rIdx}-22`] = ecartJour.toFixed(2);          // ECART BUDGET
+          data[`${rIdx}-21`] = realiseTotalJour.toFixed(2);
+          data[`${rIdx}-22`] = (realiseTotalJour - totalJour).toFixed(2);
           cumulRealiseCA += realiseTotalJour;
-          data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);     // CUMUL
+          data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
         }
 
-        // COUVERTS RESTAURANT
-        // idx: 25=NB MIDI, 26=MOY MIDI(auto), 27=NB SOIR, 28=MOY SOIR(auto), 29=TOTAL, 30=CUMUL, 31=ECART
+        // COUVERTS REALISE — idx: 25=NB MIDI,26=MOY(auto),27=NB SOIR,28=MOY(auto),29=TOTAL,30=CUMUL,31=ECART
         const nbCvtsMidi = parseFloat(data[`${rIdx}-25`] || '0');
         const nbCvtsSoir = parseFloat(data[`${rIdx}-27`] || '0');
         if (nbCvtsMidi > 0 && realiseMidi > 0) data[`${rIdx}-26`] = (realiseMidi / nbCvtsMidi).toFixed(2);
@@ -364,8 +361,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           if (budgetCvtsSoir > 0) data[`${rIdx}-31`] = (nbCvtsSoir - budgetCvtsSoir).toFixed(0);
         }
 
-        // COUVERTS LIMONADE
-        // idx: 32=NB CVTS, 33=MOY(auto), 34=CUMUL
+        // COUVERTS LIMONADE — idx: 32=NB,33=MOY(auto),34=CUMUL
         const nbCvtsLimo = parseFloat(data[`${rIdx}-32`] || '0');
         if (nbCvtsLimo > 0 && realiseLimo > 0) data[`${rIdx}-33`] = (realiseLimo / nbCvtsLimo).toFixed(2);
         if (nbCvtsLimo > 0) {
@@ -965,18 +961,19 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       {/* Left Sidebar for Months */}
       <aside style={{ 
-        width: 260, 
+        width: isSidebarOpen ? 260 : 0,
+        minWidth: isSidebarOpen ? 260 : 0,
         background: '#1e293b', 
         color: '#fff', 
         display: 'flex', 
         flexDirection: 'column', 
         flexShrink: 0, 
-        boxShadow: '4px 0 15px rgba(0,0,0,0.05)', 
+        boxShadow: isSidebarOpen ? '4px 0 15px rgba(0,0,0,0.05)' : 'none',
         zIndex: 100,
         position: isMobile ? 'absolute' : 'relative',
         height: '100%',
-        transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-        transition: 'transform 0.3s ease-in-out'
+        overflow: 'hidden',
+        transition: 'width 0.3s ease-in-out, min-width 0.3s ease-in-out'
       }}>
         <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: 0, transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}>
@@ -1033,6 +1030,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               </h2>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'} title={isSidebarOpen ? 'Masquer le menu' : 'Afficher le menu'}>
+                <Menu size={16} />
+              </button>
               <button onClick={() => setIsImportModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '6px 12px' : '8px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#10b981', fontSize: isMobile ? 12 : 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#ecfdf5'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                 <Upload size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Importer'}
               </button>
