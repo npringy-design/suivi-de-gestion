@@ -1,150 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from './DataContext';
 import { ChevronLeft, Save, Download, Upload, Calendar, Calculator, FileText, Settings, CreditCard, TrendingUp, PieChart as PieChartIcon, FileSpreadsheet, Receipt, Building2, Briefcase, Utensils, Menu, X, FileDown } from 'lucide-react';
-// ── Constantes Dashboard inline ──────────────────────────────────────────────
-const C: string[][] = [
-  ['CA', 'Midi Saisie', 'CA HT MIDI', 'bg-[#ffe699]'],
-  ['CA', 'Soir Saisie', 'CA HT SOIR', 'bg-[#ffe699]'],
-  ['CA', 'Limonade Saisie', 'CA HT LIMONADE', 'bg-[#ffe699]'],
-  ['CA', 'TOTAL JOUR', 'CAHT JOUR', 'bg-[#ffe699]'],
-  ['CA', 'CUMUL DEPUIS LE 01', 'CAHTCUMUL', 'bg-[#ffe699]'],
-  ['CA', 'VAR % VS N-1', '', 'bg-hatched'],
-  ['RESTAURANTS', 'MIDI\nPrevision Saisie', 'NB CVTS', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'MIDI\nPrevision Saisie', 'CVTS MOY HT', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'SOIR\nPrevision Saisie', 'NB CVTS', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'SOIR\nPrevision Saisie', 'CVTS MOY HT', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'JOUR\nPrevision Saisie', 'NB CVTS', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'JOUR\nPrevision Saisie', 'CVTS MOY HT', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'JOUR\nPrevision Saisie', 'CVTS CUMUL', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'VAR % VS N-1', '', 'bg-hatched'],
-  ['LIMONADE', 'JOUR\nPrevision Saisie', 'NB CVTS', 'bg-[#fff2cc]'],
-  ['LIMONADE', 'JOUR\nPrevision Saisie', 'CVTS MOY HT', 'bg-[#fff2cc]'],
-  ['LIMONADE', 'VAR % VS N-1', '', 'bg-hatched'],
-  ['REALISE', 'CA HT', 'VAE', 'bg-[#b4c6e7]'],
-  ['REALISE', 'CA HT', 'MIDI', 'bg-[#b4c6e7]'],
-  ['REALISE', 'CA HT', 'ECART AU\nBUDGET\nMIDI', 'bg-white'],
-  ['REALISE', 'CA HT', 'SOIR', 'bg-[#b4c6e7]'],
-  ['REALISE', 'CA HT', 'ECART AU\nBUDGET\nSOIR', 'bg-white'],
-  ['REALISE', 'CA HT', 'LIMONADE', 'bg-[#b4c6e7]'],
-  ['REALISE', 'CA HT', 'ECART AU\nBUDGET\nLIMONADE', 'bg-white'],
-  ['REALISE', 'CA HT', 'TOTAL JOUR\nCAHT JOUR', 'bg-[#b4c6e7]'],
-  ['REALISE', 'CA HT', 'ECART AU\nBUDGET\nJOUR', 'bg-white'],
-  ['REALISE', 'CA HT', 'CUMUL\nDEPUIS LE 01\nCAHTCUMUL', 'bg-[#b4c6e7]'],
-  ['REALISE', 'ECART AU BUDGET', 'JOUR', 'bg-white'],
-  ['REALISE', 'ECART AU BUDGET', 'Depuis le 01', 'bg-white'],
-  ['REALISE', 'ECART AU BUDGET', '% BUDGET', 'bg-white'],
-  ['REALISE', 'TENDANCE\nMENSUEL', '', 'bg-white'],
-  ['REALISE', 'TENDANCE\nVAR %\nVS N-1', '', 'bg-white'],
-  ['REALISE', 'VAR %\nVS N-1', '', 'bg-hatched'],
-  ['REALISE', 'COUVERTS RESTAURANT', 'MIDI\nNB CVTS', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS RESTAURANT', 'MIDI\nCVTS MOY', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS RESTAURANT', 'SOIR\nNB CVTS', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS RESTAURANT', 'SOIR\nCVTS MOY', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS RESTAURANT', 'JOUR\nNB CVTS', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS RESTAURANT', 'JOUR\nCVTS MOY', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS RESTAURANT', 'JOUR\nCVTS CUMUL', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS RESTAURANT', 'Ecart au\nBudget\nCouverts SOIR', 'bg-[#fce4d6]'],
-  ['REALISE', 'COUVERTS RESTAURANT', 'Ecart au\nBudget\nMOY CVTS SOIR', 'bg-[#fce4d6]'],
-  ['REALISE', 'COUVERTS RESTAURANT', 'VAR %\nVS N-1', 'bg-hatched'],
-  ['REALISE', 'COUVERTS LIMONADE', 'JOUR\nNB CVTS', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS LIMONADE', 'JOUR\nCVTS MOY', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS LIMONADE', 'JOUR\nCVTS CUMUL', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS LIMONADE', 'Ecart au\nBudget\nCouverts', 'bg-white'],
-  ['REALISE', 'COUVERTS LIMONADE', 'Ecart au\nBudget\nMoy CVTS', 'bg-white'],
-  ['REALISE', 'COUVERTS LIMONADE', 'VAR %\nVS N-1', 'bg-hatched'],
-  ['EVENEMENTS RESTAURANTS', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS RESTAURANTS', 'bg-[#e9eef7]'],
-  ['EVENEMENTS NATIONAL', 'EVENEMENTS NATIONAL', 'EVENEMENTS NATIONAL', 'bg-[#e2efda]'],
-  ['DEMARQUES', 'PERSONNEL', '', 'bg-[#e2efda]'],
-  ['DEMARQUES', 'Ratio\nPerso', '', 'bg-[#fce4d6]'],
-  ['DEMARQUES', 'OPERATIONEL', '', 'bg-[#e2efda]'],
-  ['DEMARQUES', 'Ratio Cuisine', '', 'bg-[#fce4d6]'],
-  ['DEMARQUES', 'TOTAL', '', 'bg-[#e2efda]'],
-  ['DEMARQUES', 'EXPLICATION DEMARQUE', '', 'bg-white'],
-  ['COUT MATIERE', 'ACHATS LIQUIDE HT', 'C10', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS LIQUIDE HT', 'RICHARD VINS', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS LIQUIDE HT', 'CAFE RICHARD', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS LIQUIDE HT', 'STORIA', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'BRAKE', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'POMONA F&L', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'SOCOPA', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'EPISAVEUR', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'MAMMAFIORE', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'COMPAGNIE DES DESSERTS', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'DISTRIPATE', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'METRO /\nDEPANNAGE', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'MARTEL', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHAT HT', 'TOTAL HT', 'bg-[#a9d08e]'],
-  ['COUT MATIERE', 'ACHAT HT', 'CUMUL HT', 'bg-[#a9d08e]'],
-  ['COUT MATIERE', 'RATIO', 'SANS LE\nSTOCK', 'bg-[#e2efda]'],
-  ['FRAIS DE PERSONNEL PROJECTION', '', 'TOTAL HEURES\nTRAVAILLEES', 'bg-white'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'CADRE\nCUISINE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'CADRE\nSALLE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'MAITRISE\nCUISINE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'MAITRISE\nSALLE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV I ET II\nCUISINE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV I ET II\nSALLE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV III\nCUISINE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV III\nSALLE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'APPRENTI\nCUISINE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'APPRENTI\nSALLE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', '', 'COUT GLOBAL', 'bg-white'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PRODUCTIVITE\nCIBLE\n50,00', 'PRODUCTIVITE\nREELLE', 'bg-white'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'BUDGET FRAIS\nPERSONNEL\n35,00%', 'FRAIS PERSONNEL\n%', 'bg-white'],
-  ['FRAIS DE PERSONNEL PROJECTION', '', 'RATIO HEBDO %', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'TOTAL HEURES\nTRAVAILLEES', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'CADRE\nCUISINE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'CADRE\nSALLE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'MAITRISE\nCUISINE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'MAITRISE\nSALLE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV I ET II\nCUISINE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV I ET II\nSALLE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV III\nCUISINE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV III\nSALLE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'APPRENT\nI CUISINE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'APPRENT\nI SALLE', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'COUT GLOBAL', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', 'PRODUCTIVITE\nCIBLE\n50,00', 'PRODUCTIVITE\nREELLE', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', 'BUDGET FRAIS\nPERSONNEL\n35,00%', 'FRAIS PERSONNEL\n%', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'RATIO HEBDO %', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'Ecart au Budget\nNB d\'Heure', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'Ecart au budget\nS/C %', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'VAR %\nVS N-1', 'bg-hatched'],
-  ['FRAIS GENERAUX', 'ENTRETIEN ET REPARATION', 'DATE', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ENTRETIEN ET REPARATION', 'FOURNISSEUR', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ENTRETIEN ET REPARATION', 'MOTIF ACHAT', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ENTRETIEN ET REPARATION', 'MONTANT HT', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ECOLAB / DIVERSEY', 'DATE', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ECOLAB / DIVERSEY', 'FOURNISSEURS', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ECOLAB / DIVERSEY', 'MOTIF ACHAT', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ECOLAB / DIVERSEY', 'MONTANT HT', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)', 'DATE', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)', 'FOURNISSEURS', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)', 'MOTIF ACHAT', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)', 'MONTANT HT', 'bg-[#e9eef7]'],
-  ['CONTRAT MENSUALISES', '', 'Nom', 'bg-[#e9eef7]'],
-  ['CONTRAT MENSUALISES', '', 'Montant', 'bg-[#e9eef7]'],
-  ['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Indicateur', 'bg-[#fff2cc]'],
-  ['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Valeur', 'bg-white']
-];
-const days: string[] = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-const monthNames: string[] = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-const tabs: { id: string; label: string }[] = [
-  { id: 'CA', label: 'CA & Couverts' },
-  { id: 'REALISE', label: 'Réalisé & Événements' },
-  { id: 'DEMARQUES', label: 'Démarques' },
-  { id: 'COUT_MATIERE', label: 'Coût Matière' },
-  { id: 'FRAIS_PERSONNEL', label: 'Frais de Personnel' },
-  { id: 'FRAIS_GENERAUX', label: 'Frais Généraux' },
-  { id: 'CONTRAT', label: 'Contrats' },
-  { id: 'RESULTATS', label: 'Résultats Mensuels' },
-];
-const editableCols: number[] = [
-  6, 7, 8, 9, 14, 15, 17, 18, 20, 22, 49, 50,
-  57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
-  74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
-  89, 90, 91, 92, 93, 94, 95, 96, 97, 98
-];
-// ─────────────────────────────────────────────────────────────────────────────
+import { DASHBOARD_COLUMNS as C, DAYS as days, MONTH_NAMES as monthNames, DASHBOARD_TABS as tabs, EDITABLE_COLS as editableCols } from './constants/dashboardConstants';
 import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import jsPDF from 'jspdf';
@@ -268,20 +125,45 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  // Taux horaire moyen par catégorie (=tableau ConfigSalaires) pour le mois actif
-  const getSalaryRate = (category: string): number => {
-    const rows = globalData[month]?.salariesConfig?.categories?.[category] || [];
-    let total = 0, count = 0;
-    rows.forEach((row: any) => {
-      const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
-      const heures    = parseFloat((row.heures    || '0').replace(',', '.')) || 0;
-      const taux = heures > 0 ? (coutGlobal * 1.10) / heures : 0;
-      if (taux > 0) { total += taux; count++; }
-    });
-    return count > 0 ? total / count : 0;
-  };
+  const dynamicColumns = useMemo(() => {
+    const cols = [...C];
+    const salariesConfig = globalData[month]?.salariesConfig?.categories;
+    if (salariesConfig) {
+      // Update FRAIS DE PERSONNEL PROJECTION headers
+      const updateHeader = (idx: number, category: string, label: string) => {
+        const rows = salariesConfig[category] || [];
+        let totalCoutHoraire = 0;
+        let validRowsCount = 0;
+        rows.forEach((row: any) => {
+          const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
+          const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
+          const provision = coutGlobal * 1.10;
+          const coutHoraire = heures > 0 ? provision / heures : 0;
+          if (coutHoraire > 0) {
+            totalCoutHoraire += coutHoraire;
+            validRowsCount += 1;
+          }
+        });
+        const avg = validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
+        const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
+        cols[idx] = [...cols[idx]];
+        cols[idx][1] = 'PROJECTION S/C';
+        cols[idx][2] = `${label}${avgStr}`;
+      };
 
-  const dynamicColumns = C;
+      updateHeader(76, 'cadre', 'CADRE\nCUISINE');
+      updateHeader(77, 'cadre', 'CADRE\nSALLE');
+      updateHeader(78, 'maitrise', 'MAITRISE\nCUISINE');
+      updateHeader(79, 'maitrise', 'MAITRISE\nSALLE');
+      updateHeader(80, 'niv12', 'NIV I ET II\nCUISINE');
+      updateHeader(81, 'niv12', 'NIV I ET II\nSALLE');
+      updateHeader(82, 'niv3', 'NIV III\nCUISINE');
+      updateHeader(83, 'niv3', 'NIV III\nSALLE');
+      updateHeader(84, 'apprenti', 'APPRENTI\nCUISINE');
+      updateHeader(85, 'apprenti', 'APPRENTI\nSALLE');
+    }
+    return cols;
+  }, [C, globalData, month]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -408,6 +290,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     let cumulCvts = 0;
     let cumulRealiseCA = 0;
     let cumulCoutMatiere = 0;
+    let cumulCvtsLimo = 0;
 
     // First pass: Calculate row totals (TOTAL JOUR) and CUMUL
     rows.forEach((row, rIdx) => {
@@ -451,37 +334,49 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
 
         // REALISE CA HT calculations
-        const realiseVae = parseFloat(data[`${rIdx}-17`] || '0');
+        // idx: 17=VAE, 18=MIDI, 19=SOIR, 20=LIMO, 21=TOTAL, 22=ECART, 23=CUMUL, 24=VAR N-1
+        const realiseVae  = parseFloat(data[`${rIdx}-17`] || '0');
         const realiseMidi = parseFloat(data[`${rIdx}-18`] || '0');
-        const realiseSoir = parseFloat(data[`${rIdx}-20`] || '0');
-        const realiseLimo = parseFloat(data[`${rIdx}-22`] || '0');
-
-        // Ecarts
-        if (data[`${rIdx}-18`] || data[`${rIdx}-0`]) {
-          data[`${rIdx}-19`] = (realiseMidi - budgetMidi).toFixed(2);
-        }
-        if (data[`${rIdx}-20`] || data[`${rIdx}-1`]) {
-          data[`${rIdx}-21`] = (realiseSoir - budgetSoir).toFixed(2);
-        }
-        if (data[`${rIdx}-22`] || data[`${rIdx}-2`]) {
-          data[`${rIdx}-23`] = (realiseLimo - budgetLimo).toFixed(2);
-        }
+        const realiseSoir = parseFloat(data[`${rIdx}-19`] || '0');
+        const realiseLimo = parseFloat(data[`${rIdx}-20`] || '0');
 
         const realiseTotalJour = realiseVae + realiseMidi + realiseSoir + realiseLimo;
-        if (realiseTotalJour > 0 || data[`${rIdx}-17`] || data[`${rIdx}-18`] || data[`${rIdx}-20`] || data[`${rIdx}-22`]) {
-          data[`${rIdx}-24`] = realiseTotalJour.toFixed(2);
-          
+        if (realiseTotalJour > 0 || data[`${rIdx}-17`] || data[`${rIdx}-18`] || data[`${rIdx}-19`] || data[`${rIdx}-20`]) {
+          data[`${rIdx}-21`] = realiseTotalJour.toFixed(2);   // TOTAL JOUR
           const ecartJour = realiseTotalJour - totalJour;
-          data[`${rIdx}-25`] = ecartJour.toFixed(2);
-
+          data[`${rIdx}-22`] = ecartJour.toFixed(2);          // ECART BUDGET
           cumulRealiseCA += realiseTotalJour;
-          data[`${rIdx}-26`] = cumulRealiseCA.toFixed(2);
+          data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);     // CUMUL
+        }
+
+        // COUVERTS RESTAURANT
+        // idx: 25=NB MIDI, 26=MOY MIDI(auto), 27=NB SOIR, 28=MOY SOIR(auto), 29=TOTAL, 30=CUMUL, 31=ECART
+        const nbCvtsMidi = parseFloat(data[`${rIdx}-25`] || '0');
+        const nbCvtsSoir = parseFloat(data[`${rIdx}-27`] || '0');
+        if (nbCvtsMidi > 0 && realiseMidi > 0) data[`${rIdx}-26`] = (realiseMidi / nbCvtsMidi).toFixed(2);
+        if (nbCvtsSoir > 0 && realiseSoir > 0) data[`${rIdx}-28`] = (realiseSoir / nbCvtsSoir).toFixed(2);
+        const totalCvtsJour = nbCvtsMidi + nbCvtsSoir;
+        if (totalCvtsJour > 0) {
+          data[`${rIdx}-29`] = totalCvtsJour.toFixed(0);
+          cumulCvts += totalCvtsJour;
+          data[`${rIdx}-30`] = cumulCvts.toFixed(0);
+          const budgetCvtsSoir = parseFloat(data[`${rIdx}-8`] || '0');
+          if (budgetCvtsSoir > 0) data[`${rIdx}-31`] = (nbCvtsSoir - budgetCvtsSoir).toFixed(0);
+        }
+
+        // COUVERTS LIMONADE
+        // idx: 32=NB CVTS, 33=MOY(auto), 34=CUMUL
+        const nbCvtsLimo = parseFloat(data[`${rIdx}-32`] || '0');
+        if (nbCvtsLimo > 0 && realiseLimo > 0) data[`${rIdx}-33`] = (realiseLimo / nbCvtsLimo).toFixed(2);
+        if (nbCvtsLimo > 0) {
+          cumulCvtsLimo = (cumulCvtsLimo || 0) + nbCvtsLimo;
+          data[`${rIdx}-34`] = cumulCvtsLimo.toFixed(0);
         }
 
         // COUT MATIERE calculations
         let coutMatiereTotalJour = 0;
         let hasCoutMatiereData = false;
-        for (let i = 57; i <= 69; i++) {
+        for (let i = 43; i <= 55; i++) {
           if (data[`${rIdx}-${i}`]) {
             coutMatiereTotalJour += parseFloat(data[`${rIdx}-${i}`] || '0');
             hasCoutMatiereData = true;
@@ -489,14 +384,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
 
         if (hasCoutMatiereData) {
-          data[`${rIdx}-70`] = coutMatiereTotalJour.toFixed(2);
+          data[`${rIdx}-42`] = coutMatiereTotalJour.toFixed(2);
           cumulCoutMatiere += coutMatiereTotalJour;
-          data[`${rIdx}-71`] = cumulCoutMatiere.toFixed(2);
+          data[`${rIdx}-43`] = cumulCoutMatiere.toFixed(2);
           
           if (cumulRealiseCA > 0) {
-            data[`${rIdx}-72`] = ((cumulCoutMatiere / cumulRealiseCA) * 100).toFixed(2) + '%';
+            data[`${rIdx}-44`] = ((cumulCoutMatiere / cumulRealiseCA) * 100).toFixed(2) + '%';
           } else {
-            data[`${rIdx}-72`] = '0.00%';
+            data[`${rIdx}-44`] = '0.00%';
           }
         }
 
@@ -505,7 +400,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let coutGlobalProj = 0;
         let hasProjData = false;
         
-        const salariesConfig = globalData[month]?.salariesConfig?.categories;
+        const salariesConfig = data[month]?.salariesConfig?.categories;
         const getAvgRate = (category: string) => {
           if (!salariesConfig) return 0;
           const rows = salariesConfig[category] || [];
@@ -524,17 +419,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           return validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
         };
 
-        const projRatesProj = [
-          getAvgRate('maitrise') || 20.85,
-          getAvgRate('maitrise') || 20.85,
-          getAvgRate('niv12') || 16.04,
-          getAvgRate('niv12') || 16.04,
-          getAvgRate('niv3') || 18.35,
-          getAvgRate('niv3') || 18.35,
-          getAvgRate('apprenti') || 8.39,
-          getAvgRate('apprenti') || 8.39
-        ];
-        const projRatesReal = [
+        const projRates = [
           getAvgRate('cadre') || 38.54,
           getAvgRate('cadre') || 38.54,
           getAvgRate('maitrise') || 20.85,
@@ -546,10 +431,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           getAvgRate('apprenti') || 8.39,
           getAvgRate('apprenti') || 8.39
         ];
-        const projRates = projRatesProj;
 
-        for (let i = 0; i < 8; i++) {
-          const colIdx = 76 + i; // PROJECTION S/C: MAITRISE→APPRENTI (76-83)
+        for (let i = 0; i < 10; i++) {
+          const colIdx = 76 + i; // PROJECTION S/C columns start at 76
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresProj += val;
@@ -559,13 +443,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
         
         if (hasProjData) {
-          data[`${rIdx}-77`] = totalHeuresProj.toFixed(2);
-          data[`${rIdx}-88`] = coutGlobalProj.toFixed(2);
+          data[`${rIdx}-63`] = totalHeuresProj.toFixed(2);
+          data[`${rIdx}-74`] = coutGlobalProj.toFixed(2);
           if (totalHeuresProj > 0) {
-            data[`${rIdx}-89`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
+            data[`${rIdx}-75`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
           }
           if (realiseTotalJour > 0) {
-            data[`${rIdx}-90`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-76`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
           }
         }
 
@@ -575,8 +459,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let hasRealData = false;
         
         for (let i = 0; i < 10; i++) {
-          const colIdx = 89 + i;
-          const projRates = projRatesReal;
+          const colIdx = 93 + i;
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresReal += val;
@@ -586,22 +469,22 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
         
         if (hasRealData) {
-          data[`${rIdx}-92`] = totalHeuresReal.toFixed(2);
-          data[`${rIdx}-103`] = coutGlobalReal.toFixed(2);
+          data[`${rIdx}-78`] = totalHeuresReal.toFixed(2);
+          data[`${rIdx}-89`] = coutGlobalReal.toFixed(2);
           if (totalHeuresReal > 0) {
-            data[`${rIdx}-104`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
+            data[`${rIdx}-90`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
           }
           if (realiseTotalJour > 0) {
-            data[`${rIdx}-105`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-91`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
           }
           
           // Ecarts
           if (hasProjData) {
-            data[`${rIdx}-107`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
+            data[`${rIdx}-93`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
             if (realiseTotalJour > 0) {
               const pctReal = (coutGlobalReal / realiseTotalJour) * 100;
               const pctProj = (coutGlobalProj / realiseTotalJour) * 100;
-              data[`${rIdx}-108`] = (pctReal - pctProj).toFixed(2) + '%';
+              data[`${rIdx}-94`] = (pctReal - pctProj).toFixed(2) + '%';
             }
           }
         }
@@ -621,7 +504,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 21, 22, 23, 26, 28, 29, 30, 31, 33, 34, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -655,31 +538,31 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const cvtsLimoW = parseFloat(data[`${rIdx}-14`] || '0');
         if (cvtsLimoW > 0) data[`${rIdx}-15`] = (caLimoW / cvtsLimoW);
 
-        const coutMatiereW = parseFloat(data[`${rIdx}-70`] || '0');
-        const realiseCAW = parseFloat(data[`${rIdx}-24`] || '0');
-        if (realiseCAW > 0) data[`${rIdx}-72`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
+        const coutMatiereW = parseFloat(data[`${rIdx}-42`] || '0');
+        const realiseCAW = parseFloat(data[`${rIdx}-21`] || '0');
+        if (realiseCAW > 0) data[`${rIdx}-44`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
 
-        const totalHeuresProjW = parseFloat(data[`${rIdx}-77`] || '0');
-        const coutGlobalProjW = parseFloat(data[`${rIdx}-88`] || '0');
-        if (totalHeuresProjW > 0) data[`${rIdx}-89`] = (realiseCAW / totalHeuresProjW).toFixed(2);
+        const totalHeuresProjW = parseFloat(data[`${rIdx}-63`] || '0');
+        const coutGlobalProjW = parseFloat(data[`${rIdx}-74`] || '0');
+        if (totalHeuresProjW > 0) data[`${rIdx}-75`] = (realiseCAW / totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
-          data[`${rIdx}-90`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-91`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-76`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-77`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        const totalHeuresRealW = parseFloat(data[`${rIdx}-92`] || '0');
-        const coutGlobalRealW = parseFloat(data[`${rIdx}-103`] || '0');
-        if (totalHeuresRealW > 0) data[`${rIdx}-104`] = (realiseCAW / totalHeuresRealW).toFixed(2);
+        const totalHeuresRealW = parseFloat(data[`${rIdx}-78`] || '0');
+        const coutGlobalRealW = parseFloat(data[`${rIdx}-89`] || '0');
+        if (totalHeuresRealW > 0) data[`${rIdx}-90`] = (realiseCAW / totalHeuresRealW).toFixed(2);
         if (realiseCAW > 0) {
-          data[`${rIdx}-105`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-106`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-91`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-92`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        data[`${rIdx}-107`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
+        data[`${rIdx}-93`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
           const pctRealW = (coutGlobalRealW / realiseCAW) * 100;
           const pctProjW = (coutGlobalProjW / realiseCAW) * 100;
-          data[`${rIdx}-108`] = (pctRealW - pctProjW).toFixed(2) + '%';
+          data[`${rIdx}-94`] = (pctRealW - pctProjW).toFixed(2) + '%';
         }
       }
     });
@@ -693,7 +576,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 26, 39, 45, 71, 72, 89, 90, 91, 104, 105, 106, 107, 108].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 21, 22, 23, 26, 28, 29, 30, 31, 33, 34, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -727,31 +610,31 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const cvtsLimoM = parseFloat(data[`${monthTotalIdx}-14`] || '0');
       if (cvtsLimoM > 0) data[`${monthTotalIdx}-15`] = (caLimoM / cvtsLimoM);
 
-      const coutMatiereM = parseFloat(data[`${monthTotalIdx}-70`] || '0');
-      const realiseCAM = parseFloat(data[`${monthTotalIdx}-24`] || '0');
-      if (realiseCAM > 0) data[`${monthTotalIdx}-72`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
+      const coutMatiereM = parseFloat(data[`${monthTotalIdx}-42`] || '0');
+      const realiseCAM = parseFloat(data[`${monthTotalIdx}-21`] || '0');
+      if (realiseCAM > 0) data[`${monthTotalIdx}-58`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
 
-      const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-77`] || '0');
-      const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-88`] || '0');
-      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-89`] = (realiseCAM / totalHeuresProjM).toFixed(2);
+      const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-63`] || '0');
+      const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-74`] || '0');
+      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-75`] = (realiseCAM / totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-90`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-91`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-76`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-77`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-92`] || '0');
-      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-103`] || '0');
-      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-104`] = (realiseCAM / totalHeuresRealM).toFixed(2);
+      const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-78`] || '0');
+      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-89`] || '0');
+      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-90`] = (realiseCAM / totalHeuresRealM).toFixed(2);
       if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-105`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-106`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-91`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-92`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      data[`${monthTotalIdx}-107`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
+      data[`${monthTotalIdx}-93`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
         const pctRealM = (coutGlobalRealM / realiseCAM) * 100;
         const pctProjM = (coutGlobalProjM / realiseCAM) * 100;
-        data[`${monthTotalIdx}-108`] = (pctRealM - pctProjM).toFixed(2) + '%';
+        data[`${monthTotalIdx}-94`] = (pctRealM - pctProjM).toFixed(2) + '%';
       }
 
       // Calculate FRAIS GENERAUX box totals
@@ -776,7 +659,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     }
 
     return data;
-  }, [cellData, globalData[month]?.salariesConfig]);
+  }, [cellData]);
 
   const formatValue = (val: any, c: string[]) => {
     if (val === '' || val === undefined || val === null) return '';
@@ -1290,26 +1173,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
                 return (
                   <th key={`c-${i}`} style={{ ...thBase, background: getBgColor(c[3]), color: '#374151', top: 90, height: 60, minWidth: minW, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : isSectionEnd ? '2px solid #94a3b8' : '1px solid #cbd5e1', borderBottom: '3px solid #374151' }}>
-                    {(() => {
-                      const label = isEvt ? c[0] : c[2];
-                      // Afficher le taux depuis ConfigSalaires sous le nom de la colonne
-                      const salCatMap: Record<number,string> = {
-                        74:'cadre',75:'cadre',
-                        76:'maitrise',77:'maitrise',78:'niv12',79:'niv12',
-                        80:'niv3',81:'niv3',82:'apprenti',83:'apprenti',
-                        89:'cadre',90:'cadre',
-                        91:'maitrise',92:'maitrise',93:'niv12',94:'niv12',
-                        95:'niv3',96:'niv3',97:'apprenti',98:'apprenti'
-                      };
-                      const cat = salCatMap[c.originalIndex];
-                      const rate = cat ? getSalaryRate(cat) : 0;
-                      return (
-                        <span style={{display:'flex',flexDirection:'column',alignItems:'center',gap:1}}>
-                          <span style={{whiteSpace:'pre-line',textAlign:'center'}}>{label}</span>
-                          {rate > 0 && <span style={{color:'#1e40af',fontWeight:800,fontSize:9,marginTop:2}}>{rate.toFixed(2).replace('.',',')} €</span>}
-                        </span>
-                      );
-                    })()}
+                    {isEvt ? c[0] : c[2]}
                   </th>
                 );
               })}
