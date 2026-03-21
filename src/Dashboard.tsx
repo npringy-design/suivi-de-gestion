@@ -291,6 +291,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     let cumulRealiseCA = 0;
     let cumulCoutMatiere = 0;
     let cumulCvtsLimo = 0;
+    let cumulCvtsRealise = 0;
 
     // First pass: Calculate row totals (TOTAL JOUR) and CUMUL
     rows.forEach((row, rIdx) => {
@@ -347,7 +348,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
         }
 
-        // COUVERTS REALISE — idx: 25=NB MIDI,26=MOY(auto),27=NB SOIR,28=MOY(auto),29=TOTAL,30=CUMUL,31=ECART
+        // COUVERTS REALISE — idx: 25=NB MIDI,26=MOY(auto),27=NB SOIR,28=MOY(auto),29=TOTAL,30=CUMUL,31=ECART vs budget
         const nbCvtsMidi = parseFloat(data[`${rIdx}-25`] || '0');
         const nbCvtsSoir = parseFloat(data[`${rIdx}-27`] || '0');
         if (nbCvtsMidi > 0 && realiseMidi > 0) data[`${rIdx}-26`] = (realiseMidi / nbCvtsMidi).toFixed(2);
@@ -355,10 +356,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const totalCvtsJour = nbCvtsMidi + nbCvtsSoir;
         if (totalCvtsJour > 0) {
           data[`${rIdx}-29`] = totalCvtsJour.toFixed(0);
-          cumulCvts += totalCvtsJour;
-          data[`${rIdx}-30`] = cumulCvts.toFixed(0);
-          const budgetCvtsSoir = parseFloat(data[`${rIdx}-8`] || '0');
-          if (budgetCvtsSoir > 0) data[`${rIdx}-31`] = (nbCvtsSoir - budgetCvtsSoir).toFixed(0);
+          cumulCvtsRealise += totalCvtsJour;
+          data[`${rIdx}-30`] = cumulCvtsRealise.toFixed(0);
+          // Écart = NB CVTS réalisé total jour - budget couverts total jour (idx 10 = TOTAL NB CVTS budget)
+          const budgetCvtsJour = parseFloat(data[`${rIdx}-10`] || '0');
+          if (budgetCvtsJour > 0) data[`${rIdx}-31`] = (totalCvtsJour - budgetCvtsJour).toFixed(0);
         }
 
         // COUVERTS LIMONADE — idx: 32=NB,33=MOY(auto),34=CUMUL
@@ -500,7 +502,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 21, 22, 23, 26, 28, 29, 30, 31, 33, 34, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 21, 22, 23, 26, 28, 33, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -572,7 +574,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 21, 22, 23, 26, 28, 29, 30, 31, 33, 34, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 21, 22, 23, 26, 28, 33, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
