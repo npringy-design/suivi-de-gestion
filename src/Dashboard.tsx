@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from './DataContext';
 import { ChevronLeft, Save, Download, Upload, Calendar, Calculator, FileText, Settings, CreditCard, TrendingUp, PieChart as PieChartIcon, FileSpreadsheet, Receipt, Building2, Briefcase, Utensils, Menu, X, FileDown } from 'lucide-react';
-// ── Constantes Dashboard (inline — plus besoin de dashboardConstants.ts) ──────
+// ── Constantes Dashboard inline (dashboardConstants.ts intégré) ─────────────
 const C: string[][] = [
   ['CA', 'Midi Saisie', 'CA HT MIDI', 'bg-[#ffe699]'],
   ['CA', 'Soir Saisie', 'CA HT SOIR', 'bg-[#ffe699]'],
@@ -125,11 +125,10 @@ const tabs: { id: string; label: string }[] = [
   { id: 'RESULTATS', label: 'Résultats Mensuels' },
 ];
 const editableCols: number[] = [
-  6, 7, 8, 9, 14, 15, 17, 18, 19, 20,
-  25, 27, 32, 35, 36, 43, 44, 45, 46, 47,
-  48, 49, 50, 51, 52, 53, 54, 55, 64, 65,
-  66, 67, 68, 69, 70, 71, 72, 73, 79, 80,
-  81, 82, 83, 84, 85, 86, 87, 88
+  6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27,
+  32, 35, 36, 43, 44, 45, 46, 47, 48, 49, 50, 51,
+  52, 53, 54, 55, 64, 65, 66, 67, 68, 69, 70, 71,
+  72, 73, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88
 ];
 // ─────────────────────────────────────────────────────────────────────────────
 import * as XLSX from 'xlsx';
@@ -281,16 +280,26 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         cols[idx][2] = `${label}${avgStr}`;
       };
 
-      updateHeader(76, 'cadre', 'CADRE\nCUISINE');
-      updateHeader(77, 'cadre', 'CADRE\nSALLE');
-      updateHeader(78, 'maitrise', 'MAITRISE\nCUISINE');
-      updateHeader(79, 'maitrise', 'MAITRISE\nSALLE');
-      updateHeader(80, 'niv12', 'NIV I ET II\nCUISINE');
-      updateHeader(81, 'niv12', 'NIV I ET II\nSALLE');
-      updateHeader(82, 'niv3', 'NIV III\nCUISINE');
-      updateHeader(83, 'niv3', 'NIV III\nSALLE');
-      updateHeader(84, 'apprenti', 'APPRENTI\nCUISINE');
-      updateHeader(85, 'apprenti', 'APPRENTI\nSALLE');
+      updateHeader(74, 'cadre',    'CADRE\nCUISINE');
+      updateHeader(75, 'cadre',    'CADRE\nSALLE');
+      updateHeader(76, 'maitrise', 'MAITRISE\nCUISINE');
+      updateHeader(77, 'maitrise', 'MAITRISE\nSALLE');
+      updateHeader(78, 'niv12',    'NIV I ET II\nCUISINE');
+      updateHeader(79, 'niv12',    'NIV I ET II\nSALLE');
+      updateHeader(80, 'niv3',     'NIV III\nCUISINE');
+      updateHeader(81, 'niv3',     'NIV III\nSALLE');
+      updateHeader(82, 'apprenti', 'APPRENTI\nCUISINE');
+      updateHeader(83, 'apprenti', 'APPRENTI\nSALLE');
+      updateHeader(89, 'cadre',    'CADRE\nCUISINE');
+      updateHeader(90, 'cadre',    'CADRE\nSALLE');
+      updateHeader(91, 'maitrise', 'MAITRISE\nCUISINE');
+      updateHeader(92, 'maitrise', 'MAITRISE\nSALLE');
+      updateHeader(93, 'niv12',    'NIV I ET II\nCUISINE');
+      updateHeader(94, 'niv12',    'NIV I ET II\nSALLE');
+      updateHeader(95, 'niv3',     'NIV III\nCUISINE');
+      updateHeader(96, 'niv3',     'NIV III\nSALLE');
+      updateHeader(97, 'apprenti', 'APPRENTI\nCUISINE');
+      updateHeader(98, 'apprenti', 'APPRENTI\nSALLE');
     }
     return cols;
   }, [C, globalData, month]);
@@ -341,13 +350,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       }
     }
     
-    // N'ajouter la dernière ligne Total Semaine que si le dernier jour n'est pas un dimanche
-    // ET qu'il y a au moins 1 jour dans cette dernière semaine partielle
     if (new Date(year, month, numDays).getDay() !== 0) {
       const lastWeekHasDays = generatedRows.some(r => r.type === 'day' && r.weekIndex === weekCount);
-      if (lastWeekHasDays) {
-        generatedRows.push({ type: 'total', label: `Total Semaine ${weekCount}`, weekIndex: weekCount });
-      }
+      if (lastWeekHasDays) generatedRows.push({ type: 'total', label: `Total Semaine ${weekCount}`, weekIndex: weekCount });
     }
 
     generatedRows.push({ type: 'fg_box4_total', label: '' });
@@ -481,8 +486,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           cumulRealiseCA += realiseTotalJour;
           data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
         }
-
-        // COUVERTS REALISE — 25=NB MIDI,26=MOY(auto),27=NB SOIR,28=MOY(auto),29=TOTAL,30=CUMUL,31=ECART NB vs budget
+        // COUVERTS REALISE — 25=NB MIDI,26=MOY,27=NB SOIR,28=MOY,29=TOTAL,30=CUMUL,31=ECART nb vs budget
         const nbCvtsMidi = parseFloat(data[`${rIdx}-25`] || '0');
         const nbCvtsSoir = parseFloat(data[`${rIdx}-27`] || '0');
         if (nbCvtsMidi > 0 && realiseMidi > 0) data[`${rIdx}-26`] = (realiseMidi / nbCvtsMidi).toFixed(2);
@@ -492,12 +496,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           data[`${rIdx}-29`] = totalCvtsJour.toFixed(0);
           cumulCvtsRealise += totalCvtsJour;
           data[`${rIdx}-30`] = cumulCvtsRealise.toFixed(0);
-          // Ecart = NB couverts réalisé - NB couverts budget total jour
           const budgetCvtsJour = parseFloat(data[`${rIdx}-10`] || '0');
           if (budgetCvtsJour > 0) data[`${rIdx}-31`] = (totalCvtsJour - budgetCvtsJour).toFixed(0);
         }
-
-        // COUVERTS LIMONADE — 32=NB,33=MOY(auto),34=CUMUL
+        // COUVERTS LIMONADE — 32=NB,33=MOY,34=CUMUL
         const nbCvtsLimo = parseFloat(data[`${rIdx}-32`] || '0');
         if (nbCvtsLimo > 0 && realiseLimo > 0) data[`${rIdx}-33`] = (realiseLimo / nbCvtsLimo).toFixed(2);
         if (nbCvtsLimo > 0) {
@@ -532,7 +534,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let coutGlobalProj = 0;
         let hasProjData = false;
         
-        const salariesConfig = data[month]?.salariesConfig?.categories;
+        const salariesConfig = globalData[month]?.salariesConfig?.categories;
         const getAvgRate = (category: string) => {
           if (!salariesConfig) return 0;
           const rows = salariesConfig[category] || [];
@@ -565,7 +567,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         ];
 
         for (let i = 0; i < 10; i++) {
-          const colIdx = 76 + i; // PROJECTION S/C columns start at 76
+          const colIdx = 76 + i; // PROJECTION S/C columns start at 76 (CADRE en 74+75 éditable séparément)
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresProj += val;
@@ -576,12 +578,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         
         if (hasProjData) {
           data[`${rIdx}-63`] = totalHeuresProj.toFixed(2);
-          data[`${rIdx}-74`] = coutGlobalProj.toFixed(2);
+          data[`${rIdx}-70`] = coutGlobalProj.toFixed(2);
           if (totalHeuresProj > 0) {
-            data[`${rIdx}-75`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
+            data[`${rIdx}-71`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
           }
           if (realiseTotalJour > 0) {
-            data[`${rIdx}-76`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-72`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
           }
         }
 
@@ -591,7 +593,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let hasRealData = false;
         
         for (let i = 0; i < 10; i++) {
-          const colIdx = 93 + i;
+          const colIdx = 89 + i;
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresReal += val;
@@ -601,22 +603,22 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
         
         if (hasRealData) {
-          data[`${rIdx}-78`] = totalHeuresReal.toFixed(2);
-          data[`${rIdx}-89`] = coutGlobalReal.toFixed(2);
+          data[`${rIdx}-74`] = totalHeuresReal.toFixed(2);
+          data[`${rIdx}-81`] = coutGlobalReal.toFixed(2);
           if (totalHeuresReal > 0) {
-            data[`${rIdx}-90`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
+            data[`${rIdx}-82`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
           }
           if (realiseTotalJour > 0) {
-            data[`${rIdx}-91`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-83`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
           }
           
           // Ecarts
           if (hasProjData) {
-            data[`${rIdx}-93`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
+            data[`${rIdx}-85`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
             if (realiseTotalJour > 0) {
               const pctReal = (coutGlobalReal / realiseTotalJour) * 100;
               const pctProj = (coutGlobalProj / realiseTotalJour) * 100;
-              data[`${rIdx}-94`] = (pctReal - pctProj).toFixed(2) + '%';
+              data[`${rIdx}-86`] = (pctReal - pctProj).toFixed(2) + '%';
             }
           }
         }
@@ -636,7 +638,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 33, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 33, 57, 58, 71, 72, 75, 76, 77, 82, 83, 86].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -670,41 +672,39 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const cvtsLimoW = parseFloat(data[`${rIdx}-14`] || '0');
         if (cvtsLimoW > 0) data[`${rIdx}-15`] = (caLimoW / cvtsLimoW);
 
-        // Moyennes semaine REALISE
         const realiseCAW = parseFloat(data[`${rIdx}-21`] || '0');
+        // Moyennes semaine couverts réalisé
         const nbMidiW = parseFloat(data[`${rIdx}-25`] || '0');
         const nbSoirW = parseFloat(data[`${rIdx}-27`] || '0');
-        const caMidiW2 = parseFloat(data[`${rIdx}-18`] || '0');
-        const caSoirW2 = parseFloat(data[`${rIdx}-19`] || '0');
-        if (nbMidiW > 0 && caMidiW2 > 0) data[`${rIdx}-26`] = (caMidiW2 / nbMidiW).toFixed(2);
-        if (nbSoirW > 0 && caSoirW2 > 0) data[`${rIdx}-28`] = (caSoirW2 / nbSoirW).toFixed(2);
-        const totalCvtsW = nbMidiW + nbSoirW;
-        if (totalCvtsW > 0) data[`${rIdx}-29`] = totalCvtsW.toFixed(0);
+        const caMidiWr = parseFloat(data[`${rIdx}-18`] || '0');
+        const caSoirWr = parseFloat(data[`${rIdx}-19`] || '0');
+        if (nbMidiW > 0 && caMidiWr > 0) data[`${rIdx}-26`] = (caMidiWr / nbMidiW).toFixed(2);
+        if (nbSoirW > 0 && caSoirWr > 0) data[`${rIdx}-28`] = (caSoirWr / nbSoirW).toFixed(2);
         // Cout matiere semaine
-        const coutMatiereW = parseFloat(data[`${rIdx}-${o2n(70)}`] || '0');
-        if (realiseCAW > 0) data[`${rIdx}-${o2n(72)}`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
+        const coutMatiereW = parseFloat(data[`${rIdx}-56`] || '0');
+        if (realiseCAW > 0) data[`${rIdx}-58`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
 
         const totalHeuresProjW = parseFloat(data[`${rIdx}-63`] || '0');
-        const coutGlobalProjW = parseFloat(data[`${rIdx}-74`] || '0');
-        if (totalHeuresProjW > 0) data[`${rIdx}-75`] = (realiseCAW / totalHeuresProjW).toFixed(2);
+        const coutGlobalProjW = parseFloat(data[`${rIdx}-70`] || '0');
+        if (totalHeuresProjW > 0) data[`${rIdx}-71`] = (realiseCAW / totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
-          data[`${rIdx}-76`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-77`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-72`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-73`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        const totalHeuresRealW = parseFloat(data[`${rIdx}-78`] || '0');
-        const coutGlobalRealW = parseFloat(data[`${rIdx}-89`] || '0');
-        if (totalHeuresRealW > 0) data[`${rIdx}-90`] = (realiseCAW / totalHeuresRealW).toFixed(2);
+        const totalHeuresRealW = parseFloat(data[`${rIdx}-74`] || '0');
+        const coutGlobalRealW = parseFloat(data[`${rIdx}-81`] || '0');
+        if (totalHeuresRealW > 0) data[`${rIdx}-82`] = (realiseCAW / totalHeuresRealW).toFixed(2);
         if (realiseCAW > 0) {
-          data[`${rIdx}-91`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-92`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-83`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-84`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        data[`${rIdx}-93`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
+        data[`${rIdx}-85`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
           const pctRealW = (coutGlobalRealW / realiseCAW) * 100;
           const pctProjW = (coutGlobalProjW / realiseCAW) * 100;
-          data[`${rIdx}-94`] = (pctRealW - pctProjW).toFixed(2) + '%';
+          data[`${rIdx}-86`] = (pctRealW - pctProjW).toFixed(2) + '%';
         }
       }
     });
@@ -718,7 +718,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 33, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 33, 57, 58, 71, 72, 75, 76, 77, 82, 83, 86].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -756,37 +756,37 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const realiseCAM = parseFloat(data[`${monthTotalIdx}-21`] || '0');
       if (realiseCAM > 0) data[`${monthTotalIdx}-58`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
 
-      // Moyennes mois REALISE couverts
+      // Moyennes mois couverts réalisé
       const nbMidiM = parseFloat(data[`${monthTotalIdx}-25`] || '0');
       const nbSoirM = parseFloat(data[`${monthTotalIdx}-27`] || '0');
-      const caMidiM2 = parseFloat(data[`${monthTotalIdx}-18`] || '0');
-      const caSoirM2 = parseFloat(data[`${monthTotalIdx}-19`] || '0');
-      if (nbMidiM > 0 && caMidiM2 > 0) data[`${monthTotalIdx}-26`] = (caMidiM2 / nbMidiM).toFixed(2);
-      if (nbSoirM > 0 && caSoirM2 > 0) data[`${monthTotalIdx}-28`] = (caSoirM2 / nbSoirM).toFixed(2);
+      const caMidiMr = parseFloat(data[`${monthTotalIdx}-18`] || '0');
+      const caSoirMr = parseFloat(data[`${monthTotalIdx}-19`] || '0');
+      if (nbMidiM > 0 && caMidiMr > 0) data[`${monthTotalIdx}-26`] = (caMidiMr / nbMidiM).toFixed(2);
+      if (nbSoirM > 0 && caSoirMr > 0) data[`${monthTotalIdx}-28`] = (caSoirMr / nbSoirM).toFixed(2);
       const totalCvtsM = nbMidiM + nbSoirM;
       if (totalCvtsM > 0) data[`${monthTotalIdx}-29`] = totalCvtsM.toFixed(0);
 
       const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-63`] || '0');
-      const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-74`] || '0');
-      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-75`] = (realiseCAM / totalHeuresProjM).toFixed(2);
+      const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-70`] || '0');
+      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-71`] = (realiseCAM / totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-76`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-77`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-72`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-73`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-78`] || '0');
-      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-89`] || '0');
-      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-90`] = (realiseCAM / totalHeuresRealM).toFixed(2);
+      const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-74`] || '0');
+      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-81`] || '0');
+      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-82`] = (realiseCAM / totalHeuresRealM).toFixed(2);
       if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-91`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-92`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-83`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-84`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      data[`${monthTotalIdx}-93`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
+      data[`${monthTotalIdx}-85`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
         const pctRealM = (coutGlobalRealM / realiseCAM) * 100;
         const pctProjM = (coutGlobalProjM / realiseCAM) * 100;
-        data[`${monthTotalIdx}-94`] = (pctRealM - pctProjM).toFixed(2) + '%';
+        data[`${monthTotalIdx}-86`] = (pctRealM - pctProjM).toFixed(2) + '%';
       }
 
       // Calculate FRAIS GENERAUX box totals
@@ -811,7 +811,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     }
 
     return data;
-  }, [cellData]);
+  }, [cellData, globalData[month]?.salariesConfig]);
 
   const formatValue = (val: any, c: string[]) => {
     if (val === '' || val === undefined || val === null) return '';
@@ -1129,7 +1129,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         position: isMobile ? 'absolute' : 'relative',
         height: '100%',
         overflow: 'hidden',
-        transition: 'width 0.3s ease-in-out, min-width 0.3s ease-in-out'
+        transition: 'width 0.3s ease, min-width 0.3s ease'
       }}>
         <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: 0, transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}>
@@ -1186,7 +1186,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               </h2>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} title={isSidebarOpen ? 'Masquer le menu' : 'Afficher le menu'} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} title={isSidebarOpen ? 'Masquer le menu' : 'Afficher le menu'} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                 <Menu size={16} />
               </button>
               <button onClick={() => setIsImportModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '6px 12px' : '8px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#10b981', fontSize: isMobile ? 12 : 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#ecfdf5'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
