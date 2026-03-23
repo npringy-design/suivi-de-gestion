@@ -211,8 +211,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       }
     }
     
+    // N'ajouter la dernière ligne Total Semaine que si le dernier jour n'est pas un dimanche
+    // ET qu'il y a au moins 1 jour dans cette dernière semaine partielle
     if (new Date(year, month, numDays).getDay() !== 0) {
+      const lastWeekHasDays = generatedRows.some(r => r.type === 'day' && r.weekIndex === weekCount);
+      if (lastWeekHasDays) {
         generatedRows.push({ type: 'total', label: `Total Semaine ${weekCount}`, weekIndex: weekCount });
+      }
     }
 
     generatedRows.push({ type: 'fg_box4_total', label: '' });
@@ -290,8 +295,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     let cumulCvts = 0;
     let cumulRealiseCA = 0;
     let cumulCoutMatiere = 0;
-    let cumulCvtsLimo = 0;
     let cumulCvtsRealise = 0;
+    let cumulCvtsLimo = 0;
 
     // First pass: Calculate row totals (TOTAL JOUR) and CUMUL
     rows.forEach((row, rIdx) => {
@@ -334,12 +339,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           data[`${rIdx}-12`] = cumulCvts;
         }
 
-        // REALISE CA HT — idx: 17=VAE,18=MIDI,19=SOIR,20=LIMO,21=TOTAL,22=ECART,23=CUMUL
+        // REALISE CA HT — 17=VAE,18=MIDI,19=SOIR,20=LIMO,21=TOTAL,22=ECART,23=CUMUL
         const realiseVae  = parseFloat(data[`${rIdx}-17`] || '0');
         const realiseMidi = parseFloat(data[`${rIdx}-18`] || '0');
         const realiseSoir = parseFloat(data[`${rIdx}-19`] || '0');
         const realiseLimo = parseFloat(data[`${rIdx}-20`] || '0');
-
         const realiseTotalJour = realiseVae + realiseMidi + realiseSoir + realiseLimo;
         if (realiseTotalJour > 0 || data[`${rIdx}-17`] || data[`${rIdx}-18`] || data[`${rIdx}-19`] || data[`${rIdx}-20`]) {
           data[`${rIdx}-21`] = realiseTotalJour.toFixed(2);
@@ -348,7 +352,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
         }
 
-        // COUVERTS REALISE — idx: 25=NB MIDI,26=MOY(auto),27=NB SOIR,28=MOY(auto),29=TOTAL,30=CUMUL,31=ECART vs budget
+        // COUVERTS REALISE — 25=NB MIDI,26=MOY(auto),27=NB SOIR,28=MOY(auto),29=TOTAL,30=CUMUL,31=ECART NB vs budget
         const nbCvtsMidi = parseFloat(data[`${rIdx}-25`] || '0');
         const nbCvtsSoir = parseFloat(data[`${rIdx}-27`] || '0');
         if (nbCvtsMidi > 0 && realiseMidi > 0) data[`${rIdx}-26`] = (realiseMidi / nbCvtsMidi).toFixed(2);
@@ -358,12 +362,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           data[`${rIdx}-29`] = totalCvtsJour.toFixed(0);
           cumulCvtsRealise += totalCvtsJour;
           data[`${rIdx}-30`] = cumulCvtsRealise.toFixed(0);
-          // Écart = NB CVTS réalisé total jour - budget couverts total jour (idx 10 = TOTAL NB CVTS budget)
+          // Ecart = NB couverts réalisé - NB couverts budget total jour
           const budgetCvtsJour = parseFloat(data[`${rIdx}-10`] || '0');
           if (budgetCvtsJour > 0) data[`${rIdx}-31`] = (totalCvtsJour - budgetCvtsJour).toFixed(0);
         }
 
-        // COUVERTS LIMONADE — idx: 32=NB,33=MOY(auto),34=CUMUL
+        // COUVERTS LIMONADE — 32=NB,33=MOY(auto),34=CUMUL
         const nbCvtsLimo = parseFloat(data[`${rIdx}-32`] || '0');
         if (nbCvtsLimo > 0 && realiseLimo > 0) data[`${rIdx}-33`] = (realiseLimo / nbCvtsLimo).toFixed(2);
         if (nbCvtsLimo > 0) {
@@ -382,14 +386,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
 
         if (hasCoutMatiereData) {
-          data[`${rIdx}-42`] = coutMatiereTotalJour.toFixed(2);
+          data[`${rIdx}-56`] = coutMatiereTotalJour.toFixed(2);
           cumulCoutMatiere += coutMatiereTotalJour;
-          data[`${rIdx}-43`] = cumulCoutMatiere.toFixed(2);
+          data[`${rIdx}-57`] = cumulCoutMatiere.toFixed(2);
           
           if (cumulRealiseCA > 0) {
-            data[`${rIdx}-44`] = ((cumulCoutMatiere / cumulRealiseCA) * 100).toFixed(2) + '%';
+            data[`${rIdx}-58`] = ((cumulCoutMatiere / cumulRealiseCA) * 100).toFixed(2) + '%';
           } else {
-            data[`${rIdx}-44`] = '0.00%';
+            data[`${rIdx}-58`] = '0.00%';
           }
         }
 
@@ -502,7 +506,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 21, 22, 23, 26, 28, 33, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 33, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -536,9 +540,19 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const cvtsLimoW = parseFloat(data[`${rIdx}-14`] || '0');
         if (cvtsLimoW > 0) data[`${rIdx}-15`] = (caLimoW / cvtsLimoW);
 
-        const coutMatiereW = parseFloat(data[`${rIdx}-42`] || '0');
+        // Moyennes semaine REALISE
         const realiseCAW = parseFloat(data[`${rIdx}-21`] || '0');
-        if (realiseCAW > 0) data[`${rIdx}-44`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
+        const nbMidiW = parseFloat(data[`${rIdx}-25`] || '0');
+        const nbSoirW = parseFloat(data[`${rIdx}-27`] || '0');
+        const caMidiW2 = parseFloat(data[`${rIdx}-18`] || '0');
+        const caSoirW2 = parseFloat(data[`${rIdx}-19`] || '0');
+        if (nbMidiW > 0 && caMidiW2 > 0) data[`${rIdx}-26`] = (caMidiW2 / nbMidiW).toFixed(2);
+        if (nbSoirW > 0 && caSoirW2 > 0) data[`${rIdx}-28`] = (caSoirW2 / nbSoirW).toFixed(2);
+        const totalCvtsW = nbMidiW + nbSoirW;
+        if (totalCvtsW > 0) data[`${rIdx}-29`] = totalCvtsW.toFixed(0);
+        // Cout matiere semaine
+        const coutMatiereW = parseFloat(data[`${rIdx}-${o2n(70)}`] || '0');
+        if (realiseCAW > 0) data[`${rIdx}-${o2n(72)}`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
 
         const totalHeuresProjW = parseFloat(data[`${rIdx}-63`] || '0');
         const coutGlobalProjW = parseFloat(data[`${rIdx}-74`] || '0');
@@ -574,7 +588,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 21, 22, 23, 26, 28, 33, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 33, 57, 58, 75, 76, 77, 90, 91, 92, 93, 94].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -608,9 +622,19 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const cvtsLimoM = parseFloat(data[`${monthTotalIdx}-14`] || '0');
       if (cvtsLimoM > 0) data[`${monthTotalIdx}-15`] = (caLimoM / cvtsLimoM);
 
-      const coutMatiereM = parseFloat(data[`${monthTotalIdx}-42`] || '0');
+      const coutMatiereM = parseFloat(data[`${monthTotalIdx}-56`] || '0');
       const realiseCAM = parseFloat(data[`${monthTotalIdx}-21`] || '0');
       if (realiseCAM > 0) data[`${monthTotalIdx}-58`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
+
+      // Moyennes mois REALISE couverts
+      const nbMidiM = parseFloat(data[`${monthTotalIdx}-25`] || '0');
+      const nbSoirM = parseFloat(data[`${monthTotalIdx}-27`] || '0');
+      const caMidiM2 = parseFloat(data[`${monthTotalIdx}-18`] || '0');
+      const caSoirM2 = parseFloat(data[`${monthTotalIdx}-19`] || '0');
+      if (nbMidiM > 0 && caMidiM2 > 0) data[`${monthTotalIdx}-26`] = (caMidiM2 / nbMidiM).toFixed(2);
+      if (nbSoirM > 0 && caSoirM2 > 0) data[`${monthTotalIdx}-28`] = (caSoirM2 / nbSoirM).toFixed(2);
+      const totalCvtsM = nbMidiM + nbSoirM;
+      if (totalCvtsM > 0) data[`${monthTotalIdx}-29`] = totalCvtsM.toFixed(0);
 
       const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-63`] || '0');
       const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-74`] || '0');
@@ -1032,7 +1056,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               </h2>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'} title={isSidebarOpen ? 'Masquer le menu' : 'Afficher le menu'}>
+              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} title={isSidebarOpen ? 'Masquer le menu' : 'Afficher le menu'} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                 <Menu size={16} />
               </button>
               <button onClick={() => setIsImportModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '6px 12px' : '8px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#10b981', fontSize: isMobile ? 12 : 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#ecfdf5'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
