@@ -1788,7 +1788,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
                     const isDragOver = dragState && row.type === 'day' && rIdx > dragState.rIdx && rIdx <= dragState.endRow && originalCIdx === dragState.cIdx;
                     const HANDLE_COLS = new Set([0, 1, 2, 6, 8, 14, 17, 18, 19, 20, 25, 27, 32]);
-                    const showHandle = !!val && row.type === 'day' && !dragState && HANDLE_COLS.has(originalCIdx);
+                    const showHandle = !!val && row.type === 'day' && !dragState && HANDLE_COLS.has(originalCIdx) && focusedCell === cellKey;
                     return (
                       <td
                         key={`c-${rIdx}-${cIdx}`}
@@ -1812,7 +1812,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                             {showHandle && (
                               <div
                                 onMouseDown={(e) => handleDragStart(e, rIdx, originalCIdx, cellData[cellKey] || '')}
-                                style={{ position: 'absolute', bottom: 0, right: 0, width: 7, height: 7, background: '#16a34a', border: '1px solid #fff', borderRadius: 1, cursor: 'crosshair', zIndex: 20 }}
+                                style={{ position: 'absolute', bottom: 0, right: 0, width: 7, height: 7, background: '#000000', border: '1px solid #ffffff', borderRadius: 1, cursor: 'crosshair', zIndex: 20 }}
                                 title="Glisser pour recopier vers le bas"
                               />
                             )}
