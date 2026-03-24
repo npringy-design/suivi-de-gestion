@@ -1749,45 +1749,43 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                       );
                     }
 
+                    const isDragOver = dragState && row.type === 'day' && rIdx > dragState.rIdx && rIdx <= dragState.endRow && originalCIdx === dragState.cIdx;
+                    const HANDLE_COLS = new Set([0, 1, 2, 6, 8, 14, 17, 18, 19, 20, 25, 27, 32]);
+                    const showHandle = !!val && row.type === 'day' && !dragState && HANDLE_COLS.has(originalCIdx);
                     return (
-                      {(() => {
-                        const isDragOver = dragState && row.type === 'day' && rIdx > dragState.rIdx && rIdx <= dragState.endRow && originalCIdx === dragState.cIdx;
-                        return (
-                          <td
-                            key={`c-${rIdx}-${cIdx}`}
-                            className={`p-0 ${cellBg} ${cellBorderClasses} relative text-center`}
-                            style={isDragOver ? { background: '#dcfce7', outline: '1px solid #16a34a' } : undefined}
-                            onMouseEnter={() => dragState && row.type === 'day' && handleDragMove(rIdx)}
-                          >
-                            {!isHatched && !isReadOnly ? (
-                              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                                <DebouncedInput
-                                  dataRow={rIdx}
-                                  dataCol={cIdx}
-                                  value={isFocused ? val : displayVal}
-                                  onChange={(value: string) => handleCellChange(rIdx, originalCIdx, value)}
-                                  onFocus={() => setFocusedCell(cellKey)}
-                                  onBlur={() => setFocusedCell(null)}
-                                  onKeyDown={(e: any) => handleKeyDown(e, rIdx, cIdx)}
-                                  className="w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center font-medium focus:bg-blue-50 focus:ring-1 focus:ring-indigo-400 focus:z-10 relative cursor-text text-[10px] text-slate-700 placeholder-slate-300 transition-all"
-                                  placeholder=""
-                                />
-                                {val && row.type === 'day' && !dragState && {0, 1, 2, 32, 6, 8, 14, 17, 18, 19, 20, 25, 27}.has(originalCIdx) && (
-                                  <div
-                                    onMouseDown={(e) => handleDragStart(e, rIdx, originalCIdx, cellData[cellKey] || '')}
-                                    style={{ position: 'absolute', bottom: 0, right: 0, width: 7, height: 7, background: '#16a34a', border: '1px solid #fff', borderRadius: 1, cursor: 'crosshair', zIndex: 20 }}
-                                    title="Glisser pour recopier vers le bas"
-                                  />
-                                )}
-                              </div>
-                            ) : !isHatched && isReadOnly ? (
-                              <div className={`px-1 text-center py-1.5 min-h-[26px] text-[10px] ${val ? textColorClass : 'text-slate-400'}`}>
-                                {displayVal || ''}
-                              </div>
-                            ) : null}
-                          </td>
-                        );
-                      })()}
+                      <td
+                        key={`c-${rIdx}-${cIdx}`}
+                        className={`p-0 ${cellBg} ${cellBorderClasses} relative text-center`}
+                        style={isDragOver ? { background: '#dcfce7', outline: '1px solid #16a34a' } : undefined}
+                        onMouseEnter={() => dragState && row.type === 'day' && handleDragMove(rIdx)}
+                      >
+                        {!isHatched && !isReadOnly ? (
+                          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                            <DebouncedInput
+                              dataRow={rIdx}
+                              dataCol={cIdx}
+                              value={isFocused ? val : displayVal}
+                              onChange={(value: string) => handleCellChange(rIdx, originalCIdx, value)}
+                              onFocus={() => setFocusedCell(cellKey)}
+                              onBlur={() => setFocusedCell(null)}
+                              onKeyDown={(e: any) => handleKeyDown(e, rIdx, cIdx)}
+                              className="w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center font-medium focus:bg-blue-50 focus:ring-1 focus:ring-indigo-400 focus:z-10 relative cursor-text text-[10px] text-slate-700 placeholder-slate-300 transition-all"
+                              placeholder=""
+                            />
+                            {showHandle && (
+                              <div
+                                onMouseDown={(e) => handleDragStart(e, rIdx, originalCIdx, cellData[cellKey] || '')}
+                                style={{ position: 'absolute', bottom: 0, right: 0, width: 7, height: 7, background: '#16a34a', border: '1px solid #fff', borderRadius: 1, cursor: 'crosshair', zIndex: 20 }}
+                                title="Glisser pour recopier vers le bas"
+                              />
+                            )}
+                          </div>
+                        ) : !isHatched && isReadOnly ? (
+                          <div className={`px-1 text-center py-1.5 min-h-[26px] text-[10px] ${val ? textColorClass : 'text-slate-400'}`}>
+                            {displayVal || ''}
+                          </div>
+                        ) : null}
+                      </td>
                     );
                   })}
                 </tr>
