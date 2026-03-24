@@ -316,6 +316,35 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const cellData = globalData[month]?.dashboard || {};
   const [focusedCell, setFocusedCell] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('CA');
+  const [dragState, setDragState] = useState<null | { rIdx: number; cIdx: number; endRow: number; value: string }>(null);
+
+  const handleDragStart = (e: React.MouseEvent, rIdx: number, cIdx: number, value: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragState({ rIdx, cIdx, endRow: rIdx, value });
+  };
+
+  const handleDragMove = (rIdx: number) => {
+    setDragState(prev => {
+      if (!prev) return prev;
+      return { ...prev, endRow: Math.max(prev.rIdx, rIdx) };
+    });
+  };
+
+  const handleDragEnd = () => {
+    if (!dragState) return;
+
+    const { rIdx, cIdx, endRow, value } = dragState;
+    if (endRow > rIdx) {
+      for (let rowIdx = rIdx + 1; rowIdx <= endRow; rowIdx++) {
+        if (rows[rowIdx]?.type === 'day') {
+          handleCellChange(rowIdx, cIdx, value);
+        }
+      }
+    }
+
+    setDragState(null);
+  };
 
   const rows = useMemo(() => {
     const generatedRows: any[] = [];

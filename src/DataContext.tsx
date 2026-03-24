@@ -281,8 +281,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   });
 
   useEffect(() => {
-    saveToStorage(data);
-  }, [data]);
+    saveToStorage(allData);
+  }, [allData]);
 
   useEffect(() => {
     try {
