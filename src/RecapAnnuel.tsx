@@ -141,16 +141,16 @@ const SECTIONS: { key: string; label: string; icon: string; accentBg: string; ac
       { g:'Budget FP\n35,00%',         l:'Frais Perso\n%',            bg:'#fff', w:70 },
       { g:'',                          l:'Ratio\nAnnuel %',           bg:'#fff', w:65 },
       { g:'PROJECTION S/C\nSKELLO',   l:'Total\nHeures',              bg:BG_FP,  w:60 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Cadre\nCuisine\n38,54€',    bg:BG_FP,  w:65 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Cadre\nSalle\n38,54€',      bg:BG_FP,  w:65 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Maîtrise\nCuisine\n20,85€', bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Maîtrise\nSalle\n20,85€',   bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'NIV I-II\nCuisine\n16,04€', bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'NIV I-II\nSalle\n16,04€',   bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'NIV III\nCuisine\n18,35€',  bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'NIV III\nSalle\n18,35€',    bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Apprenti\nCuisine\n8,39€',  bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Apprenti\nSalle\n8,39€',    bg:BG_FP,  w:70 },
+      { g:'PROJECTION S/C\nSKELLO',   l:'Cadre\nCuisine',            bg:BG_FP,  w:65 },
+      { g:'PROJECTION S/C\nSKELLO',   l:'Cadre\nSalle',              bg:BG_FP,  w:65 },
+      { g:'PROJECTION S/C\nSKELLO',   l:'Maîtrise\nCuisine',         bg:BG_FP,  w:70 },
+      { g:'PROJECTION S/C\nSKELLO',   l:'Maîtrise\nSalle',           bg:BG_FP,  w:70 },
+      { g:'PROJECTION S/C\nSKELLO',   l:'NIV I-II\nCuisine',         bg:BG_FP,  w:70 },
+      { g:'PROJECTION S/C\nSKELLO',   l:'NIV I-II\nSalle',           bg:BG_FP,  w:70 },
+      { g:'PROJECTION S/C\nSKELLO',   l:'NIV III\nCuisine',          bg:BG_FP,  w:70 },
+      { g:'PROJECTION S/C\nSKELLO',   l:'NIV III\nSalle',            bg:BG_FP,  w:70 },
+      { g:'PROJECTION S/C\nSKELLO',   l:'Apprenti\nCuisine',         bg:BG_FP,  w:70 },
+      { g:'PROJECTION S/C\nSKELLO',   l:'Apprenti\nSalle',           bg:BG_FP,  w:70 },
       { g:'PROJECTION S/C\nSKELLO',   l:'Coût\nGlobal',              bg:'#fff', w:80 },
       { g:'FRAIS PERSONNEL\nREALISE', l:'Total\nHeures',              bg:BG_FP,  w:60 },
       { g:'FRAIS PERSONNEL\nREALISE', l:'Cadre\nCuisine',             bg:BG_FP,  w:60 },
@@ -161,6 +161,8 @@ const SECTIONS: { key: string; label: string; icon: string; accentBg: string; ac
       { g:'FRAIS PERSONNEL\nREALISE', l:'NIV I-II\nSalle',            bg:BG_FP,  w:65 },
       { g:'FRAIS PERSONNEL\nREALISE', l:'NIV III\nCuisine',           bg:BG_FP,  w:65 },
       { g:'FRAIS PERSONNEL\nREALISE', l:'NIV III\nSalle',             bg:BG_FP,  w:65 },
+      { g:'FRAIS PERSONNEL\nREALISE', l:'Apprenti\nCuisine',          bg:BG_FP,  w:65 },
+      { g:'FRAIS PERSONNEL\nREALISE', l:'Apprenti\nSalle',            bg:BG_FP,  w:65 },
       { g:'FRAIS PERSONNEL\nREALISE', l:'FP Réel\nMois',              bg:'#fff', w:80 },
       { g:'',                          l:"Ecart Budget\nNB d'Heure",  bg:BG_FG,  w:80 },
       { g:'',                          l:'Ecart Budget\nS/C%',        bg:BG_FG,  w:70 },
@@ -308,17 +310,17 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         '0,00 €', '0,00 €',
       ];
       case 'frais_personnel': return [
-        fe(dt[88]), dt[89].toString(), fp(dt[90]), fp(dt[91]),
-        dt[73].toString(), dt[74].toString(), dt[75].toString(), dt[76].toString(), dt[77].toString(),
-        dt[78].toString(), dt[79].toString(), dt[80].toString(), dt[81].toString(), dt[82].toString(), dt[83].toString(),
-        fe(dt[88]),
-        dt[92].toString(), dt[93].toString(), dt[94].toString(), dt[95].toString(), dt[96].toString(),
-        dt[97].toString(), dt[98].toString(), dt[99].toString(), dt[100].toString(),
-        fe(dt[103]),
-        dt[107].toString(), fp(dt[108]), fp(dt[109]), '—',
+        fe(dt[101]), dt[102].toString(), fp(dt[103]), fp(dt[104]),
+        dt[75].toString(), dt[76].toString(), dt[77].toString(), dt[78].toString(), dt[79].toString(),
+        dt[80].toString(), dt[81].toString(), dt[82].toString(), dt[83].toString(), dt[84].toString(), dt[85].toString(),
+        fe(dt[86]),
+        dt[90].toString(), dt[91].toString(), dt[92].toString(), dt[93].toString(), dt[94].toString(),
+        dt[95].toString(), dt[96].toString(), dt[97].toString(), dt[98].toString(), dt[99].toString(), dt[100].toString(),
+        fe(dt[101]),
+        dt[104].toString(), fp(dt[105]), fp(dt[105]), fp(dt[102]),
       ];
       case 'frais_generaux': return [
-        fe(dt[103]), dt[107].toString(), fp(dt[108]), fp(dt[109]),
+        fe(dt[99]), dt[103].toString(), fp(dt[104]), fp(dt[105]),
         ...Array(11).fill(null).flatMap((_, i) => {
           const isAnim = i === 3 && isJan;
           const val = isAnim ? FG_ANIM_JAN : 0;
@@ -346,7 +348,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       case 'budget':          return ['0,00','0,00','0,00','0,00','0,00','—','0','','0','','0','','0','—','0','','—','0,00'];
       case 'realise':         return [fp(totalVarP),'0,00','0,00','0','0,00','0','0,00','0',totalCA>0?fe(totalCA):'0,00',fp(totalVarP),totalCA>0?fe(totalCA):'0,00','0,00','0,00','0','0',fe(CA_N1),'0','','0','','0','','0','0','0','-100,00%','0','','0','0','0','-100,00%',fe(CA_N1)];
       case 'cout_matiere':    return ['0,00','—','0,00','—','0,00',...Array(13).fill('0,00'),'0,00','0,00','—','0,00','0,00'];
-      case 'frais_personnel': return ['0 €','—','—','—',...Array(12).fill('0:00'),...Array(10).fill('0:00'),'0:00','0,00%','—','—'];
+      case 'frais_personnel': return ['0 €','—','—','—',...Array(12).fill('0:00'),...Array(12).fill('0:00'),'0:00','0,00%','—','—'];
       case 'frais_generaux':  return ['0,00','0:00','0,00%','—',...Array(11).fill(null).flatMap(()=>['0,00 €','—']),fe(FG_ANIM_JAN),'—',...CONTRATS_FG.map(c=>fe(c.montant))];
       case 'resultats':       return [totalCA>0?fe(totalCA):'0,00 €','0,00',fp(totalVarP),fe(totalCA-CA_N1),'0,00','0','0','—','0,00 €','0,00 €','0,00 €','0,00 €'];
       default: return [];
