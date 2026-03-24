@@ -1787,8 +1787,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     }
 
                     const isDragOver = dragState && row.type === 'day' && rIdx > dragState.rIdx && rIdx <= dragState.endRow && originalCIdx === dragState.cIdx;
-                    const HANDLE_COLS = new Set([0, 1, 2, 6, 8, 14, 17, 18, 19, 20, 25, 27, 32]);
-                    const showHandle = !!val && row.type === 'day' && !dragState && HANDLE_COLS.has(originalCIdx) && focusedCell === cellKey;
+                    const showHandle = row.type === 'day' && !dragState && !isHatched && !isReadOnly && focusedCell === cellKey;
                     return (
                       <td
                         key={`c-${rIdx}-${cIdx}`}
