@@ -156,7 +156,17 @@ interface DashboardProps {
   onBack: () => void;
 }
 
-const DebouncedInput = ({ value, onChange, onFocus, onBlur, onKeyDown, className, placeholder, dataRow, dataCol }: any) => {
+const DebouncedInput = ({ value, onChange, onFocus, onBlur, onKeyDown, className, placeholder, dataRow, dataCol }: {
+  value: string | number;
+  onChange: (value: string | number) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  className?: string;
+  placeholder?: string;
+  dataRow: string;
+  dataCol: string;
+}) => {
   const [localValue, setLocalValue] = useState(value);
   
   useEffect(() => {
@@ -347,7 +357,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const rows = useMemo(() => {
-    const generatedRows: any[] = [];
+    const generatedRows: (Record<string, string | number>)[] = [];
     let weekCount = 1;
     const numDays = new Date(year, month + 1, 0).getDate();
     const monthName = monthNames[month];
@@ -850,7 +860,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return data;
   }, [cellData, globalData[month]?.salariesConfig]);
 
-  const formatValue = (val: any, c: string[]) => {
+  const formatValue = (val: string | number | undefined, c: string[]) => {
     if (val === '' || val === undefined || val === null) return '';
     
     // If the value already contains a percentage sign, return it as is
@@ -908,8 +918,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     });
   }, [activeTab]);
 
-  const groups: any[] = [];
-  let currentGroup: any = null;
+  const groups: (Record<string, any>)[] = [];
+  let currentGroup: Record<string, any> | null = null;
   visibleColumns.forEach(c => {
     if (!currentGroup || currentGroup.name !== c[0]) {
       if (currentGroup) groups.push(currentGroup);
@@ -920,8 +930,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   });
   if (currentGroup) groups.push(currentGroup);
 
-  const subGroups: any[] = [];
-  let currentSub: any = null;
+  const subGroups: (Record<string, any>)[] = [];
+  let currentSub: Record<string, any> | null = null;
   visibleColumns.forEach(c => {
     if (!currentSub || currentSub.name !== c[1] || currentSub.group !== c[0]) {
       if (currentSub) subGroups.push(currentSub);

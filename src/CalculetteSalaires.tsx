@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { EmployeeRow, SimulationRow, EquipeStructure, RoleData } from '@/types';
 
 const NAV = '#1e293b';
 
@@ -95,8 +96,8 @@ export default function CalculetteSalaires({ onBack }: CalculetteSalairesProps) 
     if (simulationsPlus.length > 1) setSimulationsPlus(simulationsPlus.slice(0, -1));
   };
 
-  const calcEquipeTotal = (equipe: any, dept: 'cuisine' | 'salle', field: 'h' | 'n'): number => {
-    return (Object.values(equipe[dept]) as any[]).reduce((sum: number, role: any) => sum + parseNum(role[field]), 0);
+  const calcEquipeTotal = (equipe: EquipeStructure, dept: 'cuisine' | 'salle', field: 'h' | 'n'): number => {
+    return (Object.values(equipe[dept]) as RoleData[]).reduce((sum: number, role: RoleData) => sum + parseNum(role[field]), 0);
   };
 
   const thStyle: React.CSSProperties = {

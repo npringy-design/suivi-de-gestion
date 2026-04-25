@@ -160,9 +160,17 @@ export type CustomEvent = {
   label: string;
 };
 
+export type SalarieRow = {
+  nom: string;
+  heures: string;
+  coutGlobal: string;
+  provision: string;
+  coutHoraire: string;
+};
+
 export type MonthDataSalariesConfig = {
   locked: boolean;
-  categories: Record<string, any[]>;
+  categories: Record<string, SalarieRow[]>;
 };
 
 type MonthData = {
@@ -208,7 +216,7 @@ type DataContextType = {
   updateDeliveroo: (month: number, day: number, field: keyof DayDataDeliveroo, value: string) => void;
   updateClickCollect: (month: number, day: number, field: keyof DayDataClickCollect, value: string) => void;
   updateBilanSynthese: (month: number, day: number, field: keyof DayDataBilanSynthese, value: string) => void;
-  updateDepensesPetiteCaisse: (month: number, field: keyof MonthDataDepensesPetiteCaisse | string, value: any) => void;
+  updateDepensesPetiteCaisse: (month: number, field: keyof MonthDataDepensesPetiteCaisse | string, value: string | number) => void;
   updateDashboard: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuel: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuelRealise: (month: number, cellKey: string, value: string) => void;
@@ -578,7 +586,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const updateDepensesPetiteCaisse = useCallback((month: number, field: string, value: any) => {
+  const updateDepensesPetiteCaisse = useCallback((month: number, field: string, value: string | number) => {
     updateDataForYear(prev => {
       const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {} };
       
@@ -613,7 +621,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const [objName, key] = field.split('.');
         if (objName === 'comptabilisation' || objName === 'comptage') {
           newDepenses[objName as 'comptabilisation' | 'comptage'] = { 
-            ...(currentDepenses[objName as 'comptabilisation' | 'comptage'] as any), 
+            ...(currentDepenses[objName as 'comptabilisation' | 'comptage'] as Record<string, string | number>), 
             [key]: value 
           };
         }

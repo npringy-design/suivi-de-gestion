@@ -79,7 +79,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     const newMonthData: Record<string, any[]> = {};
     
     Object.keys(monthData).forEach(cat => {
-      newMonthData[cat] = monthData[cat].map((row: any) => ({
+      newMonthData[cat] = monthData[cat].map((row: Record<string, string>) => ({
         ...row,
         heures: '',
         coutGlobal: ''
@@ -112,7 +112,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     let totalCoutHoraire = 0;
     let validRowsCount = 0;
 
-    rows.forEach((row: any) => {
+    rows.forEach((row: Record<string, string>) => {
       const coutGlobal = parseNum(row.coutGlobal);
       const heures = parseNum(row.heures);
       const provision = coutGlobal * 1.10;
@@ -266,7 +266,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     );
   };
 
-  const renderSalarieSection = (title: string, category: string, avgTitle: string, rows: any[]) => {
+  const renderSalarieSection = (title: string, category: string, avgTitle: string, rows: Record<string, string>[]) => {
     let totalCoutHoraire = 0;
     let validRowsCount = 0;
 
