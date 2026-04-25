@@ -1,7 +1,7 @@
-import { createBrowserRouter } from 'react-router-dom';
-
-// Lazy load all pages for better performance
+import { createBrowserRouter, useNavigate, useParams } from 'react-router-dom';
 import { lazy } from 'react';
+import { useEffect } from 'react';
+import { useData } from '@/contexts/DataContext';
 
 const Home = lazy(() => import('@/Home'));
 const Dashboard = lazy(() => import('@/Dashboard'));
@@ -36,6 +36,83 @@ const ConfigurationChiffre2025 = lazy(() => import('@/ConfigurationChiffre2025')
 const VisuelVacances = lazy(() => import('@/VisuelVacances'));
 const EdgAnnuelTabs = lazy(() => import('@/EdgAnnuelTabs'));
 
+const parseMonthParam = (value: string | undefined, fallback: number) => {
+  const month = value ? parseInt(value, 10) : NaN;
+  return Number.isFinite(month) && month >= 0 && month <= 11 ? month : fallback;
+};
+
+function DashboardRoute() {
+  const { month: monthParam } = useParams();
+  const { selectedYear, selectedMonth, setSelectedMonth } = useData();
+  const navigate = useNavigate();
+  const month = parseMonthParam(monthParam, selectedMonth);
+
+  useEffect(() => {
+    if (month !== selectedMonth) {
+      setSelectedMonth(month);
+    }
+  }, [month, selectedMonth, setSelectedMonth]);
+
+  return <Dashboard initialMonth={month} year={selectedYear} onBack={() => navigate('/')} />;
+}
+
+function SyntheseRoute() {
+  const navigate = useNavigate();
+
+  return (
+    <SyntheseCA
+      onBack={() => navigate('/')}
+      onSaisieTheorique={() => navigate('/saisie-theorique')}
+      onCbNepting={() => navigate('/cb-nepting')}
+      onEspeces={() => navigate('/especes')}
+      onConecs={() => navigate('/conecs')}
+      onAncvPapiers={() => navigate('/ancv-papiers')}
+      onSaisieTR={() => navigate('/saisie-tr')}
+      onVisuTRPapiers={() => navigate('/visu-tr-papiers')}
+      onSunday={() => navigate('/sunday')}
+      onUber={() => navigate('/uber')}
+      onAmexAncv={() => navigate('/amex-ancv')}
+      onDeliveroo={() => navigate('/deliveroo')}
+      onClickCollect={() => navigate('/click-collect')}
+      onRemiseTR={() => navigate('/remise-tr')}
+      onBilanSynthese={() => navigate('/bilan-synthese')}
+      onDepensesPetiteCaisse={() => navigate('/depenses-petite-caisse')}
+    />
+  );
+}
+
+function MonthRoute({ Component, backPath }: { Component: any; backPath: string }) {
+  const { selectedYear, selectedMonth } = useData();
+  const navigate = useNavigate();
+
+  return (
+    <Component
+      month={selectedMonth}
+      year={selectedYear}
+      onBack={() => navigate(backPath)}
+    />
+  );
+}
+
+function MonthRouteWithSetMonth({ Component, backPath }: { Component: any; backPath: string }) {
+  const { selectedYear, selectedMonth, setSelectedMonth } = useData();
+  const navigate = useNavigate();
+
+  return (
+    <Component
+      month={selectedMonth}
+      year={selectedYear}
+      setMonth={setSelectedMonth}
+      onBack={() => navigate(backPath)}
+    />
+  );
+}
+
+function PageRoute({ Component, backPath }: { Component: any; backPath: string }) {
+  const navigate = useNavigate();
+  return <Component onBack={() => navigate(backPath)} />;
+}
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -43,128 +120,143 @@ const router = createBrowserRouter([
   },
   {
     path: '/dashboard/:month',
-    element: <Dashboard />,
+    element: <DashboardRoute />,
   },
   {
     path: '/synthese',
-    element: <SyntheseCA />,
+    element: <SyntheseRoute />,
   },
   {
     path: '/recap-annuel',
-    element: <RecapAnnuel />,
+    element: <PageRoute Component={RecapAnnuel} backPath='/' />,
   },
   {
     path: '/reporting',
-    element: <Reporting />,
+    element: <PageRoute Component={Reporting} backPath='/' />,
   },
   {
     path: '/saisie-theorique',
-    element: <SaisieTheorique />,
+    element: <MonthRoute Component={SaisieTheorique} backPath='/synthese' />,
   },
   {
     path: '/cb-nepting',
-    element: <CbNepting />,
+    element: <MonthRoute Component={CbNepting} backPath='/synthese' />,
   },
   {
     path: '/especes',
-    element: <Especes />,
+    element: <MonthRoute Component={Especes} backPath='/synthese' />,
   },
   {
     path: '/conecs',
-    element: <Conecs />,
+    element: <MonthRoute Component={Conecs} backPath='/synthese' />,
   },
   {
     path: '/ancv-papiers',
-    element: <AncvPapiers />,
+    element: <MonthRoute Component={AncvPapiers} backPath='/synthese' />,
   },
   {
     path: '/saisie-tr',
-    element: <SaisieTR />,
+    element: <MonthRoute Component={SaisieTR} backPath='/synthese' />,
   },
   {
     path: '/visu-tr-papiers',
-    element: <VisuTRPapiers />,
+    element: <MonthRoute Component={VisuTRPapiers} backPath='/synthese' />,
   },
   {
     path: '/sunday',
-    element: <Sunday />,
+    element: <MonthRoute Component={Sunday} backPath='/synthese' />,
   },
   {
     path: '/uber',
-    element: <Uber />,
+    element: <MonthRoute Component={Uber} backPath='/synthese' />,
   },
   {
     path: '/amex-ancv',
-    element: <AmexAncv />,
+    element: <MonthRoute Component={AmexAncv} backPath='/synthese' />,
   },
   {
     path: '/deliveroo',
-    element: <Deliveroo />,
+    element: <MonthRoute Component={Deliveroo} backPath='/synthese' />,
   },
   {
     path: '/click-collect',
-    element: <ClickCollect />,
+    element: <MonthRoute Component={ClickCollect} backPath='/synthese' />,
   },
   {
     path: '/remise-tr',
-    element: <RemiseTR />,
+    element: <MonthRoute Component={RemiseTR} backPath='/synthese' />,
   },
   {
     path: '/bilan-synthese',
-    element: <BilanSynthese />,
+    element: <MonthRoute Component={BilanSynthese} backPath='/synthese' />,
   },
   {
     path: '/depenses-petite-caisse',
-    element: <DepensesPetiteCaisse />,
+    element: <MonthRoute Component={DepensesPetiteCaisse} backPath='/synthese' />,
   },
   {
     path: '/edg-mensuel/:month',
-    element: <EdgMensuel />,
+    element: <EdgMensuelRoute />,
   },
   {
     path: '/budget-edg-annuel',
-    element: <BudgetEdgAnnuel />,
+    element: <PageRoute Component={BudgetEdgAnnuel} backPath='/' />,
   },
   {
     path: '/vs-budget',
-    element: <VsBudget />,
+    element: <PageRoute Component={VsBudget} backPath='/' />,
   },
   {
     path: '/vs-n1',
-    element: <VsN1 />,
+    element: <PageRoute Component={VsN1} backPath='/' />,
   },
   {
     path: '/realise-edg-annee-fiscale',
-    element: <RealiseEdgAnneeFiscale />,
+    element: <PageRoute Component={RealiseEdgAnneeFiscale} backPath='/' />,
   },
   {
     path: '/mise-en-paiement/:month',
-    element: <MiseEnPaiement />,
+    element: <MonthRouteWithSetMonth Component={MiseEnPaiement} backPath='/' />,
   },
   {
     path: '/facture-devis',
-    element: <FactureDevis />,
+    element: <PageRoute Component={FactureDevis} backPath='/' />,
   },
   {
     path: '/config-salaires',
-    element: <ConfigSalaires />,
+    element: <PageRoute Component={ConfigSalaires} backPath='/' />,
   },
   {
     path: '/calculette-salaires',
-    element: <CalculetteSalaires />,
+    element: <PageRoute Component={CalculetteSalaires} backPath='/' />,
   },
   {
     path: '/configuration-chiffre-2025',
-    element: <ConfigurationChiffre2025 />,
+    element: <PageRoute Component={ConfigurationChiffre2025} backPath='/' />,
   },
   {
     path: '/visuel-vacances',
-    element: <VisuelVacances />,
+    element: <PageRoute Component={VisuelVacances} backPath='/' />,
   },
   {
     path: '/edg-annuel-tabs',
-    element: <EdgAnnuelTabs />,
+    element: <PageRoute Component={EdgAnnuelTabs} backPath='/' />,
   },
 ]);
+
+function EdgMensuelRoute() {
+  const { month: monthParam } = useParams();
+  const { selectedYear, selectedMonth, setSelectedMonth } = useData();
+  const navigate = useNavigate();
+  const month = parseMonthParam(monthParam, selectedMonth);
+
+  useEffect(() => {
+    if (month !== selectedMonth) {
+      setSelectedMonth(month);
+    }
+  }, [month, selectedMonth, setSelectedMonth]);
+
+  return <EdgMensuel month={month} setMonth={setSelectedMonth} onBack={() => navigate('/')} />;
+}
 
 export default router;

@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   BarChart3, Calendar, Calculator, FileText, 
   Settings, CreditCard, TrendingUp, PieChart as PieChartIcon, 
@@ -10,26 +11,6 @@ import { useData } from '@/contexts/DataContext';
 import { getDashboardRowIndices } from './utils';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Line, PieChart, Pie, Cell } from 'recharts';
 
-interface HomeProps {
-  year: number;
-  month: number;
-  setMonth: (month: number) => void;
-  onMonthSelect: (month: number) => void;
-  onSyntheseCA: () => void;
-  onRecapAnnuel: () => void;
-  onReporting: () => void;
-  onEdgMensuel: (month: number) => void;
-  onBudgetEdgAnnuel: () => void;
-  onVsBudget: () => void;
-  onVsN1: () => void;
-  onRealiseEdgAnneeFiscale: () => void;
-  onMiseEnPaiement: (month: number) => void;
-  onFactureDevis: () => void;
-  onConfigSalaires: () => void;
-  onCalculetteSalaires: () => void;
-  onVisuelVacances: () => void;
-}
-
 const n = (v?: string | number) => {
   if (typeof v === 'number') return v;
   return parseFloat((v || '0').toString().replace(',', '.')) || 0;
@@ -37,16 +18,27 @@ const n = (v?: string | number) => {
 
 const fe = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
 
-export default function Home({ 
-  year, month, setMonth, onMonthSelect, onSyntheseCA, onRecapAnnuel, onReporting, 
-  onEdgMensuel, onBudgetEdgAnnuel, onVsBudget, onVsN1, onRealiseEdgAnneeFiscale, 
-  onMiseEnPaiement, onFactureDevis, onConfigSalaires, onCalculetteSalaires, 
-  onVisuelVacances 
-}: HomeProps) {
-  const { data, setSelectedYear } = useData();
+export default function Home() {
+  const { data, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth } = useData();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weather, setWeather] = useState<{ temp: number, code: number } | null>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  const year = selectedYear;
+  const month = selectedMonth;
+
+  const goToDashboard = () => navigate(`/dashboard/${month}`);
+  const goToSyntheseCA = () => navigate('/synthese');
+  const goToRecapAnnuel = () => navigate('/recap-annuel');
+  const goToReporting = () => navigate('/reporting');
+  const goToEdgMensuel = () => navigate(`/edg-mensuel/${month}`);
+  const goToBudgetEdgAnnuel = () => navigate('/budget-edg-annuel');
+  const goToMiseEnPaiement = () => navigate(`/mise-en-paiement/${month}`);
+  const goToFactureDevis = () => navigate('/facture-devis');
+  const goToConfigSalaires = () => navigate('/config-salaires');
+  const goToCalculetteSalaires = () => navigate('/calculette-salaires');
+  const goToVisuelVacances = () => navigate('/visuel-vacances');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -219,26 +211,26 @@ export default function Home({
 
         <div className="flex-1 overflow-y-auto py-6 scrollbar-hide">
           <NavGroup title="Suivi Quotidien" icon={BarChart3}>
-            <NavItem label="Accéder au Suivi Quotidien" onClick={() => onMonthSelect(month)} />
-            <NavItem label="Synthèse CA" onClick={onSyntheseCA} />
-            <NavItem label="Récapitulatif annuel" onClick={onRecapAnnuel} />
-            <NavItem label="Reporting annuel détaillé" onClick={onReporting} />
+            <NavItem label="Accéder au Suivi Quotidien" onClick={goToDashboard} />
+            <NavItem label="Synthèse CA" onClick={goToSyntheseCA} />
+            <NavItem label="Récapitulatif annuel" onClick={goToRecapAnnuel} />
+            <NavItem label="Reporting annuel détaillé" onClick={goToReporting} />
           </NavGroup>
 
           <NavGroup title="État de Gestion (EDG)" icon={PieChartIcon}>
-            <NavItem label="Accéder à l'EDG Mensuel" onClick={() => onEdgMensuel(month)} />
-            <NavItem label="EDG Annuel (Budget/Réalisé/VS)" onClick={onBudgetEdgAnnuel} />
+            <NavItem label="Accéder à l'EDG Mensuel" onClick={goToEdgMensuel} />
+            <NavItem label="EDG Annuel (Budget/Réalisé/VS)" onClick={goToBudgetEdgAnnuel} />
           </NavGroup>
 
           <NavGroup title="Paiements" icon={CreditCard}>
-            <NavItem label="Accéder aux Paiements" onClick={() => onMiseEnPaiement(month)} />
-            <NavItem label="Établir une facture ou un devis" onClick={onFactureDevis} />
+            <NavItem label="Accéder aux Paiements" onClick={goToMiseEnPaiement} />
+            <NavItem label="Établir une facture ou un devis" onClick={goToFactureDevis} />
           </NavGroup>
 
           <NavGroup title="Configuration" icon={Settings}>
-            <NavItem label="Salaires et charges" onClick={onConfigSalaires} />
-            <NavItem label="Calculette salaires" onClick={onCalculetteSalaires} />
-            <NavItem label="Visuel vacances & événements" onClick={onVisuelVacances} />
+            <NavItem label="Salaires et charges" onClick={goToConfigSalaires} />
+            <NavItem label="Calculette salaires" onClick={goToCalculetteSalaires} />
+            <NavItem label="Visuel vacances & événements" onClick={goToVisuelVacances} />
           </NavGroup>
         </div>
       </aside>
@@ -265,7 +257,7 @@ export default function Home({
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:block pl-2">Mois</span>
               <select
                 value={month}
-                onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
                 className="px-2 py-1 text-sm font-bold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
               >
                 {['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'].map((m, i) => (
