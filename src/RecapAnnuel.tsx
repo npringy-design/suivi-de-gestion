@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useData } from './DataContext';
+import { useData } from '@/contexts/DataContext';
 import { getDashboardRowIndices } from './utils';
 
 const CA_N1 = 1_789_254;

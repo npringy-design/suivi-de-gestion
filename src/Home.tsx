@@ -6,7 +6,7 @@ import {
   Briefcase, Utensils, Menu, X, DollarSign, Users, Activity,
   Sun, Cloud, CloudRain, CloudSnow, CloudLightning, CloudFog
 } from 'lucide-react';
-import { useData } from './DataContext';
+import { useData } from '@/contexts/DataContext';
 import { getDashboardRowIndices } from './utils';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Line, PieChart, Pie, Cell } from 'recharts';
 

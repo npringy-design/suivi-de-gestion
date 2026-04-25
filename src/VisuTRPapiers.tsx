@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useData, DayDataVisuTRPapiers, DayDataSaisieTR } from './DataContext';
+import { useData, DayDataVisuTRPapiers, DayDataSaisieTR } from '@/contexts/DataContext';
 
 interface VisuTRPapiersProps {
   month: number;

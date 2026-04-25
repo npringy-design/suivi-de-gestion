@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useData } from './DataContext';
+import { useData } from '@/contexts/DataContext';
 
 const CurrencyInput = ({ value, onChange, className }: { value: string, onChange: (val: string) => void, className?: string }) => {
   const [isFocused, setIsFocused] = useState(false);

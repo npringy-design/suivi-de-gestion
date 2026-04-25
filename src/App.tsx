@@ -31,7 +31,7 @@ import CalculetteSalaires from './CalculetteSalaires';
 import ConfigurationChiffre2025 from './ConfigurationChiffre2025';
 import VisuelVacances from './VisuelVacances';
 import EdgAnnuelTabs from './EdgAnnuelTabs';
-import { DataProvider, useData } from './DataContext';
+import { DataProvider, useData } from '@/contexts/DataContext';
 
 export default function App() {
   return (

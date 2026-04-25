@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useData, DayDataClickCollect } from './DataContext';
+import { useData, DayDataClickCollect } from '@/contexts/DataContext';
 
 interface ClickCollectProps {
   month: number;

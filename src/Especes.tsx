@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useData } from './DataContext';
+import { useData } from '@/contexts/DataContext';
 
 interface EspecesProps {
   month: number;

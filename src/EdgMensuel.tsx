@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useData } from './DataContext';
+import { useData } from '@/contexts/DataContext';
 import { getDashboardRowIndices } from './utils';
 import { Menu, X, ChevronLeft } from 'lucide-react';
 

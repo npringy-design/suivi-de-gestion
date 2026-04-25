@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useData, DayDataSaisieTR } from './DataContext';
+import { useData, DayDataSaisieTR } from '@/contexts/DataContext';
 
 interface BilanSyntheseProps {
   month: number;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useData } from './DataContext';
+import { useData } from '@/contexts/DataContext';
 import { ArrowLeft, Calendar, Trash2, Plus } from 'lucide-react';
 
 interface VisuelVacancesProps {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useData } from './DataContext';
+import { useData } from '@/contexts/DataContext';
 import { ChevronLeft, Menu, X } from 'lucide-react';
 
 interface MiseEnPaiementProps {

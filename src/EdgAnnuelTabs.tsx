@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronLeft, LayoutDashboard, Target, TrendingUp, History } from 'lucide-react';
-import { useData } from './DataContext';
+import { useData } from '@/contexts/DataContext';
 import BudgetEdgAnnuel from './BudgetEdgAnnuel';
 import RealiseEdgAnneeFiscale from './RealiseEdgAnneeFiscale';
 import VsBudget from './VsBudget';

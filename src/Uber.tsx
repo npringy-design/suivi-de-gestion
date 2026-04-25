@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useData, DayDataUber } from './DataContext';
+import { useData, DayDataUber } from '@/contexts/DataContext';
 
 interface UberProps {
   month: number;

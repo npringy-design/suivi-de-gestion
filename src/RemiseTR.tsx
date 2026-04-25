@@ -1,5 +1,5 @@
 import React from 'react';
-import { useData } from './DataContext';
+import { useData } from '@/contexts/DataContext';
 
 interface RemiseTRProps {
   month: number;

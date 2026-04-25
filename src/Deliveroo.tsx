@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useData, DayDataDeliveroo } from './DataContext';
+import { useData, DayDataDeliveroo } from '@/contexts/DataContext';
 
 interface DeliverooProps {
   month: number;

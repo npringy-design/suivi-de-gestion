@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useData } from './DataContext';
+import { useData } from '@/contexts/DataContext';
 import { getDashboardRowIndices, getISOWeek } from './utils';
 
 const NAV = '#1e293b';
