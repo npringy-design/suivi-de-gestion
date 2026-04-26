@@ -1,20 +1,68 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Suivi de Gestion
 
-# Run and deploy your AI Studio app
+Application React + TypeScript pour le suivi financier et opérationnel d'un restaurant.
 
-This contains everything you need to run your app locally.
+## Objectif
 
-View your app in AI Studio: https://ai.studio/apps/e4ecd553-2537-47c4-ae31-065755bf8db8
+Ce projet fournit un tableau de bord métier pour suivre les ventes, les budgets, les salaires, les dépenses et les indicateurs de performance.
 
-## Run Locally
+## Structure du projet
 
-**Prerequisites:**  Node.js
+- `src/main.tsx` : point d'entrée
+- `src/App.tsx` : logique de navigation interne et fournisseur de contexte
+- `src/contexts/DataContext.tsx` : état global de l'application
+- `src/router.tsx` : configuration des routes et chargement paresseux des pages
+- `src/types.ts` : définition des types métier
+- `src/utils.ts` : fonctions utilitaires partagées
+- `src/test/` : tests unitaires et d'intégration
 
+## Installation
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+npm install
+```
+
+## Scripts utiles
+
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
+npm run test
+npm run test:coverage
+```
+
+## Qualité
+
+- `tsc --noEmit` : vérifie le typage TypeScript
+- `eslint . --ext .ts,.tsx` : vérifie les règles de code React/TypeScript
+- `vitest` : exécute les tests unitaires
+
+## Tests
+
+Le projet utilise `vitest` avec l'environnement `happy-dom`.
+
+### Exécuter les tests
+
+```bash
+npm run test
+```
+
+### Couverture
+
+```bash
+npm run test:coverage
+```
+
+## CI
+
+Le workflow GitHub Actions exécute automatiquement :
+- `npm ci`
+- `npm run lint`
+- `npm run build`
+- `npm run test -- --run`
+
+## Architecture
+
+Voir `ARCHITECTURE.md` pour une description détaillée de l'architecture, du flux de données et des optimisations.
