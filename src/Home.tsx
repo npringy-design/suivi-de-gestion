@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BarChart3, Calendar, Calculator, FileText, 
@@ -28,17 +28,19 @@ export default function Home() {
   const year = selectedYear;
   const month = selectedMonth;
 
-  const goToDashboard = () => navigate(`/dashboard/${month}`);
-  const goToSyntheseCA = () => navigate('/synthese');
-  const goToRecapAnnuel = () => navigate('/recap-annuel');
-  const goToReporting = () => navigate('/reporting');
-  const goToEdgMensuel = () => navigate(`/edg-mensuel/${month}`);
-  const goToBudgetEdgAnnuel = () => navigate('/budget-edg-annuel');
-  const goToMiseEnPaiement = () => navigate(`/mise-en-paiement/${month}`);
-  const goToFactureDevis = () => navigate('/facture-devis');
-  const goToConfigSalaires = () => navigate('/config-salaires');
-  const goToCalculetteSalaires = () => navigate('/calculette-salaires');
-  const goToVisuelVacances = () => navigate('/visuel-vacances');
+  const navigationHandlers = useMemo(() => ({
+    goToDashboard: () => navigate(`/dashboard/${month}`),
+    goToSyntheseCA: () => navigate('/synthese'),
+    goToRecapAnnuel: () => navigate('/recap-annuel'),
+    goToReporting: () => navigate('/reporting'),
+    goToEdgMensuel: () => navigate(`/edg-mensuel/${month}`),
+    goToBudgetEdgAnnuel: () => navigate('/budget-edg-annuel'),
+    goToMiseEnPaiement: () => navigate(`/mise-en-paiement/${month}`),
+    goToFactureDevis: () => navigate('/facture-devis'),
+    goToConfigSalaires: () => navigate('/config-salaires'),
+    goToCalculetteSalaires: () => navigate('/calculette-salaires'),
+    goToVisuelVacances: () => navigate('/visuel-vacances'),
+  }), [navigate, month]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -61,7 +63,7 @@ export default function Home() {
       .catch(err => console.error("Erreur météo:", err));
   }, []);
 
-  const getWeatherIcon = (code: number, size: string = "w-4 h-4") => {
+  const getWeatherIcon = useMemo(() => (code: number, size: string = "w-4 h-4") => {
     if (code === 0) return <Sun className={`${size} text-amber-500`} />;
     if (code === 1 || code === 2 || code === 3) return <Cloud className={`${size} text-slate-400`} />;
     if (code >= 45 && code <= 48) return <CloudFog className={`${size} text-slate-400`} />;
@@ -69,7 +71,7 @@ export default function Home() {
     if ((code >= 71 && code <= 77) || code === 85 || code === 86) return <CloudSnow className={`${size} text-sky-300`} />;
     if (code >= 95) return <CloudLightning className={`${size} text-amber-600`} />;
     return <Sun className={`${size} text-amber-500`} />;
-  };
+  }, []);
 
   const today = new Date();
   const currentDay = today.getDate();
@@ -211,26 +213,26 @@ export default function Home() {
 
         <div className="flex-1 overflow-y-auto py-6 scrollbar-hide">
           <NavGroup title="Suivi Quotidien" icon={BarChart3}>
-            <NavItem label="Accéder au Suivi Quotidien" onClick={goToDashboard} />
-            <NavItem label="Synthèse CA" onClick={goToSyntheseCA} />
-            <NavItem label="Récapitulatif annuel" onClick={goToRecapAnnuel} />
-            <NavItem label="Reporting annuel détaillé" onClick={goToReporting} />
+            <NavItem label="Accéder au Suivi Quotidien" onClick={navigationHandlers.goToDashboard} />
+            <NavItem label="Synthèse CA" onClick={navigationHandlers.goToSyntheseCA} />
+            <NavItem label="Récapitulatif annuel" onClick={navigationHandlers.goToRecapAnnuel} />
+            <NavItem label="Reporting annuel détaillé" onClick={navigationHandlers.goToReporting} />
           </NavGroup>
 
           <NavGroup title="État de Gestion (EDG)" icon={PieChartIcon}>
-            <NavItem label="Accéder à l'EDG Mensuel" onClick={goToEdgMensuel} />
-            <NavItem label="EDG Annuel (Budget/Réalisé/VS)" onClick={goToBudgetEdgAnnuel} />
+            <NavItem label="Accéder à l'EDG Mensuel" onClick={navigationHandlers.goToEdgMensuel} />
+            <NavItem label="EDG Annuel (Budget/Réalisé/VS)" onClick={navigationHandlers.goToBudgetEdgAnnuel} />
           </NavGroup>
 
           <NavGroup title="Paiements" icon={CreditCard}>
-            <NavItem label="Accéder aux Paiements" onClick={goToMiseEnPaiement} />
-            <NavItem label="Établir une facture ou un devis" onClick={goToFactureDevis} />
+            <NavItem label="Accéder aux Paiements" onClick={navigationHandlers.goToMiseEnPaiement} />
+            <NavItem label="Établir une facture ou un devis" onClick={navigationHandlers.goToFactureDevis} />
           </NavGroup>
 
           <NavGroup title="Configuration" icon={Settings}>
-            <NavItem label="Salaires et charges" onClick={goToConfigSalaires} />
-            <NavItem label="Calculette salaires" onClick={goToCalculetteSalaires} />
-            <NavItem label="Visuel vacances & événements" onClick={goToVisuelVacances} />
+            <NavItem label="Salaires et charges" onClick={navigationHandlers.goToConfigSalaires} />
+            <NavItem label="Calculette salaires" onClick={navigationHandlers.goToCalculetteSalaires} />
+            <NavItem label="Visuel vacances & événements" onClick={navigationHandlers.goToVisuelVacances} />
           </NavGroup>
         </div>
       </aside>
