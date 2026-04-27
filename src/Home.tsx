@@ -203,6 +203,10 @@ export default function Home() {
   const { rowFirstDay, rowLastDay } = dashboardRowIndices;
 
   const indices = useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) {
+      return { moisIndex: -1, jourIndex: -1 };
+    }
+    
     const moisIndex = data.findIndex(row => row.Mois === month);
     const jourIndex = data.findIndex(row => {
       const d = row.Jour;
@@ -220,6 +224,10 @@ export default function Home() {
   const { moisIndex, jourIndex } = indices;
 
   const kpis = useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) {
+      return { caMois: 0, caJour: 0, tmJour: 0, budgetCouvert: 0 };
+    }
+    
     const caMois = moisIndex >= 0 ? n(data[moisIndex]?.CA_Realise) : 0;
     const caJour = jourIndex >= 0 ? n(data[jourIndex]?.CA_Realise) : 0;
     const caJourBudget = jourIndex >= 0 ? n(data[jourIndex]?.CA_Budget) : 1;
@@ -238,6 +246,10 @@ export default function Home() {
   }, [data, moisIndex, jourIndex, rowFirstDay, rowLastDay]);
 
   const chartDataCA = useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) {
+      return [];
+    }
+    
     const res = [];
     for (let i = rowFirstDay; i <= rowLastDay && i < data.length; i++) {
       const jour = data[i]?.Jour || '';
@@ -251,8 +263,13 @@ export default function Home() {
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
   const chartDataFG = useMemo(() => {
-    if (moisIndex < 0) return [];
+    if (!Array.isArray(data) || data.length === 0 || moisIndex < 0) {
+      return [];
+    }
+    
     const row = data[moisIndex];
+    if (!row) return [];
+    
     return [
       { name: 'Salaires', value: n(row?.Frais_de_Personnel) },
       { name: 'Fournitures', value: n(row?.Total_Fournitures) },
