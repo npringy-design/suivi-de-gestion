@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { getDashboardRowIndices, getISOWeek } from '../utils';
 
 describe('utils', () => {

@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
+
 import { useData } from '@/contexts/DataContext';
+
 import { ChevronLeft, Save, Download, Upload, Calendar, Calculator, FileText, Settings, CreditCard, TrendingUp, PieChart as PieChartIcon, FileSpreadsheet, Receipt, Building2, Briefcase, Utensils, Menu, X, FileDown } from 'lucide-react';
 // ── Constantes Dashboard inline (dashboardConstants.ts intégré) ─────────────
 const C: string[][] = [
@@ -1255,7 +1257,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               const isActive = activeTab === tab.id;
               let icon = '📁';
               let accentBg = '#475569';
-              let accentColor = '#fff';
+              const accentColor = '#fff';
               
               switch (tab.id) {
                 case 'SYNTHESE': icon = '📊'; accentBg = '#3b82f6'; break;

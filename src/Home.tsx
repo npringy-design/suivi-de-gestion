@@ -7,9 +7,11 @@ import {
   Briefcase, Utensils, Menu, X, DollarSign, Users, Activity,
   Sun, Cloud, CloudRain, CloudSnow, CloudLightning, CloudFog
 } from 'lucide-react';
-import { useData } from '@/contexts/DataContext';
-import { getDashboardRowIndices } from './utils';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Line, PieChart, Pie, Cell } from 'recharts';
+
+import { useData } from '@/contexts/DataContext';
+
+import { getDashboardRowIndices } from './utils';
 
 const n = (v?: string | number) => {
   if (typeof v === 'number') return v;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useData } from '@/contexts/DataContext';
 import { ArrowLeft, Calendar, Trash2, Plus } from 'lucide-react';
+
+import { useData } from '@/contexts/DataContext';
 
 interface VisuelVacancesProps {
   onBack: () => void;

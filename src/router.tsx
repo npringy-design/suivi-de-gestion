@@ -1,6 +1,6 @@
 import { createBrowserRouter, useNavigate, useParams } from 'react-router-dom';
-import { lazy } from 'react';
-import { useEffect } from 'react';
+import { lazy , useEffect } from 'react';
+
 import { useData } from '@/contexts/DataContext';
 
 const Home = lazy(() => import('@/Home'));

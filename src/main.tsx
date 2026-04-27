@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
+
 import router from './router';
 import { DataProvider } from './contexts/DataContext';
 import './index.css';

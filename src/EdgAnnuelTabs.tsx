@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ChevronLeft, LayoutDashboard, Target, TrendingUp, History } from 'lucide-react';
+
 import { useData } from '@/contexts/DataContext';
+
 import BudgetEdgAnnuel from './BudgetEdgAnnuel';
 import RealiseEdgAnneeFiscale from './RealiseEdgAnneeFiscale';
 import VsBudget from './VsBudget';
@@ -58,7 +60,7 @@ export default function EdgAnnuelTabs({ onBack, initialTab = 'budget' }: EdgAnnu
             const isActive = activeTab === tab.id;
             let icon = '📁';
             let accentBg = '#475569';
-            let accentColor = '#fff';
+            const accentColor = '#fff';
             
             switch (tab.id) {
               case 'budget': icon = '📊'; accentBg = '#3b82f6'; break;

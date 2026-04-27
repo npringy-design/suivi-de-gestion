@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import type { DebouncedInputProps, EmployeeRow, EquipeStructure, RoleData } from '../types';
 
 describe('Domain Types', () => {

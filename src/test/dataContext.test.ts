@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import type { DayDataTheorique, MonthData } from '../contexts/DataContext';
 
 describe('DataContext Types', () => {

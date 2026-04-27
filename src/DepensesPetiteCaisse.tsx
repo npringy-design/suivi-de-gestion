@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+
 import { useData } from '@/contexts/DataContext';
 
 const CurrencyInput = ({ value, onChange, className }: { value: string, onChange: (val: string) => void, className?: string }) => {

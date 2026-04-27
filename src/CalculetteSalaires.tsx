@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+
 import type { EmployeeRow, SimulationRow, EquipeStructure, RoleData } from '@/types';
 
 const NAV = '#1e293b';

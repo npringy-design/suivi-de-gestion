@@ -1,7 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { getDashboardRowIndices } from './utils';
 import { Menu, X, ChevronLeft } from 'lucide-react';
+
+import { useData } from '@/contexts/DataContext';
+
+import { getDashboardRowIndices } from './utils';
 
 const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 

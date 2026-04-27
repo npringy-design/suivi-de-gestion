@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
+
 import { useData } from '@/contexts/DataContext';
+
 import { getDashboardRowIndices } from './utils';
 
 const MONTH_INDICES = [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5];

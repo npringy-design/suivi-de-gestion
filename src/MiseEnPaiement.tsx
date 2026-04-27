@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useData } from '@/contexts/DataContext';
 import { ChevronLeft, Menu, X } from 'lucide-react';
+
+import { useData } from '@/contexts/DataContext';
 
 interface MiseEnPaiementProps {
   month: number;

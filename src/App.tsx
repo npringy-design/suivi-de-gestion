@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+
+import { DataProvider, useData } from '@/contexts/DataContext';
+
 import Dashboard from './Dashboard';
 import Home from './Home';
 import SyntheseCA from './SyntheseCA';
@@ -31,7 +34,6 @@ import CalculetteSalaires from './CalculetteSalaires';
 import ConfigurationChiffre2025 from './ConfigurationChiffre2025';
 import VisuelVacances from './VisuelVacances';
 import EdgAnnuelTabs from './EdgAnnuelTabs';
-import { DataProvider, useData } from '@/contexts/DataContext';
 
 export default function App() {
   return (
