@@ -622,41 +622,40 @@ export default function Home() {
                 
                 <div className="relative flex items-center justify-between">
                   <div className="flex-1">
-                    <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-1">
+                    <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
                       Au Bureau Montévrain
                     </h1>
-                    <p className="text-sm text-blue-200">{month} {year}</p>
                   </div>
 
-                  <div className="w-full sm:w-80">
-                    <div className="mx-auto rounded-[28px] border border-slate-200 bg-white px-6 py-5 shadow-lg">
-                      <div className="text-center text-[15px] font-semibold text-slate-500">
+                  <div className="w-full sm:w-[300px] lg:w-[320px]">
+                    <div className="mx-auto rounded-[24px] border border-slate-200 bg-white px-5 py-4 shadow-md">
+                      <div className="text-center text-[14px] font-semibold text-slate-500">
                         {formatDateFr(today)}
                       </div>
 
-                      <div className="my-4 border-t border-slate-200" />
+                      <div className="my-3 border-t border-slate-200" />
 
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="flex h-16 w-16 items-center justify-center">
+                      <div className="flex items-center justify-center gap-2.5">
+                        <div className="flex h-14 w-14 items-center justify-center">
                           {weather ? (
-                            getWeatherIcon(weather.code, 'w-14 h-14')
+                            getWeatherIcon(weather.code, 'w-12 h-12')
                           ) : (
-                            <Sun className="w-14 h-14 text-amber-400" />
+                            <Sun className="w-12 h-12 text-amber-400" />
                           )}
                         </div>
 
-                        <div className="text-[56px] leading-none font-extrabold text-slate-900">
+                        <div className="text-[46px] leading-none font-extrabold text-slate-900">
                           {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
                         </div>
                       </div>
 
-                      <div className="mt-3 text-center text-[15px] font-medium text-slate-500">
+                      <div className="mt-2 text-center text-[14px] font-medium text-slate-500">
                         {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
                       </div>
 
-                      <div className="my-4 border-t border-slate-200" />
+                      <div className="my-3 border-t border-slate-200" />
 
-                      <div className="text-center text-[15px] text-slate-500">
+                      <div className="text-center text-[14px] text-slate-500">
                         <span>Fête du jour : </span>
                         <span className="font-semibold text-slate-900">
                           {getDayEvent(today) || '—'}
