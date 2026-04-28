@@ -114,7 +114,6 @@ export default function Home() {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weather, setWeather] = useState<{ temp: number, code: number, wind?: number, direction?: number } | null>(null);
-  const [weatherLoading, setWeatherLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const year = selectedYear;
@@ -141,9 +140,8 @@ export default function Home() {
   }, []);
 
   const loadWeather = useCallback(async () => {
-    setWeatherLoading(true);
     try {
-      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current_weather=true&timezone=Europe%2FParis');
+      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8745&longitude=2.7463&current_weather=true&timezone=Europe%2FParis');
       const data = await res.json();
       if (data.current_weather) {
         setWeather({
@@ -155,13 +153,14 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Erreur météo:", err);
-    } finally {
-      setWeatherLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadWeather();
+    const refreshTimer = window.setInterval(loadWeather, 15 * 60 * 1000);
+
+    return () => window.clearInterval(refreshTimer);
   }, [loadWeather]);
 
   const getWeatherIcon = useMemo(() => (code: number, size: string = "w-4 h-4") => {
@@ -224,11 +223,6 @@ export default function Home() {
       default:
         return 'Temps variable';
     }
-  };
-
-  const getWindDirection = (deg: number) => {
-    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
-    return directions[Math.round(deg / 45) % 8];
   };
 
   const getFeteDesMeres = (year: number) => {
