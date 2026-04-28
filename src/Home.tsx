@@ -232,6 +232,89 @@ export default function Home() {
     return directions[Math.round(deg / 45) % 8];
   };
 
+  const isRain = useMemo(() => {
+    return weather ? [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(weather.code) : false;
+  }, [weather]);
+
+  const weatherTheme = useMemo(() => {
+    if (!weather) {
+      return {
+        bgClass: 'bg-white/10',
+        borderClass: 'border-white/20',
+        iconClass: 'text-slate-200',
+        labelClass: 'text-slate-200',
+        effectClass: 'bg-slate-300/80',
+      };
+    }
+
+    const code = weather.code;
+    if (code === 0) {
+      return {
+        bgClass: 'bg-gradient-to-br from-amber-400/25 via-orange-400/20 to-slate-900/10',
+        borderClass: 'border-amber-300/30',
+        iconClass: 'text-amber-300',
+        labelClass: 'text-amber-100',
+        effectClass: 'bg-amber-300',
+      };
+    }
+
+    if ([1, 2, 3].includes(code)) {
+      return {
+        bgClass: 'bg-gradient-to-br from-slate-700/80 via-slate-800/85 to-slate-900/95',
+        borderClass: 'border-slate-500/40',
+        iconClass: 'text-slate-300',
+        labelClass: 'text-slate-200',
+        effectClass: 'bg-slate-400',
+      };
+    }
+
+    if ([45, 48].includes(code)) {
+      return {
+        bgClass: 'bg-gradient-to-br from-slate-600/80 via-slate-700/90 to-slate-900/95',
+        borderClass: 'border-slate-400/35',
+        iconClass: 'text-slate-200',
+        labelClass: 'text-slate-300',
+        effectClass: 'bg-slate-400/70',
+      };
+    }
+
+    if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) {
+      return {
+        bgClass: 'bg-gradient-to-br from-sky-700/80 via-blue-800/90 to-slate-950/95',
+        borderClass: 'border-blue-300/30',
+        iconClass: 'text-sky-200',
+        labelClass: 'text-sky-100',
+        effectClass: 'bg-sky-300',
+      };
+    }
+
+    if ([71, 73, 75, 77, 85, 86].includes(code)) {
+      return {
+        bgClass: 'bg-gradient-to-br from-cyan-500/20 via-slate-800/80 to-slate-950/95',
+        borderClass: 'border-cyan-300/25',
+        iconClass: 'text-cyan-200',
+        labelClass: 'text-cyan-100',
+        effectClass: 'bg-cyan-200',
+      };
+    }
+
+    return {
+      bgClass: 'bg-gradient-to-br from-violet-800/90 via-indigo-900/95 to-slate-950/95',
+      borderClass: 'border-violet-400/30',
+      iconClass: 'text-violet-200',
+      labelClass: 'text-violet-100',
+      effectClass: 'bg-violet-300',
+    };
+  }, [weather]);
+
+  const isStorm = useMemo(() => {
+    return weather ? [95, 96, 99].includes(weather.code) : false;
+  }, [weather]);
+
+  const isWindy = useMemo(() => {
+    return weather ? (weather.wind ?? 0) >= 20 : false;
+  }, [weather]);
+
   const today = new Date();
 
   const dashboardRowIndices = getDashboardRowIndices(data, month);
@@ -364,6 +447,102 @@ export default function Home() {
 
         .animate-slideRight {
           animation: slideRight 0.5s ease-out;
+        }
+
+        .weather-cloud {
+          animation: floatCloud 4s ease-in-out infinite;
+        }
+
+        .weather-rain {
+          position: absolute;
+          left: 50%;
+          top: 100%;
+          width: 32px;
+          height: 28px;
+          transform: translateX(-50%);
+          display: flex;
+          justify-content: space-between;
+          pointer-events: none;
+        }
+
+        .rain-drop {
+          width: 2px;
+          height: 10px;
+          border-radius: 999px;
+          opacity: 0;
+          animation: rainFall 0.75s linear infinite;
+        }
+
+        .rain-drop-1 { animation-delay: 0s; }
+        .rain-drop-2 { animation-delay: 0.15s; }
+        .rain-drop-3 { animation-delay: 0.3s; }
+
+        .weather-wind {
+          position: absolute;
+          right: -4px;
+          top: 8px;
+          width: 16px;
+          height: 16px;
+        }
+
+        .weather-wind::before,
+        .weather-wind::after {
+          content: '';
+          position: absolute;
+          width: 12px;
+          height: 2px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.75);
+          animation: windSweep 1.2s ease-in-out infinite;
+        }
+
+        .weather-wind::before {
+          top: 4px;
+          right: 0;
+          transform-origin: right center;
+        }
+
+        .weather-wind::after {
+          top: 10px;
+          right: 0;
+          animation-delay: 0.4s;
+        }
+
+        .weather-flash {
+          position: absolute;
+          width: 8px;
+          height: 16px;
+          top: 6px;
+          right: 3px;
+          border-radius: 2px;
+          background: linear-gradient(180deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.95));
+          opacity: 0.8;
+          transform: skewX(-15deg);
+          animation: lightning 1.5s ease-in-out infinite;
+        }
+
+        @keyframes floatCloud {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+
+        @keyframes rainFall {
+          0% { opacity: 0; transform: translateY(-2px); }
+          10% { opacity: 1; }
+          100% { opacity: 0; transform: translateY(14px); }
+        }
+
+        @keyframes windSweep {
+          0% { transform: translateX(0) scaleX(1); opacity: 0.8; }
+          50% { transform: translateX(-6px) scaleX(0.9); opacity: 0.5; }
+          100% { transform: translateX(0) scaleX(1); opacity: 0.8; }
+        }
+
+        @keyframes lightning {
+          0%, 30% { opacity: 0; }
+          35% { opacity: 1; transform: skewX(-15deg) scaleY(1); }
+          40% { opacity: 0; }
+          100% { opacity: 0; }
         }
 
         /* Stagger animations for grid items */
@@ -505,14 +684,27 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setWeatherOpen(prev => !prev)}
-                        className={`group relative rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2.5 text-left text-slate-200 w-44 transition-all duration-300 ${weatherOpen ? 'shadow-xl border-blue-300/50' : 'hover:shadow-lg hover:border-white/40'}`}
+                        className={`group relative overflow-hidden rounded-xl ${weatherTheme.bgClass} ${weatherTheme.borderClass} border px-4 py-2.5 text-left w-44 transition-all duration-300 ${weatherOpen ? 'shadow-xl' : 'hover:shadow-lg hover:border-white/40'}`}
                       >
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <div className="flex items-center gap-2">
-                            {getWeatherIcon(weather.code, 'w-5 h-5')}
+                            <div className={`relative inline-flex items-center justify-center rounded-full p-2 bg-white/10 ${weatherTheme.iconClass}`}>
+                              {getWeatherIcon(weather.code, 'w-5 h-5')}
+
+                              {isRain && (
+                                <div className="weather-rain">
+                                  <span className="rain-drop rain-drop-1" style={{ backgroundColor: weatherTheme.effectClass }} />
+                                  <span className="rain-drop rain-drop-2" style={{ backgroundColor: weatherTheme.effectClass }} />
+                                  <span className="rain-drop rain-drop-3" style={{ backgroundColor: weatherTheme.effectClass }} />
+                                </div>
+                              )}
+
+                              {isStorm && <span className="weather-flash" />}
+                              {isWindy && !isRain && <span className="weather-wind" />}
+                            </div>
                             <span className="text-lg font-bold text-white">{weather.temp}°C</span>
                           </div>
-                          <span className="text-[10px] uppercase tracking-[0.2em] text-blue-200 font-semibold">Paris</span>
+                          <span className={`text-[10px] uppercase tracking-[0.2em] ${weatherTheme.labelClass} font-semibold`}>Paris</span>
                         </div>
                         <div className="text-[11px] text-slate-200">{getWeatherLabel(weather.code)}</div>
                         <div className="text-[9px] mt-1 text-slate-400">Cliquer pour afficher les détails</div>
