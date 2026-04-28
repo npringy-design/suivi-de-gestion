@@ -113,10 +113,9 @@ export default function Home() {
   const { data, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth } = useData();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [weather, setWeather] = useState<{ temp: number, code: number } | null>(null);
+  const [weather, setWeather] = useState<{ temp: number, code: number, wind?: number, direction?: number } | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [today, setToday] = useState(() => new Date());
 
   const year = selectedYear;
   const month = selectedMonth;
@@ -144,12 +143,14 @@ export default function Home() {
   const loadWeather = useCallback(async () => {
     setWeatherLoading(true);
     try {
-      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8755&longitude=2.7467&current_weather=true&timezone=Europe%2FParis');
+      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current_weather=true&timezone=Europe%2FParis');
       const data = await res.json();
       if (data.current_weather) {
         setWeather({
           temp: data.current_weather.temperature,
           code: data.current_weather.weathercode,
+          wind: data.current_weather.windspeed,
+          direction: data.current_weather.winddirection,
         });
       }
     } catch (err) {
@@ -161,36 +162,18 @@ export default function Home() {
 
   useEffect(() => {
     loadWeather();
-    const interval = window.setInterval(loadWeather, 15 * 60 * 1000);
-    return () => window.clearInterval(interval);
   }, [loadWeather]);
 
-  useEffect(() => {
-    const interval = window.setInterval(() => setToday(new Date()), 60 * 1000);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  const getWeatherVisual = useMemo(() => (code: number) => {
-    if (code === 0) return <Sun className="w-16 h-16 text-amber-400 drop-shadow-lg" />;
-
-    if (code === 1 || code === 2 || code === 3) {
-      return (
-        <div className="relative h-16 w-20">
-          <Sun className="absolute left-0 top-0 w-12 h-12 text-amber-400 drop-shadow-lg" />
-          <Cloud className="weather-cloud absolute bottom-1 right-0 w-14 h-14 text-sky-100 fill-sky-100 drop-shadow-lg" />
-          <Cloud className="weather-cloud absolute bottom-0 left-4 w-11 h-11 text-slate-200 fill-slate-200 drop-shadow" />
-        </div>
-      );
-    }
-
-    if (code >= 51 && code <= 67) return <CloudRain className="w-16 h-16 text-blue-500 drop-shadow-lg" />;
-    if (code >= 71 && code <= 77) return <CloudSnow className="w-16 h-16 text-slate-300 drop-shadow-lg" />;
-    if (code >= 80 && code <= 82) return <CloudRain className="w-16 h-16 text-blue-600 drop-shadow-lg" />;
-    if (code >= 85 && code <= 86) return <CloudSnow className="w-16 h-16 text-slate-400 drop-shadow-lg" />;
-    if (code >= 95 && code <= 99) return <CloudLightning className="w-16 h-16 text-amber-600 drop-shadow-lg" />;
-    if (code === 45 || code === 48) return <CloudFog className="w-16 h-16 text-slate-300 drop-shadow-lg" />;
-
-    return <Cloud className="w-16 h-16 text-slate-300 drop-shadow-lg" />;
+  const getWeatherIcon = useMemo(() => (code: number, size: string = "w-4 h-4") => {
+    if (code === 0) return <Sun className={`${size} text-amber-500`} />;
+    if (code === 1 || code === 2 || code === 3) return <Cloud className={`${size} text-slate-400`} />;
+    if (code >= 51 && code <= 67) return <CloudRain className={`${size} text-blue-500`} />;
+    if (code >= 71 && code <= 77) return <CloudSnow className={`${size} text-slate-300`} />;
+    if (code >= 80 && code <= 82) return <CloudRain className={`${size} text-blue-600`} />;
+    if (code >= 85 && code <= 86) return <CloudSnow className={`${size} text-slate-400`} />;
+    if (code >= 95 && code <= 99) return <CloudLightning className={`${size} text-amber-600`} />;
+    if (code === 45 || code === 48) return <CloudFog className={`${size} text-slate-300`} />;
+    return <Cloud className={`${size} text-slate-400`} />;
   }, []);
 
   const getWeatherLabel = (code: number) => {
@@ -243,6 +226,11 @@ export default function Home() {
     }
   };
 
+  const getWindDirection = (deg: number) => {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+    return directions[Math.round(deg / 45) % 8];
+  };
+
   const getFeteDesMeres = (year: number) => {
     const lastMayDay = new Date(year, 4, 31);
     const offset = lastMayDay.getDay() === 0 ? 0 : lastMayDay.getDay();
@@ -277,6 +265,7 @@ export default function Home() {
     return saintsByDay[key] || '';
   };
 
+  const today = new Date();
 
   const dashboardRowIndices = getDashboardRowIndices(data, month);
   const { rowFirstDay, rowLastDay } = dashboardRowIndices;
@@ -309,6 +298,7 @@ export default function Home() {
     
     const caMois = moisIndex >= 0 ? n(data[moisIndex]?.CA_Realise) : 0;
     const caJour = jourIndex >= 0 ? n(data[jourIndex]?.CA_Realise) : 0;
+    const caJourBudget = jourIndex >= 0 ? n(data[jourIndex]?.CA_Budget) : 1;
     const nbCouverts = jourIndex >= 0 ? n(data[jourIndex]?.Nombre_de_Couverts) : 0;
     const tmJour = nbCouverts > 0 ? caJour / nbCouverts : 0;
 
@@ -360,8 +350,6 @@ export default function Home() {
 
   const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
   const years = [2024, 2025, 2026];
-  const dayEvent = getDayEvent(today);
-  const weatherStatus = weather ? getWeatherLabel(weather.code) : weatherLoading ? 'Chargement...' : 'Météo indisponible';
 
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
@@ -439,6 +427,37 @@ export default function Home() {
         .rain-drop-2 { animation-delay: 0.15s; }
         .rain-drop-3 { animation-delay: 0.3s; }
 
+        .weather-wind {
+          position: absolute;
+          right: -4px;
+          top: 8px;
+          width: 16px;
+          height: 16px;
+        }
+
+        .weather-wind::before,
+        .weather-wind::after {
+          content: '';
+          position: absolute;
+          width: 12px;
+          height: 2px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.75);
+          animation: windSweep 1.2s ease-in-out infinite;
+        }
+
+        .weather-wind::before {
+          top: 4px;
+          right: 0;
+          transform-origin: right center;
+        }
+
+        .weather-wind::after {
+          top: 10px;
+          right: 0;
+          animation-delay: 0.4s;
+        }
+
         .weather-flash {
           position: absolute;
           width: 8px;
@@ -461,6 +480,12 @@ export default function Home() {
           0% { opacity: 0; transform: translateY(-2px); }
           10% { opacity: 1; }
           100% { opacity: 0; transform: translateY(14px); }
+        }
+
+        @keyframes windSweep {
+          0% { transform: translateX(0) scaleX(1); opacity: 0.8; }
+          50% { transform: translateX(-6px) scaleX(0.9); opacity: 0.5; }
+          100% { transform: translateX(0) scaleX(1); opacity: 0.8; }
         }
 
         @keyframes lightning {
@@ -588,67 +613,73 @@ export default function Home() {
 
           {/* Content */}
           <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-            {/* Banderole établissement + météo/date */}
+            {/* Header avec info contextuelles */}
             <section className="animate-slideRight">
-              <div className="relative overflow-hidden rounded-[22px] border border-slate-800/40 bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 shadow-xl">
-                <div className="absolute inset-0 opacity-65 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.22),transparent_1.6px),radial-gradient(circle_at_64%_38%,rgba(255,255,255,0.18),transparent_1.2px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.14),transparent_1.4px)] bg-[length:160px_120px,210px_160px,180px_140px]" />
-                <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/35 via-blue-950/20 to-transparent" />
-                <div className="absolute -bottom-8 left-0 h-24 w-[42%] rounded-[60%] bg-slate-950/70 blur-sm" />
-                <div className="absolute -bottom-10 left-[18%] h-20 w-[34%] rounded-[60%] bg-slate-900/75 blur-sm" />
-                <div className="absolute -right-16 -bottom-16 h-36 w-36 rounded-full bg-cyan-300/25 blur-3xl" />
+              <div className="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-gradient-to-r from-[#050914] via-[#101b3f] to-[#123847] px-4 py-3 shadow-xl">
+                {/* Decorative elements */}
+                <div className="absolute inset-0 opacity-60 bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.18),transparent_1.5px),radial-gradient(circle_at_62%_35%,rgba(255,255,255,0.14),transparent_1.2px),radial-gradient(circle_at_82%_72%,rgba(255,255,255,0.12),transparent_1.4px)] bg-[length:150px_110px,210px_150px,170px_130px]" />
+                <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/35 via-blue-950/20 to-transparent" />
+                <div className="absolute -right-12 -bottom-16 h-32 w-32 rounded-full bg-amber-200/20 blur-3xl" />
 
-                <div className="relative flex flex-col gap-3 p-3 sm:p-4 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="flex min-w-0 flex-1 items-center">
-                    <div className="w-full max-w-[430px]">
-                      <div className="mb-3 h-px w-full max-w-[340px] bg-gradient-to-r from-transparent via-amber-200/85 to-transparent" />
-                      <div className="font-serif text-[34px] font-black uppercase leading-none tracking-[0.08em] text-amber-50 drop-shadow sm:text-[44px] lg:text-[50px]">
-                        Au Bureau
-                      </div>
-                      <div className="mt-2 text-center text-[11px] font-bold uppercase tracking-[0.42em] text-white/90 sm:text-sm">
-                        Montévrain
-                      </div>
-                      <div className="mt-3 h-px w-full max-w-[340px] bg-gradient-to-r from-transparent via-amber-200/85 to-transparent" />
+                <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0 flex-1 py-1">
+                    <div className="mb-2 h-px max-w-[360px] bg-gradient-to-r from-transparent via-amber-200/80 to-transparent" />
+                    <h1 className="font-serif text-[34px] font-black uppercase leading-none tracking-[0.08em] text-amber-50 drop-shadow sm:text-[42px] lg:text-[48px]">
+                      Au Bureau
+                    </h1>
+                    <div className="mt-2 h-px max-w-[360px] bg-gradient-to-r from-transparent via-amber-200/75 to-transparent" />
+                    <div className="mt-2 max-w-[360px] text-center text-[11px] font-bold uppercase tracking-[0.42em] text-white/85 sm:text-xs">
+                      Montévrain
                     </div>
                   </div>
 
-                  <div className="grid w-full gap-3 sm:grid-cols-2 xl:w-auto">
-                    <div className="min-h-[108px] rounded-[20px] border border-white/70 bg-gradient-to-br from-sky-50 via-blue-50 to-sky-200/90 p-3 shadow-lg shadow-black/20 ring-1 ring-sky-200/60 xl:w-[280px]">
-                      <div className="border-b border-sky-200/80 pb-1.5 text-center text-sm font-bold text-blue-900 sm:text-base">
-                        {formatDateFr(today)}
-                      </div>
-                      <div className="mt-2 flex items-center justify-center gap-3">
-                        <div className="flex h-14 w-[72px] items-center justify-center">
-                          {weather ? getWeatherVisual(weather.code) : <Sun className="w-12 h-12 text-amber-400 drop-shadow-lg" />}
+                  <div className="w-full lg:w-auto">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:items-stretch">
+                      <div className="min-h-[82px] rounded-[18px] border border-amber-200/70 bg-gradient-to-br from-[#fff8e6] via-[#fdecc7] to-[#e6bd75] px-3 py-2 shadow-lg shadow-black/20 ring-1 ring-white/45 sm:min-w-[210px]">
+                        <div className="border-b border-amber-300/55 pb-1 text-center text-[12px] font-bold text-slate-900">
+                          {formatDateFr(today)}
                         </div>
-                        <div className="text-[38px] font-black leading-none tracking-tight text-blue-950 sm:text-[46px]">
-                          {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
-                        </div>
-                      </div>
-                      <div className="mt-0.5 text-center text-xs font-semibold text-blue-950/90">
-                        {weatherStatus}
-                      </div>
-                    </div>
 
-                    <div className="relative min-h-[108px] overflow-hidden rounded-[20px] border border-white/70 bg-gradient-to-br from-emerald-50 via-lime-50 to-emerald-100 p-3 shadow-lg shadow-black/20 ring-1 ring-emerald-100/70 xl:w-[280px]">
-                      <div className="absolute inset-x-0 bottom-0 h-10 bg-emerald-300/35" />
-                      <div className="relative flex h-full items-center gap-3">
-                        <div className="relative flex h-16 w-[52px] shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-md ring-1 ring-slate-200">
-                          <div className="h-4 bg-rose-500" />
-                          <div className="absolute left-2.5 top-[-3px] h-[18px] w-1.5 rounded-full bg-slate-200 shadow" />
-                          <div className="absolute right-2.5 top-[-3px] h-[18px] w-1.5 rounded-full bg-slate-200 shadow" />
-                          <div className="flex flex-1 items-center justify-center text-2xl font-black text-blue-950">
-                            {today.getDate()}
+                        <div className="mt-2 flex items-center justify-center gap-2">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/55 shadow-inner">
+                            {weather ? (
+                              getWeatherIcon(weather.code, 'w-8 h-8')
+                            ) : (
+                              <Sun className="w-8 h-8 text-amber-500" />
+                            )}
+                          </div>
+
+                          <div className="text-[30px] leading-none font-extrabold text-slate-950">
+                            {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
                           </div>
                         </div>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 text-base font-black text-blue-950 sm:text-lg">
-                            <Calendar className="h-[18px] w-[18px] text-blue-900/70" />
-                            <span>{formatDateFr(today)}</span>
+                        <div className="mt-1 text-center text-[11px] font-semibold text-slate-700">
+                          {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
+                        </div>
+                      </div>
+
+                      <div className="relative min-h-[82px] overflow-hidden rounded-[18px] border border-amber-200/70 bg-gradient-to-br from-[#fffaf0] via-[#f6e3b7] to-[#d7a557] px-3 py-2 shadow-lg shadow-black/20 ring-1 ring-white/45 sm:min-w-[240px]">
+                        <div className="absolute inset-x-0 bottom-0 h-7 bg-amber-700/10" />
+                        <div className="relative flex h-full items-center gap-3">
+                          <div className="relative flex h-[58px] w-[46px] shrink-0 flex-col overflow-hidden rounded-lg bg-white/95 shadow-md ring-1 ring-amber-200/80">
+                            <div className="h-3.5 bg-amber-700" />
+                            <div className="absolute left-2 top-[-3px] h-4 w-1 rounded-full bg-amber-100 shadow" />
+                            <div className="absolute right-2 top-[-3px] h-4 w-1 rounded-full bg-amber-100 shadow" />
+                            <div className="flex flex-1 items-center justify-center text-[24px] font-black text-slate-950">
+                              {today.getDate()}
+                            </div>
                           </div>
-                          <div className="my-2 h-px bg-emerald-200/80" />
-                          <div className="text-sm font-extrabold text-blue-950 sm:text-base">
-                            {dayEvent || 'Fête du jour'}
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 text-[14px] font-black text-slate-950 sm:text-[15px]">
+                              <Calendar className="h-4 w-4 text-amber-800" />
+                              <span>{formatDateFr(today)}</span>
+                            </div>
+                            <div className="my-1.5 h-px bg-amber-400/40" />
+                            <div className="text-[13px] font-extrabold text-slate-800 sm:text-sm">
+                              {getDayEvent(today) || 'Fête du jour'}
+                            </div>
                           </div>
                         </div>
                       </div>
