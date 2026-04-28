@@ -590,67 +590,64 @@ export default function Home() {
           <div className="p-4 sm:p-6 lg:p-8 space-y-6">
             {/* Banderole établissement + météo/date */}
             <section className="animate-slideRight">
-              <div className="relative overflow-hidden rounded-[28px] border border-slate-800/40 bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 shadow-2xl">
-                <div className="absolute inset-0 opacity-70 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.22),transparent_1.8px),radial-gradient(circle_at_64%_38%,rgba(255,255,255,0.18),transparent_1.4px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.14),transparent_1.6px)] bg-[length:160px_120px,210px_160px,180px_140px]" />
-                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/35 via-blue-950/20 to-transparent" />
-                <div className="absolute -bottom-8 left-0 h-28 w-[42%] rounded-[60%] bg-slate-950/70 blur-sm" />
-                <div className="absolute -bottom-10 left-[18%] h-24 w-[34%] rounded-[60%] bg-slate-900/75 blur-sm" />
-                <div className="absolute -right-16 -bottom-16 h-44 w-44 rounded-full bg-cyan-300/25 blur-3xl" />
+              <div className="relative overflow-hidden rounded-[22px] border border-slate-800/40 bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 shadow-xl">
+                <div className="absolute inset-0 opacity-65 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.22),transparent_1.6px),radial-gradient(circle_at_64%_38%,rgba(255,255,255,0.18),transparent_1.2px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.14),transparent_1.4px)] bg-[length:160px_120px,210px_160px,180px_140px]" />
+                <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/35 via-blue-950/20 to-transparent" />
+                <div className="absolute -bottom-8 left-0 h-24 w-[42%] rounded-[60%] bg-slate-950/70 blur-sm" />
+                <div className="absolute -bottom-10 left-[18%] h-20 w-[34%] rounded-[60%] bg-slate-900/75 blur-sm" />
+                <div className="absolute -right-16 -bottom-16 h-36 w-36 rounded-full bg-cyan-300/25 blur-3xl" />
 
-                <div className="relative flex flex-col gap-5 p-5 sm:p-6 xl:flex-row xl:items-center xl:justify-between">
+                <div className="relative flex flex-col gap-3 p-3 sm:p-4 xl:flex-row xl:items-center xl:justify-between">
                   <div className="flex min-w-0 flex-1 items-center">
-                    <div className="max-w-[520px]">
-                      <div className="mb-2 flex items-center gap-4 text-amber-200/95">
-                        <div className="h-px w-24 bg-gradient-to-r from-transparent via-amber-200/80 to-amber-200/20" />
-                        <div className="text-4xl leading-none drop-shadow-sm">♛</div>
-                        <div className="h-px w-24 bg-gradient-to-l from-transparent via-amber-200/80 to-amber-200/20" />
-                      </div>
-                      <div className="font-serif text-[42px] font-black uppercase leading-none tracking-[0.08em] text-amber-50 drop-shadow sm:text-[56px] lg:text-[64px]">
+                    <div className="w-full max-w-[430px]">
+                      <div className="mb-3 h-px w-full max-w-[340px] bg-gradient-to-r from-transparent via-amber-200/85 to-transparent" />
+                      <div className="font-serif text-[34px] font-black uppercase leading-none tracking-[0.08em] text-amber-50 drop-shadow sm:text-[44px] lg:text-[50px]">
                         Au Bureau
                       </div>
-                      <div className="mt-3 text-center text-sm font-bold uppercase tracking-[0.45em] text-white/90 sm:text-base">
+                      <div className="mt-2 text-center text-[11px] font-bold uppercase tracking-[0.42em] text-white/90 sm:text-sm">
                         Montévrain
                       </div>
+                      <div className="mt-3 h-px w-full max-w-[340px] bg-gradient-to-r from-transparent via-amber-200/85 to-transparent" />
                     </div>
                   </div>
 
-                  <div className="grid w-full gap-4 sm:grid-cols-2 xl:w-auto">
-                    <div className="min-h-[142px] rounded-[24px] border border-white/70 bg-gradient-to-br from-sky-50 via-blue-50 to-sky-200/90 p-4 shadow-xl shadow-black/20 ring-1 ring-sky-200/60">
-                      <div className="border-b border-sky-200/80 pb-2 text-center text-base font-bold text-blue-900 sm:text-lg">
+                  <div className="grid w-full gap-3 sm:grid-cols-2 xl:w-auto">
+                    <div className="min-h-[108px] rounded-[20px] border border-white/70 bg-gradient-to-br from-sky-50 via-blue-50 to-sky-200/90 p-3 shadow-lg shadow-black/20 ring-1 ring-sky-200/60 xl:w-[280px]">
+                      <div className="border-b border-sky-200/80 pb-1.5 text-center text-sm font-bold text-blue-900 sm:text-base">
                         {formatDateFr(today)}
                       </div>
-                      <div className="mt-3 flex items-center justify-center gap-4">
-                        <div className="flex h-20 w-24 items-center justify-center">
-                          {weather ? getWeatherVisual(weather.code) : <Sun className="w-16 h-16 text-amber-400 drop-shadow-lg" />}
+                      <div className="mt-2 flex items-center justify-center gap-3">
+                        <div className="flex h-14 w-[72px] items-center justify-center">
+                          {weather ? getWeatherVisual(weather.code) : <Sun className="w-12 h-12 text-amber-400 drop-shadow-lg" />}
                         </div>
-                        <div className="text-[46px] font-black leading-none tracking-tight text-blue-950 sm:text-[58px]">
+                        <div className="text-[38px] font-black leading-none tracking-tight text-blue-950 sm:text-[46px]">
                           {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
                         </div>
                       </div>
-                      <div className="mt-1 text-center text-sm font-semibold text-blue-950/90">
+                      <div className="mt-0.5 text-center text-xs font-semibold text-blue-950/90">
                         {weatherStatus}
                       </div>
                     </div>
 
-                    <div className="relative min-h-[142px] overflow-hidden rounded-[24px] border border-white/70 bg-gradient-to-br from-emerald-50 via-lime-50 to-emerald-100 p-4 shadow-xl shadow-black/20 ring-1 ring-emerald-100/70">
-                      <div className="absolute inset-x-0 bottom-0 h-12 bg-emerald-300/35" />
-                      <div className="relative flex h-full items-center gap-4">
-                        <div className="relative flex h-20 w-16 shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-md ring-1 ring-slate-200">
-                          <div className="h-5 bg-rose-500" />
-                          <div className="absolute left-3 top-[-3px] h-5 w-1.5 rounded-full bg-slate-200 shadow" />
-                          <div className="absolute right-3 top-[-3px] h-5 w-1.5 rounded-full bg-slate-200 shadow" />
-                          <div className="flex flex-1 items-center justify-center text-3xl font-black text-blue-950">
+                    <div className="relative min-h-[108px] overflow-hidden rounded-[20px] border border-white/70 bg-gradient-to-br from-emerald-50 via-lime-50 to-emerald-100 p-3 shadow-lg shadow-black/20 ring-1 ring-emerald-100/70 xl:w-[280px]">
+                      <div className="absolute inset-x-0 bottom-0 h-10 bg-emerald-300/35" />
+                      <div className="relative flex h-full items-center gap-3">
+                        <div className="relative flex h-16 w-[52px] shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-md ring-1 ring-slate-200">
+                          <div className="h-4 bg-rose-500" />
+                          <div className="absolute left-2.5 top-[-3px] h-[18px] w-1.5 rounded-full bg-slate-200 shadow" />
+                          <div className="absolute right-2.5 top-[-3px] h-[18px] w-1.5 rounded-full bg-slate-200 shadow" />
+                          <div className="flex flex-1 items-center justify-center text-2xl font-black text-blue-950">
                             {today.getDate()}
                           </div>
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 text-xl font-black text-blue-950 sm:text-2xl">
-                            <Calendar className="h-6 w-6 text-blue-900/70" />
+                          <div className="flex items-center gap-1.5 text-base font-black text-blue-950 sm:text-lg">
+                            <Calendar className="h-[18px] w-[18px] text-blue-900/70" />
                             <span>{formatDateFr(today)}</span>
                           </div>
-                          <div className="my-3 h-px bg-emerald-200/80" />
-                          <div className="text-lg font-extrabold text-blue-950 sm:text-xl">
+                          <div className="my-2 h-px bg-emerald-200/80" />
+                          <div className="text-sm font-extrabold text-blue-950 sm:text-base">
                             {dayEvent || 'Fête du jour'}
                           </div>
                         </div>
