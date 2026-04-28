@@ -615,24 +615,26 @@ export default function Home() {
 
                   <div className="w-full sm:w-72">
                     <div className="rounded-[32px] border border-slate-200/80 bg-white/95 p-6 shadow-xl shadow-slate-200/30">
-                      <div className="text-center text-sm uppercase tracking-[0.22em] text-slate-400">
+                      <div className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
                         {today.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                       </div>
+                      <div className="mt-3 border-t border-slate-200/70" />
 
-                      <div className="mt-6 flex flex-col items-center justify-center gap-4">
+                      <div className="mt-6 flex items-center justify-center gap-4">
                         <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 shadow-sm">
                           {weather ? getWeatherIcon(weather.code, 'w-12 h-12') : <Sun className="w-12 h-12 text-amber-400" />}
                         </div>
                         <div className="text-5xl font-black text-slate-900">
                           {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
                         </div>
-                        <div className="text-center text-sm font-medium text-slate-500">
-                          {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
-                        </div>
+                      </div>
+
+                      <div className="mt-4 text-center text-sm font-medium text-slate-500">
+                        {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
                       </div>
 
                       {getDayEvent(today) ? (
-                        <div className="mt-6 border-t border-dashed border-slate-200/70 pt-4 text-center text-sm text-slate-500">
+                        <div className="mt-6 border-t border-slate-200/70 pt-4 text-center text-sm text-slate-500">
                           <span className="font-medium text-slate-900">Fête du jour :</span>
                           <span className="font-semibold text-slate-900"> {getDayEvent(today)}</span>
                         </div>
