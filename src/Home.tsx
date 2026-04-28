@@ -73,10 +73,10 @@ type SummaryCardProps = {
 
 export function SummaryCard({ label, value, description, icon: Icon, accentClass, trend }: SummaryCardProps) {
   return (
-    <div className="group bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-xl hover:border-slate-300/80 transition-all duration-500 h-full flex flex-col backdrop-blur-sm animate-slideUp">
-      <div className="flex items-start justify-between gap-4 mb-4">
+    <div className="group bg-white rounded-2xl border border-slate-200/80 p-4 xl:p-5 2xl:p-6 shadow-sm hover:shadow-xl hover:border-slate-300/80 transition-all duration-500 h-full flex flex-col backdrop-blur-sm animate-slideUp">
+      <div className="flex items-start justify-between gap-3 mb-3 2xl:gap-4 2xl:mb-4">
         <div className="flex-1">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-3 flex items-center gap-2">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-2 2xl:mb-3 flex items-center gap-2">
             {label}
             {trend && (
               <span className={`text-[9px] px-2 py-0.5 rounded-full ${trend.value >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
@@ -84,19 +84,19 @@ export function SummaryCard({ label, value, description, icon: Icon, accentClass
               </span>
             )}
           </div>
-          <div className="text-3xl sm:text-4xl font-black text-slate-900 leading-none tracking-tight">{value}</div>
+          <div className="text-2xl xl:text-3xl 2xl:text-4xl font-black text-slate-900 leading-none tracking-tight">{value}</div>
         </div>
         <div className={`
-          w-12 h-12 rounded-xl ${accentClass} 
+          w-10 h-10 xl:w-11 xl:h-11 2xl:w-12 2xl:h-12 rounded-xl ${accentClass} 
           flex items-center justify-center text-white shadow-lg
           transform group-hover:scale-110 group-hover:rotate-6
           transition-all duration-500
         `}>
-          <Icon className="w-6 h-6" />
+          <Icon className="w-5 h-5 2xl:w-6 2xl:h-6" />
         </div>
       </div>
-      <div className="mt-auto pt-3 border-t border-slate-100">
-        <div className="text-xs leading-relaxed text-slate-500">{description}</div>
+      <div className="mt-auto pt-2 2xl:pt-3 border-t border-slate-100">
+        <div className="text-[11px] xl:text-xs leading-relaxed text-slate-500">{description}</div>
       </div>
     </div>
   );
@@ -114,6 +114,7 @@ export default function Home() {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weather, setWeather] = useState<{ temp: number, code: number, wind?: number, direction?: number } | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const year = selectedYear;
@@ -140,8 +141,9 @@ export default function Home() {
   }, []);
 
   const loadWeather = useCallback(async () => {
+    setWeatherLoading(true);
     try {
-      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8745&longitude=2.7463&current_weather=true&timezone=Europe%2FParis');
+      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current_weather=true&timezone=Europe%2FParis');
       const data = await res.json();
       if (data.current_weather) {
         setWeather({
@@ -153,14 +155,13 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Erreur météo:", err);
+    } finally {
+      setWeatherLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadWeather();
-    const refreshTimer = window.setInterval(loadWeather, 15 * 60 * 1000);
-
-    return () => window.clearInterval(refreshTimer);
   }, [loadWeather]);
 
   const getWeatherIcon = useMemo(() => (code: number, size: string = "w-4 h-4") => {
@@ -223,6 +224,11 @@ export default function Home() {
       default:
         return 'Temps variable';
     }
+  };
+
+  const getWindDirection = (deg: number) => {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+    return directions[Math.round(deg / 45) % 8];
   };
 
   const getFeteDesMeres = (year: number) => {
@@ -606,72 +612,72 @@ export default function Home() {
           </div>
 
           {/* Content */}
-          <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+          <div className="p-3 sm:p-4 lg:p-4 xl:p-5 2xl:p-8 space-y-4 2xl:space-y-6">
             {/* Header avec info contextuelles */}
             <section className="animate-slideRight">
-              <div className="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-gradient-to-r from-[#050914] via-[#101b3f] to-[#123847] px-4 py-3 shadow-xl">
+              <div className="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-gradient-to-r from-[#050914] via-[#101b3f] to-[#123847] px-4 py-2 lg:px-5 2xl:px-6 2xl:py-3 shadow-xl">
                 {/* Decorative elements */}
                 <div className="absolute inset-0 opacity-60 bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.18),transparent_1.5px),radial-gradient(circle_at_62%_35%,rgba(255,255,255,0.14),transparent_1.2px),radial-gradient(circle_at_82%_72%,rgba(255,255,255,0.12),transparent_1.4px)] bg-[length:150px_110px,210px_150px,170px_130px]" />
                 <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/35 via-blue-950/20 to-transparent" />
                 <div className="absolute -right-12 -bottom-16 h-32 w-32 rounded-full bg-amber-200/20 blur-3xl" />
 
-                <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="min-w-0 flex-1 py-1">
-                    <div className="mb-2 h-px max-w-[360px] bg-gradient-to-r from-transparent via-amber-200/80 to-transparent" />
-                    <h1 className="font-serif text-[34px] font-black uppercase leading-none tracking-[0.08em] text-amber-50 drop-shadow sm:text-[42px] lg:text-[48px]">
+                <div className="relative flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0 flex-1 py-0.5 2xl:py-1">
+                    <div className="mb-1.5 h-px max-w-[320px] 2xl:max-w-[360px] bg-gradient-to-r from-transparent via-amber-200/80 to-transparent" />
+                    <h1 className="font-serif text-[28px] font-black uppercase leading-none tracking-[0.08em] text-amber-50 drop-shadow sm:text-[34px] lg:text-[38px] 2xl:text-[48px]">
                       Au Bureau
                     </h1>
-                    <div className="mt-2 h-px max-w-[360px] bg-gradient-to-r from-transparent via-amber-200/75 to-transparent" />
-                    <div className="mt-2 max-w-[360px] text-center text-[11px] font-bold uppercase tracking-[0.42em] text-white/85 sm:text-xs">
+                    <div className="mt-1.5 h-px max-w-[320px] 2xl:max-w-[360px] bg-gradient-to-r from-transparent via-amber-200/75 to-transparent" />
+                    <div className="mt-1.5 max-w-[320px] 2xl:max-w-[360px] text-center text-[10px] font-bold uppercase tracking-[0.42em] text-white/85 sm:text-[11px] 2xl:text-xs">
                       Montévrain
                     </div>
                   </div>
 
                   <div className="w-full lg:w-auto">
-                    <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:items-stretch">
-                      <div className="min-h-[82px] rounded-[18px] border border-amber-200/70 bg-gradient-to-br from-[#fff8e6] via-[#fdecc7] to-[#e6bd75] px-3 py-2 shadow-lg shadow-black/20 ring-1 ring-white/45 sm:min-w-[210px]">
-                        <div className="border-b border-amber-300/55 pb-1 text-center text-[12px] font-bold text-slate-900">
+                    <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:items-stretch">
+                      <div className="min-h-[70px] rounded-[16px] border border-amber-200/70 bg-gradient-to-br from-[#fff8e6] via-[#fdecc7] to-[#e6bd75] px-3 py-1.5 shadow-lg shadow-black/20 ring-1 ring-white/45 sm:min-w-[190px] 2xl:min-h-[82px] 2xl:min-w-[210px] 2xl:py-2">
+                        <div className="border-b border-amber-300/55 pb-0.5 2xl:pb-1 text-center text-[11px] 2xl:text-[12px] font-bold text-slate-900">
                           {formatDateFr(today)}
                         </div>
 
-                        <div className="mt-2 flex items-center justify-center gap-2">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/55 shadow-inner">
+                        <div className="mt-1.5 2xl:mt-2 flex items-center justify-center gap-2">
+                          <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 items-center justify-center rounded-xl bg-white/55 shadow-inner">
                             {weather ? (
-                              getWeatherIcon(weather.code, 'w-8 h-8')
+                              getWeatherIcon(weather.code, 'w-7 h-7 2xl:w-8 2xl:h-8')
                             ) : (
-                              <Sun className="w-8 h-8 text-amber-500" />
+                              <Sun className="w-7 h-7 2xl:w-8 2xl:h-8 text-amber-500" />
                             )}
                           </div>
 
-                          <div className="text-[30px] leading-none font-extrabold text-slate-950">
+                          <div className="text-[25px] 2xl:text-[30px] leading-none font-extrabold text-slate-950">
                             {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
                           </div>
                         </div>
 
-                        <div className="mt-1 text-center text-[11px] font-semibold text-slate-700">
+                        <div className="mt-0.5 2xl:mt-1 text-center text-[10px] 2xl:text-[11px] font-semibold text-slate-700">
                           {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
                         </div>
                       </div>
 
-                      <div className="relative min-h-[82px] overflow-hidden rounded-[18px] border border-amber-200/70 bg-gradient-to-br from-[#fffaf0] via-[#f6e3b7] to-[#d7a557] px-3 py-2 shadow-lg shadow-black/20 ring-1 ring-white/45 sm:min-w-[240px]">
+                      <div className="relative min-h-[70px] overflow-hidden rounded-[16px] border border-amber-200/70 bg-gradient-to-br from-[#fffaf0] via-[#f6e3b7] to-[#d7a557] px-3 py-1.5 shadow-lg shadow-black/20 ring-1 ring-white/45 sm:min-w-[220px] 2xl:min-h-[82px] 2xl:min-w-[240px] 2xl:py-2">
                         <div className="absolute inset-x-0 bottom-0 h-7 bg-amber-700/10" />
                         <div className="relative flex h-full items-center gap-3">
-                          <div className="relative flex h-[58px] w-[46px] shrink-0 flex-col overflow-hidden rounded-lg bg-white/95 shadow-md ring-1 ring-amber-200/80">
-                            <div className="h-3.5 bg-amber-700" />
+                          <div className="relative flex h-[50px] w-[40px] 2xl:h-[58px] 2xl:w-[46px] shrink-0 flex-col overflow-hidden rounded-lg bg-white/95 shadow-md ring-1 ring-amber-200/80">
+                            <div className="h-3 2xl:h-3.5 bg-amber-700" />
                             <div className="absolute left-2 top-[-3px] h-4 w-1 rounded-full bg-amber-100 shadow" />
                             <div className="absolute right-2 top-[-3px] h-4 w-1 rounded-full bg-amber-100 shadow" />
-                            <div className="flex flex-1 items-center justify-center text-[24px] font-black text-slate-950">
+                            <div className="flex flex-1 items-center justify-center text-[21px] 2xl:text-[24px] font-black text-slate-950">
                               {today.getDate()}
                             </div>
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 text-[14px] font-black text-slate-950 sm:text-[15px]">
-                              <Calendar className="h-4 w-4 text-amber-800" />
+                            <div className="flex items-center gap-1.5 text-[12px] font-black text-slate-950 sm:text-[13px] 2xl:text-[15px]">
+                              <Calendar className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-amber-800" />
                               <span>{formatDateFr(today)}</span>
                             </div>
-                            <div className="my-1.5 h-px bg-amber-400/40" />
-                            <div className="text-[13px] font-extrabold text-slate-800 sm:text-sm">
+                            <div className="my-1 2xl:my-1.5 h-px bg-amber-400/40" />
+                            <div className="text-[12px] font-extrabold text-slate-800 sm:text-[13px] 2xl:text-sm">
                               {getDayEvent(today) || 'Fête du jour'}
                             </div>
                           </div>
@@ -685,7 +691,7 @@ export default function Home() {
 
             {/* KPIs Grid */}
             <section>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 2xl:gap-4">
                 <SummaryCard
                   label="CA Réalisé"
                   value={fe(kpis.caMois)}
@@ -718,10 +724,10 @@ export default function Home() {
             </section>
 
             {/* Charts Grid */}
-            <section className="grid gap-6 lg:grid-cols-2">
+            <section className="grid gap-4 2xl:gap-6 lg:grid-cols-2">
               {/* CA Evolution Chart */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-lg transition-shadow duration-300 animate-slideUp">
-                <div className="flex items-center justify-between mb-6">
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-4 2xl:p-6 shadow-sm hover:shadow-lg transition-shadow duration-300 animate-slideUp">
+                <div className="flex items-center justify-between mb-3 2xl:mb-6">
                   <div>
                     <div className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-1">
                       <TrendingUp className="w-5 h-5 text-blue-500" />
@@ -730,7 +736,7 @@ export default function Home() {
                     <p className="text-xs text-slate-500">Réalisé vs Budget mensuel</p>
                   </div>
                 </div>
-                <div className="h-[280px]">
+                <div className="h-[clamp(175px,26vh,280px)]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartDataCA} margin={{ top: 10, right: 30, bottom: 10, left: 0 }}>
                       <defs>
@@ -796,8 +802,8 @@ export default function Home() {
               </div>
 
               {/* Expenses Pie Chart */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-lg transition-shadow duration-300 animate-slideUp" style={{ animationDelay: '100ms' }}>
-                <div className="flex items-center justify-between mb-6">
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-4 2xl:p-6 shadow-sm hover:shadow-lg transition-shadow duration-300 animate-slideUp" style={{ animationDelay: '100ms' }}>
+                <div className="flex items-center justify-between mb-3 2xl:mb-6">
                   <div>
                     <div className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-1">
                       <PieChartIcon className="w-5 h-5 text-amber-500" />
@@ -806,7 +812,7 @@ export default function Home() {
                     <p className="text-xs text-slate-500">Structure des charges du mois</p>
                   </div>
                 </div>
-                <div className="h-[280px]">
+                <div className="h-[clamp(175px,26vh,280px)]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
