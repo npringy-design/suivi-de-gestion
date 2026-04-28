@@ -237,9 +237,23 @@ export default function Home() {
     return 31 - offset;
   };
 
+  const formatDateFr = (date: Date) => {
+    const formatted = date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  };
+
   const getDayEvent = (date: Date) => {
     const month = date.getMonth() + 1;
     const day = date.getDate();
+    const key = `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}`;
+
+    const saintsByDay: Record<string, string> = {
+      '28-04': 'Sainte Valérie',
+    };
 
     if (month === 5 && day === 1) {
       return 'Fête du Travail';
@@ -247,7 +261,8 @@ export default function Home() {
     if (month === 5 && day === getFeteDesMeres(date.getFullYear())) {
       return 'Fête des Mères';
     }
-    return '';
+
+    return saintsByDay[key] || '';
   };
 
   const today = new Date();
@@ -613,32 +628,40 @@ export default function Home() {
                     <p className="text-sm text-blue-200">{month} {year}</p>
                   </div>
 
-                  <div className="w-full sm:w-72">
-                    <div className="rounded-[32px] border border-slate-200/80 bg-white/95 p-6 shadow-xl shadow-slate-200/30">
-                      <div className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                        {today.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  <div className="w-full sm:w-80">
+                    <div className="mx-auto rounded-[28px] border border-slate-200 bg-white px-6 py-5 shadow-lg">
+                      <div className="text-center text-[15px] font-semibold text-slate-500">
+                        {formatDateFr(today)}
                       </div>
-                      <div className="mt-3 border-t border-slate-200/70" />
 
-                      <div className="mt-6 flex items-center justify-center gap-4">
-                        <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 shadow-sm">
-                          {weather ? getWeatherIcon(weather.code, 'w-12 h-12') : <Sun className="w-12 h-12 text-amber-400" />}
+                      <div className="my-4 border-t border-slate-200" />
+
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="flex h-16 w-16 items-center justify-center">
+                          {weather ? (
+                            getWeatherIcon(weather.code, 'w-14 h-14')
+                          ) : (
+                            <Sun className="w-14 h-14 text-amber-400" />
+                          )}
                         </div>
-                        <div className="text-5xl font-black text-slate-900">
+
+                        <div className="text-[56px] leading-none font-extrabold text-slate-900">
                           {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
                         </div>
                       </div>
 
-                      <div className="mt-4 text-center text-sm font-medium text-slate-500">
+                      <div className="mt-3 text-center text-[15px] font-medium text-slate-500">
                         {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
                       </div>
 
-                      {getDayEvent(today) ? (
-                        <div className="mt-6 border-t border-slate-200/70 pt-4 text-center text-sm text-slate-500">
-                          <span className="font-medium text-slate-900">Fête du jour :</span>
-                          <span className="font-semibold text-slate-900"> {getDayEvent(today)}</span>
-                        </div>
-                      ) : null}
+                      <div className="my-4 border-t border-slate-200" />
+
+                      <div className="text-center text-[15px] text-slate-500">
+                        <span>Fête du jour : </span>
+                        <span className="font-semibold text-slate-900">
+                          {getDayEvent(today) || '—'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
