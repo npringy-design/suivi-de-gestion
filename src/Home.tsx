@@ -627,39 +627,41 @@ export default function Home() {
                     </h1>
                   </div>
 
-                  <div className="w-full sm:w-[300px] lg:w-[320px]">
-                    <div className="mx-auto rounded-[24px] border border-slate-200 bg-white px-5 py-4 shadow-md">
-                      <div className="text-center text-[14px] font-semibold text-slate-500">
-                        {formatDateFr(today)}
-                      </div>
-
-                      <div className="my-3 border-t border-slate-200" />
-
-                      <div className="flex items-center justify-center gap-2.5">
-                        <div className="flex h-14 w-14 items-center justify-center">
-                          {weather ? (
-                            getWeatherIcon(weather.code, 'w-12 h-12')
-                          ) : (
-                            <Sun className="w-12 h-12 text-amber-400" />
-                          )}
+                  <div className="w-full sm:w-auto">
+                    <div className="flex flex-col sm:flex-row items-stretch gap-3">
+                      <div className="min-w-[150px] rounded-[20px] border border-slate-200 bg-white px-4 py-3 shadow-md">
+                        <div className="text-center text-[13px] font-semibold text-slate-500">
+                          {formatDateFr(today)}
                         </div>
 
-                        <div className="text-[46px] leading-none font-extrabold text-slate-900">
-                          {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
+                        <div className="my-2.5 border-t border-slate-200" />
+
+                        <div className="text-center text-[13px] text-slate-500">
+                          <span>Fête du jour : </span>
+                          <span className="font-semibold text-slate-900">
+                            {getDayEvent(today) || '—'}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="mt-2 text-center text-[14px] font-medium text-slate-500">
-                        {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
-                      </div>
+                      <div className="min-w-[170px] rounded-[20px] border border-slate-200 bg-white px-4 py-3 shadow-md">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="flex h-11 w-11 items-center justify-center">
+                            {weather ? (
+                              getWeatherIcon(weather.code, 'w-10 h-10')
+                            ) : (
+                              <Sun className="w-10 h-10 text-amber-400" />
+                            )}
+                          </div>
 
-                      <div className="my-3 border-t border-slate-200" />
+                          <div className="text-[36px] leading-none font-extrabold text-slate-900">
+                            {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
+                          </div>
+                        </div>
 
-                      <div className="text-center text-[14px] text-slate-500">
-                        <span>Fête du jour : </span>
-                        <span className="font-semibold text-slate-900">
-                          {getDayEvent(today) || '—'}
-                        </span>
+                        <div className="mt-2 text-center text-[13px] font-medium text-slate-500">
+                          {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
+                        </div>
                       </div>
                     </div>
                   </div>
