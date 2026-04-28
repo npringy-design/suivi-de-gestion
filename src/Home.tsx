@@ -239,22 +239,22 @@ export default function Home() {
   const weatherTheme = useMemo(() => {
     if (!weather) {
       return {
-        bgClass: 'bg-white/10',
-        borderClass: 'border-white/20',
+        bgClass: 'bg-slate-900/80',
+        borderClass: 'border-slate-700/40',
         iconClass: 'text-slate-200',
         labelClass: 'text-slate-200',
-        effectClass: 'bg-slate-300/80',
+        effectColor: 'rgba(148, 163, 184, 0.95)',
       };
     }
 
     const code = weather.code;
     if (code === 0) {
       return {
-        bgClass: 'bg-gradient-to-br from-amber-400/25 via-orange-400/20 to-slate-900/10',
+        bgClass: 'bg-gradient-to-br from-amber-400/35 via-orange-400/25 to-slate-900/20',
         borderClass: 'border-amber-300/30',
         iconClass: 'text-amber-300',
         labelClass: 'text-amber-100',
-        effectClass: 'bg-amber-300',
+        effectColor: 'rgba(251, 191, 36, 0.95)',
       };
     }
 
@@ -264,7 +264,7 @@ export default function Home() {
         borderClass: 'border-slate-500/40',
         iconClass: 'text-slate-300',
         labelClass: 'text-slate-200',
-        effectClass: 'bg-slate-400',
+        effectColor: 'rgba(148, 163, 184, 0.95)',
       };
     }
 
@@ -274,7 +274,7 @@ export default function Home() {
         borderClass: 'border-slate-400/35',
         iconClass: 'text-slate-200',
         labelClass: 'text-slate-300',
-        effectClass: 'bg-slate-400/70',
+        effectColor: 'rgba(148, 163, 184, 0.95)',
       };
     }
 
@@ -284,7 +284,7 @@ export default function Home() {
         borderClass: 'border-blue-300/30',
         iconClass: 'text-sky-200',
         labelClass: 'text-sky-100',
-        effectClass: 'bg-sky-300',
+        effectColor: 'rgba(56, 189, 248, 0.95)',
       };
     }
 
@@ -294,7 +294,7 @@ export default function Home() {
         borderClass: 'border-cyan-300/25',
         iconClass: 'text-cyan-200',
         labelClass: 'text-cyan-100',
-        effectClass: 'bg-cyan-200',
+        effectColor: 'rgba(45, 212, 191, 0.95)',
       };
     }
 
@@ -303,7 +303,7 @@ export default function Home() {
       borderClass: 'border-violet-400/30',
       iconClass: 'text-violet-200',
       labelClass: 'text-violet-100',
-      effectClass: 'bg-violet-300',
+      effectColor: 'rgba(167, 139, 250, 0.95)',
     };
   }, [weather]);
 
@@ -693,9 +693,9 @@ export default function Home() {
 
                               {isRain && (
                                 <div className="weather-rain">
-                                  <span className="rain-drop rain-drop-1" style={{ backgroundColor: weatherTheme.effectClass }} />
-                                  <span className="rain-drop rain-drop-2" style={{ backgroundColor: weatherTheme.effectClass }} />
-                                  <span className="rain-drop rain-drop-3" style={{ backgroundColor: weatherTheme.effectClass }} />
+                                  <span className="rain-drop rain-drop-1" style={{ backgroundColor: weatherTheme.effectColor }} />
+                                  <span className="rain-drop rain-drop-2" style={{ backgroundColor: weatherTheme.effectColor }} />
+                                  <span className="rain-drop rain-drop-3" style={{ backgroundColor: weatherTheme.effectColor }} />
                                 </div>
                               )}
 
@@ -710,7 +710,7 @@ export default function Home() {
                         <div className="text-[9px] mt-1 text-slate-400">Cliquer pour afficher les détails</div>
 
                         {weatherOpen && (
-                          <div className="mt-3 rounded-2xl bg-slate-900/80 border border-white/10 p-3 text-[11px] text-slate-100">
+                          <div className="absolute left-0 top-full mt-2 w-full rounded-2xl bg-slate-950/95 border border-slate-700/60 p-3 text-[11px] text-slate-100 shadow-2xl z-10">
                             <div className="flex items-center justify-between mb-1">
                               <span>Météo</span>
                               <span className="font-semibold">{getWeatherLabel(weather.code)}</span>
