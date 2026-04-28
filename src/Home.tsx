@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, type ComponentType, type ReactNode } from 'react';
+import { useMemo, useState, useEffect, useCallback, type ComponentType, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BarChart3, FileText, 
@@ -113,7 +113,9 @@ export default function Home() {
   const { data, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth } = useData();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [weather, setWeather] = useState<{ temp: number, code: number } | null>(null);
+  const [weather, setWeather] = useState<{ temp: number, code: number, wind?: number, direction?: number } | null>(null);
+  const [weatherOpen, setWeatherOpen] = useState(false);
+  const [weatherLoading, setWeatherLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const year = selectedYear;
@@ -139,19 +141,29 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,weather_code')
-      .then(res => res.json())
-      .then(data => {
-        if (data.current) {
-          setWeather({
-            temp: data.current.temperature_2m,
-            code: data.current.weather_code
-          });
-        }
-      })
-      .catch(err => console.error("Erreur météo:", err));
+  const loadWeather = useCallback(async () => {
+    setWeatherLoading(true);
+    try {
+      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current_weather=true&timezone=Europe%2FParis');
+      const data = await res.json();
+      if (data.current_weather) {
+        setWeather({
+          temp: data.current_weather.temperature,
+          code: data.current_weather.weathercode,
+          wind: data.current_weather.windspeed,
+          direction: data.current_weather.winddirection,
+        });
+      }
+    } catch (err) {
+      console.error("Erreur météo:", err);
+    } finally {
+      setWeatherLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadWeather();
+  }, [loadWeather]);
 
   const getWeatherIcon = useMemo(() => (code: number, size: string = "w-4 h-4") => {
     if (code === 0) return <Sun className={`${size} text-amber-500`} />;
@@ -164,6 +176,61 @@ export default function Home() {
     if (code === 45 || code === 48) return <CloudFog className={`${size} text-slate-300`} />;
     return <Cloud className={`${size} text-slate-400`} />;
   }, []);
+
+  const getWeatherLabel = (code: number) => {
+    switch (code) {
+      case 0:
+        return 'Ciel dégagé';
+      case 1:
+        return 'Peu nuageux';
+      case 2:
+        return 'Partiellement nuageux';
+      case 3:
+        return 'Couvert';
+      case 45:
+        return 'Brouillard';
+      case 48:
+        return 'Brouillard givrant';
+      case 51:
+      case 53:
+      case 55:
+        return 'Bruine';
+      case 56:
+      case 57:
+        return 'Bruine verglaçante';
+      case 61:
+      case 63:
+      case 65:
+        return 'Pluie';
+      case 66:
+      case 67:
+        return 'Pluie verglaçante';
+      case 71:
+      case 73:
+      case 75:
+        return 'Neige';
+      case 77:
+        return 'Grésil';
+      case 80:
+      case 81:
+      case 82:
+        return 'Averses';
+      case 85:
+      case 86:
+        return 'Neige';
+      case 95:
+      case 96:
+      case 99:
+        return 'Orage';
+      default:
+        return 'Temps variable';
+    }
+  };
+
+  const getWindDirection = (deg: number) => {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+    return directions[Math.round(deg / 45) % 8];
+  };
 
   const today = new Date();
 
@@ -435,13 +502,47 @@ export default function Home() {
                   {/* Quick Stats */}
                   <div className="flex gap-3">
                     {weather && (
-                      <div className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2.5 text-center">
-                        <div className="flex items-center justify-center gap-2 mb-0.5">
-                          {getWeatherIcon(weather.code, 'w-4 h-4')}
-                          <span className="text-lg font-bold text-white">{weather.temp}°C</span>
+                      <button
+                        type="button"
+                        onClick={() => setWeatherOpen(prev => !prev)}
+                        className={`group relative rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2.5 text-left text-slate-200 w-44 transition-all duration-300 ${weatherOpen ? 'shadow-xl border-blue-300/50' : 'hover:shadow-lg hover:border-white/40'}`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2">
+                            {getWeatherIcon(weather.code, 'w-5 h-5')}
+                            <span className="text-lg font-bold text-white">{weather.temp}°C</span>
+                          </div>
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-blue-200 font-semibold">Paris</span>
                         </div>
-                        <div className="text-[9px] uppercase tracking-wider text-blue-200 font-semibold">Paris</div>
-                      </div>
+                        <div className="text-[11px] text-slate-200">{getWeatherLabel(weather.code)}</div>
+                        <div className="text-[9px] mt-1 text-slate-400">Cliquer pour afficher les détails</div>
+
+                        {weatherOpen && (
+                          <div className="mt-3 rounded-2xl bg-slate-900/80 border border-white/10 p-3 text-[11px] text-slate-100">
+                            <div className="flex items-center justify-between mb-1">
+                              <span>Météo</span>
+                              <span className="font-semibold">{getWeatherLabel(weather.code)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-slate-300">
+                              <span>Vent</span>
+                              <span>{weather.wind ?? '-'} km/h {weather.direction != null ? getWindDirection(weather.direction) : ''}</span>
+                            </div>
+                            {weather.direction != null && (
+                              <div className="flex items-center justify-between text-slate-300">
+                                <span>Direction</span>
+                                <span>{getWindDirection(weather.direction)}</span>
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); loadWeather(); }}
+                              className="mt-3 w-full rounded-lg border border-blue-300/30 bg-blue-600/10 px-3 py-1 text-[11px] font-semibold text-blue-100 hover:bg-blue-600/20 transition"
+                            >
+                              {weatherLoading ? 'Actualisation...' : 'Actualiser'}
+                            </button>
+                          </div>
+                        )}
+                      </button>
                     )}
                     <div className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2.5 text-center">
                       <div className="flex items-center justify-center gap-2 mb-0.5">
