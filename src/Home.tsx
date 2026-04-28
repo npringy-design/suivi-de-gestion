@@ -114,7 +114,6 @@ export default function Home() {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weather, setWeather] = useState<{ temp: number, code: number, wind?: number, direction?: number } | null>(null);
-  const [forecast, setForecast] = useState<Array<{ time: string; code: number; max: number; min: number; }> | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -144,7 +143,7 @@ export default function Home() {
   const loadWeather = useCallback(async () => {
     setWeatherLoading(true);
     try {
-      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&forecast_days=8&timezone=Europe%2FParis');
+      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current_weather=true&timezone=Europe%2FParis');
       const data = await res.json();
       if (data.current_weather) {
         setWeather({
@@ -153,14 +152,6 @@ export default function Home() {
           wind: data.current_weather.windspeed,
           direction: data.current_weather.winddirection,
         });
-      }
-      if (data.daily) {
-        setForecast(data.daily.time.map((time: string, index: number) => ({
-          time,
-          code: data.daily.weathercode[index],
-          max: data.daily.temperature_2m_max[index],
-          min: data.daily.temperature_2m_min[index],
-        })));
       }
     } catch (err) {
       console.error("Erreur météo:", err);
@@ -240,12 +231,23 @@ export default function Home() {
     return directions[Math.round(deg / 45) % 8];
   };
 
-  const formatForecastDay = (time: string) => {
-    const date = new Date(`${time}T00:00:00`);
-    return {
-      day: date.getDate(),
-      weekday: date.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', ''),
-    };
+  const getFeteDesMeres = (year: number) => {
+    const lastMayDay = new Date(year, 4, 31);
+    const offset = lastMayDay.getDay() === 0 ? 0 : lastMayDay.getDay();
+    return 31 - offset;
+  };
+
+  const getDayEvent = (date: Date) => {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+
+    if (month === 5 && day === 1) {
+      return 'Fête du Travail';
+    }
+    if (month === 5 && day === getFeteDesMeres(date.getFullYear())) {
+      return 'Fête des Mères';
+    }
+    return '';
   };
 
   const today = new Date();
@@ -611,32 +613,58 @@ export default function Home() {
                     <p className="text-sm text-blue-200">{month} {year}</p>
                   </div>
 
-                  {/* Forecast Cards */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 w-full">
-                    {forecast ? (
-                      forecast.slice(0, 8).map(({ time, code, max, min }) => {
-                        const { day, weekday } = formatForecastDay(time);
-                        return (
-                          <div key={time} className="rounded-3xl bg-white/95 border border-slate-200/80 p-3 shadow-sm text-slate-900">
-                            <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.25em] text-slate-500 font-semibold">
-                              <span>{weekday}</span>
-                              <span>{day}</span>
-                            </div>
-                            <div className="mt-3 flex items-center justify-center">
-                              {getWeatherIcon(code, 'w-6 h-6')}
-                            </div>
-                            <div className="mt-3 flex items-center justify-center gap-2 text-lg font-bold text-slate-900">
-                              <span>{Math.round(max)}°</span>
-                            </div>
-                            <div className="mt-1 text-center text-[11px] text-slate-500">{Math.round(min)}°</div>
+                  <div className="w-full sm:w-72">
+                    <div className="rounded-[32px] border border-slate-200/80 bg-gradient-to-br from-white via-slate-100 to-sky-100/80 p-5 shadow-xl shadow-slate-200/30">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="text-[10px] uppercase tracking-[0.3em] text-slate-400 font-semibold">Aujourd'hui</div>
+                          <div className="mt-2 text-xl font-black text-slate-900 leading-tight">
+                            {today.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                           </div>
-                        );
-                      })
-                    ) : (
-                      <div className="col-span-full rounded-3xl bg-white/90 border border-slate-200/80 p-4 text-center text-slate-500 shadow-sm">
-                        Chargement prévision...
+                        </div>
+                        <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-900/95 shadow-lg shadow-slate-400/10">
+                          {weather ? (
+                            <div className="relative inline-flex items-center justify-center rounded-full bg-slate-100/90 p-3">
+                              {getWeatherIcon(weather.code, 'w-8 h-8')}
+                            </div>
+                          ) : (
+                            <Sun className="w-8 h-8 text-amber-400" />
+                          )}
+                        </div>
                       </div>
-                    )}
+
+                      <div className="mt-6 rounded-[28px] bg-slate-950/5 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-4xl font-bold text-slate-900">
+                              {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
+                            </div>
+                            <div className="mt-1 text-sm text-slate-500">
+                              {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
+                            </div>
+                          </div>
+                          <div className="space-y-1 text-right">
+                            <div className="inline-flex rounded-full bg-slate-900/95 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-white shadow-sm">
+                              {getDayEvent(today) || 'Aucun événement'}
+                            </div>
+                            <div className="text-xs text-slate-400">{weather ? `${weather.wind ?? '-'} km/h ${weather.direction != null ? getWindDirection(weather.direction) : ''}` : '...' }</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 flex items-center justify-between gap-3">
+                        <div className="rounded-3xl bg-slate-900/95 px-4 py-3 text-sm text-slate-100 shadow-sm">
+                          {weather ? getWeatherLabel(weather.code) : 'Météo en cours'}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={loadWeather}
+                          className="rounded-3xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                        >
+                          {weatherLoading ? 'Actualisation...' : 'Rafraîchir'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
