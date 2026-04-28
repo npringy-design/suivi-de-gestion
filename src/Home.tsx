@@ -114,7 +114,7 @@ export default function Home() {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weather, setWeather] = useState<{ temp: number, code: number, wind?: number, direction?: number } | null>(null);
-  const [weatherOpen, setWeatherOpen] = useState(false);
+  const [forecast, setForecast] = useState<Array<{ time: string; code: number; max: number; min: number; }> | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -144,7 +144,7 @@ export default function Home() {
   const loadWeather = useCallback(async () => {
     setWeatherLoading(true);
     try {
-      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current_weather=true&timezone=Europe%2FParis');
+      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&forecast_days=8&timezone=Europe%2FParis');
       const data = await res.json();
       if (data.current_weather) {
         setWeather({
@@ -153,6 +153,14 @@ export default function Home() {
           wind: data.current_weather.windspeed,
           direction: data.current_weather.winddirection,
         });
+      }
+      if (data.daily) {
+        setForecast(data.daily.time.map((time: string, index: number) => ({
+          time,
+          code: data.daily.weathercode[index],
+          max: data.daily.temperature_2m_max[index],
+          min: data.daily.temperature_2m_min[index],
+        })));
       }
     } catch (err) {
       console.error("Erreur météo:", err);
@@ -232,88 +240,13 @@ export default function Home() {
     return directions[Math.round(deg / 45) % 8];
   };
 
-  const isRain = useMemo(() => {
-    return weather ? [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(weather.code) : false;
-  }, [weather]);
-
-  const weatherTheme = useMemo(() => {
-    if (!weather) {
-      return {
-        bgClass: 'bg-slate-900/80',
-        borderClass: 'border-slate-700/40',
-        iconClass: 'text-slate-200',
-        labelClass: 'text-slate-200',
-        effectColor: 'rgba(148, 163, 184, 0.95)',
-      };
-    }
-
-    const code = weather.code;
-    if (code === 0) {
-      return {
-        bgClass: 'bg-gradient-to-br from-amber-400/35 via-orange-400/25 to-slate-900/20',
-        borderClass: 'border-amber-300/30',
-        iconClass: 'text-amber-300',
-        labelClass: 'text-amber-100',
-        effectColor: 'rgba(251, 191, 36, 0.95)',
-      };
-    }
-
-    if ([1, 2, 3].includes(code)) {
-      return {
-        bgClass: 'bg-gradient-to-br from-slate-700/80 via-slate-800/85 to-slate-900/95',
-        borderClass: 'border-slate-500/40',
-        iconClass: 'text-slate-300',
-        labelClass: 'text-slate-200',
-        effectColor: 'rgba(148, 163, 184, 0.95)',
-      };
-    }
-
-    if ([45, 48].includes(code)) {
-      return {
-        bgClass: 'bg-gradient-to-br from-slate-600/80 via-slate-700/90 to-slate-900/95',
-        borderClass: 'border-slate-400/35',
-        iconClass: 'text-slate-200',
-        labelClass: 'text-slate-300',
-        effectColor: 'rgba(148, 163, 184, 0.95)',
-      };
-    }
-
-    if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) {
-      return {
-        bgClass: 'bg-gradient-to-br from-sky-700/80 via-blue-800/90 to-slate-950/95',
-        borderClass: 'border-blue-300/30',
-        iconClass: 'text-sky-200',
-        labelClass: 'text-sky-100',
-        effectColor: 'rgba(56, 189, 248, 0.95)',
-      };
-    }
-
-    if ([71, 73, 75, 77, 85, 86].includes(code)) {
-      return {
-        bgClass: 'bg-gradient-to-br from-cyan-500/20 via-slate-800/80 to-slate-950/95',
-        borderClass: 'border-cyan-300/25',
-        iconClass: 'text-cyan-200',
-        labelClass: 'text-cyan-100',
-        effectColor: 'rgba(45, 212, 191, 0.95)',
-      };
-    }
-
+  const formatForecastDay = (time: string) => {
+    const date = new Date(`${time}T00:00:00`);
     return {
-      bgClass: 'bg-gradient-to-br from-violet-800/90 via-indigo-900/95 to-slate-950/95',
-      borderClass: 'border-violet-400/30',
-      iconClass: 'text-violet-200',
-      labelClass: 'text-violet-100',
-      effectColor: 'rgba(167, 139, 250, 0.95)',
+      day: date.getDate(),
+      weekday: date.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', ''),
     };
-  }, [weather]);
-
-  const isStorm = useMemo(() => {
-    return weather ? [95, 96, 99].includes(weather.code) : false;
-  }, [weather]);
-
-  const isWindy = useMemo(() => {
-    return weather ? (weather.wind ?? 0) >= 20 : false;
-  }, [weather]);
+  };
 
   const today = new Date();
 
@@ -678,75 +611,32 @@ export default function Home() {
                     <p className="text-sm text-blue-200">{month} {year}</p>
                   </div>
 
-                  {/* Quick Stats */}
-                  <div className="flex gap-3">
-                    {weather && (
-                      <button
-                        type="button"
-                        onClick={() => setWeatherOpen(prev => !prev)}
-                        className={`group relative overflow-hidden rounded-xl ${weatherTheme.bgClass} ${weatherTheme.borderClass} border px-4 py-2.5 text-left w-44 transition-all duration-300 ${weatherOpen ? 'shadow-xl' : 'hover:shadow-lg hover:border-white/40'}`}
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <div className="flex items-center gap-2">
-                            <div className={`relative inline-flex items-center justify-center rounded-full p-2 bg-white/10 ${weatherTheme.iconClass}`}>
-                              {getWeatherIcon(weather.code, 'w-5 h-5')}
-
-                              {isRain && (
-                                <div className="weather-rain">
-                                  <span className="rain-drop rain-drop-1" style={{ backgroundColor: weatherTheme.effectColor }} />
-                                  <span className="rain-drop rain-drop-2" style={{ backgroundColor: weatherTheme.effectColor }} />
-                                  <span className="rain-drop rain-drop-3" style={{ backgroundColor: weatherTheme.effectColor }} />
-                                </div>
-                              )}
-
-                              {isStorm && <span className="weather-flash" />}
-                              {isWindy && !isRain && <span className="weather-wind" />}
+                  {/* Forecast Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 w-full">
+                    {forecast ? (
+                      forecast.slice(0, 8).map(({ time, code, max, min }) => {
+                        const { day, weekday } = formatForecastDay(time);
+                        return (
+                          <div key={time} className="rounded-3xl bg-white/95 border border-slate-200/80 p-3 shadow-sm text-slate-900">
+                            <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.25em] text-slate-500 font-semibold">
+                              <span>{weekday}</span>
+                              <span>{day}</span>
                             </div>
-                            <span className="text-lg font-bold text-white">{weather.temp}°C</span>
+                            <div className="mt-3 flex items-center justify-center">
+                              {getWeatherIcon(code, 'w-6 h-6')}
+                            </div>
+                            <div className="mt-3 flex items-center justify-center gap-2 text-lg font-bold text-slate-900">
+                              <span>{Math.round(max)}°</span>
+                            </div>
+                            <div className="mt-1 text-center text-[11px] text-slate-500">{Math.round(min)}°</div>
                           </div>
-                          <span className={`text-[10px] uppercase tracking-[0.2em] ${weatherTheme.labelClass} font-semibold`}>Paris</span>
-                        </div>
-                        <div className="text-[11px] text-slate-200">{getWeatherLabel(weather.code)}</div>
-                        <div className="text-[9px] mt-1 text-slate-400">Cliquer pour afficher les détails</div>
-
-                        {weatherOpen && (
-                          <div className="absolute left-0 top-full mt-2 w-full rounded-2xl bg-slate-950/95 border border-slate-700/60 p-3 text-[11px] text-slate-100 shadow-2xl z-10">
-                            <div className="flex items-center justify-between mb-1">
-                              <span>Météo</span>
-                              <span className="font-semibold">{getWeatherLabel(weather.code)}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-slate-300">
-                              <span>Vent</span>
-                              <span>{weather.wind ?? '-'} km/h {weather.direction != null ? getWindDirection(weather.direction) : ''}</span>
-                            </div>
-                            {weather.direction != null && (
-                              <div className="flex items-center justify-between text-slate-300">
-                                <span>Direction</span>
-                                <span>{getWindDirection(weather.direction)}</span>
-                              </div>
-                            )}
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); loadWeather(); }}
-                              className="mt-3 w-full rounded-lg border border-blue-300/30 bg-blue-600/10 px-3 py-1 text-[11px] font-semibold text-blue-100 hover:bg-blue-600/20 transition"
-                            >
-                              {weatherLoading ? 'Actualisation...' : 'Actualiser'}
-                            </button>
-                          </div>
-                        )}
-                      </button>
+                        );
+                      })
+                    ) : (
+                      <div className="col-span-full rounded-3xl bg-white/90 border border-slate-200/80 p-4 text-center text-slate-500 shadow-sm">
+                        Chargement prévision...
+                      </div>
                     )}
-                    <div className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2.5 text-center">
-                      <div className="flex items-center justify-center gap-2 mb-0.5">
-                        <Calendar className="w-3.5 h-3.5 text-blue-200" />
-                        <span className="text-lg font-bold text-white">
-                          {today.toLocaleDateString('fr-FR', { day: 'numeric' })}
-                        </span>
-                      </div>
-                      <div className="text-[9px] uppercase tracking-wider text-blue-200 font-semibold">
-                        {today.toLocaleDateString('fr-FR', { month: 'short' })}
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
