@@ -366,8 +366,10 @@ export default function Home() {
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   };
 
-  const dashboardRowIndices = getDashboardRowIndices(data, month);
-  const { rowFirstDay, rowLastDay } = dashboardRowIndices;
+  const dashboardRowIndices = getDashboardRowIndices(month, year);
+  const dashboardRowValues = Object.values(dashboardRowIndices);
+  const rowFirstDay = dashboardRowValues.length > 0 ? Math.min(...dashboardRowValues) : 0;
+  const rowLastDay = dashboardRowValues.length > 0 ? Math.max(...dashboardRowValues) : 0;
 
   const indices = useMemo(() => {
     if (!Array.isArray(data) || data.length === 0) {
@@ -720,7 +722,7 @@ export default function Home() {
                   <div className="home-period-panel grid grid-cols-2 gap-2 rounded-2xl border border-cyan-100/25 bg-[#052a34]/72 p-2 shadow-lg shadow-black/20 ring-1 ring-white/10 backdrop-blur-sm lg:grid-cols-1">
                     <select
                       value={month}
-                      onChange={e => setSelectedMonth(e.target.value)}
+                      onChange={e => setSelectedMonth(parseInt(e.target.value, 10))}
                       className="h-9 rounded-xl border border-cyan-100/15 bg-[#0a3a45]/95 px-3 text-sm font-extrabold text-cyan-50 shadow-inner outline-none transition-all focus:ring-2 focus:ring-cyan-300/35"
                     >
                       {months.map(m => (
@@ -864,7 +866,7 @@ export default function Home() {
                         dx={-10}
                       />
                       <RechartsTooltip
-                        formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
+                        formatter={value => [`${Number(value || 0).toFixed(2)} €`, '']}
                         contentStyle={{
                           borderRadius: 12,
                           border: 'none',
@@ -929,7 +931,7 @@ export default function Home() {
                         ))}
                       </Pie>
                       <RechartsTooltip
-                        formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
+                        formatter={value => [`${Number(value || 0).toFixed(2)} €`, '']}
                         contentStyle={{
                           borderRadius: 12,
                           border: 'none',

@@ -314,5 +314,5 @@ function AppContent() {
     return <VisuelVacances onBack={handleBackToHome} />;
   }
 
-  return <Home year={year} month={selectedMonth} setMonth={setSelectedMonth} onMonthSelect={handleMonthSelect} onSyntheseCA={handleSyntheseCA} onRecapAnnuel={handleRecapAnnuel} onReporting={handleReporting} onEdgMensuel={handleEdgMensuel} onBudgetEdgAnnuel={handleBudgetEdgAnnuel} onVsBudget={handleVsBudget} onVsN1={handleVsN1} onRealiseEdgAnneeFiscale={handleRealiseEdgAnneeFiscale} onMiseEnPaiement={handleMiseEnPaiement} onFactureDevis={handleFactureDevis} onConfigSalaires={handleConfigSalaires} onCalculetteSalaires={handleCalculetteSalaires} onVisuelVacances={handleVisuelVacances} />;
+  return <Home />;
 }

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
-type DayDataTheorique = {
+export type DayDataTheorique = {
   total_ca: string;
   cb: string;
   amex: string;
@@ -173,7 +173,7 @@ export type MonthDataSalariesConfig = {
   categories: Record<string, SalarieRow[]>;
 };
 
-type MonthData = {
+export type MonthData = {
   theorique: Record<number, DayDataTheorique>;
   nepting: Record<number, DayDataNepting>;
   especes: Record<number, DayDataEspeces>;
@@ -623,7 +623,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           newDepenses[objName as 'comptabilisation' | 'comptage'] = { 
             ...(currentDepenses[objName as 'comptabilisation' | 'comptage'] as Record<string, string | number>), 
             [key]: value 
-          };
+          } as MonthDataDepensesPetiteCaisse['comptabilisation'] & MonthDataDepensesPetiteCaisse['comptage'];
         }
       } else {
         newDepenses = { ...currentDepenses, [field]: value };

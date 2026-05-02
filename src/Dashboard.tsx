@@ -4,7 +4,21 @@ import { useData } from '@/contexts/DataContext';
 
 import { ChevronLeft, Save, Download, Upload, Calendar, Calculator, FileText, Settings, CreditCard, TrendingUp, PieChart as PieChartIcon, FileSpreadsheet, Receipt, Building2, Briefcase, Utensils, Menu, X, FileDown } from 'lucide-react';
 // ── Constantes Dashboard inline (dashboardConstants.ts intégré) ─────────────
-const C: string[][] = [
+type DashboardColumn = [string, string, string, string];
+type VisibleDashboardColumn = DashboardColumn & { originalIndex: number };
+type DashboardRow = {
+  type: 'day' | 'total' | 'month_total' | 'fg_box4_total';
+  label: string;
+  isWeekend?: boolean;
+  isSchoolHoliday?: boolean;
+  isPublicHoliday?: boolean;
+  isCustomEvent?: boolean;
+  dateObj?: Date;
+  dayIndex?: number;
+  weekIndex?: number;
+};
+
+const C: DashboardColumn[] = [
   ['CA', 'Midi Saisie', 'CA HT MIDI', 'bg-[#ffe699]'],
   ['CA', 'Soir Saisie', 'CA HT SOIR', 'bg-[#ffe699]'],
   ['CA', 'Limonade Saisie', 'CA HT LIMONADE', 'bg-[#ffe699]'],
@@ -166,8 +180,8 @@ const DebouncedInput = ({ value, onChange, onFocus, onBlur, onKeyDown, className
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   className?: string;
   placeholder?: string;
-  dataRow: string;
-  dataCol: string;
+  dataRow: string | number;
+  dataCol: string | number;
 }) => {
   const [localValue, setLocalValue] = useState(value);
   
@@ -359,7 +373,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const rows = useMemo(() => {
-    const generatedRows: (Record<string, string | number>)[] = [];
+    const generatedRows: DashboardRow[] = [];
     let weekCount = 1;
     const numDays = new Date(year, month + 1, 0).getDate();
     const monthName = monthNames[month];
@@ -465,7 +479,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   // Calculate totals
   const calculatedData = useMemo(() => {
-    const data = { ...cellData };
+    const data: Record<string, string> = { ...cellData };
     let cumulCA = 0;
     let cumulCvts = 0;
     let cumulRealiseCA = 0;
@@ -506,12 +520,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
         const jourCvts = cvtsMidi + cvtsSoir;
         if (jourCvts > 0) {
-          data[`${rIdx}-10`] = jourCvts;
+          data[`${rIdx}-10`] = jourCvts.toString();
           const jourMoy = (budgetMidi + budgetSoir) / jourCvts;
-          data[`${rIdx}-11`] = jourMoy;
+          data[`${rIdx}-11`] = jourMoy.toString();
           
           cumulCvts += jourCvts;
-          data[`${rIdx}-12`] = cumulCvts;
+          data[`${rIdx}-12`] = cumulCvts.toString();
         }
 
         // REALISE CA HT — 17=VAE,18=MIDI,19=SOIR,20=LIMO,21=TOTAL,22=ECART,23=CUMUL
@@ -700,26 +714,26 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           });
 
           if (hasData) {
-            data[`${rIdx}-${cIdx}`] = colSum;
+            data[`${rIdx}-${cIdx}`] = colSum.toString();
           }
         });
 
         // Calculate averages for week
         const caMidiW = parseFloat(data[`${rIdx}-0`] || '0');
         const cvtsMidiW = parseFloat(data[`${rIdx}-6`] || '0');
-        if (cvtsMidiW > 0) data[`${rIdx}-7`] = (caMidiW / cvtsMidiW);
+        if (cvtsMidiW > 0) data[`${rIdx}-7`] = (caMidiW / cvtsMidiW).toString();
 
         const caSoirW = parseFloat(data[`${rIdx}-1`] || '0');
         const cvtsSoirW = parseFloat(data[`${rIdx}-8`] || '0');
-        if (cvtsSoirW > 0) data[`${rIdx}-9`] = (caSoirW / cvtsSoirW);
+        if (cvtsSoirW > 0) data[`${rIdx}-9`] = (caSoirW / cvtsSoirW).toString();
 
         const caJourW = caMidiW + caSoirW;
         const cvtsJourW = cvtsMidiW + cvtsSoirW;
-        if (cvtsJourW > 0) data[`${rIdx}-11`] = (caJourW / cvtsJourW);
+        if (cvtsJourW > 0) data[`${rIdx}-11`] = (caJourW / cvtsJourW).toString();
 
         const caLimoW = parseFloat(data[`${rIdx}-2`] || '0');
         const cvtsLimoW = parseFloat(data[`${rIdx}-14`] || '0');
-        if (cvtsLimoW > 0) data[`${rIdx}-15`] = (caLimoW / cvtsLimoW);
+        if (cvtsLimoW > 0) data[`${rIdx}-15`] = (caLimoW / cvtsLimoW).toString();
 
         const realiseCAW = parseFloat(data[`${rIdx}-21`] || '0');
         // Moyennes semaine couverts réalisé
@@ -780,26 +794,26 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         });
 
         if (hasData) {
-          data[`${monthTotalIdx}-${cIdx}`] = colSum;
+            data[`${monthTotalIdx}-${cIdx}`] = colSum.toString();
         }
       });
 
       // Calculate averages for month
       const caMidiM = parseFloat(data[`${monthTotalIdx}-0`] || '0');
       const cvtsMidiM = parseFloat(data[`${monthTotalIdx}-6`] || '0');
-      if (cvtsMidiM > 0) data[`${monthTotalIdx}-7`] = (caMidiM / cvtsMidiM);
+      if (cvtsMidiM > 0) data[`${monthTotalIdx}-7`] = (caMidiM / cvtsMidiM).toString();
 
       const caSoirM = parseFloat(data[`${monthTotalIdx}-1`] || '0');
       const cvtsSoirM = parseFloat(data[`${monthTotalIdx}-8`] || '0');
-      if (cvtsSoirM > 0) data[`${monthTotalIdx}-9`] = (caSoirM / cvtsSoirM);
+      if (cvtsSoirM > 0) data[`${monthTotalIdx}-9`] = (caSoirM / cvtsSoirM).toString();
 
       const caJourM = caMidiM + caSoirM;
       const cvtsJourM = cvtsMidiM + cvtsSoirM;
-      if (cvtsJourM > 0) data[`${monthTotalIdx}-11`] = (caJourM / cvtsJourM);
+      if (cvtsJourM > 0) data[`${monthTotalIdx}-11`] = (caJourM / cvtsJourM).toString();
 
       const caLimoM = parseFloat(data[`${monthTotalIdx}-2`] || '0');
       const cvtsLimoM = parseFloat(data[`${monthTotalIdx}-14`] || '0');
-      if (cvtsLimoM > 0) data[`${monthTotalIdx}-15`] = (caLimoM / cvtsLimoM);
+      if (cvtsLimoM > 0) data[`${monthTotalIdx}-15`] = (caLimoM / cvtsLimoM).toString();
 
       const coutMatiereM = parseFloat(data[`${monthTotalIdx}-58`] || '0');
       const realiseCAM = parseFloat(data[`${monthTotalIdx}-21`] || '0');
@@ -868,7 +882,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     // If the value already contains a percentage sign, return it as is
     if (typeof val === 'string' && val.includes('%')) return val;
 
-    const num = parseFloat(val);
+    const num = parseFloat(String(val));
     if (isNaN(num)) return val;
 
     const groupName = c[0];
@@ -893,7 +907,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const visibleColumns = useMemo(() => {
-    return dynamicColumns.map((c, index) => ({ ...c, originalIndex: index })).filter(c => {
+    return dynamicColumns.map((c, index) => Object.assign([...c] as DashboardColumn, { originalIndex: index })).filter(c => {
       const group = c[0];
       const subGroup = c[1];
       
@@ -920,8 +934,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     });
   }, [activeTab]);
 
-  const groups: (Record<string, any>)[] = [];
-  let currentGroup: Record<string, any> | null = null;
+  const groups: Array<{ name: string; colspan: number; bg: string }> = [];
+  let currentGroup: { name: string; colspan: number; bg: string } | null = null;
   visibleColumns.forEach(c => {
     if (!currentGroup || currentGroup.name !== c[0]) {
       if (currentGroup) groups.push(currentGroup);
@@ -932,8 +946,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   });
   if (currentGroup) groups.push(currentGroup);
 
-  const subGroups: (Record<string, any>)[] = [];
-  let currentSub: Record<string, any> | null = null;
+  const subGroups: Array<{ name: string; group: string; colspan: number; bg: string }> = [];
+  let currentSub: { name: string; group: string; colspan: number; bg: string } | null = null;
   visibleColumns.forEach(c => {
     if (!currentSub || currentSub.name !== c[1] || currentSub.group !== c[0]) {
       if (currentSub) subGroups.push(currentSub);
@@ -1579,12 +1593,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                               dataRow={rIdx}
                               dataCol={cIdx}
                               value={isFgFocused ? fgVal : (colIndexInGroup === 3 && fgVal ? formatValue(fgVal, ['FRAIS GENERAUX', '', 'MONTANT HT']) : fgVal)}
-                              onChange={(value: string) => {
+                              onChange={value => {
+                                const nextValue = String(value);
                                 if (colIndexInGroup === 3) {
-                                  const cleanValue = value.replace(/[^0-9.,-]/g, '').replace(',', '.');
+                                  const cleanValue = nextValue.replace(/[^0-9.,-]/g, '').replace(',', '.');
                                   updateDashboard(month, fgCellKey, cleanValue);
                                 } else {
-                                  updateDashboard(month, fgCellKey, value);
+                                  updateDashboard(month, fgCellKey, nextValue);
                                 }
                               }}
                               onFocus={() => setFocusedCell(fgCellKey)}
@@ -1782,7 +1797,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                               dataRow={rIdx}
                               dataCol={cIdx}
                               value={focusedCell === rmRow.key ? (cellData[rmRow.key!] || '') : (cellData[rmRow.key!] ? eur(parseFloat(cellData[rmRow.key!])) : '')}
-                              onChange={(value: string) => updateDashboard(month, rmRow.key!, value.replace(/[^0-9.,]/g,'').replace(',','.'))}
+                              onChange={value => updateDashboard(month, rmRow.key!, String(value).replace(/[^0-9.,]/g,'').replace(',','.'))}
                               onFocus={() => setFocusedCell(rmRow.key!)}
                               onBlur={() => setFocusedCell(null)}
                               onKeyDown={(e: any) => handleKeyDown(e, rIdx, cIdx)}
@@ -1813,7 +1828,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                               dataRow={rIdx}
                               dataCol={cIdx}
                               value={isFocused ? val : displayVal}
-                              onChange={(value: string) => handleCellChange(rIdx, originalCIdx, value)}
+                              onChange={value => handleCellChange(rIdx, originalCIdx, String(value))}
                               onFocus={() => setFocusedCell(cellKey)}
                               onBlur={() => setFocusedCell(null)}
                               onKeyDown={(e: any) => handleKeyDown(e, rIdx, cIdx)}
@@ -1822,7 +1837,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                             />
                             {showHandle && (
                               <div
-                                onMouseDown={(e) => handleDragStart(e, rIdx, originalCIdx, cellData[cellKey] || '')}
+                                onMouseDown={(e) => handleDragStart(e, rIdx, originalCIdx, String(cellData[cellKey] || ''))}
                                 style={{ position: 'absolute', bottom: 0, right: 0, width: 7, height: 7, background: '#000000', border: '1px solid #ffffff', borderRadius: 1, cursor: 'crosshair', zIndex: 20 }}
                                 title="Glisser pour recopier vers le bas"
                               />
