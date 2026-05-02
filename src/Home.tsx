@@ -1,17 +1,47 @@
-import { useMemo, useState, useEffect, useCallback, type ComponentType, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  BarChart3, FileText, 
-  Settings, TrendingUp, PieChart as PieChartIcon, 
-  FileSpreadsheet, Menu, DollarSign, Activity,
-  Sun, Cloud, CloudRain, CloudSnow, CloudLightning, CloudFog,
-  X, Calendar
-} from 'lucide-react';
-import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Line, PieChart, Pie, Cell } from 'recharts';
+import {
+  useMemo,
+  useState,
+  useEffect,
+  useCallback,
+  type ComponentType,
+  type ReactNode,
+} from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  BarChart3,
+  FileText,
+  Settings,
+  TrendingUp,
+  PieChart as PieChartIcon,
+  FileSpreadsheet,
+  Menu,
+  DollarSign,
+  Activity,
+  Sun,
+  Cloud,
+  CloudRain,
+  CloudSnow,
+  CloudLightning,
+  CloudFog,
+  X,
+} from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  Legend,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
-import { useData } from '@/contexts/DataContext';
+import { useData } from "@/contexts/DataContext";
 
-import { getDashboardRowIndices } from './utils';
+import { getDashboardRowIndices } from "./utils";
 
 type IconComponent = ComponentType<{ className?: string }>;
 
@@ -28,9 +58,7 @@ export function NavGroup({ title, icon: Icon, children }: NavGroupProps) {
         <Icon className="w-3 h-3" />
         <span>{title}</span>
       </div>
-      <div className="flex flex-col gap-0.5 px-3">
-        {children}
-      </div>
+      <div className="flex flex-col gap-0.5 px-3">{children}</div>
     </div>
   );
 }
@@ -48,9 +76,10 @@ export function NavItem({ label, onClick, active = false }: NavItemProps) {
       className={`
         group relative text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold
         transition-all duration-300 ease-out
-        ${active
-          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30'
-          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+        ${
+          active
+            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
+            : "text-slate-400 hover:text-white hover:bg-slate-800/50"
         }
       `}
     >
@@ -79,7 +108,14 @@ type ForecastDay = {
   precipitation: number | null;
 };
 
-export function SummaryCard({ label, value, description, icon: Icon, accentClass, trend }: SummaryCardProps) {
+export function SummaryCard({
+  label,
+  value,
+  description,
+  icon: Icon,
+  accentClass,
+  trend,
+}: SummaryCardProps) {
   return (
     <div className="group bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-xl hover:border-slate-300/80 transition-all duration-500 h-full flex flex-col backdrop-blur-sm animate-slideUp">
       <div className="flex items-start justify-between gap-4 mb-4">
@@ -87,83 +123,104 @@ export function SummaryCard({ label, value, description, icon: Icon, accentClass
           <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-3 flex items-center gap-2">
             {label}
             {trend && (
-              <span className={`text-[9px] px-2 py-0.5 rounded-full ${trend.value >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                {trend.value >= 0 ? '+' : ''}{trend.value}%
+              <span
+                className={`text-[9px] px-2 py-0.5 rounded-full ${trend.value >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}
+              >
+                {trend.value >= 0 ? "+" : ""}
+                {trend.value}%
               </span>
             )}
           </div>
-          <div className="text-3xl sm:text-4xl font-black text-slate-900 leading-none tracking-tight">{value}</div>
+          <div className="text-3xl sm:text-4xl font-black text-slate-900 leading-none tracking-tight">
+            {value}
+          </div>
         </div>
-        <div className={`
+        <div
+          className={`
           w-12 h-12 rounded-xl ${accentClass} 
           flex items-center justify-center text-white shadow-lg
           transform group-hover:scale-110 group-hover:rotate-6
           transition-all duration-500
-        `}>
+        `}
+        >
           <Icon className="w-6 h-6" />
         </div>
       </div>
       <div className="mt-auto pt-3 border-t border-slate-100">
-        <div className="text-xs leading-relaxed text-slate-500">{description}</div>
+        <div className="text-xs leading-relaxed text-slate-500">
+          {description}
+        </div>
       </div>
     </div>
   );
 }
 
 const n = (v?: string | number) => {
-  if (typeof v === 'number') return v;
-  return parseFloat((v || '0').toString().replace(',', '.')) || 0;
+  if (typeof v === "number") return v;
+  return parseFloat((v || "0").toString().replace(",", ".")) || 0;
 };
 
-const fe = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
+const fe = (v: number) =>
+  new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(v);
 
 export default function Home() {
-  const { data, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth } = useData();
+  const {
+    data,
+    selectedYear,
+    setSelectedYear,
+    selectedMonth,
+    setSelectedMonth,
+  } = useData();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [weather, setWeather] = useState<{ temp: number, code: number, wind?: number, direction?: number } | null>(null);
+  const [weather, setWeather] = useState<{ temp: number; code: number } | null>(
+    null,
+  );
   const [forecastDays, setForecastDays] = useState<ForecastDay[]>([]);
   const [isForecastOpen, setIsForecastOpen] = useState(false);
-  const [dayEvent, setDayEvent] = useState('');
-  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [dayEvent, setDayEvent] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const year = selectedYear;
   const month = selectedMonth;
 
-  const navigationHandlers = useMemo(() => ({
-    goToDashboard: () => navigate(`/dashboard/${month}`),
-    goToSyntheseCA: () => navigate('/synthese'),
-    goToRecapAnnuel: () => navigate('/recap-annuel'),
-    goToReporting: () => navigate('/reporting'),
-    goToEdgMensuel: () => navigate(`/edg-mensuel/${month}`),
-    goToBudgetEdgAnnuel: () => navigate('/budget-edg-annuel'),
-    goToMiseEnPaiement: () => navigate(`/mise-en-paiement/${month}`),
-    goToFactureDevis: () => navigate('/facture-devis'),
-    goToConfigSalaires: () => navigate('/config-salaires'),
-    goToCalculetteSalaires: () => navigate('/calculette-salaires'),
-    goToVisuelVacances: () => navigate('/visuel-vacances'),
-  }), [navigate, month]);
+  const navigationHandlers = useMemo(
+    () => ({
+      goToDashboard: () => navigate(`/dashboard/${month}`),
+      goToSyntheseCA: () => navigate("/synthese"),
+      goToRecapAnnuel: () => navigate("/recap-annuel"),
+      goToReporting: () => navigate("/reporting"),
+      goToEdgMensuel: () => navigate(`/edg-mensuel/${month}`),
+      goToBudgetEdgAnnuel: () => navigate("/budget-edg-annuel"),
+      goToMiseEnPaiement: () => navigate(`/mise-en-paiement/${month}`),
+      goToFactureDevis: () => navigate("/facture-devis"),
+      goToConfigSalaires: () => navigate("/config-salaires"),
+      goToCalculetteSalaires: () => navigate("/calculette-salaires"),
+      goToVisuelVacances: () => navigate("/visuel-vacances"),
+    }),
+    [navigate, month],
+  );
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const loadWeather = useCallback(async () => {
-    setWeatherLoading(true);
     try {
       const res = await fetch(
-        'https://api.open-meteo.com/v1/forecast?latitude=48.8755&longitude=2.7467&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=7&timezone=Europe%2FParis'
+        "https://api.open-meteo.com/v1/forecast?latitude=48.8755&longitude=2.7467&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=7&timezone=Europe%2FParis",
       );
       const data = await res.json();
       if (data.current_weather) {
         setWeather({
           temp: data.current_weather.temperature,
           code: data.current_weather.weathercode,
-          wind: data.current_weather.windspeed,
-          direction: data.current_weather.winddirection,
         });
       }
 
@@ -174,14 +231,13 @@ export default function Home() {
             code: data.daily.weathercode?.[index] ?? 3,
             min: data.daily.temperature_2m_min?.[index] ?? 0,
             max: data.daily.temperature_2m_max?.[index] ?? 0,
-            precipitation: data.daily.precipitation_probability_max?.[index] ?? null,
-          }))
+            precipitation:
+              data.daily.precipitation_probability_max?.[index] ?? null,
+          })),
         );
       }
     } catch (err) {
       console.error("Erreur météo:", err);
-    } finally {
-      setWeatherLoading(false);
     }
   }, []);
 
@@ -191,71 +247,77 @@ export default function Home() {
     return () => window.clearInterval(refreshWeather);
   }, [loadWeather]);
 
-  const getWeatherIcon = useMemo(() => (code: number, size: string = "w-4 h-4") => {
-    if (code === 0) return <Sun className={`${size} text-amber-500`} />;
-    if (code === 1 || code === 2 || code === 3) return <Cloud className={`${size} text-slate-400`} />;
-    if (code >= 51 && code <= 67) return <CloudRain className={`${size} text-blue-500`} />;
-    if (code >= 71 && code <= 77) return <CloudSnow className={`${size} text-slate-300`} />;
-    if (code >= 80 && code <= 82) return <CloudRain className={`${size} text-blue-600`} />;
-    if (code >= 85 && code <= 86) return <CloudSnow className={`${size} text-slate-400`} />;
-    if (code >= 95 && code <= 99) return <CloudLightning className={`${size} text-amber-600`} />;
-    if (code === 45 || code === 48) return <CloudFog className={`${size} text-slate-300`} />;
-    return <Cloud className={`${size} text-slate-400`} />;
-  }, []);
+  const getWeatherIcon = useMemo(
+    () =>
+      (code: number, size: string = "w-4 h-4") => {
+        if (code === 0) return <Sun className={`${size} text-amber-500`} />;
+        if (code === 1 || code === 2 || code === 3)
+          return <Cloud className={`${size} text-slate-400`} />;
+        if (code >= 51 && code <= 67)
+          return <CloudRain className={`${size} text-blue-500`} />;
+        if (code >= 71 && code <= 77)
+          return <CloudSnow className={`${size} text-slate-300`} />;
+        if (code >= 80 && code <= 82)
+          return <CloudRain className={`${size} text-blue-600`} />;
+        if (code >= 85 && code <= 86)
+          return <CloudSnow className={`${size} text-slate-400`} />;
+        if (code >= 95 && code <= 99)
+          return <CloudLightning className={`${size} text-amber-600`} />;
+        if (code === 45 || code === 48)
+          return <CloudFog className={`${size} text-slate-300`} />;
+        return <Cloud className={`${size} text-slate-400`} />;
+      },
+    [],
+  );
 
   const getWeatherLabel = (code: number) => {
     switch (code) {
       case 0:
-        return 'Ciel dégagé';
+        return "Ciel dégagé";
       case 1:
-        return 'Peu nuageux';
+        return "Peu nuageux";
       case 2:
-        return 'Partiellement nuageux';
+        return "Partiellement nuageux";
       case 3:
-        return 'Couvert';
+        return "Couvert";
       case 45:
-        return 'Brouillard';
+        return "Brouillard";
       case 48:
-        return 'Brouillard givrant';
+        return "Brouillard givrant";
       case 51:
       case 53:
       case 55:
-        return 'Bruine';
+        return "Bruine";
       case 56:
       case 57:
-        return 'Bruine verglaçante';
+        return "Bruine verglaçante";
       case 61:
       case 63:
       case 65:
-        return 'Pluie';
+        return "Pluie";
       case 66:
       case 67:
-        return 'Pluie verglaçante';
+        return "Pluie verglaçante";
       case 71:
       case 73:
       case 75:
-        return 'Neige';
+        return "Neige";
       case 77:
-        return 'Grésil';
+        return "Grésil";
       case 80:
       case 81:
       case 82:
-        return 'Averses';
+        return "Averses";
       case 85:
       case 86:
-        return 'Neige';
+        return "Neige";
       case 95:
       case 96:
       case 99:
-        return 'Orage';
+        return "Orage";
       default:
-        return 'Temps variable';
+        return "Temps variable";
     }
-  };
-
-  const getWindDirection = (deg: number) => {
-    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
-    return directions[Math.round(deg / 45) % 8];
   };
 
   const getFeteDesMeres = (year: number) => {
@@ -265,49 +327,49 @@ export default function Home() {
   };
 
   const formatDateFr = (date: Date) => {
-    const formatted = date.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
+    const formatted = date.toLocaleDateString("fr-FR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
     });
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   };
 
   const formatForecastDate = (dateIso: string) => {
     const date = new Date(`${dateIso}T12:00:00`);
-    const formatted = date.toLocaleDateString('fr-FR', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
+    const formatted = date.toLocaleDateString("fr-FR", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
     });
-    const clean = formatted.replace('.', '');
+    const clean = formatted.replace(".", "");
     return clean.charAt(0).toUpperCase() + clean.slice(1);
   };
 
   const cleanDayEventName = (name: string) => {
     return name
-      .replace(/<[^>]+>/g, '')
-      .replace(/\s+/g, ' ')
+      .replace(/<[^>]+>/g, "")
+      .replace(/\s+/g, " ")
       .trim();
   };
 
   const getDayEvent = (date: Date) => {
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    const key = `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}`;
+    const key = `${String(day).padStart(2, "0")}-${String(month).padStart(2, "0")}`;
 
     const saintsByDay: Record<string, string> = {
-      '28-04': 'Sainte Valérie',
+      "28-04": "Sainte Valérie",
     };
 
     if (month === 5 && day === 1) {
-      return 'Fête du Travail';
+      return "Fête du Travail";
     }
     if (month === 5 && day === getFeteDesMeres(date.getFullYear())) {
-      return 'Fête des Mères';
+      return "Fête des Mères";
     }
 
-    return saintsByDay[key] || '';
+    return saintsByDay[key] || "";
   };
 
   const loadDayEvent = useCallback(async (date: Date) => {
@@ -324,11 +386,12 @@ export default function Home() {
       }
 
       const res = await fetch(
-        `https://nominis.cef.fr/json/saintdujour.php?annee=${date.getFullYear()}&mois=${monthNumber}&jour=${dayNumber}`
+        `https://nominis.cef.fr/json/saintdujour.php?annee=${date.getFullYear()}&mois=${monthNumber}&jour=${dayNumber}`,
       );
       const json = await res.json();
       const rawName = json?.response?.saintdujour?.nom;
-      const eventName = typeof rawName === 'string' ? cleanDayEventName(rawName) : '';
+      const eventName =
+        typeof rawName === "string" ? cleanDayEventName(rawName) : "";
 
       if (eventName) {
         window.localStorage.setItem(cacheKey, eventName);
@@ -355,17 +418,21 @@ export default function Home() {
     if (!Array.isArray(data) || data.length === 0) {
       return { moisIndex: -1, jourIndex: -1 };
     }
-    
-    const moisIndex = data.findIndex(row => row.Mois === month);
-    const jourIndex = data.findIndex(row => {
+
+    const moisIndex = data.findIndex((row) => row.Mois === month);
+    const jourIndex = data.findIndex((row) => {
       const d = row.Jour;
       if (!d) return false;
-      const parts = d.split('/');
+      const parts = d.split("/");
       if (parts.length !== 3) return false;
       const day = parseInt(parts[0], 10);
       const mon = parseInt(parts[1], 10);
       const yr = parseInt(parts[2], 10);
-      return day === today.getDate() && mon === (today.getMonth() + 1) && yr === today.getFullYear();
+      return (
+        day === today.getDate() &&
+        mon === today.getMonth() + 1 &&
+        yr === today.getFullYear()
+      );
     });
     return { moisIndex, jourIndex };
   }, [data, month, today]);
@@ -376,11 +443,12 @@ export default function Home() {
     if (!Array.isArray(data) || data.length === 0) {
       return { caMois: 0, caJour: 0, tmJour: 0, budgetCouvert: 0 };
     }
-    
+
     const caMois = moisIndex >= 0 ? n(data[moisIndex]?.CA_Realise) : 0;
     const caJour = jourIndex >= 0 ? n(data[jourIndex]?.CA_Realise) : 0;
     const caJourBudget = jourIndex >= 0 ? n(data[jourIndex]?.CA_Budget) : 1;
-    const nbCouverts = jourIndex >= 0 ? n(data[jourIndex]?.Nombre_de_Couverts) : 0;
+    const nbCouverts =
+      jourIndex >= 0 ? n(data[jourIndex]?.Nombre_de_Couverts) : 0;
     const tmJour = nbCouverts > 0 ? caJour / nbCouverts : 0;
 
     let totalBudgetCA = 0;
@@ -389,7 +457,8 @@ export default function Home() {
       totalBudgetCA += n(data[i]?.CA_Budget);
       totalRealiseCA += n(data[i]?.CA_Realise);
     }
-    const budgetCouvert = totalBudgetCA > 0 ? (totalRealiseCA / totalBudgetCA) * 100 : 0;
+    const budgetCouvert =
+      totalBudgetCA > 0 ? (totalRealiseCA / totalBudgetCA) * 100 : 0;
 
     return { caMois, caJour, tmJour, budgetCouvert };
   }, [data, moisIndex, jourIndex, rowFirstDay, rowLastDay]);
@@ -398,10 +467,10 @@ export default function Home() {
     if (!Array.isArray(data) || data.length === 0) {
       return [];
     }
-    
+
     const res = [];
     for (let i = rowFirstDay; i <= rowLastDay && i < data.length; i++) {
-      const jour = data[i]?.Jour || '';
+      const jour = data[i]?.Jour || "";
       const caReal = n(data[i]?.CA_Realise);
       const caBudg = n(data[i]?.CA_Budget);
       res.push({ name: jour, CA_Realise: caReal, CA_Budget: caBudg });
@@ -409,29 +478,49 @@ export default function Home() {
     return res;
   }, [data, rowFirstDay, rowLastDay]);
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const COLORS = [
+    "#3b82f6",
+    "#10b981",
+    "#f59e0b",
+    "#ef4444",
+    "#8b5cf6",
+    "#ec4899",
+  ];
 
   const chartDataFG = useMemo(() => {
     if (!Array.isArray(data) || data.length === 0 || moisIndex < 0) {
       return [];
     }
-    
+
     const row = data[moisIndex];
     if (!row) return [];
-    
+
     return [
-      { name: 'Salaires', value: n(row?.Frais_de_Personnel) },
-      { name: 'Fournitures', value: n(row?.Total_Fournitures) },
-      { name: 'Loyer', value: n(row?.Loyer_et_Charges) },
-      { name: 'Énergie', value: n(row?.Frais_Energie) },
-      { name: 'Assurances', value: n(row?.Assurances) },
-      { name: 'Autres', value: n(row?.Autres_FG) }
-    ].filter(item => item.value > 0);
+      { name: "Salaires", value: n(row?.Frais_de_Personnel) },
+      { name: "Fournitures", value: n(row?.Total_Fournitures) },
+      { name: "Loyer", value: n(row?.Loyer_et_Charges) },
+      { name: "Énergie", value: n(row?.Frais_Energie) },
+      { name: "Assurances", value: n(row?.Assurances) },
+      { name: "Autres", value: n(row?.Autres_FG) },
+    ].filter((item) => item.value > 0);
   }, [data, moisIndex]);
 
-  const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  const months = [
+    "Janvier",
+    "Février",
+    "Mars",
+    "Avril",
+    "Mai",
+    "Juin",
+    "Juillet",
+    "Août",
+    "Septembre",
+    "Octobre",
+    "Novembre",
+    "Décembre",
+  ];
   const years = [2024, 2025, 2026];
-  const dayEventLabel = dayEvent || getDayEvent(today) || 'Fête du jour';
+  const dayEventLabel = dayEvent || getDayEvent(today) || "Fête du jour";
 
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
@@ -606,19 +695,21 @@ export default function Home() {
       `}</style>
 
       {/* Sidebar */}
-      <aside className={`
+      <aside
+        className={`
         fixed lg:static inset-y-0 left-0 z-50
         w-72 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900
         border-r border-slate-700/50
         transform transition-transform duration-500 ease-out
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0
         shadow-2xl lg:shadow-none
-      `}>
+      `}
+      >
         <div className="flex flex-col h-full relative overflow-hidden">
           {/* Decorative gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none" />
-          
+
           {/* Period selector - compact header */}
           <div className="relative p-3 border-b border-slate-700/50">
             <div className="flex items-center justify-end mb-2 lg:hidden">
@@ -633,17 +724,25 @@ export default function Home() {
             <div className="space-y-2">
               <select
                 value={month}
-                onChange={e => setSelectedMonth(e.target.value)}
+                onChange={(e) => setSelectedMonth(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
               >
-                {months.map(m => <option key={m} value={m}>{m}</option>)}
+                {months.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
               </select>
               <select
                 value={year}
-                onChange={e => setSelectedYear(parseInt(e.target.value))}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                 className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
               >
-                {years.map(y => <option key={y} value={y}>{y}</option>)}
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -651,23 +750,56 @@ export default function Home() {
           {/* Navigation */}
           <nav className="flex-1 overflow-hidden py-3 px-2">
             <NavGroup title="Analyse" icon={BarChart3}>
-              <NavItem label="Suivi Quotidien" onClick={navigationHandlers.goToDashboard} />
-              <NavItem label="Synthèse CA" onClick={navigationHandlers.goToSyntheseCA} />
-              <NavItem label="Récap Annuel" onClick={navigationHandlers.goToRecapAnnuel} />
-              <NavItem label="Reporting" onClick={navigationHandlers.goToReporting} />
+              <NavItem
+                label="Suivi Quotidien"
+                onClick={navigationHandlers.goToDashboard}
+              />
+              <NavItem
+                label="Synthèse CA"
+                onClick={navigationHandlers.goToSyntheseCA}
+              />
+              <NavItem
+                label="Récap Annuel"
+                onClick={navigationHandlers.goToRecapAnnuel}
+              />
+              <NavItem
+                label="Reporting"
+                onClick={navigationHandlers.goToReporting}
+              />
             </NavGroup>
 
             <NavGroup title="Gestion" icon={FileText}>
-              <NavItem label="EdG Mensuel" onClick={navigationHandlers.goToEdgMensuel} />
-              <NavItem label="Budget EdG" onClick={navigationHandlers.goToBudgetEdgAnnuel} />
-              <NavItem label="Mise en Paiement" onClick={navigationHandlers.goToMiseEnPaiement} />
-              <NavItem label="Facture & Devis" onClick={navigationHandlers.goToFactureDevis} />
+              <NavItem
+                label="EdG Mensuel"
+                onClick={navigationHandlers.goToEdgMensuel}
+              />
+              <NavItem
+                label="Budget EdG"
+                onClick={navigationHandlers.goToBudgetEdgAnnuel}
+              />
+              <NavItem
+                label="Mise en Paiement"
+                onClick={navigationHandlers.goToMiseEnPaiement}
+              />
+              <NavItem
+                label="Facture & Devis"
+                onClick={navigationHandlers.goToFactureDevis}
+              />
             </NavGroup>
 
             <NavGroup title="Outils" icon={Settings}>
-              <NavItem label="Config Salaires" onClick={navigationHandlers.goToConfigSalaires} />
-              <NavItem label="Calculette" onClick={navigationHandlers.goToCalculetteSalaires} />
-              <NavItem label="Vacances" onClick={navigationHandlers.goToVisuelVacances} />
+              <NavItem
+                label="Config Salaires"
+                onClick={navigationHandlers.goToConfigSalaires}
+              />
+              <NavItem
+                label="Calculette"
+                onClick={navigationHandlers.goToCalculetteSalaires}
+              />
+              <NavItem
+                label="Vacances"
+                onClick={navigationHandlers.goToVisuelVacances}
+              />
             </NavGroup>
           </nav>
         </div>
@@ -686,7 +818,9 @@ export default function Home() {
                 <Menu className="w-5 h-5" />
               </button>
               <div className="text-center">
-                <div className="text-sm font-bold text-slate-900">{month} {year}</div>
+                <div className="text-sm font-bold text-slate-900">
+                  {month} {year}
+                </div>
                 <div className="text-xs text-slate-500">Dashboard</div>
               </div>
               <div className="w-10 h-10" /> {/* Spacer */}
@@ -701,7 +835,7 @@ export default function Home() {
                 {/* Decorative elements */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
-                
+
                 <div className="relative flex items-center justify-between">
                   <div className="flex-1">
                     <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
@@ -730,8 +864,8 @@ export default function Home() {
                         role="button"
                         tabIndex={0}
                         onClick={() => setIsForecastOpen(true)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' || e.key === ' ') {
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
                             setIsForecastOpen(true);
                           }
@@ -741,19 +875,21 @@ export default function Home() {
                         <div className="flex items-center justify-center gap-2">
                           <div className="flex h-11 w-11 items-center justify-center">
                             {weather ? (
-                              getWeatherIcon(weather.code, 'w-10 h-10')
+                              getWeatherIcon(weather.code, "w-10 h-10")
                             ) : (
                               <Sun className="w-10 h-10 text-amber-400" />
                             )}
                           </div>
 
                           <div className="text-[36px] leading-none font-extrabold text-slate-900">
-                            {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
+                            {weather ? `${Math.round(weather.temp)}°C` : "--°C"}
                           </div>
                         </div>
 
                         <div className="mt-2 text-center text-[13px] font-medium text-slate-500">
-                          {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
+                          {weather
+                            ? getWeatherLabel(weather.code)
+                            : "Chargement..."}
                         </div>
                       </div>
                     </div>
@@ -791,7 +927,11 @@ export default function Home() {
                   value={`${Math.min(kpis.budgetCouvert, 999).toFixed(1)} %`}
                   description="Taux d'atteinte du budget mensuel"
                   icon={FileSpreadsheet}
-                  accentClass={kpis.budgetCouvert >= 100 ? 'bg-gradient-to-br from-emerald-500 to-emerald-600' : 'bg-gradient-to-br from-slate-500 to-slate-600'}
+                  accentClass={
+                    kpis.budgetCouvert >= 100
+                      ? "bg-gradient-to-br from-emerald-500 to-emerald-600"
+                      : "bg-gradient-to-br from-slate-500 to-slate-600"
+                  }
                 />
               </div>
             </section>
@@ -806,67 +946,97 @@ export default function Home() {
                       <TrendingUp className="w-5 h-5 text-blue-500" />
                       Évolution du CA
                     </div>
-                    <p className="text-xs text-slate-500">Réalisé vs Budget mensuel</p>
+                    <p className="text-xs text-slate-500">
+                      Réalisé vs Budget mensuel
+                    </p>
                   </div>
                 </div>
                 <div className="h-[280px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartDataCA} margin={{ top: 10, right: 30, bottom: 10, left: 0 }}>
+                    <LineChart
+                      data={chartDataCA}
+                      margin={{ top: 10, right: 30, bottom: 10, left: 0 }}
+                    >
                       <defs>
-                        <linearGradient id="colorRealise" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        <linearGradient
+                          id="colorRealise"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#3b82f6"
+                            stopOpacity={0.1}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#3b82f6"
+                            stopOpacity={0}
+                          />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                      <XAxis 
-                        dataKey="name" 
-                        stroke="#94a3b8" 
-                        fontSize={11} 
-                        tickLine={false} 
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e2e8f0"
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="name"
+                        stroke="#94a3b8"
+                        fontSize={11}
+                        tickLine={false}
                         axisLine={false}
                         dy={10}
                       />
-                      <YAxis 
-                        stroke="#94a3b8" 
-                        fontSize={11} 
-                        tickLine={false} 
+                      <YAxis
+                        stroke="#94a3b8"
+                        fontSize={11}
+                        tickLine={false}
                         axisLine={false}
                         tickFormatter={(value) => `${value}€`}
                         dx={-10}
                       />
-                      <RechartsTooltip 
-                        formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
-                        contentStyle={{ 
-                          borderRadius: 12, 
-                          border: 'none', 
-                          boxShadow: '0 10px 40px rgba(15,23,42,0.15)', 
+                      <RechartsTooltip
+                        formatter={(value: number) => [
+                          `${value.toFixed(2)} €`,
+                          "",
+                        ]}
+                        contentStyle={{
+                          borderRadius: 12,
+                          border: "none",
+                          boxShadow: "0 10px 40px rgba(15,23,42,0.15)",
                           fontSize: 12,
-                          fontWeight: 600
+                          fontWeight: 600,
                         }}
                       />
-                      <Legend 
-                        wrapperStyle={{ paddingTop: 15, fontSize: 11, fontWeight: 600 }}
+                      <Legend
+                        wrapperStyle={{
+                          paddingTop: 15,
+                          fontSize: 11,
+                          fontWeight: 600,
+                        }}
                         iconType="circle"
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="CA_Realise" 
-                        name="CA Réalisé" 
-                        stroke="#3b82f6" 
-                        strokeWidth={3} 
-                        dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} 
+                      <Line
+                        type="monotone"
+                        dataKey="CA_Realise"
+                        name="CA Réalisé"
+                        stroke="#3b82f6"
+                        strokeWidth={3}
+                        dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
                         activeDot={{ r: 6, strokeWidth: 2 }}
                         fillOpacity={1}
                         fill="url(#colorRealise)"
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="CA_Budget" 
-                        name="CA Budget" 
-                        stroke="#94a3b8" 
-                        strokeWidth={2} 
-                        strokeDasharray="5 5" 
+                      <Line
+                        type="monotone"
+                        dataKey="CA_Budget"
+                        name="CA Budget"
+                        stroke="#94a3b8"
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
                         dot={false}
                       />
                     </LineChart>
@@ -875,14 +1045,19 @@ export default function Home() {
               </div>
 
               {/* Expenses Pie Chart */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-lg transition-shadow duration-300 animate-slideUp" style={{ animationDelay: '100ms' }}>
+              <div
+                className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-lg transition-shadow duration-300 animate-slideUp"
+                style={{ animationDelay: "100ms" }}
+              >
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <div className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-1">
                       <PieChartIcon className="w-5 h-5 text-amber-500" />
                       Répartition des Frais
                     </div>
-                    <p className="text-xs text-slate-500">Structure des charges du mois</p>
+                    <p className="text-xs text-slate-500">
+                      Structure des charges du mois
+                    </p>
                   </div>
                 </div>
                 <div className="h-[280px]">
@@ -898,28 +1073,31 @@ export default function Home() {
                         dataKey="value"
                       >
                         {chartDataFG.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
+                          <Cell
+                            key={`cell-${index}`}
                             fill={COLORS[index % COLORS.length]}
                             stroke="#fff"
                             strokeWidth={2}
                           />
                         ))}
                       </Pie>
-                      <RechartsTooltip 
-                        formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
-                        contentStyle={{ 
-                          borderRadius: 12, 
-                          border: 'none', 
-                          boxShadow: '0 10px 40px rgba(15,23,42,0.15)', 
+                      <RechartsTooltip
+                        formatter={(value: number) => [
+                          `${value.toFixed(2)} €`,
+                          "",
+                        ]}
+                        contentStyle={{
+                          borderRadius: 12,
+                          border: "none",
+                          boxShadow: "0 10px 40px rgba(15,23,42,0.15)",
                           fontSize: 12,
-                          fontWeight: 600
+                          fontWeight: 600,
                         }}
                       />
-                      <Legend 
-                        layout="vertical" 
-                        verticalAlign="middle" 
-                        align="right" 
+                      <Legend
+                        layout="vertical"
+                        verticalAlign="middle"
+                        align="right"
                         wrapperStyle={{ fontSize: 11, fontWeight: 600 }}
                         iconType="circle"
                       />
@@ -939,12 +1117,16 @@ export default function Home() {
         >
           <div
             className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
               <div>
-                <div className="text-sm font-black text-slate-900">Prévision météo semaine</div>
-                <div className="text-xs font-semibold text-slate-500">Montévrain · 7 jours</div>
+                <div className="text-sm font-black text-slate-900">
+                  Prévision météo semaine
+                </div>
+                <div className="text-xs font-semibold text-slate-500">
+                  Montévrain · 7 jours
+                </div>
               </div>
               <button
                 onClick={() => setIsForecastOpen(false)}
@@ -957,7 +1139,7 @@ export default function Home() {
 
             <div className="grid max-h-[70vh] gap-2 overflow-y-auto p-4 sm:grid-cols-2 lg:grid-cols-7">
               {forecastDays.length > 0 ? (
-                forecastDays.map(day => (
+                forecastDays.map((day) => (
                   <div
                     key={day.date}
                     className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center shadow-sm"
@@ -966,7 +1148,7 @@ export default function Home() {
                       {formatForecastDate(day.date)}
                     </div>
                     <div className="mb-2 flex justify-center">
-                      {getWeatherIcon(day.code, 'h-7 w-7')}
+                      {getWeatherIcon(day.code, "h-7 w-7")}
                     </div>
                     <div className="mb-2 min-h-[30px] text-[11px] font-semibold leading-tight text-slate-600">
                       {getWeatherLabel(day.code)}
@@ -991,7 +1173,7 @@ export default function Home() {
 
       {/* Overlay for mobile sidebar */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
