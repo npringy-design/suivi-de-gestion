@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import type { MonthDataSalariesConfig, SalarieRow } from '@/contexts/DataContext';
 
 const NAV = '#1e293b';
+const SALARY_CATEGORIES = ['cadre', 'maitrise', 'niv12', 'niv3', 'apprenti'] as const;
+
+type SalaryCategory = (typeof SALARY_CATEGORIES)[number];
+type SalarieField = keyof SalarieRow;
+type SalariesCategories = Record<SalaryCategory, SalarieRow[]>;
+type SalarieRowWithCalculations = SalarieRow & {
+  provisionVal: number;
+  coutHoraireVal: number;
+};
 
 interface ConfigSalairesProps {
   onBack: () => void;
@@ -19,25 +29,38 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   const selectedMonth = MONTHS[selectedMonthIndex];
   
   // Initialisation à 1 ligne max par défaut pour chaque mois
-  const defaultCategories = {
-    cadre: [{ nom: '', heures: '', coutGlobal: '', provision: '', coutHoraire: '' }],
-    maitrise: [{ nom: '', heures: '', coutGlobal: '', provision: '', coutHoraire: '' }],
-    niv12: [{ nom: '', heures: '', coutGlobal: '', provision: '', coutHoraire: '' }],
-    niv3: [{ nom: '', heures: '', coutGlobal: '', provision: '', coutHoraire: '' }],
-    apprenti: [{ nom: '', heures: '', coutGlobal: '', provision: '', coutHoraire: '' }],
+  const emptySalarieRow = (): SalarieRow => ({ nom: '', heures: '', coutGlobal: '', provision: '', coutHoraire: '' });
+
+  const defaultCategories: SalariesCategories = {
+    cadre: [emptySalarieRow()],
+    maitrise: [emptySalarieRow()],
+    niv12: [emptySalarieRow()],
+    niv3: [emptySalarieRow()],
+    apprenti: [emptySalarieRow()],
   };
 
-  const getSalariesForMonth = (monthIdx: number) => {
-    return data[monthIdx]?.salariesConfig?.categories || defaultCategories;
+  const getCurrentConfig = (monthIdx: number): MonthDataSalariesConfig => {
+    return data[monthIdx]?.salariesConfig || { locked: false, categories: defaultCategories };
+  };
+
+  const getSalariesForMonth = (monthIdx: number): SalariesCategories => {
+    const categories = getCurrentConfig(monthIdx).categories;
+    return {
+      cadre: categories.cadre || defaultCategories.cadre,
+      maitrise: categories.maitrise || defaultCategories.maitrise,
+      niv12: categories.niv12 || defaultCategories.niv12,
+      niv3: categories.niv3 || defaultCategories.niv3,
+      apprenti: categories.apprenti || defaultCategories.apprenti,
+    };
   };
 
   const isMonthLocked = (monthIdx: number) => {
     return data[monthIdx]?.salariesConfig?.locked || false;
   };
 
-  const handleSalarieChange = (category: string, index: number, field: string, value: string) => {
-    const currentConfig = data[selectedMonthIndex]?.salariesConfig || { locked: false, categories: defaultCategories };
-    const monthData = currentConfig.categories;
+  const handleSalarieChange = (category: SalaryCategory, index: number, field: SalarieField, value: string) => {
+    const currentConfig = getCurrentConfig(selectedMonthIndex);
+    const monthData = getSalariesForMonth(selectedMonthIndex);
     const newCat = [...monthData[category]];
     newCat[index] = { ...newCat[index], [field]: value };
     
@@ -47,22 +70,22 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     });
   };
 
-  const addRow = (category: string) => {
-    const currentConfig = data[selectedMonthIndex]?.salariesConfig || { locked: false, categories: defaultCategories };
-    const monthData = currentConfig.categories;
+  const addRow = (category: SalaryCategory) => {
+    const currentConfig = getCurrentConfig(selectedMonthIndex);
+    const monthData = getSalariesForMonth(selectedMonthIndex);
     
     updateSalariesConfig(selectedMonthIndex, {
       ...currentConfig,
       categories: {
         ...monthData,
-        [category]: [...monthData[category], { nom: '', heures: '', coutGlobal: '', provision: '', coutHoraire: '' }]
+        [category]: [...monthData[category], emptySalarieRow()]
       }
     });
   };
 
-  const removeRow = (category: string) => {
-    const currentConfig = data[selectedMonthIndex]?.salariesConfig || { locked: false, categories: defaultCategories };
-    const monthData = currentConfig.categories;
+  const removeRow = (category: SalaryCategory) => {
+    const currentConfig = getCurrentConfig(selectedMonthIndex);
+    const monthData = getSalariesForMonth(selectedMonthIndex);
     if (monthData[category].length <= 1) return; // Garder au moins 1 ligne
     
     updateSalariesConfig(selectedMonthIndex, {
@@ -75,12 +98,12 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   };
 
   const handleRAZ = () => {
-    const currentConfig = data[selectedMonthIndex]?.salariesConfig || { locked: false, categories: defaultCategories };
-    const monthData = currentConfig.categories;
-    const newMonthData: Record<string, any[]> = {};
+    const currentConfig = getCurrentConfig(selectedMonthIndex);
+    const monthData = getSalariesForMonth(selectedMonthIndex);
+    const newMonthData: SalariesCategories = { ...monthData };
     
-    Object.keys(monthData).forEach(cat => {
-      newMonthData[cat] = monthData[cat].map((row: Record<string, string>) => ({
+    SALARY_CATEGORIES.forEach(cat => {
+      newMonthData[cat] = monthData[cat].map(row => ({
         ...row,
         heures: '',
         coutGlobal: ''
@@ -94,7 +117,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   };
 
   const toggleLock = (monthIdx: number) => {
-    const currentConfig = data[monthIdx]?.salariesConfig || { locked: false, categories: defaultCategories };
+    const currentConfig = getCurrentConfig(monthIdx);
     updateSalariesConfig(monthIdx, {
       ...currentConfig,
       locked: !currentConfig.locked
@@ -108,12 +131,12 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
 
   const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
 
-  const getAverageForCategory = (monthIdx: number, category: string) => {
+  const getAverageForCategory = (monthIdx: number, category: SalaryCategory) => {
     const rows = getSalariesForMonth(monthIdx)[category];
     let totalCoutHoraire = 0;
     let validRowsCount = 0;
 
-    rows.forEach((row: Record<string, string>) => {
+    rows.forEach(row => {
       const coutGlobal = parseNum(row.coutGlobal);
       const heures = parseNum(row.heures);
       const provision = coutGlobal * 1.10;
@@ -161,7 +184,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   };
 
   const renderTauxHorairesTable = () => {
-    const categories = [
+    const categories: Array<{ id: SalaryCategory; label: string }> = [
       { id: 'cadre', label: 'CADRE' },
       { id: 'maitrise', label: 'MAITRISE' },
       { id: 'niv12', label: 'NIV I ET II' },
@@ -267,11 +290,11 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     );
   };
 
-  const renderSalarieSection = (title: string, category: string, avgTitle: string, rows: Record<string, string>[]) => {
+  const renderSalarieSection = (title: string, category: SalaryCategory, avgTitle: string, rows: SalarieRow[]) => {
     let totalCoutHoraire = 0;
     let validRowsCount = 0;
 
-    const rowsWithCalculations = rows.map(row => {
+    const rowsWithCalculations: SalarieRowWithCalculations[] = rows.map(row => {
       const coutGlobal = parseNum(row.coutGlobal);
       const heures = parseNum(row.heures);
       
