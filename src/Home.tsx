@@ -1,4 +1,11 @@
-import { useMemo, useState, useEffect, useCallback, type ComponentType, type ReactNode } from 'react';
+import {
+  useMemo,
+  useState,
+  useEffect,
+  useCallback,
+  type ComponentType,
+  type ReactNode,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BarChart3,
@@ -46,17 +53,12 @@ type NavGroupProps = {
 
 export function NavGroup({ title, icon: Icon, children }: NavGroupProps) {
   return (
-    <div className="mb-3">
-      <div className="mx-2 mb-2 rounded-xl border border-cyan-200/15 bg-cyan-100/10 px-3 py-2 shadow-inner shadow-black/10">
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-50">
-          <span className="flex h-5 w-5 items-center justify-center rounded-lg bg-cyan-300/10 text-cyan-100 ring-1 ring-cyan-100/20">
-            <Icon className="h-3.5 w-3.5" />
-          </span>
-          <span>{title}</span>
-          <span className="h-px flex-1 bg-gradient-to-r from-cyan-200/35 to-transparent" />
-        </div>
+    <div className="mb-4 rounded-2xl border border-cyan-100/10 bg-white/[0.025] px-2 py-2 shadow-inner shadow-black/10">
+      <div className="mb-2 flex items-center gap-2 border-b border-cyan-100/10 px-3 pb-2 text-[9px] font-black uppercase tracking-[0.2em] text-cyan-100/65">
+        <Icon className="h-3 w-3 text-cyan-100/55" />
+        <span>{title}</span>
       </div>
-      <div className="flex flex-col gap-0.5 px-3">{children}</div>
+      <div className="flex flex-col gap-0.5">{children}</div>
     </div>
   );
 }
@@ -72,17 +74,18 @@ export function NavItem({ label, onClick, active = false }: NavItemProps) {
     <button
       onClick={onClick}
       className={`
-        group relative rounded-lg px-3 py-2 text-left text-[12.5px] font-semibold transition-all duration-300 ease-out
+        group relative rounded-xl px-3 py-2 text-left text-[12.5px] font-semibold
+        transition-all duration-300 ease-out
         ${
           active
-            ? 'bg-gradient-to-r from-[#078892] to-[#0f5d66] text-white shadow-lg shadow-cyan-950/40 ring-1 ring-cyan-200/20'
-            : 'text-cyan-100/70 hover:bg-cyan-300/10 hover:text-white'
+            ? 'bg-gradient-to-r from-cyan-500 to-teal-600 text-white shadow-lg shadow-cyan-500/25'
+            : 'text-cyan-50/72 hover:bg-white/8 hover:text-white'
         }
       `}
     >
       <span className="relative z-10">{label}</span>
       {!active && (
-        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-cyan-300/0 to-teal-300/0 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
+        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-300/0 to-teal-300/0 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
       )}
     </button>
   );
@@ -97,37 +100,44 @@ type SummaryCardProps = {
   trend?: { value: number; label: string };
 };
 
+type ForecastDay = {
+  date: string;
+  code: number;
+  min: number;
+  max: number;
+  precipitation: number | null;
+};
+
 export function SummaryCard({ label, value, description, icon: Icon, accentClass, trend }: SummaryCardProps) {
   return (
-    <div className="home-summary-card group relative flex h-full min-h-[112px] flex-col overflow-hidden rounded-2xl border border-cyan-200/25 bg-gradient-to-br from-[#061f28] via-[#073846] to-[#0b5a62] p-[clamp(0.8rem,1vw,1.25rem)] shadow-sm shadow-slate-950/10 backdrop-blur-sm transition-all duration-500 hover:border-cyan-200/50 hover:shadow-xl hover:shadow-cyan-950/20">
-      <div className="mb-[clamp(0.55rem,1vh,1rem)] flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="home-summary-label mb-[clamp(0.45rem,0.8vh,0.75rem)] flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-100/75">
+    <div className="home-summary-card group flex h-full min-h-[126px] flex-col rounded-2xl border border-cyan-100/20 bg-gradient-to-br from-[#06313b] via-[#0b4a52] to-[#0e6062] p-4 shadow-lg shadow-slate-950/10 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl animate-slideUp">
+      <div className="mb-3 flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="home-summary-label mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-100/65">
             {label}
             {trend && (
-              <span className={`rounded-full px-2 py-0.5 text-[9px] ${trend.value >= 0 ? 'bg-emerald-300/20 text-emerald-100' : 'bg-red-300/20 text-red-100'}`}>
-                {trend.value >= 0 ? '+' : ''}
-                {trend.value}%
+              <span className={`rounded-full px-2 py-0.5 text-[9px] ${trend.value >= 0 ? 'bg-emerald-400/15 text-emerald-100' : 'bg-red-400/15 text-red-100'}`}>
+                {trend.value >= 0 ? '+' : ''}{trend.value}%
               </span>
             )}
           </div>
-          <div className="home-summary-value text-[clamp(1.85rem,2.15vw,2.5rem)] font-black leading-none tracking-tight text-amber-50 drop-shadow-sm">
+          <div className="home-summary-value text-3xl font-black leading-none tracking-tight text-amber-50 sm:text-4xl">
             {value}
           </div>
         </div>
         <div
           className={`
-            home-summary-icon flex h-[clamp(2.35rem,3vw,3rem)] w-[clamp(2.35rem,3vw,3rem)]
-            items-center justify-center rounded-xl ${accentClass}
-            text-white shadow-lg ring-1 ring-white/20 transition-all duration-500
-            group-hover:rotate-6 group-hover:scale-110
-          `}
+          home-summary-icon flex h-12 w-12 items-center justify-center rounded-xl ${accentClass}
+          text-white shadow-lg transition-all duration-500 group-hover:scale-105 group-hover:rotate-3
+        `}
         >
-          <Icon className="h-[clamp(1.15rem,1.55vw,1.5rem)] w-[clamp(1.15rem,1.55vw,1.5rem)]" />
+          <Icon className="h-6 w-6" />
         </div>
       </div>
-      <div className="home-summary-footer mt-auto border-t border-cyan-100/20 pt-[clamp(0.45rem,0.8vh,0.75rem)]">
-        <div className="home-card-description text-xs leading-relaxed text-cyan-50/80">{description}</div>
+      <div className="home-summary-footer mt-auto border-t border-cyan-100/20 pt-3">
+        <div className="home-card-description text-xs leading-relaxed text-cyan-50/75">
+          {description}
+        </div>
       </div>
     </div>
   );
@@ -148,11 +158,13 @@ const fe = (v: number) =>
 export default function Home() {
   const { data, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth } = useData();
   const navigate = useNavigate();
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null);
+  const [forecastDays, setForecastDays] = useState<ForecastDay[]>([]);
+  const [isForecastOpen, setIsForecastOpen] = useState(false);
+  const [dayEvent, setDayEvent] = useState('');
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [today, setToday] = useState(() => new Date());
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
 
   const year = selectedYear;
   const month = selectedMonth;
@@ -181,27 +193,14 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const refreshDate = window.setInterval(() => setToday(new Date()), 60 * 1000);
-    return () => window.clearInterval(refreshDate);
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.lang = 'fr';
-    document.documentElement.setAttribute('translate', 'no');
-
-    let meta = document.querySelector('meta[name="google"]') as HTMLMetaElement | null;
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.name = 'google';
-      document.head.appendChild(meta);
-    }
-    meta.content = 'notranslate';
+    const refreshToday = window.setInterval(() => setToday(new Date()), 60 * 1000);
+    return () => window.clearInterval(refreshToday);
   }, []);
 
   const loadWeather = useCallback(async () => {
     try {
       const res = await fetch(
-        'https://api.open-meteo.com/v1/forecast?latitude=48.8755&longitude=2.7467&current_weather=true&timezone=Europe%2FParis',
+        'https://api.open-meteo.com/v1/forecast?latitude=48.8745&longitude=2.7463&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=7&timezone=Europe%2FParis',
       );
       const meteo = await res.json();
 
@@ -211,6 +210,18 @@ export default function Home() {
           code: meteo.current_weather.weathercode,
         });
       }
+
+      if (meteo.daily?.time?.length) {
+        setForecastDays(
+          meteo.daily.time.map((date: string, index: number) => ({
+            date,
+            code: meteo.daily.weathercode?.[index] ?? 3,
+            min: meteo.daily.temperature_2m_min?.[index] ?? 0,
+            max: meteo.daily.temperature_2m_max?.[index] ?? 0,
+            precipitation: meteo.daily.precipitation_probability_max?.[index] ?? null,
+          })),
+        );
+      }
     } catch (err) {
       console.error('Erreur météo:', err);
     }
@@ -218,22 +229,23 @@ export default function Home() {
 
   useEffect(() => {
     loadWeather();
-    const refreshWeather = window.setInterval(loadWeather, 15 * 60 * 1000);
-    return () => window.clearInterval(refreshWeather);
+    const refreshTimer = window.setInterval(loadWeather, 15 * 60 * 1000);
+    return () => window.clearInterval(refreshTimer);
   }, [loadWeather]);
 
   const getWeatherIcon = useMemo(
-    () => (code: number, size = 'w-4 h-4') => {
-      if (code === 0) return <Sun className={`${size} text-amber-400`} />;
-      if (code === 1 || code === 2 || code === 3) return <Cloud className={`${size} text-slate-300`} />;
-      if (code >= 51 && code <= 67) return <CloudRain className={`${size} text-blue-400`} />;
-      if (code >= 71 && code <= 77) return <CloudSnow className={`${size} text-slate-200`} />;
-      if (code >= 80 && code <= 82) return <CloudRain className={`${size} text-blue-400`} />;
-      if (code >= 85 && code <= 86) return <CloudSnow className={`${size} text-slate-200`} />;
-      if (code >= 95 && code <= 99) return <CloudLightning className={`${size} text-amber-500`} />;
-      if (code === 45 || code === 48) return <CloudFog className={`${size} text-slate-300`} />;
-      return <Cloud className={`${size} text-slate-300`} />;
-    },
+    () =>
+      (code: number, size = 'w-4 h-4') => {
+        if (code === 0) return <Sun className={`${size} text-amber-500`} />;
+        if (code === 1 || code === 2 || code === 3) return <Cloud className={`${size} text-slate-400`} />;
+        if (code >= 51 && code <= 67) return <CloudRain className={`${size} text-blue-500`} />;
+        if (code >= 71 && code <= 77) return <CloudSnow className={`${size} text-slate-300`} />;
+        if (code >= 80 && code <= 82) return <CloudRain className={`${size} text-blue-600`} />;
+        if (code >= 85 && code <= 86) return <CloudSnow className={`${size} text-slate-400`} />;
+        if (code >= 95 && code <= 99) return <CloudLightning className={`${size} text-amber-600`} />;
+        if (code === 45 || code === 48) return <CloudFog className={`${size} text-slate-300`} />;
+        return <Cloud className={`${size} text-slate-400`} />;
+      },
     [],
   );
 
@@ -302,6 +314,17 @@ export default function Home() {
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   };
 
+  const formatForecastDate = (dateIso: string) => {
+    const date = new Date(`${dateIso}T12:00:00`);
+    const formatted = date.toLocaleDateString('fr-FR', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
+    const clean = formatted.replace('.', '');
+    return clean.charAt(0).toUpperCase() + clean.slice(1);
+  };
+
   const getDayEvent = (date: Date) => {
     const currentMonth = date.getMonth() + 1;
     const day = date.getDate();
@@ -309,13 +332,114 @@ export default function Home() {
 
     const saintsByDay: Record<string, string> = {
       '28-04': 'Sainte Valérie',
+      '02-05': "Saint Athanase d'Alexandrie",
     };
 
     if (currentMonth === 5 && day === 1) return 'Fête du Travail';
     if (currentMonth === 5 && day === getFeteDesMeres(date.getFullYear())) return 'Fête des Mères';
 
-    return saintsByDay[key] || 'Fête du jour';
+    return saintsByDay[key] || '';
   };
+
+  const cleanDayEventLabel = (value: string) => {
+    return value
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/\s+/g, ' ')
+      .replace(/^Fête du jour\s*:?\s*/i, '')
+      .trim();
+  };
+
+  const extractDayEventFromNominis = (payload: unknown): string => {
+    const candidates: string[] = [];
+
+    const walk = (value: unknown, key = '') => {
+      if (typeof value === 'string') {
+        const cleaned = cleanDayEventLabel(value);
+        if (cleaned && /saint|sainte|fête/i.test(cleaned)) {
+          candidates.push(cleaned);
+        } else if (cleaned && /nom|titre|libelle|fete|saint/i.test(key)) {
+          candidates.push(cleaned);
+        }
+        return;
+      }
+
+      if (Array.isArray(value)) {
+        value.forEach(item => walk(item, key));
+        return;
+      }
+
+      if (value && typeof value === 'object') {
+        Object.entries(value as Record<string, unknown>).forEach(([childKey, childValue]) => {
+          walk(childValue, childKey);
+        });
+      }
+    };
+
+    walk(payload);
+
+    return candidates
+      .map(cleanDayEventLabel)
+      .find(candidate => candidate.length > 0 && candidate.length <= 70) || '';
+  };
+
+  const loadDayEvent = useCallback((date: Date) => {
+    const fallback = getDayEvent(date) || 'Fête du jour';
+
+    return new Promise<string>((resolve) => {
+      const callbackName = `nominisCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const script = document.createElement('script');
+      const cleanup = () => {
+        window.clearTimeout(timeout);
+        script.remove();
+        delete (window as unknown as Record<string, unknown>)[callbackName];
+      };
+
+      const timeout = window.setTimeout(() => {
+        cleanup();
+        resolve(fallback);
+      }, 4500);
+
+      (window as unknown as Record<string, unknown>)[callbackName] = (payload: unknown) => {
+        cleanup();
+        resolve(extractDayEventFromNominis(payload) || fallback);
+      };
+
+      const params = new URLSearchParams({
+        mois: String(date.getMonth() + 1),
+        jour: String(date.getDate()),
+        callback: callbackName,
+      });
+
+      script.onerror = () => {
+        cleanup();
+        resolve(fallback);
+      };
+
+      script.src = `https://nominis.cef.fr/json/nominis.php?${params.toString()}`;
+      document.body.appendChild(script);
+    });
+  }, []);
+
+  const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+
+  useEffect(() => {
+    let isActive = true;
+
+    const refreshDayEvent = async () => {
+      const label = await loadDayEvent(new Date());
+      if (isActive) setDayEvent(label);
+    };
+
+    refreshDayEvent();
+    const refreshDayEventInterval = window.setInterval(refreshDayEvent, 60 * 60 * 1000);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(refreshDayEventInterval);
+    };
+  }, [loadDayEvent, todayKey]);
 
   const dashboardRowIndices = getDashboardRowIndices(data, month);
   const { rowFirstDay, rowLastDay } = dashboardRowIndices;
@@ -398,7 +522,6 @@ export default function Home() {
   }, [data, moisIndex]);
 
   const COLORS = ['#0891b2', '#14b8a6', '#f59e0b', '#0f766e', '#64748b', '#0e7490'];
-
   const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
   const years = [2024, 2025, 2026];
 
@@ -412,34 +535,17 @@ export default function Home() {
         }
 
         @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(18px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(18px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
         @keyframes slideRight {
-          from {
-            opacity: 0;
-            transform: translateX(-18px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
+          from { opacity: 0; transform: translateX(-18px); }
+          to { opacity: 1; transform: translateX(0); }
         }
 
-        .animate-slideUp {
-          animation: slideUp 0.45s ease-out both;
-        }
-
-        .animate-slideRight {
-          animation: slideRight 0.45s ease-out both;
-        }
+        .animate-slideUp { animation: slideUp 0.45s ease-out both; }
+        .animate-slideRight { animation: slideRight 0.45s ease-out both; }
 
         .home-card-description {
           display: -webkit-box;
@@ -449,134 +555,45 @@ export default function Home() {
         }
 
         @media (min-width: 1024px) {
-          .home-content {
-            height: 100vh;
-            max-height: 100vh;
-          }
-
-          .home-chart-section,
-          .home-chart-card {
-            min-height: 0;
-          }
+          .home-content { height: 100vh; max-height: 100vh; }
+          .home-chart-section, .home-chart-card { min-height: 0; }
         }
 
         @media (min-width: 1024px) and (max-height: 790px) {
-          .home-content {
-            gap: 0.75rem !important;
-            padding: 0.75rem 1rem !important;
-          }
-
-          .home-banner {
-            padding-top: 0.45rem !important;
-            padding-bottom: 0.45rem !important;
-          }
-
-          .home-title {
-            font-size: clamp(1.9rem, 3.2vw, 2.55rem) !important;
-          }
-
-          .home-location,
-          .home-separator {
-            margin-top: 0.35rem !important;
-          }
-
-          .home-period-panel,
-          .home-weather-tile,
-          .home-date-tile {
+          .home-content { gap: 0.75rem !important; padding: 0.75rem 1rem !important; }
+          .home-banner { padding-top: 0.45rem !important; padding-bottom: 0.45rem !important; }
+          .home-title { font-size: clamp(1.9rem, 3.2vw, 2.55rem) !important; }
+          .home-location, .home-separator { margin-top: 0.35rem !important; }
+          .home-period-panel, .home-weather-tile, .home-date-tile {
             min-height: 58px !important;
             padding-top: 0.35rem !important;
             padding-bottom: 0.35rem !important;
             border-radius: 0.9rem !important;
           }
-
-          .home-period-panel select {
-            height: 1.9rem !important;
-            font-size: 0.75rem !important;
-          }
-
-          .home-date-calendar {
-            width: 2.25rem !important;
-            height: 2.6rem !important;
-          }
-
-          .home-summary-card {
-            min-height: 98px !important;
-            padding: 0.75rem !important;
-          }
-
-          .home-summary-value {
-            font-size: 1.75rem !important;
-          }
-
-          .home-summary-icon {
-            width: 2.2rem !important;
-            height: 2.2rem !important;
-          }
-
-          .home-summary-label {
-            margin-bottom: 0.35rem !important;
-          }
-
-          .home-card-description {
-            font-size: 0.68rem !important;
-            line-height: 1.2 !important;
-          }
-
-          .home-chart-card {
-            padding: 0.85rem !important;
-          }
-
-          .home-chart-header {
-            margin-bottom: 0.45rem !important;
-          }
-
-          .home-chart-title {
-            font-size: 1rem !important;
-          }
+          .home-period-panel select { height: 1.9rem !important; font-size: 0.75rem !important; }
+          .home-date-calendar { width: 2.25rem !important; height: 2.6rem !important; }
+          .home-summary-card { min-height: 98px !important; padding: 0.75rem !important; }
+          .home-summary-value { font-size: 1.75rem !important; }
+          .home-summary-icon { width: 2.2rem !important; height: 2.2rem !important; }
+          .home-summary-label { margin-bottom: 0.35rem !important; }
+          .home-card-description { font-size: 0.68rem !important; line-height: 1.2 !important; }
+          .home-chart-card { padding: 0.85rem !important; }
+          .home-chart-header { margin-bottom: 0.45rem !important; }
+          .home-chart-title { font-size: 1rem !important; }
         }
 
         @media (min-width: 1024px) and (max-height: 690px) {
-          .home-content {
-            gap: 0.55rem !important;
-            padding-top: 0.55rem !important;
-            padding-bottom: 0.55rem !important;
-          }
-
-          .home-summary-card {
-            min-height: 80px !important;
-          }
-
-          .home-summary-footer {
-            display: none !important;
-          }
-
-          .home-kpi-grid {
-            gap: 0.55rem !important;
-          }
-
-          .home-chart-subtitle,
-          .home-weather-label {
-            display: none !important;
-          }
+          .home-content { gap: 0.55rem !important; padding-top: 0.55rem !important; padding-bottom: 0.55rem !important; }
+          .home-summary-card { min-height: 80px !important; }
+          .home-summary-footer { display: none !important; }
+          .home-kpi-grid { gap: 0.55rem !important; }
+          .home-chart-subtitle, .home-weather-label { display: none !important; }
         }
 
-        ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-          background: #eef6f4;
-        }
-
-        ::-webkit-scrollbar-thumb {
-          background: #9fc7c4;
-          border-radius: 999px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-          background: #6ea9a6;
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #eef6f4; }
+        ::-webkit-scrollbar-thumb { background: #9fc7c4; border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6ea9a6; }
       `}</style>
 
       <aside
@@ -640,9 +657,7 @@ export default function Home() {
                 <Menu className="h-5 w-5" />
               </button>
               <div className="text-center">
-                <div className="text-sm font-bold text-slate-900">
-                  {month} {year}
-                </div>
+                <div className="text-sm font-bold text-slate-900">{month} {year}</div>
                 <div className="text-xs text-slate-500">Dashboard</div>
               </div>
               <div className="h-10 w-10" />
@@ -674,28 +689,31 @@ export default function Home() {
                       onChange={e => setSelectedMonth(e.target.value)}
                       className="h-9 rounded-xl border border-cyan-100/15 bg-[#0a3a45]/95 px-3 text-sm font-extrabold text-cyan-50 shadow-inner outline-none transition-all focus:ring-2 focus:ring-cyan-300/35"
                     >
-                      {months.map(m => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
+                      {months.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                     <select
                       value={year}
                       onChange={e => setSelectedYear(parseInt(e.target.value))}
                       className="h-9 rounded-xl border border-cyan-100/15 bg-[#0a3a45]/95 px-3 text-sm font-extrabold text-cyan-50 shadow-inner outline-none transition-all focus:ring-2 focus:ring-cyan-300/35"
                     >
-                      {years.map(y => (
-                        <option key={y} value={y}>
-                          {y}
-                        </option>
-                      ))}
+                      {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                   </div>
 
                   <div className="w-full lg:w-auto">
                     <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:items-stretch">
-                      <div className="home-weather-tile min-h-[72px] rounded-[16px] border border-cyan-100/25 bg-gradient-to-br from-[#052a34] via-[#0a4d58] to-[#0d6b6f] px-3 py-1.5 shadow-lg shadow-black/20 ring-1 ring-white/20 sm:min-w-[clamp(180px,15vw,220px)]">
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setIsForecastOpen(true)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setIsForecastOpen(true);
+                          }
+                        }}
+                        className="home-weather-tile min-h-[72px] cursor-pointer rounded-[16px] border border-cyan-100/25 bg-gradient-to-br from-[#052a34] via-[#0a4d58] to-[#0d6b6f] px-3 py-1.5 shadow-lg shadow-black/20 ring-1 ring-white/20 sm:min-w-[clamp(180px,15vw,220px)]"
+                      >
                         <div className="border-b border-cyan-100/20 pb-0.5 text-center text-[11px] font-black text-cyan-50">
                           Météo Montévrain
                         </div>
@@ -731,7 +749,7 @@ export default function Home() {
                             </div>
                             <div className="my-1 h-px bg-cyan-100/25" />
                             <div className="truncate text-[12px] font-extrabold text-cyan-50/80 sm:text-[13px]">
-                              {getDayEvent(today)}
+                              {dayEvent || getDayEvent(today) || 'Fête du jour'}
                             </div>
                           </div>
                         </div>
@@ -763,34 +781,30 @@ export default function Home() {
                   value={fe(kpis.tmJour)}
                   description="Valeur moyenne par couvert du jour"
                   icon={Activity}
-                  accentClass="bg-gradient-to-br from-amber-500 to-teal-700"
+                  accentClass="bg-gradient-to-br from-orange-500 to-amber-600"
                 />
                 <SummaryCard
                   label="Réalisation Budget"
                   value={`${Math.min(kpis.budgetCouvert, 999).toFixed(1)} %`}
                   description="Taux d'atteinte du budget mensuel"
                   icon={FileSpreadsheet}
-                  accentClass={
-                    kpis.budgetCouvert >= 100
-                      ? 'bg-gradient-to-br from-teal-500 to-cyan-800'
-                      : 'bg-gradient-to-br from-cyan-700 to-slate-800'
-                  }
+                  accentClass={kpis.budgetCouvert >= 100 ? 'bg-gradient-to-br from-emerald-500 to-emerald-600' : 'bg-gradient-to-br from-slate-600 to-cyan-900'}
                 />
               </div>
             </section>
 
-            <section className="home-chart-section grid flex-1 gap-3 overflow-hidden lg:min-h-0 lg:grid-cols-2 xl:gap-4">
-              <div className="home-chart-card flex min-h-[260px] flex-col rounded-2xl border border-cyan-900/10 bg-white/90 p-[clamp(0.9rem,1.2vw,1.35rem)] shadow-sm transition-shadow duration-300 hover:shadow-lg lg:min-h-0">
-                <div className="home-chart-header mb-3 flex items-center justify-between">
+            <section className="home-chart-section grid min-h-0 flex-1 gap-3 lg:grid-cols-2 2xl:gap-4">
+              <div className="home-chart-card flex min-h-[260px] flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-shadow duration-300 hover:shadow-lg animate-slideUp">
+                <div className="home-chart-header mb-4 flex items-center justify-between">
                   <div>
                     <div className="home-chart-title mb-1 flex items-center gap-2 text-lg font-bold text-slate-900">
-                      <TrendingUp className="h-5 w-5 text-cyan-700" />
+                      <TrendingUp className="h-5 w-5 text-cyan-600" />
                       Évolution du CA
                     </div>
                     <p className="home-chart-subtitle text-xs text-slate-500">Réalisé vs Budget mensuel</p>
                   </div>
                 </div>
-                <div className="min-h-0 flex-1">
+                <div className="min-h-[210px] flex-1">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartDataCA} margin={{ top: 10, right: 30, bottom: 10, left: 0 }}>
                       <defs>
@@ -801,23 +815,10 @@ export default function Home() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                       <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} dy={10} />
-                      <YAxis
-                        stroke="#94a3b8"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={value => `${value}€`}
-                        dx={-10}
-                      />
+                      <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}€`} dx={-10} />
                       <RechartsTooltip
                         formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
-                        contentStyle={{
-                          borderRadius: 12,
-                          border: 'none',
-                          boxShadow: '0 10px 40px rgba(15,23,42,0.15)',
-                          fontSize: 12,
-                          fontWeight: 600,
-                        }}
+                        contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 40px rgba(15,23,42,0.15)', fontSize: 12, fontWeight: 600 }}
                       />
                       <Legend wrapperStyle={{ paddingTop: 15, fontSize: 11, fontWeight: 600 }} iconType="circle" />
                       <Line
@@ -831,66 +832,35 @@ export default function Home() {
                         fillOpacity={1}
                         fill="url(#colorRealise)"
                       />
-                      <Line
-                        type="monotone"
-                        dataKey="CA_Budget"
-                        name="CA Budget"
-                        stroke="#94a3b8"
-                        strokeWidth={2}
-                        strokeDasharray="5 5"
-                        dot={false}
-                      />
+                      <Line type="monotone" dataKey="CA_Budget" name="CA Budget" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              <div
-                className="home-chart-card flex min-h-[260px] flex-col rounded-2xl border border-cyan-900/10 bg-white/90 p-[clamp(0.9rem,1.2vw,1.35rem)] shadow-sm transition-shadow duration-300 hover:shadow-lg lg:min-h-0"
-                style={{ animationDelay: '100ms' }}
-              >
-                <div className="home-chart-header mb-3 flex items-center justify-between">
+              <div className="home-chart-card flex min-h-[260px] flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-shadow duration-300 hover:shadow-lg animate-slideUp" style={{ animationDelay: '100ms' }}>
+                <div className="home-chart-header mb-4 flex items-center justify-between">
                   <div>
                     <div className="home-chart-title mb-1 flex items-center gap-2 text-lg font-bold text-slate-900">
-                      <PieChartIcon className="h-5 w-5 text-amber-500" />
+                      <PieChartIcon className="h-5 w-5 text-orange-500" />
                       Répartition des Frais
                     </div>
                     <p className="home-chart-subtitle text-xs text-slate-500">Structure des charges du mois</p>
                   </div>
                 </div>
-                <div className="min-h-0 flex-1">
+                <div className="min-h-[210px] flex-1">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie
-                        data={chartDataFG}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={isMobile ? 45 : 60}
-                        outerRadius={isMobile ? 75 : 95}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
+                      <Pie data={chartDataFG} cx="50%" cy="50%" innerRadius={isMobile ? 45 : 60} outerRadius={isMobile ? 75 : 95} paddingAngle={3} dataKey="value">
                         {chartDataFG.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="#fff" strokeWidth={2} />
                         ))}
                       </Pie>
                       <RechartsTooltip
                         formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
-                        contentStyle={{
-                          borderRadius: 12,
-                          border: 'none',
-                          boxShadow: '0 10px 40px rgba(15,23,42,0.15)',
-                          fontSize: 12,
-                          fontWeight: 600,
-                        }}
+                        contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 40px rgba(15,23,42,0.15)', fontSize: 12, fontWeight: 600 }}
                       />
-                      <Legend
-                        layout="vertical"
-                        verticalAlign="middle"
-                        align="right"
-                        wrapperStyle={{ fontSize: 11, fontWeight: 600 }}
-                        iconType="circle"
-                      />
+                      <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: 11, fontWeight: 600 }} iconType="circle" />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -900,8 +870,64 @@ export default function Home() {
         </div>
       </main>
 
+      {isForecastOpen && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm"
+          onClick={() => setIsForecastOpen(false)}
+        >
+          <div
+            className="w-full max-w-3xl overflow-hidden rounded-3xl border border-cyan-100/20 bg-gradient-to-br from-[#061f28] via-[#073846] to-[#0b5a62] shadow-2xl shadow-slate-950/50"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-cyan-100/15 px-5 py-4">
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-100/60">Prévision météo</div>
+                <h2 className="mt-1 text-xl font-black text-amber-50">Montévrain · 7 jours</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsForecastOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-cyan-50 transition-colors hover:bg-white/15"
+                aria-label="Fermer les prévisions météo"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid max-h-[70vh] gap-2 overflow-y-auto p-4 sm:grid-cols-2 lg:grid-cols-7">
+              {forecastDays.length > 0 ? (
+                forecastDays.map(day => (
+                  <div key={day.date} className="rounded-2xl border border-cyan-100/15 bg-white/10 p-3 text-center shadow-sm ring-1 ring-white/10">
+                    <div className="mb-2 text-[11px] font-black uppercase tracking-wide text-cyan-50/80">
+                      {formatForecastDate(day.date)}
+                    </div>
+                    <div className="mb-2 flex justify-center">{getWeatherIcon(day.code, 'h-7 w-7')}</div>
+                    <div className="mb-2 min-h-[30px] text-[11px] font-semibold leading-tight text-cyan-50/70">
+                      {getWeatherLabel(day.code)}
+                    </div>
+                    <div className="text-sm font-black text-amber-50">
+                      {Math.round(day.max)}° / {Math.round(day.min)}°
+                    </div>
+                    <div className="mt-1 text-[11px] font-semibold text-cyan-50/60">
+                      Pluie {day.precipitation ?? 0}%
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full rounded-2xl bg-white/10 p-4 text-center text-sm font-semibold text-cyan-50/75">
+                  Prévisions indisponibles pour le moment.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {isSidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden" onClick={() => setIsSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
       )}
     </div>
   );
