@@ -151,11 +151,15 @@ export default function Home() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null);
+  const [weeklyForecast, setWeeklyForecast] = useState<Array<{ date: string; code: number; tempMin: number; tempMax: number; rain: number }>>([]);
+  const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
+  const [dayEvent, setDayEvent] = useState('Fête du jour');
   const [today, setToday] = useState(() => new Date());
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
 
   const year = selectedYear;
   const month = selectedMonth;
+  const todayEventKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
 
   const navigationHandlers = useMemo(
     () => ({
@@ -201,7 +205,7 @@ export default function Home() {
   const loadWeather = useCallback(async () => {
     try {
       const res = await fetch(
-        'https://api.open-meteo.com/v1/forecast?latitude=48.8755&longitude=2.7467&current_weather=true&timezone=Europe%2FParis',
+        'https://api.open-meteo.com/v1/forecast?latitude=48.8755&longitude=2.7467&current_weather=true&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FParis&forecast_days=7',
       );
       const meteo = await res.json();
 
@@ -210,6 +214,18 @@ export default function Home() {
           temp: meteo.current_weather.temperature,
           code: meteo.current_weather.weathercode,
         });
+      }
+
+      if (meteo.daily?.time) {
+        setWeeklyForecast(
+          meteo.daily.time.map((date: string, index: number) => ({
+            date,
+            code: meteo.daily.weather_code?.[index] ?? 0,
+            tempMin: meteo.daily.temperature_2m_min?.[index] ?? 0,
+            tempMax: meteo.daily.temperature_2m_max?.[index] ?? 0,
+            rain: meteo.daily.precipitation_sum?.[index] ?? 0,
+          })),
+        );
       }
     } catch (err) {
       console.error('Erreur météo:', err);
@@ -315,6 +331,39 @@ export default function Home() {
     if (currentMonth === 5 && day === getFeteDesMeres(date.getFullYear())) return 'Fête des Mères';
 
     return saintsByDay[key] || 'Fête du jour';
+  };
+
+  const loadDayEvent = useCallback(async (date: Date) => {
+    try {
+      const res = await fetch(
+        `https://nominis.cef.fr/json/nominis.php?jour=${date.getDate()}&mois=${date.getMonth() + 1}&annee=${date.getFullYear()}`,
+      );
+      const nominis = await res.json();
+      const firstNames = nominis?.response?.prenoms?.majeurs;
+      const firstName = firstNames ? Object.keys(firstNames)[0] : '';
+
+      if (firstName) {
+        setDayEvent(`Saint ${firstName}`);
+        return;
+      }
+    } catch (err) {
+      console.error('Erreur fête du jour:', err);
+    }
+
+    setDayEvent(getDayEvent(date));
+  }, []);
+
+  useEffect(() => {
+    loadDayEvent(today);
+  }, [loadDayEvent, todayEventKey]);
+
+  const formatForecastDay = (date: string) => {
+    const formatted = new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   };
 
   const dashboardRowIndices = getDashboardRowIndices(data, month);
@@ -695,7 +744,12 @@ export default function Home() {
 
                   <div className="w-full lg:w-auto">
                     <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:items-stretch">
-                      <div className="home-weather-tile min-h-[72px] rounded-[16px] border border-cyan-100/25 bg-gradient-to-br from-[#052a34] via-[#0a4d58] to-[#0d6b6f] px-3 py-1.5 shadow-lg shadow-black/20 ring-1 ring-white/20 sm:min-w-[clamp(180px,15vw,220px)]">
+                      <button
+                        type="button"
+                        onClick={() => setIsWeatherModalOpen(true)}
+                        className="home-weather-tile min-h-[72px] rounded-[16px] border border-cyan-100/25 bg-gradient-to-br from-[#052a34] via-[#0a4d58] to-[#0d6b6f] px-3 py-1.5 text-left shadow-lg shadow-black/20 ring-1 ring-white/20 sm:min-w-[clamp(180px,15vw,220px)]"
+                        aria-label="Ouvrir les prévisions météo de la semaine"
+                      >
                         <div className="border-b border-cyan-100/20 pb-0.5 text-center text-[11px] font-black text-cyan-50">
                           Météo Montévrain
                         </div>
@@ -710,7 +764,7 @@ export default function Home() {
                         <div className="home-weather-label mt-0.5 text-center text-[10.5px] font-semibold text-cyan-50/80">
                           {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
                         </div>
-                      </div>
+                      </button>
 
                       <div className="home-date-tile relative min-h-[72px] overflow-hidden rounded-[16px] border border-cyan-100/25 bg-gradient-to-br from-[#06313b] via-[#0b5f65] to-[#16847d] px-3 py-1.5 shadow-lg shadow-black/20 ring-1 ring-white/20 sm:min-w-[clamp(215px,18vw,265px)]">
                         <div className="absolute inset-x-0 bottom-0 h-7 bg-cyan-950/20" />
@@ -731,7 +785,7 @@ export default function Home() {
                             </div>
                             <div className="my-1 h-px bg-cyan-100/25" />
                             <div className="truncate text-[12px] font-extrabold text-cyan-50/80 sm:text-[13px]">
-                              {getDayEvent(today)}
+                              {dayEvent}
                             </div>
                           </div>
                         </div>
@@ -899,6 +953,56 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {isWeatherModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" onClick={() => setIsWeatherModalOpen(false)}>
+          <div
+            className="w-full max-w-lg overflow-hidden rounded-2xl border border-cyan-100/25 bg-gradient-to-br from-[#052a34] via-[#0a4d58] to-[#0d6b6f] shadow-2xl ring-1 ring-white/20"
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-cyan-100/20 px-4 py-3">
+              <div>
+                <div className="text-sm font-black text-cyan-50">Prévision semaine</div>
+                <div className="text-xs font-semibold text-cyan-50/70">Montévrain</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsWeatherModalOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-cyan-50 transition-colors hover:bg-white/20"
+                aria-label="Fermer les prévisions météo"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="grid gap-2 p-4">
+              {weeklyForecast.length > 0 ? (
+                weeklyForecast.map(day => (
+                  <div key={day.date} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl border border-cyan-100/15 bg-white/10 px-3 py-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-extrabold text-amber-50">{formatForecastDay(day.date)}</div>
+                      <div className="text-xs font-semibold text-cyan-50/75">{getWeatherLabel(day.code)}</div>
+                    </div>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 shadow-inner ring-1 ring-cyan-100/20">
+                      {getWeatherIcon(day.code, 'h-6 w-6')}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-black text-amber-50">
+                        {Math.round(day.tempMax)}° / {Math.round(day.tempMin)}°
+                      </div>
+                      <div className="text-[11px] font-semibold text-cyan-50/70">{day.rain.toFixed(1)} mm</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-xl border border-cyan-100/15 bg-white/10 px-3 py-4 text-center text-sm font-semibold text-cyan-50/80">
+                  Prévisions en cours de chargement...
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {isSidebarOpen && (
         <div className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden" onClick={() => setIsSidebarOpen(false)} />
