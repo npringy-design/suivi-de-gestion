@@ -667,48 +667,57 @@ export default function Home() {
 
                   <div className="w-full sm:w-auto">
                     <div className="flex flex-col sm:flex-row items-stretch gap-3">
-                      <div className="min-w-[150px] rounded-[20px] border border-slate-200 bg-white px-4 py-3 shadow-md">
-                        <div className="text-center text-[13px] font-semibold text-slate-500">
-                          {formatDateFr(today)}
-                        </div>
-
-                        <div className="my-2.5 border-t border-slate-200" />
-
-                        <div className="text-center text-[13px] text-slate-500">
-                          <span>Fête du jour : </span>
-                          <span className="font-semibold text-slate-900">
-                            {getDayEvent(today) || '—'}
-                          </span>
-                        </div>
-                      </div>
-
                       <button
                         type="button"
                         onClick={() => setIsForecastOpen(true)}
-                        className="min-w-[170px] rounded-[20px] border border-slate-200 bg-white px-4 py-3 text-left shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                        className="min-w-[180px] h-[104px] rounded-2xl border border-cyan-200/25 bg-gradient-to-br from-[#0a5660] via-[#087174] to-[#0b8580] px-4 py-2.5 text-left shadow-lg shadow-slate-950/25 ring-1 ring-white/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
                         aria-label="Ouvrir les prévisions météo sur 7 jours"
                       >
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="flex h-11 w-11 items-center justify-center">
+                        <div className="text-center text-[11px] font-black text-amber-50">
+                          Météo Montévrain
+                        </div>
+                        <div className="my-2 border-t border-cyan-50/20" />
+                        <div className="flex items-center justify-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
                             {weather ? (
-                              getWeatherIcon(weather.code, 'w-10 h-10')
+                              getWeatherIcon(weather.code, 'w-8 h-8')
                             ) : (
-                              <Sun className="w-10 h-10 text-amber-400" />
+                              <Sun className="w-8 h-8 text-amber-300" />
                             )}
                           </div>
 
-                          <div className="text-[36px] leading-none font-extrabold text-slate-900">
+                          <div className="text-[34px] leading-none font-black tracking-tight text-amber-50">
                             {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
                           </div>
                         </div>
 
-                        <div className="mt-2 text-center text-[13px] font-medium text-slate-500">
+                        <div className="mt-1 text-center text-[11px] font-extrabold text-cyan-50/90">
                           {weather ? getWeatherLabel(weather.code) : weatherLoading ? 'Chargement...' : 'Météo indisponible'}
                         </div>
-                        <div className="mt-1 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-700/80">
-                          Voir 7 jours
-                        </div>
                       </button>
+
+                      <div className="min-w-[220px] h-[104px] rounded-2xl border border-cyan-200/25 bg-gradient-to-br from-[#0a5660] via-[#087174] to-[#0b8580] px-4 py-3 shadow-lg shadow-slate-950/25 ring-1 ring-white/10">
+                        <div className="flex h-full items-center gap-3">
+                          <div className="relative flex h-[58px] w-[50px] shrink-0 flex-col overflow-hidden rounded-lg bg-amber-50 text-center shadow-md shadow-black/20 ring-1 ring-white/40">
+                            <div className="h-5 bg-gradient-to-r from-[#0b7774] to-[#10958b]" />
+                            <div className="flex flex-1 items-center justify-center text-[24px] font-black leading-none text-slate-950">
+                              {today.getDate()}
+                            </div>
+                            <div className="absolute left-2 top-0 h-3 w-1 rounded-full bg-white/90" />
+                            <div className="absolute right-2 top-0 h-3 w-1 rounded-full bg-white/90" />
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 border-b border-cyan-50/20 pb-2 text-[14px] font-black text-amber-50">
+                              <Calendar className="h-4 w-4 shrink-0 text-amber-300" />
+                              <span className="truncate">{formatDateFr(today)}</span>
+                            </div>
+                            <div className="border-b border-cyan-50/20 py-2 text-[12px] font-black text-cyan-50/95">
+                              {getDayEvent(today) || '—'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
