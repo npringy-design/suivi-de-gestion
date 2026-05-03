@@ -1102,6 +1102,48 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     );
   };
 
+  const renderDailyControl = (col: number, options: { readOnly?: boolean; text?: boolean } = {}) => {
+    const cellKey = `${selectedDayRowIndex}-${col}`;
+    const rawValue = cellData[cellKey] || '';
+    const value = options.readOnly ? getDailyDisplayValue(col) : (isDailyFieldFocused(col) ? rawValue : getDailyDisplayValue(col));
+
+    if (options.readOnly) {
+      return <div className={dailyReadOnlyClass}>{value || '-'}</div>;
+    }
+
+    return (
+      <DebouncedInput
+        dataRow={`daily-${selectedDayRowIndex}`}
+        dataCol={col}
+        value={value}
+        onChange={nextValue => handleCellChange(selectedDayRowIndex, col, String(nextValue))}
+        onFocus={() => setFocusedCell(cellKey)}
+        onBlur={() => setFocusedCell(null)}
+        onKeyDown={(event) => handleKeyDown(event, selectedDayRowIndex, col)}
+        className={`${dailyInputClass} ${options.text ? 'text-left' : ''}`}
+        placeholder=""
+      />
+    );
+  };
+
+  const renderDailyServiceRow = (label: string, caCol: number, coversCol: number, tmCol: number) => (
+    <div key={label} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '110px repeat(3, minmax(130px, 1fr))', gap: 10, alignItems: 'end', gridColumn: '1 / -1' }}>
+      <div style={{ height: isMobile ? 'auto' : 36, display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{label}</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>CA {label}</span>
+        {renderDailyControl(caCol)}
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>Cts {label}</span>
+        {renderDailyControl(coversCol)}
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>TM {label}</span>
+        {renderDailyControl(tmCol, { readOnly: true })}
+      </label>
+    </div>
+  );
+
   const renderDailySection = (title: string, subtitle: string, fields: React.ReactNode, accent: string) => (
     <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
       <div style={{ padding: '12px 14px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1193,27 +1235,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             </div>
           </div>
 
-          {renderDailySection('Prévisions', 'Budget, couverts et ticket moyen attendus', (
-            <>
-              {renderDailyField('Couverts midi', 6)}
-              {renderDailyField('TM midi', 7)}
-              {renderDailyField('Couverts soir', 8)}
-              {renderDailyField('TM soir', 9)}
-              {renderDailyField('Couverts limonade', 14)}
-              {renderDailyField('TM limonade', 15)}
-              {renderDailyField('CA budget jour', 3, { readOnly: true })}
-            </>
-          ), '#f59e0b')}
-
-          {renderDailySection('Réalisé', 'Chiffre d’affaires, couverts et événements', (
+          {renderDailySection('Réalisé', 'Saisie du CA et des couverts par service', (
             <>
               {renderDailyField('VAE', 17)}
-              {renderDailyField('CA midi', 18)}
-              {renderDailyField('CA soir', 19)}
-              {renderDailyField('CA limonade', 20)}
-              {renderDailyField('Couverts midi', 25)}
-              {renderDailyField('Couverts soir', 27)}
-              {renderDailyField('Couverts limonade', 34)}
+              {renderDailyServiceRow('Midi', 18, 25, 26)}
+              {renderDailyServiceRow('Soir', 19, 27, 28)}
+              {renderDailyServiceRow('Limonade', 20, 34, 35)}
               {renderDailyField('Événement restaurant', 37, { text: true })}
               {renderDailyField('Événement national', 38, { text: true })}
               {renderDailyField('Total CA', 21, { readOnly: true })}
