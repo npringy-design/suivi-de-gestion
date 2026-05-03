@@ -283,6 +283,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedEntryDay, setSelectedEntryDay] = useState(() => {
+    const now = new Date();
+    return initialMonth === now.getMonth() && year === now.getFullYear() ? now.getDate() : 1;
+  });
 
   const dynamicColumns = useMemo(() => {
     const cols = [...C];
@@ -420,6 +424,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return generatedRows;
   }, [month, year]);
 
+  useEffect(() => {
+    const now = new Date();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const defaultDay = month === now.getMonth() && year === now.getFullYear() ? now.getDate() : 1;
+    setSelectedEntryDay(Math.min(defaultDay, daysInMonth));
+  }, [month, year]);
+
   const getFgBoxLayout = (rIdx: number, N: number) => {
     const dataRowsTotal = N - 9;
     const baseDataRows = Math.floor(dataRowsTotal / 4);
@@ -471,7 +482,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const handleCellChange = (rIdx: number, cIdx: number, value: string) => {
     const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-    const isTextCol = cIdx === 49 || cIdx === 50 || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName);
+    const isTextCol = [37, 38, 44, 49, 50].includes(cIdx) || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName);
     
     if (isTextCol) {
       // Allow text for events columns and text columns
@@ -1049,6 +1060,197 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return false;
   });
 
+  const dayRows = useMemo(() => rows
+    .map((row, index) => ({ row, index }))
+    .filter(item => item.row.type === 'day'), [rows]);
+
+  const selectedDayEntry = dayRows.find(item => item.row.dayIndex === selectedEntryDay) || dayRows[0];
+  const selectedDayRowIndex = selectedDayEntry?.index ?? -1;
+  const selectedDayRow = selectedDayEntry?.row;
+
+  const getDailyCellValue = (col: number) => selectedDayRowIndex >= 0 ? calculatedData[`${selectedDayRowIndex}-${col}`] || '' : '';
+  const getDailyDisplayValue = (col: number) => formatValue(getDailyCellValue(col), dynamicColumns[col] || ['', '', '', '']);
+  const isDailyFieldFocused = (col: number) => focusedCell === `${selectedDayRowIndex}-${col}`;
+
+  const dailyInputClass = "w-full h-9 rounded-lg border border-emerald-200 bg-emerald-50/80 px-2 text-right text-sm font-bold text-slate-900 outline-none transition-all focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20";
+  const dailyReadOnlyClass = "flex h-9 items-center justify-end rounded-lg border border-slate-200 bg-slate-50 px-2 text-sm font-bold text-slate-700";
+
+  const renderDailyField = (label: string, col: number, options: { readOnly?: boolean; text?: boolean } = {}) => {
+    const cellKey = `${selectedDayRowIndex}-${col}`;
+    const rawValue = cellData[cellKey] || '';
+    const value = options.readOnly ? getDailyDisplayValue(col) : (isDailyFieldFocused(col) ? rawValue : getDailyDisplayValue(col));
+
+    return (
+      <label key={`${label}-${col}`} style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+        {options.readOnly ? (
+          <div className={dailyReadOnlyClass}>{value || '-'}</div>
+        ) : (
+          <DebouncedInput
+            dataRow={`daily-${selectedDayRowIndex}`}
+            dataCol={col}
+            value={value}
+            onChange={nextValue => handleCellChange(selectedDayRowIndex, col, String(nextValue))}
+            onFocus={() => setFocusedCell(cellKey)}
+            onBlur={() => setFocusedCell(null)}
+            onKeyDown={(event) => handleKeyDown(event, selectedDayRowIndex, col)}
+            className={`${dailyInputClass} ${options.text ? 'text-left' : ''}`}
+            placeholder=""
+          />
+        )}
+      </label>
+    );
+  };
+
+  const renderDailySection = (title: string, subtitle: string, fields: React.ReactNode, accent: string) => (
+    <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+      <div style={{ padding: '12px 14px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 8, height: 34, borderRadius: 999, background: accent, flexShrink: 0 }} />
+        <div style={{ minWidth: 0 }}>
+          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: '#0f172a' }}>{title}</h3>
+          <p style={{ margin: '2px 0 0', fontSize: 11, color: '#64748b', fontWeight: 700 }}>{subtitle}</p>
+        </div>
+      </div>
+      <div style={{ padding: 14, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(150px, 1fr))', gap: 12 }}>
+        {fields}
+      </div>
+    </section>
+  );
+
+  const renderDailyEntryView = () => {
+    if (!selectedDayRow) return null;
+
+    const dayLabel = selectedDayRow.dateObj?.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }) || selectedDayRow.label;
+
+    const achatFields = Array.from({ length: 13 }, (_, idx) => 45 + idx).map(col => renderDailyField(dynamicColumns[col]?.[2] || `Achat ${col}`, col));
+
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '220px minmax(0, 1fr)', gap: 16, minHeight: '100%' }}>
+        <aside style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div style={{ padding: 14, borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+            <div style={{ fontSize: 12, fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.05em' }}>Jours du mois</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, fontWeight: 700 }}>{monthNames[month]} {year}</div>
+          </div>
+          <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto' }}>
+            {dayRows.map(({ row, index }) => {
+              const isSelected = row.dayIndex === selectedEntryDay;
+              const isToday = row.dateObj
+                && row.dateObj.getFullYear() === todayMarker.year
+                && row.dateObj.getMonth() === todayMarker.month
+                && row.dateObj.getDate() === todayMarker.day;
+
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => row.dayIndex && setSelectedEntryDay(row.dayIndex)}
+                  style={{
+                    border: `1px solid ${isSelected ? '#10b981' : '#e2e8f0'}`,
+                    borderRadius: 9,
+                    background: isSelected ? '#ecfdf5' : '#fff',
+                    color: isSelected ? '#065f46' : '#334155',
+                    padding: '8px 10px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: isSelected ? 900 : 700,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <span>{row.label.replace(` ${year}`, '')}</span>
+                  {isToday && <span style={{ fontSize: 10, fontWeight: 900, color: '#2563eb' }}>Aujourd'hui</span>}
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+          <div style={{ background: '#0f172a', color: '#fff', borderRadius: 14, padding: isMobile ? 16 : 18, display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row' }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journalière</div>
+              <h2 style={{ margin: '4px 0 0', fontSize: isMobile ? 20 : 24, fontWeight: 950, textTransform: 'capitalize' }}>{dayLabel}</h2>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(84px, 1fr))', gap: 8, width: isMobile ? '100%' : 330 }}>
+              {[
+                ['CA réalisé', getDailyDisplayValue(21)],
+                ['Couverts', getDailyDisplayValue(29)],
+                ['Coût mat.', getDailyDisplayValue(58)],
+              ].map(([label, value]) => (
+                <div key={label} style={{ border: '1px solid rgba(255,255,255,.12)', borderRadius: 10, padding: '8px 10px', background: 'rgba(255,255,255,.06)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#cbd5e1', textTransform: 'uppercase' }}>{label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 950, color: '#fff', marginTop: 2 }}>{value || '-'}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {renderDailySection('Prévisions', 'Budget, couverts et ticket moyen attendus', (
+            <>
+              {renderDailyField('Couverts midi', 6)}
+              {renderDailyField('TM midi', 7)}
+              {renderDailyField('Couverts soir', 8)}
+              {renderDailyField('TM soir', 9)}
+              {renderDailyField('Couverts limonade', 14)}
+              {renderDailyField('TM limonade', 15)}
+              {renderDailyField('CA budget jour', 3, { readOnly: true })}
+            </>
+          ), '#f59e0b')}
+
+          {renderDailySection('Réalisé', 'Chiffre d’affaires, couverts et événements', (
+            <>
+              {renderDailyField('VAE', 17)}
+              {renderDailyField('CA midi', 18)}
+              {renderDailyField('CA soir', 19)}
+              {renderDailyField('CA limonade', 20)}
+              {renderDailyField('Couverts midi', 25)}
+              {renderDailyField('Couverts soir', 27)}
+              {renderDailyField('Couverts limonade', 34)}
+              {renderDailyField('Événement restaurant', 37, { text: true })}
+              {renderDailyField('Événement national', 38, { text: true })}
+              {renderDailyField('Total CA', 21, { readOnly: true })}
+              {renderDailyField('Total couverts', 29, { readOnly: true })}
+              {renderDailyField('Ticket moyen', 30, { readOnly: true })}
+            </>
+          ), '#2563eb')}
+
+          {renderDailySection('Coût matière et démarques', 'Achats du jour et démarques saisies quotidiennement', (
+            <>
+              {renderDailyField('Démarque personnel', 39)}
+              {renderDailyField('Démarque opérationnel', 41)}
+              {renderDailyField('Explication démarque', 44, { text: true })}
+              {renderDailyField('Total démarque', 43, { readOnly: true })}
+              {achatFields}
+              {renderDailyField('Total achats HT', 58, { readOnly: true })}
+              {renderDailyField('Ratio matière', 60, { readOnly: true })}
+            </>
+          ), '#16a34a')}
+
+          {renderDailySection('Personnel', 'Heures, coût et ratios principaux', (
+            <>
+              {[66, 67, 68, 69, 70, 71, 72, 73, 74, 75].map(col => renderDailyField(dynamicColumns[col]?.[2] || `Projection ${col}`, col))}
+              {[81, 82, 83, 84, 85, 86, 87, 88, 89, 90].map(col => renderDailyField(dynamicColumns[col]?.[2] || `Réalisé ${col}`, col))}
+              {renderDailyField('Heures projetées', 65, { readOnly: true })}
+              {renderDailyField('Coût projeté', 72, { readOnly: true })}
+              {renderDailyField('Heures réalisées', 76, { readOnly: true })}
+              {renderDailyField('Coût réalisé', 83, { readOnly: true })}
+              {renderDailyField('Écart heures', 87, { readOnly: true })}
+              {renderDailyField('Écart ratio', 88, { readOnly: true })}
+            </>
+          ), '#9333ea')}
+        </div>
+      </div>
+    );
+  };
+
   const previsionsGroups = groups.filter(g => ['CA', 'RESTAURANTS', 'LIMONADE'].includes(g.name));
   const previsionsColspan = previsionsGroups.reduce((acc, g) => acc + g.colspan, 0);
   
@@ -1449,6 +1651,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
         {/* Table Area */}
         <div id="dashboard-content-area" style={{ flex: 1, overflow: 'auto', padding: isMobile ? 12 : 32, display: 'flex', flexDirection: 'column' }}>
+          {tableViewMode === 'SAISIE' ? (
+            renderDailyEntryView()
+          ) : (
           <div style={{ flex: 1, background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
                 <table id="dashboard-table" style={{ borderCollapse: 'separate', borderSpacing: 0, width: 'max-content', minWidth: '100%' }}>
@@ -1541,8 +1746,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 && row.dateObj?.getFullYear() === todayMarker.year
                 && row.dateObj?.getMonth() === todayMarker.month
                 && row.dateObj?.getDate() === todayMarker.day;
-
-              if (tableViewMode === 'SAISIE' && activeTab !== 'FRAIS_GENERAUX' && isTotalRow) return null;
 
               // Ligne dédiée au total du box 4 FG — rendu spécial sans aucune bordure épaisse
               if (isFgBox4Total) {
@@ -1728,10 +1931,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                         const isFgFocused = focusedCell === fgCellKey;
                         // Bordure droite : épaisse après la dernière colonne de chaque groupe (MONTANT HT), fine sinon
                         const fgCellBorder = `border-b border-b-slate-200 ${colIndexInGroup === 3 ? 'border-r-[2px] border-r-slate-400' : 'border-r border-r-slate-200'}`;
-                        const fgSaisieClass = tableViewMode === 'SAISIE' ? 'bg-emerald-50/80 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.16)]' : 'bg-white';
-                        
                         return (
-                          <td key={`c-${rIdx}-${cIdx}`} className={`p-0 ${fgSaisieClass} ${fgCellBorder} relative text-center`}>
+                          <td key={`c-${rIdx}-${cIdx}`} className={`p-0 bg-white ${fgCellBorder} relative text-center`}>
                             <DebouncedInput
                               dataRow={rIdx}
                               dataCol={cIdx}
@@ -1748,7 +1949,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                               onFocus={() => setFocusedCell(fgCellKey)}
                               onBlur={() => setFocusedCell(null)}
                               onKeyDown={(e: any) => handleKeyDown(e, rIdx, cIdx)}
-                              className="w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:z-10 relative cursor-text text-[10px] text-slate-800 placeholder-slate-300 transition-all"
+                              className="w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center font-medium focus:bg-blue-50 focus:ring-1 focus:ring-indigo-400 focus:z-10 relative cursor-text text-[10px] text-slate-700 placeholder-slate-300 transition-all"
                               placeholder=""
                             />
                           </td>
@@ -1958,20 +2159,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
                     const isDragOver = dragState && row.type === 'day' && rIdx > dragState.rIdx && rIdx <= dragState.endRow && originalCIdx === dragState.cIdx;
                     const showHandle = row.type === 'day' && !dragState && !isHatched && !isReadOnly && focusedCell === cellKey;
-                    const isSaisieEditableCell = tableViewMode === 'SAISIE' && row.type === 'day' && !isHatched && !isReadOnly;
-                    const isSaisieReadOnlyCell = tableViewMode === 'SAISIE' && row.type === 'day' && !isHatched && isReadOnly;
-                    const saisieCellClass = isSaisieEditableCell
-                      ? 'bg-emerald-50/80 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.16)]'
-                      : isSaisieReadOnlyCell
-                        ? 'bg-slate-50/70'
-                        : '';
-                    const saisieInputClass = isSaisieEditableCell
-                      ? 'font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500 text-slate-900'
-                      : 'font-medium focus:bg-blue-50 focus:ring-1 focus:ring-indigo-400 text-slate-700';
                     return (
                       <td
                         key={`c-${rIdx}-${cIdx}`}
-                        className={`p-0 ${cellBg} ${saisieCellClass} ${cellBorderClasses} relative text-center`}
+                        className={`p-0 ${cellBg} ${cellBorderClasses} relative text-center`}
                         style={isDragOver ? { background: '#dcfce7', outline: '1px solid #16a34a' } : undefined}
                         onMouseEnter={() => dragState && row.type === 'day' && handleDragMove(rIdx)}
                       >
@@ -1985,7 +2176,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                               onFocus={() => setFocusedCell(cellKey)}
                               onBlur={() => setFocusedCell(null)}
                               onKeyDown={(e: any) => handleKeyDown(e, rIdx, cIdx)}
-                              className={`w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center focus:z-10 relative cursor-text text-[10px] placeholder-slate-300 transition-all ${saisieInputClass}`}
+                              className="w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center font-medium focus:bg-blue-50 focus:ring-1 focus:ring-indigo-400 focus:z-10 relative cursor-text text-[10px] text-slate-700 placeholder-slate-300 transition-all"
                               placeholder=""
                             />
                             {showHandle && (
@@ -1997,7 +2188,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                             )}
                           </div>
                         ) : !isHatched && isReadOnly ? (
-                          <div className={`px-1 text-center py-1.5 min-h-[26px] text-[10px] ${isSaisieReadOnlyCell ? 'font-medium' : ''} ${val ? textColorClass : 'text-slate-400'}`}>
+                          <div className={`px-1 text-center py-1.5 min-h-[26px] text-[10px] ${val ? textColorClass : 'text-slate-400'}`}>
                             {displayVal || ''}
                           </div>
                         ) : null}
@@ -2011,6 +2202,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         </table>
             </div>
           </div>
+          )}
         </div>
       </main>
 
