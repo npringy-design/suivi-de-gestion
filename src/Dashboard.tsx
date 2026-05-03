@@ -140,6 +140,13 @@ const tabs: { id: string; label: string }[] = [
   { id: 'FRAIS_GENERAUX', label: 'Frais généraux' },
   { id: 'RESULTATS', label: 'Résultats' },
 ];
+const viewModes = [
+  { id: 'SAISIE', label: 'Saisie' },
+  { id: 'ANALYSE', label: 'Analyse' },
+  { id: 'COMPLET', label: 'Complet' },
+] as const;
+
+type TableViewMode = (typeof viewModes)[number]['id'];
 const editableCols: number[] = [
   6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34, 37, 38, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90
 ];
@@ -340,6 +347,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const cellData = globalData[month]?.dashboard || {};
   const [focusedCell, setFocusedCell] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('PREVISIONS');
+  const [tableViewMode, setTableViewMode] = useState<TableViewMode>('SAISIE');
   const [dragState, setDragState] = useState<null | { rIdx: number; cIdx: number; endRow: number; value: string }>(null);
 
   const handleDragStart = (e: React.MouseEvent, rIdx: number, cIdx: number, value: string) => {
@@ -948,14 +956,16 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return dynamicColumns.map((c, index) => Object.assign([...c] as DashboardColumn, { originalIndex: index })).filter(c => {
       const group = c[0];
       const subGroup = c[1];
-      
-      switch (activeTab) {
+      const colIndex = c.originalIndex;
+
+      const isInActiveTab = (() => {
+        switch (activeTab) {
         case 'PREVISIONS':
           return ['CA', 'RESTAURANTS', 'LIMONADE'].includes(group);
         case 'REALISE':
-          return ['REALISE', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL', 'DEMARQUES'].includes(group);
+          return ['REALISE', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(group);
         case 'COUT_MATIERE':
-          return group === 'COUT MATIERE';
+          return ['DEMARQUES', 'COUT MATIERE'].includes(group);
         case 'PERSONNEL':
           return ['FRAIS DE PERSONNEL PROJECTION', 'FRAIS DE PERSONNEL REALISE'].includes(group);
         case 'FRAIS_GENERAUX':
@@ -964,9 +974,30 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           return group === 'RESULTATS MENSUEL HT';
         default:
           return true;
+        }
+      })();
+
+      if (!isInActiveTab || tableViewMode === 'COMPLET') return isInActiveTab;
+
+      const isEditableColumn = editableCols.includes(colIndex) || group === 'FRAIS GENERAUX' || group === 'CONTRAT MENSUALISES';
+      const contextColumns = new Set([
+        0, 1, 2, 3, 4, 10, 11, 12,
+        21, 22, 23, 29, 30, 31, 32, 33, 35, 36,
+        49, 58, 59, 60,
+        65, 72, 73, 74, 76, 83, 84, 85, 87, 88,
+      ]);
+
+      if (tableViewMode === 'SAISIE') {
+        return isEditableColumn || contextColumns.has(colIndex);
       }
+
+      if (group === 'FRAIS GENERAUX' || group === 'CONTRAT MENSUALISES') {
+        return true;
+      }
+
+      return !isEditableColumn || contextColumns.has(colIndex);
     });
-  }, [activeTab]);
+  }, [activeTab, tableViewMode]);
 
   const groups: Array<{ name: string; colspan: number; bg: string }> = [];
   let currentGroup: { name: string; colspan: number; bg: string } | null = null;
@@ -1335,6 +1366,33 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
           {/* Section Tabs */}
           <div style={{ padding: isMobile ? '10px 0' : '10px 0 12px', display: 'flex', gap: 8, background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 4, border: '1px solid #e2e8f0', borderRadius: 10, background: '#f8fafc', flexShrink: 0 }}>
+              <span style={{ padding: '0 6px', fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Vue</span>
+              {viewModes.map(mode => {
+                const isModeActive = tableViewMode === mode.id;
+                return (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    onClick={() => setTableViewMode(mode.id)}
+                    style={{
+                      border: 'none',
+                      borderRadius: 7,
+                      background: isModeActive ? '#0f172a' : 'transparent',
+                      color: isModeActive ? '#fff' : '#475569',
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      padding: '6px 9px',
+                      whiteSpace: 'nowrap',
+                      transition: 'all .15s',
+                    }}
+                  >
+                    {mode.label}
+                  </button>
+                );
+              })}
+            </div>
             {tabs.map(tab => {
               const isActive = activeTab === tab.id;
               let icon = '📁';
