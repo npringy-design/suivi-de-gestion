@@ -133,14 +133,12 @@ const C: DashboardColumn[] = [
 const days: string[] = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const monthNames: string[] = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const tabs: { id: string; label: string }[] = [
-  { id: 'CA', label: 'CA & Couverts' },
-  { id: 'REALISE', label: 'Réalisé & Événements' },
-  { id: 'DEMARQUES', label: 'Démarques' },
-  { id: 'COUT_MATIERE', label: 'Coût Matière' },
-  { id: 'FRAIS_PERSONNEL', label: 'Frais de Personnel' },
-  { id: 'FRAIS_GENERAUX', label: 'Frais Généraux' },
-  { id: 'CONTRAT', label: 'Contrats' },
-  { id: 'RESULTATS', label: 'Résultats Mensuels' },
+  { id: 'PREVISIONS', label: 'Prévisions' },
+  { id: 'REALISE', label: 'Réalisé' },
+  { id: 'COUT_MATIERE', label: 'Coût matière' },
+  { id: 'PERSONNEL', label: 'Personnel' },
+  { id: 'FRAIS_GENERAUX', label: 'Frais généraux' },
+  { id: 'RESULTATS', label: 'Résultats' },
 ];
 const editableCols: number[] = [
   6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34, 37, 38, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90
@@ -341,7 +339,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const cellData = globalData[month]?.dashboard || {};
   const [focusedCell, setFocusedCell] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('CA');
+  const [activeTab, setActiveTab] = useState('PREVISIONS');
   const [dragState, setDragState] = useState<null | { rIdx: number; cIdx: number; endRow: number; value: string }>(null);
 
   const handleDragStart = (e: React.MouseEvent, rIdx: number, cIdx: number, value: string) => {
@@ -952,20 +950,16 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const subGroup = c[1];
       
       switch (activeTab) {
-        case 'CA':
+        case 'PREVISIONS':
           return ['CA', 'RESTAURANTS', 'LIMONADE'].includes(group);
         case 'REALISE':
-          return ['REALISE', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(group);
-        case 'DEMARQUES':
-          return group === 'DEMARQUES';
+          return ['REALISE', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL', 'DEMARQUES'].includes(group);
         case 'COUT_MATIERE':
           return group === 'COUT MATIERE';
-        case 'FRAIS_PERSONNEL':
+        case 'PERSONNEL':
           return ['FRAIS DE PERSONNEL PROJECTION', 'FRAIS DE PERSONNEL REALISE'].includes(group);
         case 'FRAIS_GENERAUX':
-          return group === 'FRAIS GENERAUX';
-        case 'CONTRAT':
-          return group === 'CONTRAT MENSUALISES';
+          return ['FRAIS GENERAUX', 'CONTRAT MENSUALISES'].includes(group);
         case 'RESULTATS':
           return group === 'RESULTATS MENSUEL HT';
         default:
@@ -1348,15 +1342,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               const accentColor = '#fff';
               
               switch (tab.id) {
-                case 'SYNTHESE': icon = '📊'; accentBg = '#3b82f6'; break;
-                case 'CA': icon = '🎯'; accentBg = '#92400e'; break;
-                case 'REALISE': icon = '📈'; accentBg = '#1e40af'; break;
-                case 'DEMARQUES': icon = '📉'; accentBg = '#047857'; break;
-                case 'COUT_MATIERE': icon = '🛒'; accentBg = '#166534'; break;
-                case 'FRAIS_PERSONNEL': icon = '👥'; accentBg = '#6b21a8'; break;
-                case 'FRAIS_GENERAUX': icon = '📋'; accentBg = '#b45309'; break;
-                case 'CONTRAT': icon = '📝'; accentBg = '#0f766e'; break;
-                case 'RESULTATS': icon = '🏆'; accentBg = '#be123c'; break;
+                case 'PREVISIONS': icon = 'PR'; accentBg = '#92400e'; break;
+                case 'REALISE': icon = 'RE'; accentBg = '#1e40af'; break;
+                case 'COUT_MATIERE': icon = 'CM'; accentBg = '#166534'; break;
+                case 'PERSONNEL': icon = 'FP'; accentBg = '#6b21a8'; break;
+                case 'FRAIS_GENERAUX': icon = 'FG'; accentBg = '#b45309'; break;
+                case 'RESULTATS': icon = 'RM'; accentBg = '#be123c'; break;
               }
 
               return (
@@ -1373,7 +1364,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  <span style={{ fontSize: 14 }}>{icon}</span>
+                  <span style={{ width: 22, height: 22, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'rgba(255,255,255,.16)' : '#e2e8f0', color: isActive ? '#fff' : accentBg, fontSize: 9, fontWeight: 900 }}>{icon}</span>
                   <span style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? accentColor : '#334155', letterSpacing: '.02em', lineHeight: 1.3 }}>{tab.label}</span>
                   </span>
