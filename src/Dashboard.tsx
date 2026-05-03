@@ -955,7 +955,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const visibleColumns = useMemo(() => {
     return dynamicColumns.map((c, index) => Object.assign([...c] as DashboardColumn, { originalIndex: index })).filter(c => {
       const group = c[0];
-      const subGroup = c[1];
       const colIndex = c.originalIndex;
 
       const isInActiveTab = (() => {
@@ -969,6 +968,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         case 'PERSONNEL':
           return ['FRAIS DE PERSONNEL PROJECTION', 'FRAIS DE PERSONNEL REALISE'].includes(group);
         case 'FRAIS_GENERAUX':
+          if (tableViewMode === 'SAISIE') return group === 'FRAIS GENERAUX';
           return ['FRAIS GENERAUX', 'CONTRAT MENSUALISES'].includes(group);
         case 'RESULTATS':
           return group === 'RESULTATS MENSUEL HT';
@@ -980,6 +980,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       if (!isInActiveTab || tableViewMode === 'COMPLET') return isInActiveTab;
 
       const isEditableColumn = editableCols.includes(colIndex) || group === 'FRAIS GENERAUX' || group === 'CONTRAT MENSUALISES';
+      const isDailyDemarqueColumn = group === 'DEMARQUES';
       const contextColumns = new Set([
         0, 1, 2, 3, 4, 10, 11, 12,
         21, 22, 23, 29, 30, 31, 32, 33, 35, 36,
@@ -988,7 +989,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       ]);
 
       if (tableViewMode === 'SAISIE') {
-        return isEditableColumn || contextColumns.has(colIndex);
+        return isDailyDemarqueColumn || isEditableColumn || contextColumns.has(colIndex);
       }
 
       if (group === 'FRAIS GENERAUX' || group === 'CONTRAT MENSUALISES') {
