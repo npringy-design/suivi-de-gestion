@@ -922,6 +922,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     };
   }, [calculatedData, rows]);
 
+  const todayMarker = useMemo(() => {
+    const now = new Date();
+    return {
+      year: now.getFullYear(),
+      month: now.getMonth(),
+      day: now.getDate(),
+    };
+  }, []);
+
   const formatValue = (val: string | number | undefined, c: string[]) => {
     if (val === '' || val === undefined || val === null) return '';
     
@@ -1528,6 +1537,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               const isTotalRow = row.type === 'total';
               const isMonthTotal = row.type === 'month_total';
               const isFgBox4Total = row.type === 'fg_box4_total';
+              const isTodayRow = row.type === 'day'
+                && row.dateObj?.getFullYear() === todayMarker.year
+                && row.dateObj?.getMonth() === todayMarker.month
+                && row.dateObj?.getDate() === todayMarker.day;
+
+              if (tableViewMode === 'SAISIE' && activeTab !== 'FRAIS_GENERAUX' && isTotalRow) return null;
 
               // Ligne dédiée au total du box 4 FG — rendu spécial sans aucune bordure épaisse
               if (isFgBox4Total) {
@@ -1574,14 +1589,17 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               let rowClasses = 'transition-colors hover:bg-blue-50/30';
               if (isTotalRow) rowClasses = 'font-bold bg-slate-100 hover:bg-slate-200/80';
               if (isMonthTotal) rowClasses = 'font-bold bg-amber-50 hover:bg-amber-100/80';
+              if (isTodayRow) rowClasses = 'transition-colors bg-blue-50 hover:bg-blue-100/70';
 
               let rowBorderClasses = '';
               if (isTotalRow) rowBorderClasses = 'border-y-2 border-y-slate-400';
               if (isMonthTotal) rowBorderClasses = 'border-y-2 border-y-amber-500';
+              if (isTodayRow) rowBorderClasses = 'border-y-2 border-y-blue-300';
 
               let dateCellBg = 'bg-[#ffffff] text-slate-600';
               if (isTotalRow) dateCellBg = 'bg-[#f1f5f9] text-slate-800 font-bold';
               else if (isMonthTotal) dateCellBg = 'bg-[#fffbeb] text-amber-900 font-bold';
+              else if (isTodayRow) dateCellBg = 'bg-blue-600 text-white font-black';
               else if (row.isPublicHoliday) dateCellBg = 'bg-red-100 text-red-800 font-bold';
               else if (row.isCustomEvent) dateCellBg = 'bg-green-200 text-green-900 font-bold';
               else if (row.isSchoolHoliday) dateCellBg = 'bg-blue-200 text-blue-900 font-bold';
@@ -1597,7 +1615,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     rowBorderClasses,
                     dateCellBg
                   ].join(' ')}>
-                    {row.label}
+                    {isTodayRow ? `${row.label} - aujourd'hui` : row.label}
                   </td>
 
                   {visibleColumns.map((c, cIdx) => {
