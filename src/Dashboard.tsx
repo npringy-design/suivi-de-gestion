@@ -1728,9 +1728,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                         const isFgFocused = focusedCell === fgCellKey;
                         // Bordure droite : épaisse après la dernière colonne de chaque groupe (MONTANT HT), fine sinon
                         const fgCellBorder = `border-b border-b-slate-200 ${colIndexInGroup === 3 ? 'border-r-[2px] border-r-slate-400' : 'border-r border-r-slate-200'}`;
+                        const fgSaisieClass = tableViewMode === 'SAISIE' ? 'bg-emerald-50/80 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.16)]' : 'bg-white';
                         
                         return (
-                          <td key={`c-${rIdx}-${cIdx}`} className={`p-0 bg-white ${fgCellBorder} relative text-center`}>
+                          <td key={`c-${rIdx}-${cIdx}`} className={`p-0 ${fgSaisieClass} ${fgCellBorder} relative text-center`}>
                             <DebouncedInput
                               dataRow={rIdx}
                               dataCol={cIdx}
@@ -1747,7 +1748,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                               onFocus={() => setFocusedCell(fgCellKey)}
                               onBlur={() => setFocusedCell(null)}
                               onKeyDown={(e: any) => handleKeyDown(e, rIdx, cIdx)}
-                              className="w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center font-medium focus:bg-blue-50 focus:ring-1 focus:ring-indigo-400 focus:z-10 relative cursor-text text-[10px] text-slate-700 placeholder-slate-300 transition-all"
+                              className="w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:z-10 relative cursor-text text-[10px] text-slate-800 placeholder-slate-300 transition-all"
                               placeholder=""
                             />
                           </td>
@@ -1957,10 +1958,20 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
                     const isDragOver = dragState && row.type === 'day' && rIdx > dragState.rIdx && rIdx <= dragState.endRow && originalCIdx === dragState.cIdx;
                     const showHandle = row.type === 'day' && !dragState && !isHatched && !isReadOnly && focusedCell === cellKey;
+                    const isSaisieEditableCell = tableViewMode === 'SAISIE' && row.type === 'day' && !isHatched && !isReadOnly;
+                    const isSaisieReadOnlyCell = tableViewMode === 'SAISIE' && row.type === 'day' && !isHatched && isReadOnly;
+                    const saisieCellClass = isSaisieEditableCell
+                      ? 'bg-emerald-50/80 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.16)]'
+                      : isSaisieReadOnlyCell
+                        ? 'bg-slate-50/70'
+                        : '';
+                    const saisieInputClass = isSaisieEditableCell
+                      ? 'font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500 text-slate-900'
+                      : 'font-medium focus:bg-blue-50 focus:ring-1 focus:ring-indigo-400 text-slate-700';
                     return (
                       <td
                         key={`c-${rIdx}-${cIdx}`}
-                        className={`p-0 ${cellBg} ${cellBorderClasses} relative text-center`}
+                        className={`p-0 ${cellBg} ${saisieCellClass} ${cellBorderClasses} relative text-center`}
                         style={isDragOver ? { background: '#dcfce7', outline: '1px solid #16a34a' } : undefined}
                         onMouseEnter={() => dragState && row.type === 'day' && handleDragMove(rIdx)}
                       >
@@ -1974,7 +1985,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                               onFocus={() => setFocusedCell(cellKey)}
                               onBlur={() => setFocusedCell(null)}
                               onKeyDown={(e: any) => handleKeyDown(e, rIdx, cIdx)}
-                              className="w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center font-medium focus:bg-blue-50 focus:ring-1 focus:ring-indigo-400 focus:z-10 relative cursor-text text-[10px] text-slate-700 placeholder-slate-300 transition-all"
+                              className={`w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center focus:z-10 relative cursor-text text-[10px] placeholder-slate-300 transition-all ${saisieInputClass}`}
                               placeholder=""
                             />
                             {showHandle && (
@@ -1986,7 +1997,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                             )}
                           </div>
                         ) : !isHatched && isReadOnly ? (
-                          <div className={`px-1 text-center py-1.5 min-h-[26px] text-[10px] ${val ? textColorClass : 'text-slate-400'}`}>
+                          <div className={`px-1 text-center py-1.5 min-h-[26px] text-[10px] ${isSaisieReadOnlyCell ? 'font-medium' : ''} ${val ? textColorClass : 'text-slate-400'}`}>
                             {displayVal || ''}
                           </div>
                         ) : null}
