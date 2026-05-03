@@ -876,6 +876,46 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return data;
   }, [cellData, globalData[month]?.salariesConfig]);
 
+  const parseDashboardNumber = (value: string | number | undefined) => {
+    if (value === undefined || value === null || value === '') return 0;
+    return parseFloat(String(value).replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
+  };
+
+  const formatKpiCurrency = (value: number) =>
+    value === 0 ? '-' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
+
+  const formatKpiNumber = (value: number) =>
+    value === 0 ? '-' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(value);
+
+  const summaryKpis = useMemo(() => {
+    const monthTotalIdx = rows.findIndex(r => r.type === 'month_total');
+    if (monthTotalIdx === -1) {
+      return {
+        budgetCa: 0,
+        realiseCa: 0,
+        ecartCa: 0,
+        couverts: 0,
+        ticketMoyen: 0,
+        coutMatiere: 0,
+        fraisPersonnel: 0,
+      };
+    }
+
+    const budgetCa = parseDashboardNumber(calculatedData[`${monthTotalIdx}-3`]);
+    const realiseCa = parseDashboardNumber(calculatedData[`${monthTotalIdx}-21`]);
+    const ecartCa = realiseCa - budgetCa;
+
+    return {
+      budgetCa,
+      realiseCa,
+      ecartCa,
+      couverts: parseDashboardNumber(calculatedData[`${monthTotalIdx}-29`]),
+      ticketMoyen: parseDashboardNumber(calculatedData[`${monthTotalIdx}-30`]),
+      coutMatiere: parseDashboardNumber(calculatedData[`${monthTotalIdx}-58`]),
+      fraisPersonnel: parseDashboardNumber(calculatedData[`${monthTotalIdx}-83`]),
+    };
+  }, [calculatedData, rows]);
+
   const formatValue = (val: string | number | undefined, c: string[]) => {
     if (val === '' || val === undefined || val === null) return '';
     
@@ -1234,8 +1274,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8fafc' }}>
         
         {/* Top Header for Sections */}
-        <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 32px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90 }}>
-          <div style={{ height: isMobile ? 60 : 80, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90 }}>
+          <div style={{ height: isMobile ? 58 : 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {isMobile && (
                 <button 
@@ -1245,7 +1285,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
                 </button>
               )}
-              <h2 style={{ fontSize: isMobile ? 18 : 28, fontWeight: 800, color: '#0f172a', margin: 0, textTransform: 'capitalize', letterSpacing: '-0.02em' }}>
+              <h2 style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, color: '#0f172a', margin: 0, textTransform: 'capitalize', letterSpacing: '-0.02em' }}>
                 {monthNames[month]} {year}
               </h2>
             </div>
@@ -1265,8 +1305,42 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             </div>
           </div>
 
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(7, minmax(116px, 1fr))', gap: 8, padding: isMobile ? '0 0 12px' : '0 0 12px', overflowX: isMobile ? 'visible' : 'auto' }}>
+            {[
+              { label: 'CA budget', value: formatKpiCurrency(summaryKpis.budgetCa), color: '#64748b', icon: '€' },
+              { label: 'CA réalisé', value: formatKpiCurrency(summaryKpis.realiseCa), color: '#2563eb', icon: 'CA' },
+              { label: 'Écart CA', value: formatKpiCurrency(summaryKpis.ecartCa), color: summaryKpis.ecartCa >= 0 ? '#059669' : '#dc2626', icon: summaryKpis.ecartCa >= 0 ? '+' : '-' },
+              { label: 'Couverts', value: formatKpiNumber(summaryKpis.couverts), color: '#7c3aed', icon: 'CV' },
+              { label: 'Ticket moyen', value: formatKpiCurrency(summaryKpis.ticketMoyen), color: '#d97706', icon: 'TM' },
+              { label: 'Coût matière', value: formatKpiCurrency(summaryKpis.coutMatiere), color: '#16a34a', icon: 'CM' },
+              { label: 'Frais personnel', value: formatKpiCurrency(summaryKpis.fraisPersonnel), color: '#9333ea', icon: 'SC' },
+            ].map(kpi => (
+              <div
+                key={kpi.label}
+                style={{
+                  minWidth: 0,
+                  border: '1px solid #e2e8f0',
+                  background: '#f8fafc',
+                  borderRadius: 10,
+                  padding: isMobile ? '8px 10px' : '9px 11px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 9,
+                }}
+              >
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: `${kpi.color}14`, color: kpi.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>
+                  {kpi.icon}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.label}</div>
+                  <div style={{ fontSize: isMobile ? 13 : 14, color: '#0f172a', fontWeight: 900, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           {/* Section Tabs */}
-          <div style={{ padding: '12px 28px', display: 'flex', gap: 8, background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+          <div style={{ padding: isMobile ? '10px 0' : '10px 0 12px', display: 'flex', gap: 8, background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
             {tabs.map(tab => {
               const isActive = activeTab === tab.id;
               let icon = '📁';
