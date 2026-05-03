@@ -162,8 +162,9 @@ export default function VisuelVacances({ onBack }: VisuelVacancesProps) {
               <div className="p-5 border-b border-slate-100 bg-slate-50/50">
                 <form onSubmit={handleAddEvent} className="flex flex-col sm:flex-row gap-4 items-end">
                   <div className="flex-1 w-full">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Date</label>
+                    <label htmlFor="custom-event-date" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Date</label>
                     <input 
+                      id="custom-event-date"
                       type="date" 
                       value={newEventDate}
                       onChange={e => setNewEventDate(e.target.value)}
@@ -172,8 +173,9 @@ export default function VisuelVacances({ onBack }: VisuelVacancesProps) {
                     />
                   </div>
                   <div className="flex-[2] w-full">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nom de l'événement</label>
+                    <label htmlFor="custom-event-label" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nom de l'événement</label>
                     <input 
+                      id="custom-event-label"
                       type="text" 
                       value={newEventLabel}
                       onChange={e => setNewEventLabel(e.target.value)}

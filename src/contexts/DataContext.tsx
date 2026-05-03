@@ -295,13 +295,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     try {
       localStorage.setItem('config2025_data_v1', JSON.stringify(config2025));
-    } catch {}
+    } catch {
+      // localStorage can be unavailable in restricted browser contexts.
+    }
   }, [config2025]);
 
   useEffect(() => {
     try {
       localStorage.setItem('custom_events_v1', JSON.stringify(customEvents));
-    } catch {}
+    } catch {
+      // localStorage can be unavailable in restricted browser contexts.
+    }
   }, [customEvents]);
 
   const addCustomEvent = useCallback((event: CustomEvent) => {

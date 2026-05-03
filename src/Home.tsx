@@ -238,8 +238,7 @@ export default function Home() {
     return () => window.clearInterval(refreshWeather);
   }, [loadWeather]);
 
-  const getWeatherIcon = useMemo(
-    () => (code: number, size = 'w-4 h-4') => {
+  const getWeatherIcon = useCallback((code: number, size = 'w-4 h-4') => {
       if (code === 0) return <Sun className={`${size} text-amber-400`} />;
       if (code === 1 || code === 2 || code === 3) return <Cloud className={`${size} text-slate-300`} />;
       if (code >= 51 && code <= 67) return <CloudRain className={`${size} text-blue-400`} />;

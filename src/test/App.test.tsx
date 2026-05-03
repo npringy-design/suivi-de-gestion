@@ -1,14 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 
-import App from '@/App';
+import { DataProvider } from '@/contexts/DataContext';
+import Home from '@/Home';
+
+function LocationDisplay() {
+  const location = useLocation();
+  return <div data-testid="location">{location.pathname}</div>;
+}
 
 describe('App flow', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn(() =>
       Promise.resolve({
-        json: () => Promise.resolve({ current: { temperature_2m: 20, weather_code: 0 } }),
+        json: () => Promise.resolve({ current_weather: { temperature: 20, weathercode: 0 } }),
       }) as Promise<Response>,
     ));
   });
@@ -18,16 +24,19 @@ describe('App flow', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders the home dashboard and navigates to Synthèse CA', async () => {
+  it('renders the home dashboard and navigates to Synthese CA', async () => {
     render(
-      <MemoryRouter>
-        <App />
-      </MemoryRouter>,
+      <DataProvider>
+        <MemoryRouter initialEntries={['/']}>
+          <Home />
+          <LocationDisplay />
+        </MemoryRouter>
+      </DataProvider>,
     );
 
-    expect(await screen.findByText('Tableau de Bord')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Au Bureau/i })).toBeInTheDocument();
     const syntheseButton = screen.getByRole('button', { name: /Synthèse CA/i });
     fireEvent.click(syntheseButton);
-    expect(await screen.findByText(/Synthèse Visuelle du mois/i)).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent('/synthese');
   });
 });

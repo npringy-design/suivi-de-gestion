@@ -196,8 +196,9 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
       <>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '12px 24px', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1px solid #e2e8f0' }}>
-            <label style={{ fontSize: 14, fontWeight: 700, color: '#475569' }}>Mois en cours :</label>
+            <label htmlFor="config-salaires-month" style={{ fontSize: 14, fontWeight: 700, color: '#475569' }}>Mois en cours :</label>
             <select 
+              id="config-salaires-month"
               value={selectedMonthIndex} 
               onChange={e => setSelectedMonthIndex(parseInt(e.target.value))}
               style={{ 
