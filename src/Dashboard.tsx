@@ -1172,66 +1172,52 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const achatFields = Array.from({ length: 13 }, (_, idx) => 45 + idx).map(col => renderDailyField(dynamicColumns[col]?.[2] || `Achat ${col}`, col));
 
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '220px minmax(0, 1fr)', gap: 16, minHeight: '100%' }}>
-        <aside style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <div style={{ padding: 14, borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-            <div style={{ fontSize: 12, fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.05em' }}>Jours du mois</div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, fontWeight: 700 }}>{monthNames[month]} {year}</div>
-          </div>
-          <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto' }}>
-            {dayRows.map(({ row, index }) => {
-              const isSelected = row.dayIndex === selectedEntryDay;
-              const isToday = row.dateObj
-                && row.dateObj.getFullYear() === todayMarker.year
-                && row.dateObj.getMonth() === todayMarker.month
-                && row.dateObj.getDate() === todayMarker.day;
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: '100%', minWidth: 0 }}>
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: isMobile ? 10 : 12, display: 'flex', alignItems: 'center', gap: 8, overflowX: 'auto', scrollbarWidth: 'none' }}>
+          {dayRows.map(({ row, index }) => {
+            const isSelected = row.dayIndex === selectedEntryDay;
+            const isToday = row.dateObj
+              && row.dateObj.getFullYear() === todayMarker.year
+              && row.dateObj.getMonth() === todayMarker.month
+              && row.dateObj.getDate() === todayMarker.day;
+            const weekday = row.dateObj?.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '') || '';
 
-              return (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => row.dayIndex && setSelectedEntryDay(row.dayIndex)}
-                  style={{
-                    border: `1px solid ${isSelected ? '#10b981' : '#e2e8f0'}`,
-                    borderRadius: 9,
-                    background: isSelected ? '#ecfdf5' : '#fff',
-                    color: isSelected ? '#065f46' : '#334155',
-                    padding: '8px 10px',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: isSelected ? 900 : 700,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
-                >
-                  <span>{row.label.replace(` ${year}`, '')}</span>
-                  {isToday && <span style={{ fontSize: 10, fontWeight: 900, color: '#2563eb' }}>Aujourd'hui</span>}
-                </button>
-              );
-            })}
-          </div>
-        </aside>
+            return (
+              <button
+                key={index}
+                type="button"
+                onClick={() => row.dayIndex && setSelectedEntryDay(row.dayIndex)}
+                style={{
+                  minWidth: isMobile ? 58 : 66,
+                  border: `1px solid ${isSelected ? '#10b981' : '#e2e8f0'}`,
+                  borderRadius: 10,
+                  background: isSelected ? '#ecfdf5' : '#f8fafc',
+                  color: isSelected ? '#065f46' : '#334155',
+                  padding: '7px 9px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 2,
+                  boxShadow: isSelected ? '0 0 0 2px rgba(16,185,129,.12)' : 'none',
+                }}
+              >
+                <span style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', color: isSelected ? '#047857' : '#64748b' }}>{weekday}</span>
+                <span style={{ fontSize: 15, fontWeight: 950, lineHeight: 1 }}>{row.dayIndex}</span>
+                {isToday && <span style={{ width: 5, height: 5, borderRadius: 999, background: '#2563eb' }} />}
+              </button>
+            );
+          })}
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
-          <div style={{ background: '#0f172a', color: '#fff', borderRadius: 14, padding: isMobile ? 16 : 18, display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row' }}>
+          <div style={{ background: '#0f172a', color: '#fff', borderRadius: 14, padding: isMobile ? 16 : '16px 18px', display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row' }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journalière</div>
               <h2 style={{ margin: '4px 0 0', fontSize: isMobile ? 20 : 24, fontWeight: 950, textTransform: 'capitalize' }}>{dayLabel}</h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(84px, 1fr))', gap: 8, width: isMobile ? '100%' : 330 }}>
-              {[
-                ['CA réalisé', getDailyDisplayValue(21)],
-                ['Couverts', getDailyDisplayValue(29)],
-                ['Coût mat.', getDailyDisplayValue(58)],
-              ].map(([label, value]) => (
-                <div key={label} style={{ border: '1px solid rgba(255,255,255,.12)', borderRadius: 10, padding: '8px 10px', background: 'rgba(255,255,255,.06)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#cbd5e1', textTransform: 'uppercase' }}>{label}</div>
-                  <div style={{ fontSize: 13, fontWeight: 950, color: '#fff', marginTop: 2 }}>{value || '-'}</div>
-                </div>
-              ))}
+            <div style={{ fontSize: 12, color: '#cbd5e1', fontWeight: 800 }}>
+              {monthNames[month]} {year}
             </div>
           </div>
 
@@ -1569,39 +1555,41 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(7, minmax(116px, 1fr))', gap: 8, padding: isMobile ? '0 0 12px' : '0 0 12px', overflowX: isMobile ? 'visible' : 'auto' }}>
-            {[
-              { label: 'CA budget', value: formatKpiCurrency(summaryKpis.budgetCa), color: '#64748b', icon: '€' },
-              { label: 'CA réalisé', value: formatKpiCurrency(summaryKpis.realiseCa), color: '#2563eb', icon: 'CA' },
-              { label: 'Écart CA', value: formatKpiCurrency(summaryKpis.ecartCa), color: summaryKpis.ecartCa >= 0 ? '#059669' : '#dc2626', icon: summaryKpis.ecartCa >= 0 ? '+' : '-' },
-              { label: 'Couverts', value: formatKpiNumber(summaryKpis.couverts), color: '#7c3aed', icon: 'CV' },
-              { label: 'Ticket moyen', value: formatKpiCurrency(summaryKpis.ticketMoyen), color: '#d97706', icon: 'TM' },
-              { label: 'Coût matière', value: formatKpiCurrency(summaryKpis.coutMatiere), color: '#16a34a', icon: 'CM' },
-              { label: 'Frais personnel', value: formatKpiCurrency(summaryKpis.fraisPersonnel), color: '#9333ea', icon: 'SC' },
-            ].map(kpi => (
-              <div
-                key={kpi.label}
-                style={{
-                  minWidth: 0,
-                  border: '1px solid #e2e8f0',
-                  background: '#f8fafc',
-                  borderRadius: 10,
-                  padding: isMobile ? '8px 10px' : '9px 11px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 9,
-                }}
-              >
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: `${kpi.color}14`, color: kpi.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>
-                  {kpi.icon}
+          {tableViewMode !== 'SAISIE' && (
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(7, minmax(116px, 1fr))', gap: 8, padding: isMobile ? '0 0 12px' : '0 0 12px', overflowX: isMobile ? 'visible' : 'auto' }}>
+              {[
+                { label: 'CA budget', value: formatKpiCurrency(summaryKpis.budgetCa), color: '#64748b', icon: '€' },
+                { label: 'CA réalisé', value: formatKpiCurrency(summaryKpis.realiseCa), color: '#2563eb', icon: 'CA' },
+                { label: 'Écart CA', value: formatKpiCurrency(summaryKpis.ecartCa), color: summaryKpis.ecartCa >= 0 ? '#059669' : '#dc2626', icon: summaryKpis.ecartCa >= 0 ? '+' : '-' },
+                { label: 'Couverts', value: formatKpiNumber(summaryKpis.couverts), color: '#7c3aed', icon: 'CV' },
+                { label: 'Ticket moyen', value: formatKpiCurrency(summaryKpis.ticketMoyen), color: '#d97706', icon: 'TM' },
+                { label: 'Coût matière', value: formatKpiCurrency(summaryKpis.coutMatiere), color: '#16a34a', icon: 'CM' },
+                { label: 'Frais personnel', value: formatKpiCurrency(summaryKpis.fraisPersonnel), color: '#9333ea', icon: 'SC' },
+              ].map(kpi => (
+                <div
+                  key={kpi.label}
+                  style={{
+                    minWidth: 0,
+                    border: '1px solid #e2e8f0',
+                    background: '#f8fafc',
+                    borderRadius: 10,
+                    padding: isMobile ? '8px 10px' : '9px 11px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 9,
+                  }}
+                >
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: `${kpi.color}14`, color: kpi.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>
+                    {kpi.icon}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.label}</div>
+                    <div style={{ fontSize: isMobile ? 13 : 14, color: '#0f172a', fontWeight: 900, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.value}</div>
+                  </div>
                 </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.label}</div>
-                  <div style={{ fontSize: isMobile ? 13 : 14, color: '#0f172a', fontWeight: 900, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.value}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Section Tabs */}
           <div style={{ padding: isMobile ? '10px 0' : '10px 0 12px', display: 'flex', gap: 8, background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
@@ -1632,7 +1620,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 );
               })}
             </div>
-            {tabs.map(tab => {
+            {tableViewMode !== 'SAISIE' && tabs.map(tab => {
               const isActive = activeTab === tab.id;
               let icon = '📁';
               let accentBg = '#475569';
@@ -1677,7 +1665,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         </header>
 
         {/* Table Area */}
-        <div id="dashboard-content-area" style={{ flex: 1, overflow: 'auto', padding: isMobile ? 12 : 32, display: 'flex', flexDirection: 'column' }}>
+        <div id="dashboard-content-area" style={{ flex: 1, overflow: 'auto', padding: tableViewMode === 'SAISIE' ? (isMobile ? 12 : 16) : (isMobile ? 12 : 32), display: 'flex', flexDirection: 'column' }}>
           {tableViewMode === 'SAISIE' ? (
             renderDailyEntryView()
           ) : (
