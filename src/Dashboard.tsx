@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 
-import { ChevronLeft, Save, Download, Upload, Calendar, Calculator, FileText, Settings, CreditCard, TrendingUp, PieChart as PieChartIcon, FileSpreadsheet, Receipt, Building2, Briefcase, Utensils, Menu, X, FileDown } from 'lucide-react';
+import { ChevronLeft, Download, Upload, FileDown } from 'lucide-react';
 // ── Constantes Dashboard inline (dashboardConstants.ts intégré) ─────────────
 type DashboardColumn = [string, string, string, string];
 type VisibleDashboardColumn = DashboardColumn & { originalIndex: number };
@@ -224,7 +224,7 @@ const DebouncedInput = ({ value, onChange, onFocus, onBlur, onKeyDown, className
 };
 
 export default function Dashboard({ initialMonth, year, onBack }: DashboardProps) {
-  const { data: globalData, updateDashboard, customEvents } = useData();
+  const { data: globalData, updateDashboard, customEvents, setSelectedYear, setSelectedMonth } = useData();
   
   const getEaster = (y: number) => {
     const a = y % 19;
@@ -280,7 +280,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   ];
 
   const [month, setMonth] = useState(initialMonth);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedEntryDay, setSelectedEntryDay] = useState(() => {
@@ -341,8 +341,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth > 1024) setIsSidebarOpen(true);
-      else setIsSidebarOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -1127,7 +1125,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const renderDailyServiceRow = (label: string, caCol: number, coversCol: number, tmCol: number) => (
-    <div key={label} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '110px repeat(3, minmax(130px, 1fr))', gap: 10, alignItems: 'end', gridColumn: '1 / -1' }}>
+    <div key={label} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '96px repeat(3, minmax(160px, 1fr))', gap: 12, alignItems: 'end', gridColumn: '1 / -1' }}>
       <div style={{ height: isMobile ? 'auto' : 36, display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{label}</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>CA {label}</span>
@@ -1140,6 +1138,16 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>TM {label}</span>
         {renderDailyControl(tmCol, { readOnly: true })}
+      </label>
+    </div>
+  );
+
+  const renderDailySingleRow = (label: string, col: number, options: { readOnly?: boolean; text?: boolean } = {}) => (
+    <div key={`${label}-${col}`} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '96px minmax(160px, 1fr) repeat(2, minmax(160px, 1fr))', gap: 12, alignItems: 'end', gridColumn: '1 / -1' }}>
+      <div style={{ height: isMobile ? 'auto' : 36, display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{label}</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</span>
+        {renderDailyControl(col, options)}
       </label>
     </div>
   );
@@ -1168,62 +1176,98 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       month: 'long',
       year: 'numeric',
     }) || selectedDayRow.label;
+    const selectedMonthLabel = `${monthNames[month]} ${year}`;
+    const monthSelectOptions = monthNames.map((label, value) => ({ label, value }));
+    const yearSelectOptions = [year - 1, year, year + 1];
+    const leadingEmptyDays = (new Date(year, month, 1).getDay() + 6) % 7;
+    const calendarCells = [
+      ...Array.from({ length: leadingEmptyDays }, () => null as DashboardRow | null),
+      ...dayRows.map(({ row }) => row),
+    ];
+    while (calendarCells.length % 7 !== 0) calendarCells.push(null);
+
+    const selectMonth = (nextMonth: number) => {
+      setMonth(nextMonth);
+      setSelectedMonth(nextMonth);
+    };
 
     const achatFields = Array.from({ length: 13 }, (_, idx) => 45 + idx).map(col => renderDailyField(dynamicColumns[col]?.[2] || `Achat ${col}`, col));
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: '100%', minWidth: 0 }}>
-        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: isMobile ? 10 : 12, display: 'flex', alignItems: 'center', gap: 8, overflowX: 'auto', scrollbarWidth: 'none' }}>
-          {dayRows.map(({ row, index }) => {
-            const isSelected = row.dayIndex === selectedEntryDay;
-            const isToday = row.dateObj
-              && row.dateObj.getFullYear() === todayMarker.year
-              && row.dateObj.getMonth() === todayMarker.month
-              && row.dateObj.getDate() === todayMarker.day;
-            const weekday = row.dateObj?.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '') || '';
-
-            return (
-              <button
-                key={index}
-                type="button"
-                onClick={() => row.dayIndex && setSelectedEntryDay(row.dayIndex)}
-                style={{
-                  minWidth: isMobile ? 58 : 66,
-                  border: `1px solid ${isSelected ? '#10b981' : '#e2e8f0'}`,
-                  borderRadius: 10,
-                  background: isSelected ? '#ecfdf5' : '#f8fafc',
-                  color: isSelected ? '#065f46' : '#334155',
-                  padding: '7px 9px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 2,
-                  boxShadow: isSelected ? '0 0 0 2px rgba(16,185,129,.12)' : 'none',
-                }}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: '100%', minWidth: 0, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: isMobile ? 12 : 16, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '280px 1fr', gap: isMobile ? 12 : 18, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 96px', gap: 10 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Mois</span>
+              <select
+                value={month}
+                onChange={event => selectMonth(Number(event.target.value))}
+                style={{ height: 38, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff', textTransform: 'capitalize' }}
               >
-                <span style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', color: isSelected ? '#047857' : '#64748b' }}>{weekday}</span>
-                <span style={{ fontSize: 15, fontWeight: 950, lineHeight: 1 }}>{row.dayIndex}</span>
-                {isToday && <span style={{ width: 5, height: 5, borderRadius: 999, background: '#2563eb' }} />}
-              </button>
-            );
-          })}
+                {monthSelectOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Année</span>
+              <select
+                value={year}
+                onChange={event => setSelectedYear(Number(event.target.value))}
+                style={{ height: 38, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff' }}
+              >
+                {yearSelectOptions.map(option => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </label>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(34px, 1fr))', gap: 6 }}>
+            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+              <div key={day} style={{ textAlign: 'center', fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>{day}</div>
+            ))}
+            {calendarCells.map((row, index) => {
+              if (!row) return <div key={`empty-${index}`} style={{ minHeight: 34 }} />;
+              const isSelected = row.dayIndex === selectedEntryDay;
+              const isToday = row.dateObj
+                && row.dateObj.getFullYear() === todayMarker.year
+                && row.dateObj.getMonth() === todayMarker.month
+                && row.dateObj.getDate() === todayMarker.day;
+
+              return (
+                <button
+                  key={`${row.dayIndex}-${index}`}
+                  type="button"
+                  onClick={() => row.dayIndex && setSelectedEntryDay(row.dayIndex)}
+                  style={{
+                    height: 34,
+                    border: `1px solid ${isSelected ? '#0f172a' : '#e2e8f0'}`,
+                    borderRadius: 8,
+                    background: isSelected ? '#0f172a' : isToday ? '#eff6ff' : '#fff',
+                    color: isSelected ? '#fff' : isToday ? '#1d4ed8' : '#334155',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: 900,
+                  }}
+                >
+                  {row.dayIndex}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
-          <div style={{ background: '#0f172a', color: '#fff', borderRadius: 14, padding: isMobile ? 16 : '16px 18px', display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row' }}>
+          <div style={{ background: '#050b18', color: '#fff', borderRadius: 10, padding: isMobile ? 16 : '18px 20px', marginTop: isMobile ? 4 : 24, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row' }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journalière</div>
               <h2 style={{ margin: '4px 0 0', fontSize: isMobile ? 20 : 24, fontWeight: 950, textTransform: 'capitalize' }}>{dayLabel}</h2>
             </div>
             <div style={{ fontSize: 12, color: '#cbd5e1', fontWeight: 800 }}>
-              {monthNames[month]} {year}
+              {selectedMonthLabel}
             </div>
           </div>
 
           {renderDailySection('Réalisé', 'Saisie du CA et des couverts par service', (
             <>
-              {renderDailyField('VAE', 17)}
+              {renderDailySingleRow('VAE', 17)}
               {renderDailyServiceRow('Midi', 18, 25, 26)}
               {renderDailyServiceRow('Soir', 19, 27, 28)}
               {renderDailyServiceRow('Limonade', 20, 34, 35)}
@@ -1527,22 +1571,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90 }}>
           <div style={{ height: isMobile ? 58 : 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {isMobile && (
-                <button 
-                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', padding: 4 }}
-                >
-                  {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-                </button>
-              )}
+              <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 800, padding: 0 }}>
+                <ChevronLeft size={16} /> Retour Accueil
+              </button>
               <h2 style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, color: '#0f172a', margin: 0, textTransform: 'capitalize', letterSpacing: '-0.02em' }}>
                 {monthNames[month]} {year}
               </h2>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} title={isSidebarOpen ? 'Masquer le menu' : 'Afficher le menu'} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
-                <Menu size={16} />
-              </button>
               <button onClick={() => setIsImportModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '6px 12px' : '8px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#10b981', fontSize: isMobile ? 12 : 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#ecfdf5'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                 <Upload size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Importer'}
               </button>
