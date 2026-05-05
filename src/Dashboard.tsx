@@ -1173,6 +1173,18 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     </div>
   );
 
+  const renderDailyTotalRow = (items: Array<{ label: string; col: number }>) => (
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '92px repeat(3, minmax(160px, 1fr))', gap: 12, alignItems: 'end', gridColumn: '1 / -1' }}>
+      <div style={{ height: isMobile ? 'auto' : 36, display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 900, color: '#0f172a' }}>Totaux</div>
+      {items.map(item => (
+        <label key={`total-${item.col}`} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ fontSize: 11, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.04em' }}>{item.label}</span>
+          {renderDailyControl(item.col, { readOnly: true })}
+        </label>
+      ))}
+    </div>
+  );
+
   const renderDailySection = (title: string, subtitle: string, fields: React.ReactNode, accent: string) => (
     <section style={{ background: '#fff', border: '1px solid #dbe5ec', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
       <div style={{ padding: '11px 14px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -1334,23 +1346,37 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               {renderDailyServiceRow('Midi', 18, 25, 26)}
               {renderDailyServiceRow('Soir', 19, 27, 28)}
               {renderDailyServiceRow('Limonade', 20, 34, 35)}
-              {renderDailyField('Événement restaurant', 37, { text: true })}
-              {renderDailyField('Événement national', 38, { text: true })}
-              {renderDailyField('Total CA', 21, { readOnly: true })}
-              {renderDailyField('Total couverts', 29, { readOnly: true })}
-              {renderDailyField('Ticket moyen', 30, { readOnly: true })}
+              {renderDailyTotalRow([
+                { label: 'Total CA', col: 21 },
+                { label: 'Total couverts', col: 29 },
+                { label: 'Ticket moyen', col: 30 },
+              ])}
             </>
           ), '#2563eb')}
 
-          {renderDailySection('Coût matière et démarques', 'Achats du jour et démarques saisies quotidiennement', (
+          {renderDailySection('Événements', 'Notes particulières du jour', (
+            <>
+              {renderDailyField('Événement restaurant', 37, { text: true })}
+              {renderDailyField('Événement national', 38, { text: true })}
+            </>
+          ), '#0f766e')}
+
+          {renderDailySection('Démarques', 'Personnel, opérationnel et total démarques', (
             <>
               {renderDailyField('Démarque personnel', 39)}
               {renderDailyField('Démarque opérationnel', 41)}
-              {renderDailyField('Explication démarque', 44, { text: true })}
               {renderDailyField('Total démarque', 43, { readOnly: true })}
+              {renderDailyField('Explication démarque', 44, { text: true })}
+            </>
+          ), '#f59e0b')}
+
+          {renderDailySection('Achats / livraisons', 'Factures fournisseurs reçues dans la journée', (
+            <>
               {achatFields}
-              {renderDailyField('Total achats HT', 58, { readOnly: true })}
-              {renderDailyField('Ratio matière', 60, { readOnly: true })}
+              {renderDailyTotalRow([
+                { label: 'Total achats HT', col: 58 },
+                { label: 'Ratio matière', col: 60 },
+              ])}
             </>
           ), '#16a34a')}
 
