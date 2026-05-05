@@ -1221,11 +1221,32 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
+  const sidebarTheme = 'linear-gradient(180deg,#07111f 0%,#0a2430 48%,#073d43 100%)';
+  const sidebarThemeWide = 'linear-gradient(135deg,#07111f 0%,#0a2430 46%,#073d43 100%)';
+  const weatherTheme = 'linear-gradient(135deg,#052a34 0%,#0a4d58 52%,#0d6b6f 100%)';
+  const weatherThemeHover = 'linear-gradient(135deg,#07323d 0%,#0b5b67 52%,#0f787b 100%)';
+
+  const actionTileStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: isMobile ? '7px 12px' : '9px 16px',
+    background: weatherTheme,
+    border: '1px solid rgba(207, 250, 254, .26)',
+    borderRadius: 12,
+    color: '#ecfeff',
+    fontSize: isMobile ? 12 : 14,
+    fontWeight: 850,
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    boxShadow: '0 8px 18px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.14)',
+  };
+
   const renderDailySection = (title: string, subtitle: string, fields: React.ReactNode, accent: string) => (
     <section style={{ background: '#fff', border: '1px solid #dbe5ec', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
-      <div style={{ padding: '11px 14px', borderBottom: `1px solid ${tint(accent, 0.24)}`, background: `linear-gradient(135deg, ${tint(accent, 0.18)} 0%, ${tint(accent, 0.08)} 46%, #f8fafc 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <div style={{ padding: '11px 14px', borderBottom: `1px solid ${tint(accent, 0.34)}`, background: `linear-gradient(135deg, ${tint(accent, 0.30)} 0%, ${tint(accent, 0.16)} 48%, #f8fafc 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <div style={{ width: 6, height: 28, borderRadius: 999, background: `linear-gradient(180deg, ${accent}, ${tint(accent, 0.66)})`, flexShrink: 0 }} />
+          <div style={{ width: 6, height: 28, borderRadius: 999, background: `linear-gradient(180deg, ${accent}, ${tint(accent, 0.78)})`, boxShadow: `0 0 0 3px ${tint(accent, 0.12)}`, flexShrink: 0 }} />
           <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap' }}>{title}</h3>
         </div>
         <p style={{ margin: 0, fontSize: 11, color: '#475569', fontWeight: 800, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isMobile ? 'normal' : 'nowrap' }}>{subtitle}</p>
@@ -1237,14 +1258,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   );
 
   const renderDatePicker = () => (
-    <div style={{ position: 'absolute', left: 0, top: 'calc(100% + 10px)', width: isMobile ? 320 : 430, maxWidth: 'calc(100vw - 32px)', background: '#fff', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: 10, padding: 14, boxShadow: '0 18px 45px rgba(15, 23, 42, 0.22)', zIndex: 140 }}>
+    <div style={{ position: 'absolute', left: 0, top: 'calc(100% + 10px)', width: isMobile ? 320 : 430, maxWidth: 'calc(100vw - 32px)', background: weatherTheme, color: '#ecfeff', border: '1px solid rgba(207,250,254,.28)', borderRadius: 14, padding: 14, boxShadow: '0 20px 48px rgba(2, 6, 23, 0.34), inset 0 1px 0 rgba(255,255,255,.12)', zIndex: 140 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 104px', gap: 10, marginBottom: 12 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Mois</span>
+          <span style={{ fontSize: 10, fontWeight: 900, color: 'rgba(236,254,255,.76)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Mois</span>
           <select
             value={month}
             onChange={event => selectMonth(Number(event.target.value))}
-            style={{ height: 38, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff', textTransform: 'capitalize' }}
+            style={{ height: 38, border: '1px solid rgba(207,250,254,.24)', borderRadius: 10, padding: '0 10px', fontWeight: 850, color: '#ecfeff', background: 'rgba(5, 42, 52, .82)', textTransform: 'capitalize', outline: 'none' }}
           >
             {monthSelectOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
@@ -1254,7 +1275,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           <select
             value={year}
             onChange={event => setSelectedYear(Number(event.target.value))}
-            style={{ height: 38, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff' }}
+            style={{ height: 38, border: '1px solid rgba(207,250,254,.24)', borderRadius: 10, padding: '0 10px', fontWeight: 850, color: '#ecfeff', background: 'rgba(5, 42, 52, .82)', outline: 'none' }}
           >
             {yearSelectOptions.map(option => <option key={option} value={option}>{option}</option>)}
           </select>
@@ -1262,7 +1283,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(34px, 1fr))', gap: 6 }}>
         {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
-          <div key={day} style={{ textAlign: 'center', fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>{day}</div>
+          <div key={day} style={{ textAlign: 'center', fontSize: 10, fontWeight: 900, color: 'rgba(236,254,255,.70)', textTransform: 'uppercase' }}>{day}</div>
         ))}
         {datePickerCells.map((row, index) => {
           if (!row) return <div key={`empty-${index}`} style={{ minHeight: 34 }} />;
@@ -1282,13 +1303,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               }}
               style={{
                 height: 34,
-                border: `1px solid ${isSelected ? '#0f172a' : '#e2e8f0'}`,
-                borderRadius: 8,
-                background: isSelected ? '#0f172a' : isToday ? '#eff6ff' : '#fff',
-                color: isSelected ? '#fff' : isToday ? '#1d4ed8' : '#334155',
+                border: `1px solid ${isSelected ? 'rgba(254,243,199,.86)' : isToday ? 'rgba(251,191,36,.55)' : 'rgba(207,250,254,.18)'}`,
+                borderRadius: 9,
+                background: isSelected ? 'linear-gradient(135deg,#f59e0b,#fbbf24)' : isToday ? 'rgba(251,191,36,.18)' : 'rgba(255,255,255,.10)',
+                color: isSelected ? '#0f172a' : isToday ? '#fde68a' : '#ecfeff',
                 cursor: 'pointer',
                 fontSize: 13,
                 fontWeight: 900,
+                boxShadow: isSelected ? '0 8px 18px rgba(0,0,0,.20)' : 'none',
               }}
             >
               {row.dayIndex}
@@ -1640,7 +1662,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       <aside style={{ 
         width: isSidebarOpen ? 260 : 0,
         minWidth: isSidebarOpen ? 260 : 0,
-        background: '#1e293b', 
+        background: sidebarTheme, 
         color: '#fff', 
         display: 'flex', 
         flexDirection: 'column', 
@@ -1691,7 +1713,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8fafc' }}>
         
         {/* Top Header for Sections */}
-        <header style={{ background: tableViewMode === 'SAISIE' ? 'linear-gradient(135deg,#07111f 0%,#0a2430 48%,#073d43 100%)' : '#fff', borderBottom: tableViewMode === 'SAISIE' ? '1px solid rgba(125, 211, 252, .22)' : '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90, position: 'relative', boxShadow: tableViewMode === 'SAISIE' ? '0 12px 30px rgba(15, 23, 42, .16)' : 'none' }}>
+        <header style={{ background: tableViewMode === 'SAISIE' ? sidebarThemeWide : '#fff', borderBottom: tableViewMode === 'SAISIE' ? '1px solid rgba(125, 211, 252, .24)' : '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90, position: 'relative', boxShadow: tableViewMode === 'SAISIE' ? '0 14px 32px rgba(15, 23, 42, .20), inset 0 -1px 0 rgba(255,255,255,.06)' : 'none' }}>
           <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', minHeight: tableViewMode === 'SAISIE' ? (isMobile ? 86 : 78) : (isMobile ? 58 : 64), padding: tableViewMode === 'SAISIE' ? (isMobile ? '12px 0' : '14px 0 10px') : 0, display: 'flex', alignItems: tableViewMode === 'SAISIE' && isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 16, flexDirection: tableViewMode === 'SAISIE' && isMobile ? 'column' : 'row' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: tableViewMode === 'SAISIE' ? 18 : 12, minWidth: 0 }}>
               <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: tableViewMode === 'SAISIE' ? '#cbd5e1' : '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 800, padding: 0, flexShrink: 0 }}>
@@ -1702,10 +1724,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   <button
                     type="button"
                     onClick={() => setIsDatePickerOpen(prev => !prev)}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff', padding: 0, textAlign: 'left' }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(207,250,254,.14)', borderRadius: 14, cursor: 'pointer', color: '#fff', padding: isMobile ? '9px 11px' : '10px 14px', textAlign: 'left', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08)' }}
                   >
                     <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journalière</span>
-                    <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1 }}>{selectedDayLabel}</span>
+                    <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1, color: '#fef3c7' }}>{selectedDayLabel}</span>
                   </button>
                   {isDatePickerOpen && renderDatePicker()}
                 </div>
@@ -1716,13 +1738,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               )}
             </div>
             <div style={{ display: 'flex', gap: 8, alignSelf: tableViewMode === 'SAISIE' && isMobile ? 'stretch' : 'auto', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button onClick={() => setIsImportModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '6px 12px' : '8px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#10b981', fontSize: isMobile ? 12 : 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#ecfdf5'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+              <button onClick={() => setIsImportModalOpen(true)} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
                 <Upload size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Importer'}
               </button>
-              <button onClick={handleExportPDF} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '6px 12px' : '8px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#ef4444', fontSize: isMobile ? 12 : 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+              <button onClick={handleExportPDF} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
                 <FileDown size={isMobile ? 14 : 16} /> {isMobile ? '' : 'PDF'}
               </button>
-              <button onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '6px 12px' : '8px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#475569', fontSize: isMobile ? 12 : 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+              <button onClick={handleExport} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
                 <Download size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Excel'}
               </button>
             </div>
