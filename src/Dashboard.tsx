@@ -1185,6 +1185,31 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     </div>
   );
 
+  const renderPersonnelPair = (label: string, projectionCol: number, realiseCol: number) => (
+    <div key={`${label}-${projectionCol}-${realiseCol}`} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '180px repeat(2, minmax(180px, 1fr))', gap: 12, alignItems: 'end', gridColumn: '1 / -1' }}>
+      <div style={{ height: isMobile ? 'auto' : 36, display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{label}</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>Projection</span>
+        {renderDailyControl(projectionCol)}
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>Réalisé</span>
+        {renderDailyControl(realiseCol)}
+      </label>
+    </div>
+  );
+
+  const renderPersonnelGroup = (title: string, rows: React.ReactNode) => (
+    <div style={{ gridColumn: '1 / -1', border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
+      <div style={{ padding: '9px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: 12, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+        {title}
+      </div>
+      <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+        {rows}
+      </div>
+    </div>
+  );
+
   const renderDailySection = (title: string, subtitle: string, fields: React.ReactNode, accent: string) => (
     <section style={{ background: '#fff', border: '1px solid #dbe5ec', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
       <div style={{ padding: '11px 14px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -1375,21 +1400,26 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               {achatFields}
               {renderDailyTotalRow([
                 { label: 'Total achats HT', col: 58 },
-                { label: 'Ratio matière', col: 60 },
               ])}
             </>
           ), '#16a34a')}
 
-          {renderDailySection('Personnel', 'Heures, coût et ratios principaux', (
+          {renderDailySection('Personnel', 'Saisie des heures par équipe', (
             <>
-              {[66, 67, 68, 69, 70, 71, 72, 73, 74, 75].map(col => renderDailyField(dynamicColumns[col]?.[2] || `Projection ${col}`, col))}
-              {[81, 82, 83, 84, 85, 86, 87, 88, 89, 90].map(col => renderDailyField(dynamicColumns[col]?.[2] || `Réalisé ${col}`, col))}
-              {renderDailyField('Heures projetées', 65, { readOnly: true })}
-              {renderDailyField('Coût projeté', 72, { readOnly: true })}
-              {renderDailyField('Heures réalisées', 76, { readOnly: true })}
-              {renderDailyField('Coût réalisé', 83, { readOnly: true })}
-              {renderDailyField('Écart heures', 87, { readOnly: true })}
-              {renderDailyField('Écart ratio', 88, { readOnly: true })}
+              {renderPersonnelGroup('Cuisine', (
+                <>
+                  {renderPersonnelPair('NIV I et II', 66, 81)}
+                  {renderPersonnelPair('NIV III', 68, 83)}
+                  {renderPersonnelPair('Apprenti', 70, 85)}
+                </>
+              ))}
+              {renderPersonnelGroup('Salle', (
+                <>
+                  {renderPersonnelPair('NIV I et II', 67, 82)}
+                  {renderPersonnelPair('NIV III', 69, 84)}
+                  {renderPersonnelPair('Apprenti', 71, 86)}
+                </>
+              ))}
             </>
           ), '#9333ea')}
         </div>
