@@ -283,6 +283,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [selectedEntryDay, setSelectedEntryDay] = useState(() => {
     const now = new Date();
     return initialMonth === now.getMonth() && year === now.getFullYear() ? now.getDate() : 1;
@@ -1065,6 +1066,26 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const selectedDayEntry = dayRows.find(item => item.row.dayIndex === selectedEntryDay) || dayRows[0];
   const selectedDayRowIndex = selectedDayEntry?.index ?? -1;
   const selectedDayRow = selectedDayEntry?.row;
+  const selectedDayLabel = selectedDayRow?.dateObj?.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }) || selectedDayRow?.label || '';
+  const selectedMonthLabel = `${monthNames[month]} ${year}`;
+  const monthSelectOptions = monthNames.map((label, value) => ({ label, value }));
+  const yearSelectOptions = [year - 1, year, year + 1];
+  const leadingEmptyDays = (new Date(year, month, 1).getDay() + 6) % 7;
+  const datePickerCells = [
+    ...Array.from({ length: leadingEmptyDays }, () => null as DashboardRow | null),
+    ...dayRows.map(({ row }) => row),
+  ];
+  while (datePickerCells.length % 7 !== 0) datePickerCells.push(null);
+
+  const selectMonth = (nextMonth: number) => {
+    setMonth(nextMonth);
+    setSelectedMonth(nextMonth);
+  };
 
   const getDailyCellValue = (col: number) => selectedDayRowIndex >= 0 ? calculatedData[`${selectedDayRowIndex}-${col}`] || '' : '';
   const getDailyDisplayValue = (col: number) => formatValue(getDailyCellValue(col), dynamicColumns[col] || ['', '', '', '']);
@@ -1167,35 +1188,77 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     </section>
   );
 
+  const renderDatePicker = () => (
+    <div style={{ position: 'absolute', left: 0, top: 'calc(100% + 10px)', width: isMobile ? 320 : 430, maxWidth: 'calc(100vw - 32px)', background: '#fff', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: 10, padding: 14, boxShadow: '0 18px 45px rgba(15, 23, 42, 0.22)', zIndex: 140 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 104px', gap: 10, marginBottom: 12 }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Mois</span>
+          <select
+            value={month}
+            onChange={event => selectMonth(Number(event.target.value))}
+            style={{ height: 38, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff', textTransform: 'capitalize' }}
+          >
+            {monthSelectOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Année</span>
+          <select
+            value={year}
+            onChange={event => setSelectedYear(Number(event.target.value))}
+            style={{ height: 38, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff' }}
+          >
+            {yearSelectOptions.map(option => <option key={option} value={option}>{option}</option>)}
+          </select>
+        </label>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(34px, 1fr))', gap: 6 }}>
+        {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+          <div key={day} style={{ textAlign: 'center', fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>{day}</div>
+        ))}
+        {datePickerCells.map((row, index) => {
+          if (!row) return <div key={`empty-${index}`} style={{ minHeight: 34 }} />;
+          const isSelected = row.dayIndex === selectedEntryDay;
+          const isToday = row.dateObj
+            && row.dateObj.getFullYear() === todayMarker.year
+            && row.dateObj.getMonth() === todayMarker.month
+            && row.dateObj.getDate() === todayMarker.day;
+
+          return (
+            <button
+              key={`${row.dayIndex}-${index}`}
+              type="button"
+              onClick={() => {
+                if (row.dayIndex) setSelectedEntryDay(row.dayIndex);
+                setIsDatePickerOpen(false);
+              }}
+              style={{
+                height: 34,
+                border: `1px solid ${isSelected ? '#0f172a' : '#e2e8f0'}`,
+                borderRadius: 8,
+                background: isSelected ? '#0f172a' : isToday ? '#eff6ff' : '#fff',
+                color: isSelected ? '#fff' : isToday ? '#1d4ed8' : '#334155',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: 900,
+              }}
+            >
+              {row.dayIndex}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   const renderDailyEntryView = () => {
     if (!selectedDayRow) return null;
-
-    const dayLabel = selectedDayRow.dateObj?.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }) || selectedDayRow.label;
-    const selectedMonthLabel = `${monthNames[month]} ${year}`;
-    const monthSelectOptions = monthNames.map((label, value) => ({ label, value }));
-    const yearSelectOptions = [year - 1, year, year + 1];
-    const leadingEmptyDays = (new Date(year, month, 1).getDay() + 6) % 7;
-    const calendarCells = [
-      ...Array.from({ length: leadingEmptyDays }, () => null as DashboardRow | null),
-      ...dayRows.map(({ row }) => row),
-    ];
-    while (calendarCells.length % 7 !== 0) calendarCells.push(null);
-
-    const selectMonth = (nextMonth: number) => {
-      setMonth(nextMonth);
-      setSelectedMonth(nextMonth);
-    };
 
     const achatFields = Array.from({ length: 13 }, (_, idx) => 45 + idx).map(col => renderDailyField(dynamicColumns[col]?.[2] || `Achat ${col}`, col));
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: '100%', minWidth: 0, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
-        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: isMobile ? 12 : 16, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '280px 1fr', gap: isMobile ? 12 : 18, alignItems: 'start' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: '100%', minWidth: 0, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: isMobile ? 12 : 16, display: 'none', gridTemplateColumns: isMobile ? '1fr' : '280px 1fr', gap: isMobile ? 12 : 18, alignItems: 'start' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 96px', gap: 10 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Mois</span>
@@ -1223,7 +1286,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
               <div key={day} style={{ textAlign: 'center', fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>{day}</div>
             ))}
-            {calendarCells.map((row, index) => {
+            {datePickerCells.map((row, index) => {
               if (!row) return <div key={`empty-${index}`} style={{ minHeight: 34 }} />;
               const isSelected = row.dayIndex === selectedEntryDay;
               const isToday = row.dateObj
@@ -1255,10 +1318,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
-          <div style={{ background: '#050b18', color: '#fff', borderRadius: 10, padding: isMobile ? 16 : '18px 20px', marginTop: isMobile ? 4 : 24, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row' }}>
+          <div style={{ background: '#050b18', color: '#fff', borderRadius: 10, padding: isMobile ? 16 : '18px 20px', marginTop: isMobile ? 4 : 24, display: 'none', justifyContent: 'space-between', gap: 12, alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row' }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journalière</div>
-              <h2 style={{ margin: '4px 0 0', fontSize: isMobile ? 20 : 24, fontWeight: 950, textTransform: 'capitalize' }}>{dayLabel}</h2>
+              <h2 style={{ margin: '4px 0 0', fontSize: isMobile ? 20 : 24, fontWeight: 950, textTransform: 'capitalize' }}>{selectedDayLabel}</h2>
             </div>
             <div style={{ fontSize: 12, color: '#cbd5e1', fontWeight: 800 }}>
               {selectedMonthLabel}
@@ -1568,17 +1631,31 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8fafc' }}>
         
         {/* Top Header for Sections */}
-        <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90 }}>
-          <div style={{ height: isMobile ? 58 : 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 800, padding: 0 }}>
+        <header style={{ background: tableViewMode === 'SAISIE' ? '#050b18' : '#fff', borderBottom: tableViewMode === 'SAISIE' ? '1px solid #111827' : '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90, position: 'relative' }}>
+          <div style={{ minHeight: tableViewMode === 'SAISIE' ? (isMobile ? 96 : 92) : (isMobile ? 58 : 64), padding: tableViewMode === 'SAISIE' ? (isMobile ? '14px 0' : '16px 0') : 0, display: 'flex', alignItems: tableViewMode === 'SAISIE' && isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 16, flexDirection: tableViewMode === 'SAISIE' && isMobile ? 'column' : 'row' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: tableViewMode === 'SAISIE' ? 18 : 12, minWidth: 0 }}>
+              <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: tableViewMode === 'SAISIE' ? '#cbd5e1' : '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 800, padding: 0, flexShrink: 0 }}>
                 <ChevronLeft size={16} /> Retour Accueil
               </button>
-              <h2 style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, color: '#0f172a', margin: 0, textTransform: 'capitalize', letterSpacing: '-0.02em' }}>
-                {monthNames[month]} {year}
-              </h2>
+              {tableViewMode === 'SAISIE' ? (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsDatePickerOpen(prev => !prev)}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff', padding: 0, textAlign: 'left' }}
+                  >
+                    <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journalière</span>
+                    <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1 }}>{selectedDayLabel}</span>
+                  </button>
+                  {isDatePickerOpen && renderDatePicker()}
+                </div>
+              ) : (
+                <h2 style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, color: '#0f172a', margin: 0, textTransform: 'capitalize', letterSpacing: '-0.02em' }}>
+                  {monthNames[month]} {year}
+                </h2>
+              )}
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignSelf: tableViewMode === 'SAISIE' && isMobile ? 'stretch' : 'auto', justifyContent: 'flex-end' }}>
               <button onClick={() => setIsImportModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '6px 12px' : '8px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#10b981', fontSize: isMobile ? 12 : 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#ecfdf5'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                 <Upload size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Importer'}
               </button>
@@ -1628,9 +1705,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           )}
 
           {/* Section Tabs */}
-          <div style={{ padding: isMobile ? '10px 0' : '10px 0 12px', display: 'flex', gap: 8, background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 4, border: '1px solid #e2e8f0', borderRadius: 10, background: '#f8fafc', flexShrink: 0 }}>
-              <span style={{ padding: '0 6px', fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Vue</span>
+          <div style={{ padding: tableViewMode === 'SAISIE' ? '0 0 14px' : (isMobile ? '10px 0' : '10px 0 12px'), display: 'flex', gap: 8, background: tableViewMode === 'SAISIE' ? '#050b18' : '#fff', borderBottom: tableViewMode === 'SAISIE' ? 'none' : '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 4, border: tableViewMode === 'SAISIE' ? '1px solid rgba(255,255,255,.14)' : '1px solid #e2e8f0', borderRadius: 10, background: tableViewMode === 'SAISIE' ? 'rgba(255,255,255,.08)' : '#f8fafc', flexShrink: 0 }}>
+              <span style={{ padding: '0 6px', fontSize: 10, fontWeight: 900, color: tableViewMode === 'SAISIE' ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Vue</span>
               {viewModes.map(mode => {
                 const isModeActive = tableViewMode === mode.id;
                 return (
@@ -1641,8 +1718,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     style={{
                       border: 'none',
                       borderRadius: 7,
-                      background: isModeActive ? '#0f172a' : 'transparent',
-                      color: isModeActive ? '#fff' : '#475569',
+                      background: isModeActive ? (tableViewMode === 'SAISIE' ? '#fff' : '#0f172a') : 'transparent',
+                      color: isModeActive ? (tableViewMode === 'SAISIE' ? '#0f172a' : '#fff') : (tableViewMode === 'SAISIE' ? '#cbd5e1' : '#475569'),
                       cursor: 'pointer',
                       fontSize: 11,
                       fontWeight: 800,
