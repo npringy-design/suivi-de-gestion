@@ -1212,14 +1212,23 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     </div>
   );
 
+  const tint = (hex: string, opacity: number) => {
+    const normalized = hex.replace('#', '');
+    const bigint = parseInt(normalized, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  };
+
   const renderDailySection = (title: string, subtitle: string, fields: React.ReactNode, accent: string) => (
     <section style={{ background: '#fff', border: '1px solid #dbe5ec', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
-      <div style={{ padding: '11px 14px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <div style={{ padding: '11px 14px', borderBottom: `1px solid ${tint(accent, 0.24)}`, background: `linear-gradient(135deg, ${tint(accent, 0.18)} 0%, ${tint(accent, 0.08)} 46%, #f8fafc 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <div style={{ width: 6, height: 28, borderRadius: 999, background: accent, flexShrink: 0 }} />
+          <div style={{ width: 6, height: 28, borderRadius: 999, background: `linear-gradient(180deg, ${accent}, ${tint(accent, 0.66)})`, flexShrink: 0 }} />
           <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap' }}>{title}</h3>
         </div>
-        <p style={{ margin: 0, fontSize: 11, color: '#64748b', fontWeight: 700, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isMobile ? 'normal' : 'nowrap' }}>{subtitle}</p>
+        <p style={{ margin: 0, fontSize: 11, color: '#475569', fontWeight: 800, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isMobile ? 'normal' : 'nowrap' }}>{subtitle}</p>
       </div>
       <div style={{ padding: isMobile ? 12 : 14, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(160px, 1fr))', columnGap: 12, rowGap: 12 }}>
         {fields}
