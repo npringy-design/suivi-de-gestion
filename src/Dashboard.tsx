@@ -1146,7 +1146,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const renderDailyServiceRow = (label: string, caCol: number, coversCol: number, tmCol: number) => (
-    <div key={label} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '96px repeat(3, minmax(160px, 1fr))', gap: 12, alignItems: 'end', gridColumn: '1 / -1' }}>
+    <div key={label} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '92px repeat(3, minmax(160px, 1fr))', gap: 12, alignItems: 'end', gridColumn: '1 / -1' }}>
       <div style={{ height: isMobile ? 'auto' : 36, display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{label}</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>CA {label}</span>
@@ -1164,7 +1164,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   );
 
   const renderDailySingleRow = (label: string, col: number, options: { readOnly?: boolean; text?: boolean } = {}) => (
-    <div key={`${label}-${col}`} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '96px minmax(160px, 1fr) repeat(2, minmax(160px, 1fr))', gap: 12, alignItems: 'end', gridColumn: '1 / -1' }}>
+    <div key={`${label}-${col}`} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '92px repeat(3, minmax(160px, 1fr))', gap: 12, alignItems: 'end', gridColumn: '1 / -1' }}>
       <div style={{ height: isMobile ? 'auto' : 36, display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{label}</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</span>
@@ -1174,15 +1174,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   );
 
   const renderDailySection = (title: string, subtitle: string, fields: React.ReactNode, accent: string) => (
-    <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
-      <div style={{ padding: '12px 14px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 8, height: 34, borderRadius: 999, background: accent, flexShrink: 0 }} />
-        <div style={{ minWidth: 0 }}>
-          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: '#0f172a' }}>{title}</h3>
-          <p style={{ margin: '2px 0 0', fontSize: 11, color: '#64748b', fontWeight: 700 }}>{subtitle}</p>
+    <section style={{ background: '#fff', border: '1px solid #dbe5ec', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+      <div style={{ padding: '11px 14px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <div style={{ width: 6, height: 28, borderRadius: 999, background: accent, flexShrink: 0 }} />
+          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap' }}>{title}</h3>
         </div>
+        <p style={{ margin: 0, fontSize: 11, color: '#64748b', fontWeight: 700, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isMobile ? 'normal' : 'nowrap' }}>{subtitle}</p>
       </div>
-      <div style={{ padding: 14, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(150px, 1fr))', gap: 12 }}>
+      <div style={{ padding: isMobile ? 12 : 14, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(160px, 1fr))', columnGap: 12, rowGap: 12 }}>
         {fields}
       </div>
     </section>
@@ -1257,7 +1257,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const achatFields = Array.from({ length: 13 }, (_, idx) => 45 + idx).map(col => renderDailyField(dynamicColumns[col]?.[2] || `Achat ${col}`, col));
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: '100%', minWidth: 0, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: '100%', minWidth: 0, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: isMobile ? 12 : 16, display: 'none', gridTemplateColumns: isMobile ? '1fr' : '280px 1fr', gap: isMobile ? 12 : 18, alignItems: 'start' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 96px', gap: 10 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1317,7 +1317,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
           <div style={{ background: '#050b18', color: '#fff', borderRadius: 10, padding: isMobile ? 16 : '18px 20px', marginTop: isMobile ? 4 : 24, display: 'none', justifyContent: 'space-between', gap: 12, alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row' }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journalière</div>
@@ -1631,8 +1631,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8fafc' }}>
         
         {/* Top Header for Sections */}
-        <header style={{ background: tableViewMode === 'SAISIE' ? '#050b18' : '#fff', borderBottom: tableViewMode === 'SAISIE' ? '1px solid #111827' : '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90, position: 'relative' }}>
-          <div style={{ minHeight: tableViewMode === 'SAISIE' ? (isMobile ? 96 : 92) : (isMobile ? 58 : 64), padding: tableViewMode === 'SAISIE' ? (isMobile ? '14px 0' : '16px 0') : 0, display: 'flex', alignItems: tableViewMode === 'SAISIE' && isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 16, flexDirection: tableViewMode === 'SAISIE' && isMobile ? 'column' : 'row' }}>
+        <header style={{ background: tableViewMode === 'SAISIE' ? 'linear-gradient(135deg,#07111f 0%,#0a2430 48%,#073d43 100%)' : '#fff', borderBottom: tableViewMode === 'SAISIE' ? '1px solid rgba(125, 211, 252, .22)' : '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90, position: 'relative', boxShadow: tableViewMode === 'SAISIE' ? '0 12px 30px rgba(15, 23, 42, .16)' : 'none' }}>
+          <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', minHeight: tableViewMode === 'SAISIE' ? (isMobile ? 86 : 78) : (isMobile ? 58 : 64), padding: tableViewMode === 'SAISIE' ? (isMobile ? '12px 0' : '14px 0 10px') : 0, display: 'flex', alignItems: tableViewMode === 'SAISIE' && isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 16, flexDirection: tableViewMode === 'SAISIE' && isMobile ? 'column' : 'row' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: tableViewMode === 'SAISIE' ? 18 : 12, minWidth: 0 }}>
               <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: tableViewMode === 'SAISIE' ? '#cbd5e1' : '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 800, padding: 0, flexShrink: 0 }}>
                 <ChevronLeft size={16} /> Retour Accueil
@@ -1655,7 +1655,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 </h2>
               )}
             </div>
-            <div style={{ display: 'flex', gap: 8, alignSelf: tableViewMode === 'SAISIE' && isMobile ? 'stretch' : 'auto', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 8, alignSelf: tableViewMode === 'SAISIE' && isMobile ? 'stretch' : 'auto', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <button onClick={() => setIsImportModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '6px 12px' : '8px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#10b981', fontSize: isMobile ? 12 : 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#ecfdf5'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                 <Upload size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Importer'}
               </button>
@@ -1705,8 +1705,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           )}
 
           {/* Section Tabs */}
-          <div style={{ padding: tableViewMode === 'SAISIE' ? '0 0 14px' : (isMobile ? '10px 0' : '10px 0 12px'), display: 'flex', gap: 8, background: tableViewMode === 'SAISIE' ? '#050b18' : '#fff', borderBottom: tableViewMode === 'SAISIE' ? 'none' : '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 4, border: tableViewMode === 'SAISIE' ? '1px solid rgba(255,255,255,.14)' : '1px solid #e2e8f0', borderRadius: 10, background: tableViewMode === 'SAISIE' ? 'rgba(255,255,255,.08)' : '#f8fafc', flexShrink: 0 }}>
+          <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: tableViewMode === 'SAISIE' ? '0 0 14px' : (isMobile ? '10px 0' : '10px 0 12px'), display: 'flex', gap: 8, background: 'transparent', borderBottom: tableViewMode === 'SAISIE' ? 'none' : '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 4, border: tableViewMode === 'SAISIE' ? '1px solid rgba(255,255,255,.18)' : '1px solid #e2e8f0', borderRadius: 10, background: tableViewMode === 'SAISIE' ? 'rgba(255,255,255,.10)' : '#f8fafc', flexShrink: 0 }}>
               <span style={{ padding: '0 6px', fontSize: 10, fontWeight: 900, color: tableViewMode === 'SAISIE' ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Vue</span>
               {viewModes.map(mode => {
                 const isModeActive = tableViewMode === mode.id;
@@ -1778,7 +1778,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         </header>
 
         {/* Table Area */}
-        <div id="dashboard-content-area" style={{ flex: 1, overflow: 'auto', padding: tableViewMode === 'SAISIE' ? (isMobile ? 12 : 16) : (isMobile ? 12 : 32), display: 'flex', flexDirection: 'column' }}>
+        <div id="dashboard-content-area" style={{ flex: 1, overflow: 'auto', padding: tableViewMode === 'SAISIE' ? (isMobile ? 12 : '16px 24px 28px') : (isMobile ? 12 : 32), display: 'flex', flexDirection: 'column' }}>
           {tableViewMode === 'SAISIE' ? (
             renderDailyEntryView()
           ) : (
