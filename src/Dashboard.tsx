@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 
-import { ChevronLeft, Download, Upload, FileDown } from 'lucide-react';
+import { ChevronLeft, Download, Upload, FileDown, X } from 'lucide-react';
 // ── Constantes Dashboard inline (dashboardConstants.ts intégré) ─────────────
 type DashboardColumn = [string, string, string, string];
 type VisibleDashboardColumn = DashboardColumn & { originalIndex: number };
@@ -1185,6 +1185,74 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     </div>
   );
 
+  const renderDailyRealiseMatrix = () => {
+    const columns = [
+      { label: 'VAE', compact: 'VAE' },
+      { label: 'Midi', compact: 'Midi' },
+      { label: 'Soir', compact: 'Soir' },
+      { label: 'Limonade', compact: 'Limo' },
+      { label: 'Total', compact: 'Total' },
+    ];
+    const rows: Array<{ label: string; cells: Array<{ col: number; readOnly?: boolean } | null> }> = [
+      {
+        label: 'CA',
+        cells: [
+          { col: 17 },
+          { col: 18 },
+          { col: 19 },
+          { col: 20 },
+          { col: 21, readOnly: true },
+        ],
+      },
+      {
+        label: 'Couverts',
+        cells: [
+          null,
+          { col: 25 },
+          { col: 27 },
+          { col: 34 },
+          { col: 29, readOnly: true },
+        ],
+      },
+      {
+        label: 'Ticket moyen',
+        cells: [
+          null,
+          { col: 26, readOnly: true },
+          { col: 28, readOnly: true },
+          { col: 35, readOnly: true },
+          { col: 30, readOnly: true },
+        ],
+      },
+    ];
+
+    return (
+      <div style={{ gridColumn: '1 / -1', overflowX: 'auto', paddingBottom: 2 }}>
+        <div style={{ minWidth: isMobile ? 620 : 0, display: 'grid', gridTemplateColumns: isMobile ? '118px repeat(5, minmax(92px, 1fr))' : '140px repeat(5, minmax(130px, 1fr))', gap: 8, alignItems: 'center' }}>
+          <div />
+          {columns.map(column => (
+            <div key={column.label} style={{ minHeight: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: column.label === 'Total' ? '#eff6ff' : '#f8fafc', border: '1px solid #dbe5ec', color: column.label === 'Total' ? '#1d4ed8' : '#334155', fontSize: 11, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+              {isMobile ? column.compact : column.label}
+            </div>
+          ))}
+
+          {rows.map(row => (
+            <React.Fragment key={row.label}>
+              <div style={{ minHeight: 36, display: 'flex', alignItems: 'center', fontSize: 12, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.03em' }}>{row.label}</div>
+              {row.cells.map((cell, index) => (
+                <div key={`${row.label}-${columns[index].label}`} style={{ minWidth: 0 }}>
+                  {cell ? renderDailyControl(cell.col, { readOnly: cell.readOnly }) : (
+                    <div className={dailyReadOnlyClass} style={{ justifyContent: 'center', color: '#94a3b8' }}>-</div>
+                  )}
+                </div>
+              ))}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderPersonnelRow = (label: string, cuisineCol: number, salleCol: number) => (
     <div key={`${label}-${cuisineCol}-${salleCol}`} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '180px repeat(2, minmax(180px, 1fr))', gap: 12, alignItems: 'center', gridColumn: '1 / -1' }}>
       <div style={{ height: isMobile ? 'auto' : 36, display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{label}</div>
@@ -1399,17 +1467,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           </div>
 
           {renderDailySection('Réalisé', 'Saisie du CA et des couverts par service', (
-            <>
-              {renderDailySingleRow('VAE', 17)}
-              {renderDailyServiceRow('Midi', 18, 25, 26)}
-              {renderDailyServiceRow('Soir', 19, 27, 28)}
-              {renderDailyServiceRow('Limonade', 20, 34, 35)}
-              {renderDailyTotalRow([
-                { label: 'Total CA', col: 21 },
-                { label: 'Total couverts', col: 29 },
-                { label: 'Ticket moyen', col: 30 },
-              ])}
-            </>
+            renderDailyRealiseMatrix()
           ), '#2563eb')}
 
           {renderDailySection('Événements', 'Notes particulières du jour', (
