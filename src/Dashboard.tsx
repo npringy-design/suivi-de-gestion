@@ -224,7 +224,23 @@ const DebouncedInput = ({ value, onChange, onFocus, onBlur, onKeyDown, className
 };
 
 export default function Dashboard({ initialMonth, year, onBack }: DashboardProps) {
-  const { data: globalData, updateDashboard, customEvents, setSelectedYear, setSelectedMonth } = useData();
+  const {
+    data: globalData,
+    updateDashboard,
+    updateNepting,
+    updateEspeces,
+    updateConecs,
+    updateAncvPapiers,
+    updateSaisieTR,
+    updateSunday,
+    updateUber,
+    updateAmexAncv,
+    updateDeliveroo,
+    updateClickCollect,
+    customEvents,
+    setSelectedYear,
+    setSelectedMonth,
+  } = useData();
   
   const getEaster = (y: number) => {
     const a = y % 19;
@@ -1119,6 +1135,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const pdfDay = dateMatch ? Number(dateMatch[1]) : null;
     const pdfMonth = dateMatch ? Number(dateMatch[2]) - 1 : null;
     const pdfYear = dateMatch ? 2000 + Number(dateMatch[3]) : null;
+    const sundayReel = findCaisseAmount(text, 'SUNDAY') + findCaisseAmount(text, 'CHEQUE BANCAIRE') + findCaisseAmount(text, 'SUNDAY MANUEL') + findCaisseAmount(text, 'SUNDAY TPE');
+    const trPapierReel = findCaisseAmount(text, 'EDENRED TR PAPIER') + findCaisseAmount(text, 'BIMPLI TR PAPIER') + findCaisseAmount(text, 'PLUXEE TR PAPIER') + findCaisseAmount(text, 'UP TR PAPIER');
 
     const livraisonTtc = findCaisseAmount(text, 'Livraison');
     const livraisonSection = text.match(/TVA\s+LIVRAISON([\s\S]*?)TVA\s+TOTAL/i)?.[1] || '';
@@ -1160,6 +1178,20 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         27: soirCovers,
         34: 0,
       } as Record<number, number>,
+      realValues: {
+        cb: findCaisseAmount(text, 'CB'),
+        pourboires: 0,
+        especes: findCaisseAmount(text, 'ESPECES'),
+        pieces: 0,
+        amexAncvCarte: findCaisseAmount(text, 'AMEX') + findCaisseAmount(text, 'Carte ANCV'),
+        trCarte: findCaisseAmount(text, 'CARTE TR'),
+        ancvPapier: findCaisseAmount(text, 'ANCV'),
+        trPapier: trPapierReel,
+        sunday: sundayReel,
+        uber: findCaisseAmount(text, 'UBER EATS'),
+        deliveroo: findCaisseAmount(text, 'DELIVEROO'),
+        clickCollect: findCaisseAmount(text, 'Click and Collect'),
+      },
     };
   };
 
@@ -1185,12 +1217,27 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       Object.entries(parsed.values).forEach(([col, value]) => {
         handleCellChange(targetRowIndex, Number(col), formatImportedNumber(value, Number(col) === 25 || Number(col) === 27 || Number(col) === 34 ? 0 : 2));
       });
+      updateNepting(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'saisie_reel_nepting', formatImportedNumber(parsed.realValues.cb));
+      updateNepting(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'pourboire_sunday', formatImportedNumber(parsed.realValues.pourboires));
+      updateEspeces(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'mis_au_coffre', formatImportedNumber(parsed.realValues.especes));
+      updateEspeces(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'pieces', formatImportedNumber(parsed.realValues.pieces));
+      updateAmexAncv(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'reel_nepting', formatImportedNumber(parsed.realValues.amexAncvCarte));
+      updateConecs(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'conecs_reel_nepting', formatImportedNumber(parsed.realValues.trCarte));
+      updateAncvPapiers(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'montant_total', formatImportedNumber(parsed.realValues.ancvPapier));
+      updateSaisieTR(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'edenred', 0, 'valeur', formatImportedNumber(parsed.realValues.trPapier));
+      updateSaisieTR(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'edenred', 0, 'nombre', parsed.realValues.trPapier > 0 ? '1' : '');
+      updateSunday(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'reel', formatImportedNumber(parsed.realValues.sunday));
+      updateUber(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'reel', formatImportedNumber(parsed.realValues.uber));
+      updateDeliveroo(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'reel', formatImportedNumber(parsed.realValues.deliveroo));
+      updateClickCollect(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'reel', formatImportedNumber(parsed.realValues.clickCollect));
       if (targetDayEntry?.row.dayIndex) setSelectedEntryDay(targetDayEntry.row.dayIndex);
 
       setImportPreview([
         { label: 'VAE HT', value: formatImportedNumber(parsed.values[17]) || '-' },
         { label: 'CA midi HT hors VAE', value: formatImportedNumber(parsed.values[18]) || '-' },
         { label: 'CA soir HT hors VAE', value: formatImportedNumber(parsed.values[19]) || '-' },
+        { label: 'CB réel', value: formatImportedNumber(parsed.realValues.cb) || '-' },
+        { label: 'Encaissements réels', value: formatImportedNumber(parsed.realValues.cb + parsed.realValues.especes + parsed.realValues.amexAncvCarte + parsed.realValues.trCarte + parsed.realValues.ancvPapier + parsed.realValues.trPapier + parsed.realValues.sunday + parsed.realValues.uber + parsed.realValues.deliveroo + parsed.realValues.clickCollect) || '-' },
         { label: 'Couverts midi', value: formatImportedNumber(parsed.values[25], 0) || '-' },
         { label: 'Couverts soir', value: formatImportedNumber(parsed.values[27], 0) || '-' },
       ]);
@@ -1206,8 +1253,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const getDailyDisplayValue = (col: number) => formatValue(getDailyCellValue(col), dynamicColumns[col] || ['', '', '', '']);
   const isDailyFieldFocused = (col: number) => focusedCell === `${selectedDayRowIndex}-${col}`;
 
-  const dailyInputClass = "w-full h-9 rounded-lg border border-emerald-200 bg-emerald-50/80 px-2 text-right text-sm font-bold text-slate-900 outline-none transition-all focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20";
-  const dailyReadOnlyClass = "flex h-9 items-center justify-end rounded-lg border border-slate-200 bg-slate-50 px-2 text-sm font-bold text-slate-700";
+  const dailyInputClass = "w-full h-8 rounded-md border border-emerald-200 bg-emerald-50/80 px-2 text-right text-sm font-bold text-slate-900 outline-none transition-all focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20";
+  const dailyReadOnlyClass = "flex h-8 items-center justify-end rounded-md border border-slate-200 bg-slate-50 px-2 text-sm font-bold text-slate-700";
 
   const renderDailyField = (label: string, col: number, options: { readOnly?: boolean; text?: boolean } = {}) => {
     const cellKey = `${selectedDayRowIndex}-${col}`;
@@ -1260,18 +1307,69 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     );
   };
 
+  const renderRealCaisseControl = (label: string, value: string, onChange: (value: string) => void) => (
+    <label key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(86px, 1fr) minmax(110px, 1.2fr)', gap: 8, alignItems: 'center', minWidth: 0 }}>
+      <span style={{ fontSize: 11, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+      <DebouncedInput
+        dataRow={`cash-${selectedDayRowIndex}`}
+        dataCol={label}
+        value={value}
+        onChange={nextValue => onChange(String(nextValue).replace(/[^0-9.,-]/g, '').replace(',', '.'))}
+        className={dailyInputClass}
+        placeholder=""
+      />
+    </label>
+  );
+
+  const renderRealCaisseTable = () => {
+    const day = selectedDayRow?.dayIndex;
+    if (!day) return null;
+
+    const monthData = globalData[month];
+    const nepting = monthData?.nepting?.[day];
+    const especes = monthData?.especes?.[day];
+    const conecs = monthData?.conecs?.[day];
+    const ancv = monthData?.ancvPapiers?.[day];
+    const sunday = monthData?.sunday?.[day];
+    const uber = monthData?.uber?.[day];
+    const amexAncv = monthData?.amexAncv?.[day];
+    const deliveroo = monthData?.deliveroo?.[day];
+    const clickCollect = monthData?.clickCollect?.[day];
+    const trPapier = monthData?.saisieTR?.[day]?.edenred?.[0];
+
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+        {renderRealCaisseControl('CB', nepting?.saisie_reel_nepting || '', value => updateNepting(month, day, 'saisie_reel_nepting', value))}
+        {renderRealCaisseControl('Pourboires', nepting?.pourboire_sunday || '', value => updateNepting(month, day, 'pourboire_sunday', value))}
+        {renderRealCaisseControl('Espèces coffre', especes?.mis_au_coffre || '', value => updateEspeces(month, day, 'mis_au_coffre', value))}
+        {renderRealCaisseControl('Pièces', especes?.pieces || '', value => updateEspeces(month, day, 'pieces', value))}
+        {renderRealCaisseControl('AMEX/ANCV carte', amexAncv?.reel_nepting || '', value => updateAmexAncv(month, day, 'reel_nepting', value))}
+        {renderRealCaisseControl('TR carte', conecs?.conecs_reel_nepting || '', value => updateConecs(month, day, 'conecs_reel_nepting', value))}
+        {renderRealCaisseControl('ANCV papier', ancv?.montant_total || '', value => updateAncvPapiers(month, day, 'montant_total', value))}
+        {renderRealCaisseControl('TR papier', trPapier?.valeur || '', value => {
+          updateSaisieTR(month, day, 'edenred', 0, 'valeur', value);
+          updateSaisieTR(month, day, 'edenred', 0, 'nombre', value ? '1' : '');
+        })}
+        {renderRealCaisseControl('Sunday', sunday?.reel || '', value => updateSunday(month, day, 'reel', value))}
+        {renderRealCaisseControl('Uber', uber?.reel || '', value => updateUber(month, day, 'reel', value))}
+        {renderRealCaisseControl('Deliveroo', deliveroo?.reel || '', value => updateDeliveroo(month, day, 'reel', value))}
+        {renderRealCaisseControl('Click & collect', clickCollect?.reel || '', value => updateClickCollect(month, day, 'reel', value))}
+      </div>
+    );
+  };
+
   const renderDailyServiceRow = (label: string, caCol: number, coversCol: number, tmCol: number) => (
-    <div key={label} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '92px repeat(3, minmax(160px, 1fr))', gap: 12, alignItems: 'end', gridColumn: '1 / -1' }}>
-      <div style={{ height: isMobile ? 'auto' : 36, display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{label}</div>
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div key={label} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '78px repeat(3, minmax(120px, 1fr))', gap: 8, alignItems: 'end', gridColumn: '1 / -1' }}>
+      <div style={{ height: isMobile ? 'auto' : 32, display: 'flex', alignItems: 'center', fontSize: 12, fontWeight: 900, color: '#0f172a' }}>{label}</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>CA {label}</span>
         {renderDailyControl(caCol)}
       </label>
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>Cts {label}</span>
         {renderDailyControl(coversCol)}
       </label>
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>TM {label}</span>
         {renderDailyControl(tmCol, { readOnly: true })}
       </label>
@@ -1279,9 +1377,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   );
 
   const renderDailySingleRow = (label: string, col: number, options: { readOnly?: boolean; text?: boolean } = {}) => (
-    <div key={`${label}-${col}`} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '92px repeat(3, minmax(160px, 1fr))', gap: 12, alignItems: 'end', gridColumn: '1 / -1' }}>
-      <div style={{ height: isMobile ? 'auto' : 36, display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{label}</div>
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div key={`${label}-${col}`} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '78px repeat(3, minmax(120px, 1fr))', gap: 8, alignItems: 'end', gridColumn: '1 / -1' }}>
+      <div style={{ height: isMobile ? 'auto' : 32, display: 'flex', alignItems: 'center', fontSize: 12, fontWeight: 900, color: '#0f172a' }}>{label}</div>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</span>
         {renderDailyControl(col, options)}
       </label>
@@ -1289,10 +1387,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   );
 
   const renderDailyTotalRow = (items: Array<{ label: string; col: number }>) => (
-    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '92px repeat(3, minmax(160px, 1fr))', gap: 12, alignItems: 'end', gridColumn: '1 / -1' }}>
-      <div style={{ height: isMobile ? 'auto' : 36, display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 900, color: '#0f172a' }}>Totaux</div>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '78px repeat(3, minmax(120px, 1fr))', gap: 8, alignItems: 'end', gridColumn: '1 / -1' }}>
+      <div style={{ height: isMobile ? 'auto' : 32, display: 'flex', alignItems: 'center', fontSize: 12, fontWeight: 900, color: '#0f172a' }}>Totaux</div>
       {items.map(item => (
-        <label key={`total-${item.col}`} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label key={`total-${item.col}`} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontSize: 11, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.04em' }}>{item.label}</span>
           {renderDailyControl(item.col, { readOnly: true })}
         </label>
@@ -1427,14 +1525,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const renderDailySection = (title: string, subtitle: string, fields: React.ReactNode, accent: string) => (
     <section style={{ background: '#fff', border: '1px solid #dbe5ec', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
-      <div style={{ padding: '11px 14px', borderBottom: `1px solid ${tint(accent, 0.34)}`, background: `linear-gradient(135deg, ${tint(accent, 0.30)} 0%, ${tint(accent, 0.16)} 48%, #f8fafc 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <div style={{ padding: '9px 12px', borderBottom: `1px solid ${tint(accent, 0.34)}`, background: `linear-gradient(135deg, ${tint(accent, 0.30)} 0%, ${tint(accent, 0.16)} 48%, #f8fafc 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <div style={{ width: 6, height: 28, borderRadius: 999, background: `linear-gradient(180deg, ${accent}, ${tint(accent, 0.78)})`, boxShadow: `0 0 0 3px ${tint(accent, 0.12)}`, flexShrink: 0 }} />
+          <div style={{ width: 6, height: 24, borderRadius: 999, background: `linear-gradient(180deg, ${accent}, ${tint(accent, 0.78)})`, boxShadow: `0 0 0 3px ${tint(accent, 0.12)}`, flexShrink: 0 }} />
           <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap' }}>{title}</h3>
         </div>
         <p style={{ margin: 0, fontSize: 11, color: '#475569', fontWeight: 800, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isMobile ? 'normal' : 'nowrap' }}>{subtitle}</p>
       </div>
-      <div style={{ padding: isMobile ? 12 : 14, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(160px, 1fr))', columnGap: 12, rowGap: 12 }}>
+      <div style={{ padding: isMobile ? 10 : 12, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(130px, 1fr))', columnGap: 8, rowGap: 8 }}>
         {fields}
       </div>
     </section>
@@ -1510,7 +1608,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const achatFields = Array.from({ length: 13 }, (_, idx) => 45 + idx).map(col => renderDailyField(dynamicColumns[col]?.[2] || `Achat ${col}`, col));
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: '100%', minWidth: 0, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: '100%', minWidth: 0, maxWidth: 1480, width: '100%', margin: '0 auto' }}>
         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: isMobile ? 12 : 16, display: 'none', gridTemplateColumns: isMobile ? '1fr' : '280px 1fr', gap: isMobile ? 12 : 18, alignItems: 'start' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 96px', gap: 10 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1570,7 +1668,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
           <div style={{ background: '#050b18', color: '#fff', borderRadius: 10, padding: isMobile ? 16 : '18px 20px', marginTop: isMobile ? 4 : 24, display: 'none', justifyContent: 'space-between', gap: 12, alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row' }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journalière</div>
@@ -1581,19 +1679,25 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             </div>
           </div>
 
-          {renderDailySection('Réalisé', 'Saisie du CA et des couverts par service', (
-            <>
-              {renderDailySingleRow('VAE', 17)}
-              {renderDailyServiceRow('Midi', 18, 25, 26)}
-              {renderDailyServiceRow('Soir', 19, 27, 28)}
-              {renderDailyServiceRow('Limonade', 20, 34, 35)}
-              {renderDailyTotalRow([
-                { label: 'Total CA', col: 21 },
-                { label: 'Total couverts', col: 29 },
-                { label: 'Ticket moyen', col: 30 },
-              ])}
-            </>
-          ), '#2563eb')}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(620px, 1.35fr) minmax(360px, .9fr)', gap: 10, alignItems: 'start' }}>
+            {renderDailySection('Réalisé', 'Saisie du CA et des couverts par service', (
+              <>
+                {renderDailySingleRow('VAE', 17)}
+                {renderDailyServiceRow('Midi', 18, 25, 26)}
+                {renderDailyServiceRow('Soir', 19, 27, 28)}
+                {renderDailyServiceRow('Limonade', 20, 34, 35)}
+                {renderDailyTotalRow([
+                  { label: 'Total CA', col: 21 },
+                  { label: 'Total couverts', col: 29 },
+                  { label: 'Ticket moyen', col: 30 },
+                ])}
+              </>
+            ), '#2563eb')}
+
+            {renderDailySection('Réel caisse', 'Saisie réelle des encaissements', (
+              renderRealCaisseTable()
+            ), '#0f766e')}
+          </div>
 
           {renderDailySection('Événements', 'Notes particulières du jour', (
             <>
