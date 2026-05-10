@@ -1096,6 +1096,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const match = text.match(new RegExp(`${escaped}\\s+[-\\d\\s,.]+\\s+([-\\d\\s]+,\\d{2})`, 'i'));
     return match ? parseCaisseNumber(match[1]) : 0;
   };
+  const extractCaisseNumbers = (text: string) => (text.match(/-?\d[\d\s]*,\d{2}/g) || []).map(parseCaisseNumber);
 
   const extractPdfText = async (file: File) => {
     const loadPdfJs = new Function('url', 'return import(url)') as (url: string) => Promise<any>;
@@ -1112,20 +1113,23 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return pages.join('\n');
   };
 
-  const parseCaisseRealise = (text: string) => {
+  const parseCaisseRealise = (sourceText: string) => {
+    const text = sourceText.replace(/\u00a0/g, ' ').replace(/€/g, '').replace(/\s+/g, ' ');
     const dateMatch = text.match(/Du\s+(\d{2})\/(\d{2})\/(\d{2})/i);
     const pdfDay = dateMatch ? Number(dateMatch[1]) : null;
     const pdfMonth = dateMatch ? Number(dateMatch[2]) - 1 : null;
     const pdfYear = dateMatch ? 2000 + Number(dateMatch[3]) : null;
 
     const livraisonTtc = findCaisseAmount(text, 'Livraison');
-    const totalHtMatch = text.match(/TVA\s+TOTAL[\s\S]*?TOTAL\s+([-.\d\s]+,\d{2})\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}/i);
-    const totalHt = totalHtMatch ? parseCaisseNumber(totalHtMatch[1]) : 0;
-    const livraisonHtMatch = text.match(/LIVRAISON[\s\S]*?TOTAL\s+([-.\d\s]+,\d{2})\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}/i);
-    const vaeHt = livraisonHtMatch ? parseCaisseNumber(livraisonHtMatch[1]) : 0;
-    const serviceMatch = text.match(/Total\s+([-.\d\s]+,\d{2})\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}\s+([-.\d\s]+,\d{2})\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}/i);
-    const totalMidiHt = serviceMatch ? parseCaisseNumber(serviceMatch[1]) : 0;
-    const totalSoirHt = serviceMatch ? parseCaisseNumber(serviceMatch[2]) : 0;
+    const livraisonSection = text.match(/TVA\s+LIVRAISON([\s\S]*?)TVA\s+TOTAL/i)?.[1] || '';
+    const livraisonNumbers = extractCaisseNumbers(livraisonSection).slice(-6);
+    const vaeHt = livraisonNumbers[2] || 0;
+    const serviceSection = text.match(/TVA\s+MIDI([\s\S]*?)Quantit/i)?.[1] || text.match(/TVA\s+MIDI([\s\S]*?)REMISES/i)?.[1] || '';
+    const serviceNumbers = extractCaisseNumbers(serviceSection);
+    const totalLine = serviceNumbers.slice(-9);
+    const totalMidiHt = totalLine[0] || 0;
+    const totalSoirHt = totalLine[3] || 0;
+    const totalHt = totalLine[6] || 0;
     const serviceLineMatch = text.match(/Sur-place\s+(\d+)\s+(\d+)\s+\d+\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}/i);
     const midiCovers = serviceLineMatch ? Number(serviceLineMatch[1]) : 0;
     const soirCovers = serviceLineMatch ? Number(serviceLineMatch[2]) : 0;
@@ -1578,7 +1582,17 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           </div>
 
           {renderDailySection('Réalisé', 'Saisie du CA et des couverts par service', (
-            renderDailyRealiseMatrix()
+            <>
+              {renderDailySingleRow('VAE', 17)}
+              {renderDailyServiceRow('Midi', 18, 25, 26)}
+              {renderDailyServiceRow('Soir', 19, 27, 28)}
+              {renderDailyServiceRow('Limonade', 20, 34, 35)}
+              {renderDailyTotalRow([
+                { label: 'Total CA', col: 21 },
+                { label: 'Total couverts', col: 29 },
+                { label: 'Ticket moyen', col: 30 },
+              ])}
+            </>
           ), '#2563eb')}
 
           {renderDailySection('Événements', 'Notes particulières du jour', (
