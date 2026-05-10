@@ -227,6 +227,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const {
     data: globalData,
     updateDashboard,
+    updateTheorique,
     updateNepting,
     updateEspeces,
     updateConecs,
@@ -1107,10 +1108,18 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const parseCaisseNumber = (value: string) => Number(value.replace(/\s/g, '').replace(',', '.')) || 0;
   const formatImportedNumber = (value: number, decimals = 2) => value > 0 ? value.toFixed(decimals) : '';
-  const findCaisseAmount = (text: string, label: string) => {
+  const findCaisseAmounts = (text: string, label: string) => {
     const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const match = text.match(new RegExp(`${escaped}\\s+[-\\d\\s,.]+\\s+([-\\d\\s]+,\\d{2})`, 'i'));
-    return match ? parseCaisseNumber(match[1]) : 0;
+    const match = text.match(new RegExp(`${escaped}\\s+((?:-?\\d[\\d\\s]*,\\d{2}\\s*){1,3})`, 'i'));
+    return match ? extractCaisseNumbers(match[1]) : [];
+  };
+  const findCaisseAmount = (text: string, label: string) => {
+    const amounts = findCaisseAmounts(text, label);
+    return amounts[amounts.length - 1] || 0;
+  };
+  const findCaisseTheoriqueAmount = (text: string, label: string) => {
+    const amounts = findCaisseAmounts(text, label);
+    return amounts.length >= 2 ? amounts[amounts.length - 2] : amounts[0] || 0;
   };
   const extractCaisseNumbers = (text: string) => (text.match(/-?\d[\d\s]*,\d{2}/g) || []).map(parseCaisseNumber);
 
@@ -1137,6 +1146,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const pdfYear = dateMatch ? 2000 + Number(dateMatch[3]) : null;
     const sundayReel = findCaisseAmount(text, 'SUNDAY') + findCaisseAmount(text, 'CHEQUE BANCAIRE') + findCaisseAmount(text, 'SUNDAY MANUEL') + findCaisseAmount(text, 'SUNDAY TPE');
     const trPapierReel = findCaisseAmount(text, 'EDENRED TR PAPIER') + findCaisseAmount(text, 'BIMPLI TR PAPIER') + findCaisseAmount(text, 'PLUXEE TR PAPIER') + findCaisseAmount(text, 'UP TR PAPIER');
+    const sundayTheorique = findCaisseTheoriqueAmount(text, 'SUNDAY') + findCaisseTheoriqueAmount(text, 'CHEQUE BANCAIRE') + findCaisseTheoriqueAmount(text, 'SUNDAY MANUEL') + findCaisseTheoriqueAmount(text, 'SUNDAY TPE');
+    const trPapierTheorique = findCaisseTheoriqueAmount(text, 'EDENRED TR PAPIER') + findCaisseTheoriqueAmount(text, 'BIMPLI TR PAPIER') + findCaisseTheoriqueAmount(text, 'PLUXEE TR PAPIER') + findCaisseTheoriqueAmount(text, 'UP TR PAPIER');
 
     const livraisonTtc = findCaisseAmount(text, 'Livraison');
     const livraisonSection = text.match(/TVA\s+LIVRAISON([\s\S]*?)TVA\s+TOTAL/i)?.[1] || '';
@@ -1178,6 +1189,19 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         27: soirCovers,
         34: 0,
       } as Record<number, number>,
+      theoriqueValues: {
+        total_ca: findCaisseAmount(text, 'TOTAL CA'),
+        cb: findCaisseTheoriqueAmount(text, 'CB'),
+        amex: findCaisseTheoriqueAmount(text, 'AMEX') + findCaisseTheoriqueAmount(text, 'Carte ANCV'),
+        tr_papier: trPapierTheorique,
+        tr_carte: findCaisseTheoriqueAmount(text, 'CARTE TR'),
+        ancv: findCaisseTheoriqueAmount(text, 'ANCV'),
+        especes: findCaisseTheoriqueAmount(text, 'ESPECES'),
+        click_collect: findCaisseTheoriqueAmount(text, 'Click and Collect'),
+        uber: findCaisseTheoriqueAmount(text, 'UBER EATS'),
+        deliveroo: findCaisseTheoriqueAmount(text, 'DELIVEROO'),
+        sunday: sundayTheorique,
+      },
       realValues: {
         cb: findCaisseAmount(text, 'CB'),
         pourboires: 0,
@@ -1214,22 +1238,34 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       if (targetRowIndex < 0) throw new Error('Aucune journée cible trouvée pour importer ces données.');
 
+      const targetDay = targetDayEntry?.row.dayIndex || selectedEntryDay;
       Object.entries(parsed.values).forEach(([col, value]) => {
         handleCellChange(targetRowIndex, Number(col), formatImportedNumber(value, Number(col) === 25 || Number(col) === 27 || Number(col) === 34 ? 0 : 2));
       });
-      updateNepting(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'saisie_reel_nepting', formatImportedNumber(parsed.realValues.cb));
-      updateNepting(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'pourboire_sunday', formatImportedNumber(parsed.realValues.pourboires));
-      updateEspeces(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'mis_au_coffre', formatImportedNumber(parsed.realValues.especes));
-      updateEspeces(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'pieces', formatImportedNumber(parsed.realValues.pieces));
-      updateAmexAncv(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'reel_nepting', formatImportedNumber(parsed.realValues.amexAncvCarte));
-      updateConecs(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'conecs_reel_nepting', formatImportedNumber(parsed.realValues.trCarte));
-      updateAncvPapiers(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'montant_total', formatImportedNumber(parsed.realValues.ancvPapier));
-      updateSaisieTR(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'edenred', 0, 'valeur', formatImportedNumber(parsed.realValues.trPapier));
-      updateSaisieTR(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'edenred', 0, 'nombre', parsed.realValues.trPapier > 0 ? '1' : '');
-      updateSunday(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'reel', formatImportedNumber(parsed.realValues.sunday));
-      updateUber(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'reel', formatImportedNumber(parsed.realValues.uber));
-      updateDeliveroo(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'reel', formatImportedNumber(parsed.realValues.deliveroo));
-      updateClickCollect(month, targetDayEntry?.row.dayIndex || selectedEntryDay, 'reel', formatImportedNumber(parsed.realValues.clickCollect));
+      updateTheorique(month, targetDay, 'total_ca', formatImportedNumber(parsed.theoriqueValues.total_ca));
+      updateTheorique(month, targetDay, 'cb', formatImportedNumber(parsed.theoriqueValues.cb));
+      updateTheorique(month, targetDay, 'amex', formatImportedNumber(parsed.theoriqueValues.amex));
+      updateTheorique(month, targetDay, 'tr_papier', formatImportedNumber(parsed.theoriqueValues.tr_papier));
+      updateTheorique(month, targetDay, 'tr_carte', formatImportedNumber(parsed.theoriqueValues.tr_carte));
+      updateTheorique(month, targetDay, 'ancv', formatImportedNumber(parsed.theoriqueValues.ancv));
+      updateTheorique(month, targetDay, 'especes', formatImportedNumber(parsed.theoriqueValues.especes));
+      updateTheorique(month, targetDay, 'click_collect', formatImportedNumber(parsed.theoriqueValues.click_collect));
+      updateTheorique(month, targetDay, 'uber', formatImportedNumber(parsed.theoriqueValues.uber));
+      updateTheorique(month, targetDay, 'deliveroo', formatImportedNumber(parsed.theoriqueValues.deliveroo));
+      updateTheorique(month, targetDay, 'sunday', formatImportedNumber(parsed.theoriqueValues.sunday));
+      updateNepting(month, targetDay, 'saisie_reel_nepting', formatImportedNumber(parsed.realValues.cb));
+      updateNepting(month, targetDay, 'pourboire_sunday', formatImportedNumber(parsed.realValues.pourboires));
+      updateEspeces(month, targetDay, 'mis_au_coffre', formatImportedNumber(parsed.realValues.especes));
+      updateEspeces(month, targetDay, 'pieces', formatImportedNumber(parsed.realValues.pieces));
+      updateAmexAncv(month, targetDay, 'reel_nepting', formatImportedNumber(parsed.realValues.amexAncvCarte));
+      updateConecs(month, targetDay, 'conecs_reel_nepting', formatImportedNumber(parsed.realValues.trCarte));
+      updateAncvPapiers(month, targetDay, 'montant_total', formatImportedNumber(parsed.realValues.ancvPapier));
+      updateSaisieTR(month, targetDay, 'edenred', 0, 'valeur', formatImportedNumber(parsed.realValues.trPapier));
+      updateSaisieTR(month, targetDay, 'edenred', 0, 'nombre', parsed.realValues.trPapier > 0 ? '1' : '');
+      updateSunday(month, targetDay, 'reel', formatImportedNumber(parsed.realValues.sunday));
+      updateUber(month, targetDay, 'reel', formatImportedNumber(parsed.realValues.uber));
+      updateDeliveroo(month, targetDay, 'reel', formatImportedNumber(parsed.realValues.deliveroo));
+      updateClickCollect(month, targetDay, 'reel', formatImportedNumber(parsed.realValues.clickCollect));
       if (targetDayEntry?.row.dayIndex) setSelectedEntryDay(targetDayEntry.row.dayIndex);
 
       setImportPreview([
@@ -1307,20 +1343,27 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     );
   };
 
-  const renderRealCaisseControl = (label: string, theorique: string, value: string, onChange: (value: string) => void) => (
-    <label key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(92px, 1.05fr) minmax(88px, .95fr) minmax(96px, 1fr)', gap: 8, alignItems: 'center', minWidth: 0 }}>
-      <span style={{ fontSize: 10, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
-      <div className={dailyReadOnlyClass}>{theorique || '-'}</div>
-      <DebouncedInput
-        dataRow={`cash-${selectedDayRowIndex}`}
-        dataCol={label}
-        value={value}
-        onChange={nextValue => onChange(String(nextValue).replace(/[^0-9.,-]/g, '').replace(',', '.'))}
-        className={dailyInputClass}
-        placeholder=""
-      />
-    </label>
-  );
+  const renderRealCaisseControl = (label: string, theorique: string, value: string, onChange: (value: string) => void) => {
+    const hasValues = Boolean(theorique || value);
+    const ecart = parseCaisseNumber(value) - parseCaisseNumber(theorique);
+    const ecartDisplay = hasValues ? ecart.toFixed(2) : '-';
+
+    return (
+      <label key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(96px, .9fr) repeat(3, minmax(92px, 1fr))', gap: 8, alignItems: 'center', minWidth: 0 }}>
+        <span style={{ fontSize: 10, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+        <div className={dailyReadOnlyClass}>{theorique || '-'}</div>
+        <DebouncedInput
+          dataRow={`cash-${selectedDayRowIndex}`}
+          dataCol={label}
+          value={value}
+          onChange={nextValue => onChange(String(nextValue).replace(/[^0-9.,-]/g, '').replace(',', '.'))}
+          className={dailyInputClass}
+          placeholder=""
+        />
+        <div className={dailyReadOnlyClass} style={{ color: hasValues && ecart < -0.001 ? '#dc2626' : hasValues && ecart > 0.001 ? '#059669' : '#475569' }}>{ecartDisplay}</div>
+      </label>
+    );
+  };
 
   const renderRealCaisseTable = () => {
     const day = selectedDayRow?.dayIndex;
@@ -1341,10 +1384,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
     return (
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(92px, 1.05fr) minmax(88px, .95fr) minmax(96px, 1fr)', gap: 8, alignItems: 'center', minWidth: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(96px, .9fr) repeat(3, minmax(92px, 1fr))', gap: 8, alignItems: 'center', minWidth: 0 }}>
           <div />
           <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Théorique</div>
           <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Réel</div>
+          <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Écart</div>
         </div>
         {renderRealCaisseControl('CB', theorique?.cb || '', nepting?.saisie_reel_nepting || '', value => updateNepting(month, day, 'saisie_reel_nepting', value))}
         {renderRealCaisseControl('Pourboires', '', nepting?.pourboire_sunday || '', value => updateNepting(month, day, 'pourboire_sunday', value))}
