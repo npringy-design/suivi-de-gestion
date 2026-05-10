@@ -1275,8 +1275,16 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const getDailyDisplayValue = (col: number) => formatValue(getDailyCellValue(col), dynamicColumns[col] || ['', '', '', '']);
   const isDailyFieldFocused = (col: number) => focusedCell === `${selectedDayRowIndex}-${col}`;
 
-  const dailyInputClass = "w-full h-8 rounded-md border border-emerald-200 bg-emerald-50/80 px-2 text-right text-sm font-bold text-slate-900 outline-none transition-all focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20";
-  const dailyReadOnlyClass = "flex h-8 items-center justify-end rounded-md border border-slate-200 bg-slate-50 px-2 text-sm font-bold text-slate-700";
+  const dailyInputClass = "w-full h-8 rounded-md border-2 border-emerald-300 bg-white px-2 text-right text-sm font-bold text-slate-950 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.14)] outline-none transition-all hover:border-emerald-500 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/25";
+  const dailyReadOnlyClass = "flex h-8 items-center justify-between gap-1 overflow-hidden rounded-md border border-slate-300 bg-slate-100/90 px-2 text-sm font-bold text-slate-700 shadow-inner";
+  const dailyAutoBadgeClass = "shrink-0 rounded-[3px] bg-slate-200 px-1 py-0.5 text-[8px] font-black uppercase leading-none text-slate-500";
+
+  const renderAutoValue = (value: string | number, options: { className?: string; style?: React.CSSProperties } = {}) => (
+    <div className={`${dailyReadOnlyClass} ${options.className || ''}`} style={options.style}>
+      <span className={dailyAutoBadgeClass}>Auto</span>
+      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value || '-'}</span>
+    </div>
+  );
 
   const renderDailyField = (label: string, col: number, options: { readOnly?: boolean; text?: boolean } = {}) => {
     const cellKey = `${selectedDayRowIndex}-${col}`;
@@ -1287,7 +1295,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       <label key={`${label}-${col}`} style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
         {options.readOnly ? (
-          <div className={dailyReadOnlyClass}>{value || '-'}</div>
+          renderAutoValue(value)
         ) : (
           <DebouncedInput
             dataRow={`daily-${selectedDayRowIndex}`}
@@ -1311,7 +1319,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const value = options.readOnly ? getDailyDisplayValue(col) : (isDailyFieldFocused(col) ? rawValue : getDailyDisplayValue(col));
 
     if (options.readOnly) {
-      return <div className={dailyReadOnlyClass}>{value || '-'}</div>;
+      return renderAutoValue(value);
     }
 
     return (
@@ -1337,7 +1345,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return (
       <label key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(118px, .7fr) repeat(3, minmax(0, 1fr))', gap: 10, alignItems: 'center', minWidth: 0 }}>
         <span style={{ fontSize: 10, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
-        <div className={dailyReadOnlyClass}>{theorique || '-'}</div>
+        {renderAutoValue(theorique)}
         <DebouncedInput
           dataRow={`cash-${selectedDayRowIndex}`}
           dataCol={label}
@@ -1346,7 +1354,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           className={dailyInputClass}
           placeholder=""
         />
-        <div className={dailyReadOnlyClass} style={{ color: hasValues && ecart < -0.001 ? '#dc2626' : hasValues && ecart > 0.001 ? '#059669' : '#475569' }}>{ecartDisplay}</div>
+        {renderAutoValue(ecartDisplay, { style: { color: hasValues && ecart < -0.001 ? '#dc2626' : hasValues && ecart > 0.001 ? '#059669' : '#475569' } })}
       </label>
     );
   };
