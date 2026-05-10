@@ -1280,11 +1280,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const dailyInputClass = "w-full h-8 rounded-md border border-slate-400 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
   const dailyReadOnlyClass = "flex h-8 items-center justify-end gap-1 overflow-hidden rounded-md border border-slate-300 bg-slate-100/90 px-2 text-sm font-bold text-slate-700 shadow-inner";
+  const cashInputClass = "w-full h-7 rounded-md border border-slate-400 bg-white px-2 text-right text-xs font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
 
   const renderAutoValue = (value: string | number, options: { className?: string; style?: React.CSSProperties } = {}) => (
     <div className={`${dailyReadOnlyClass} ${options.className || ''}`} style={options.style}>
       <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value || '-'}</span>
     </div>
+  );
+  const renderCashAutoValue = (value: string | number, options: { style?: React.CSSProperties } = {}) => (
+    renderAutoValue(value, { className: 'h-7 px-2 text-xs', style: options.style })
   );
 
   const renderDailyField = (label: string, col: number, options: { readOnly?: boolean; text?: boolean } = {}) => {
@@ -1352,7 +1356,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const isExpanded = options.detailId && expandedCashDetail === options.detailId;
 
     return (
-      <div key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(118px, .7fr) repeat(3, minmax(0, 1fr))', gap: 10, alignItems: 'center', minWidth: 0 }}>
+      <div key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(132px, .66fr) repeat(3, minmax(0, 1fr))', gap: 6, alignItems: 'center', minWidth: 0 }}>
         {options.detailId ? (
           <button
             type="button"
@@ -1382,18 +1386,18 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         ) : (
           <span style={{ fontSize: 10, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
         )}
-        {renderAutoValue(theorique)}
+        {renderCashAutoValue(theorique)}
         <DebouncedInput
           dataRow={`cash-${selectedDayRowIndex}`}
           dataCol={label}
           value={value}
           onChange={nextValue => onChange(String(nextValue).replace(/[^0-9.,-]/g, '').replace(',', '.'))}
-          className={dailyInputClass}
+          className={cashInputClass}
           placeholder=""
         />
-        {renderAutoValue(ecartDisplay, { style: { color: hasValues && ecart < -0.001 ? '#dc2626' : hasValues && ecart > 0.001 ? '#059669' : '#475569' } })}
+        {renderCashAutoValue(ecartDisplay, { style: { color: hasValues && ecart < -0.001 ? '#dc2626' : hasValues && ecart > 0.001 ? '#059669' : '#475569' } })}
         {isExpanded && options.details ? (
-          <div style={{ gridColumn: '2 / -1', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, minmax(0, 1fr))', gap: 8, padding: 8, border: '1px solid #0f172a', borderRadius: 8, background: '#f8fafc' }}>
+          <div style={{ gridColumn: '2 / -1', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, minmax(0, 1fr))', gap: 6, padding: 6, border: '1px solid #0f172a', borderRadius: 8, background: '#f8fafc' }}>
             {options.details}
           </div>
         ) : null}
@@ -1430,14 +1434,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const cashValidationLabel = cashValidationComment ? 'Validation enregistrée' : 'Non validé';
 
     const renderCashDetailField = (label: string, value: string, onChange: (value: string) => void) => (
-      <label key={label} style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+      <label key={label} style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
         <span style={{ fontSize: 10, fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</span>
         <DebouncedInput
           dataRow={`cash-detail-${selectedDayRowIndex}`}
           dataCol={label}
           value={value}
           onChange={nextValue => onChange(String(nextValue).replace(/[^0-9]/g, ''))}
-          className="w-full h-8 rounded-md border border-slate-400 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15"
+          className="w-full h-7 rounded-md border border-slate-400 bg-white px-2 text-right text-xs font-bold text-slate-950 outline-none transition-all focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15"
           placeholder=""
         />
       </label>
@@ -1473,8 +1477,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     };
 
     return (
-      <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr', gap: 8, width: '100%' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(118px, .7fr) repeat(3, minmax(0, 1fr))', gap: 10, alignItems: 'center', minWidth: 0 }}>
+      <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr', gap: 5, width: '100%' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(132px, .66fr) repeat(3, minmax(0, 1fr))', gap: 6, alignItems: 'center', minWidth: 0 }}>
           <div />
           <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Théorique</div>
           <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Réel</div>
@@ -1500,13 +1504,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         {renderRealCaisseControl('Uber', theorique?.uber || '', uber?.reel || '', value => updateUber(month, day, 'reel', value))}
         {renderRealCaisseControl('Deliveroo', theorique?.deliveroo || '', deliveroo?.reel || '', value => updateDeliveroo(month, day, 'reel', value))}
         {renderRealCaisseControl('Click & collect', theorique?.click_collect || '', clickCollect?.reel || '', value => updateClickCollect(month, day, 'reel', value))}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(118px, .7fr) repeat(3, minmax(0, 1fr))', gap: 10, alignItems: 'center', marginTop: 4, paddingTop: 10, borderTop: '1px solid #cbd5e1' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(132px, .66fr) repeat(3, minmax(0, 1fr))', gap: 6, alignItems: 'center', marginTop: 2, paddingTop: 7, borderTop: '1px solid #cbd5e1' }}>
           <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em' }}>Total caisse</div>
-          {renderAutoValue(totalTheorique.toFixed(2))}
-          {renderAutoValue(totalReel.toFixed(2))}
-          {renderAutoValue(totalEcart.toFixed(2), { style: { color: totalEcartColor } })}
+          {renderCashAutoValue(totalTheorique.toFixed(2))}
+          {renderCashAutoValue(totalReel.toFixed(2))}
+          {renderCashAutoValue(totalEcart.toFixed(2), { style: { color: totalEcartColor } })}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', padding: '10px 12px', border: `1px solid ${hasTotalEcart ? '#fecaca' : '#bbf7d0'}`, borderRadius: 8, background: hasTotalEcart ? '#fef2f2' : '#f0fdf4' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', padding: '7px 10px', border: `1px solid ${hasTotalEcart ? '#fecaca' : '#bbf7d0'}`, borderRadius: 8, background: hasTotalEcart ? '#fef2f2' : '#f0fdf4' }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, fontWeight: 950, color: hasTotalEcart ? '#991b1b' : '#166534', textTransform: 'uppercase', letterSpacing: '.04em' }}>Écart total : {totalEcart.toFixed(2)}</div>
             <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cashValidationLabel}</div>
@@ -1514,7 +1518,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           <button
             type="button"
             onClick={handleCashValidation}
-            style={{ border: 'none', borderRadius: 7, background: hasTotalEcart ? '#dc2626' : '#16a34a', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 950, padding: '8px 12px', whiteSpace: 'nowrap' }}
+            style={{ border: 'none', borderRadius: 7, background: hasTotalEcart ? '#dc2626' : '#16a34a', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 950, padding: '7px 11px', whiteSpace: 'nowrap' }}
           >
             Valider
           </button>
