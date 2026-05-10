@@ -1278,13 +1278,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const getDailyDisplayValue = (col: number) => formatValue(getDailyCellValue(col), dynamicColumns[col] || ['', '', '', '']);
   const isDailyFieldFocused = (col: number) => focusedCell === `${selectedDayRowIndex}-${col}`;
 
-  const dailyInputClass = "w-full h-8 rounded-md border-2 border-emerald-300 bg-white px-2 text-right text-sm font-bold text-slate-950 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.14)] outline-none transition-all hover:border-emerald-500 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/25";
-  const dailyReadOnlyClass = "flex h-8 items-center justify-between gap-1 overflow-hidden rounded-md border border-slate-300 bg-slate-100/90 px-2 text-sm font-bold text-slate-700 shadow-inner";
-  const dailyAutoBadgeClass = "shrink-0 rounded-[3px] bg-slate-200 px-1 py-0.5 text-[8px] font-black uppercase leading-none text-slate-500";
+  const dailyInputClass = "w-full h-8 rounded-md border-2 border-slate-900 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all hover:border-slate-700 focus:border-slate-950 focus:ring-2 focus:ring-slate-900/20";
+  const dailyReadOnlyClass = "flex h-8 items-center justify-end gap-1 overflow-hidden rounded-md border border-slate-300 bg-slate-100/90 px-2 text-sm font-bold text-slate-700 shadow-inner";
 
   const renderAutoValue = (value: string | number, options: { className?: string; style?: React.CSSProperties } = {}) => (
     <div className={`${dailyReadOnlyClass} ${options.className || ''}`} style={options.style}>
-      <span className={dailyAutoBadgeClass}>Auto</span>
       <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value || '-'}</span>
     </div>
   );
@@ -1394,7 +1392,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         />
         {renderAutoValue(ecartDisplay, { style: { color: hasValues && ecart < -0.001 ? '#dc2626' : hasValues && ecart > 0.001 ? '#059669' : '#475569' } })}
         {isExpanded && options.details ? (
-          <div style={{ gridColumn: '2 / -1', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 8, padding: 8, border: '1px solid #99f6e4', borderRadius: 8, background: '#f0fdfa' }}>
+          <div style={{ gridColumn: '2 / -1', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, minmax(0, 1fr))', gap: 8, padding: 8, border: '1px solid #0f172a', borderRadius: 8, background: '#f8fafc' }}>
             {options.details}
           </div>
         ) : null}
@@ -1416,20 +1414,29 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const amexAncv = monthData?.amexAncv?.[day];
     const deliveroo = monthData?.deliveroo?.[day];
     const clickCollect = monthData?.clickCollect?.[day];
-    const trPapier = monthData?.saisieTR?.[day]?.edenred?.[0];
+    const trData = monthData?.saisieTR?.[day];
+    const trPapier = trData?.edenred?.[0];
+    const trPapierProviders = [
+      { key: 'bimpli', label: 'Bimpli' },
+      { key: 'up', label: 'Up' },
+      { key: 'pluxee', label: 'Pluxee' },
+      { key: 'edenred', label: 'Edenred' },
+    ] as const;
+    const trPapierReel = trPapierProviders.reduce((sum, provider) => sum + parseCaisseNumber(trData?.[provider.key]?.[0]?.valeur || ''), 0);
+    const trPapierDisplay = trPapierReel ? trPapierReel.toFixed(2) : trPapier?.valeur || '';
     const theorique = monthData?.theorique?.[day];
     const cashValidationComment = nepting?.commentaire || '';
     const cashValidationLabel = cashValidationComment ? 'Validation enregistrée' : 'Non validé';
 
     const renderCashDetailField = (label: string, value: string, onChange: (value: string) => void) => (
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-        <span style={{ fontSize: 10, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</span>
+      <label key={label} style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+        <span style={{ fontSize: 10, fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</span>
         <DebouncedInput
           dataRow={`cash-detail-${selectedDayRowIndex}`}
           dataCol={label}
           value={value}
           onChange={nextValue => onChange(String(nextValue).replace(/[^0-9]/g, ''))}
-          className="w-full h-8 rounded-md border-2 border-teal-300 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all focus:border-teal-600 focus:ring-2 focus:ring-teal-500/25"
+          className="w-full h-8 rounded-md border-2 border-slate-900 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all focus:border-slate-950 focus:ring-2 focus:ring-slate-900/20"
           placeholder=""
         />
       </label>
@@ -1443,7 +1450,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       { label: 'AMEX/ANCV carte', theorique: theorique?.amex || '', value: amexAncv?.reel_nepting || '' },
       { label: 'TR carte', theorique: theorique?.tr_carte || '', value: conecs?.conecs_reel_nepting || '' },
       { label: 'ANCV papier', theorique: theorique?.ancv || '', value: ancv?.montant_total || '' },
-      { label: 'TR papier', theorique: theorique?.tr_papier || '', value: trPapier?.valeur || '' },
+      { label: 'TR papier', theorique: theorique?.tr_papier || '', value: trPapierDisplay },
       { label: 'Sunday', theorique: theorique?.sunday || '', value: sunday?.reel || '' },
       { label: 'Uber', theorique: theorique?.uber || '', value: uber?.reel || '' },
       { label: 'Deliveroo', theorique: theorique?.deliveroo || '', value: deliveroo?.reel || '' },
@@ -1482,11 +1489,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           detailId: 'ancv',
           details: renderCashDetailField('Nombre ANCV papier', ancv?.nombre_ancv || '', value => updateAncvPapiers(month, day, 'nombre_ancv', value)),
         })}
-        {renderRealCaisseControl('TR papier', theorique?.tr_papier || '', trPapier?.valeur || '', value => {
+        {renderRealCaisseControl('TR papier', theorique?.tr_papier || '', trPapierDisplay, value => {
           updateSaisieTR(month, day, 'edenred', 0, 'valeur', value);
         }, {
           detailId: 'tr',
-          details: renderCashDetailField('Nombre TR papier', trPapier?.nombre || '', value => updateSaisieTR(month, day, 'edenred', 0, 'nombre', value)),
+          details: trPapierProviders.map(provider => renderCashDetailField(provider.label, trData?.[provider.key]?.[0]?.nombre || '', value => updateSaisieTR(month, day, provider.key, 0, 'nombre', value))),
         })}
         {renderRealCaisseControl('Sunday', theorique?.sunday || '', sunday?.reel || '', value => updateSunday(month, day, 'reel', value))}
         {renderRealCaisseControl('Uber', theorique?.uber || '', uber?.reel || '', value => updateUber(month, day, 'reel', value))}
@@ -1520,11 +1527,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       <div style={{ height: isMobile ? 'auto' : 32, display: 'flex', alignItems: 'center', fontSize: 12, fontWeight: 900, color: '#0f172a' }}>{label}</div>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>CA {label}</span>
-        {renderDailyControl(caCol)}
+        {renderDailyControl(caCol, { readOnly: true })}
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>Cts {label}</span>
-        {renderDailyControl(coversCol)}
+        {renderDailyControl(coversCol, { readOnly: true })}
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>TM {label}</span>
@@ -1840,7 +1847,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
               {renderDailySection('Réalisé', 'Saisie du CA et des couverts par service', (
                 <>
-                  {renderDailySingleRow('VAE', 17)}
+                  {renderDailySingleRow('VAE', 17, { readOnly: true })}
                   {renderDailyServiceRow('Midi', 18, 25, 26)}
                   {renderDailyServiceRow('Soir', 19, 27, 28)}
                   {renderDailyServiceRow('Limonade', 20, 34, 35)}
