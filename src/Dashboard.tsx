@@ -1865,34 +1865,35 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               ), '#2563eb')}
 
               {renderDailySection('Événements', 'Notes particulières du jour', (
-                <>
+                <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
                   {renderDailyField('Événement restaurant', 37, { text: true })}
                   {renderDailyField('Événement national', 38, { text: true })}
+                </div>
+              ), '#f59e0b')}
+
+              {renderDailySection('Démarques', 'Personnel, opérationnel et total démarques', (
+                <>
+                  <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                    {renderDailyField('Démarque personnel', 39)}
+                    {renderDailyField('Démarque opérationnel', 41)}
+                    {renderDailyField('Total démarque', 43, { readOnly: true })}
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    {renderDailyField('Explication démarque', 44, { text: true })}
+                  </div>
                 </>
               ), '#f59e0b')}
             </div>
-
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(360px, .85fr) minmax(620px, 1.15fr)', gap: 10, alignItems: 'start' }}>
-            {renderDailySection('Démarques', 'Personnel, opérationnel et total démarques', (
-              <>
-                {renderDailyField('Démarque personnel', 39)}
-                {renderDailyField('Démarque opérationnel', 41)}
-                {renderDailyField('Total démarque', 43, { readOnly: true })}
-                {renderDailyField('Explication démarque', 44, { text: true })}
-              </>
-            ), '#f59e0b')}
-
-            {renderDailySection('Achats / livraisons', 'Factures fournisseurs reçues dans la journée', (
-              <>
-                {achatFields}
-                {renderDailyTotalRow([
-                  { label: 'Total achats HT', col: 58 },
-                ])}
-              </>
-            ), '#16a34a')}
-          </div>
+          {renderDailySection('Achats / livraisons', 'Factures fournisseurs reçues dans la journée', (
+            <>
+              {achatFields}
+              {renderDailyTotalRow([
+                { label: 'Total achats HT', col: 58 },
+              ])}
+            </>
+          ), '#16a34a')}
 
           {renderDailySection('Personnel', 'Saisie des heures par équipe', (
             renderPersonnelTable(
