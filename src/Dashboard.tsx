@@ -1335,7 +1335,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const ecartDisplay = hasValues ? ecart.toFixed(2) : '-';
 
     return (
-      <label key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(96px, .9fr) repeat(3, minmax(92px, 1fr))', gap: 8, alignItems: 'center', minWidth: 0 }}>
+      <label key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(118px, .7fr) repeat(3, minmax(0, 1fr))', gap: 10, alignItems: 'center', minWidth: 0 }}>
         <span style={{ fontSize: 10, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
         <div className={dailyReadOnlyClass}>{theorique || '-'}</div>
         <DebouncedInput
@@ -1369,8 +1369,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const theorique = monthData?.theorique?.[day];
 
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(96px, .9fr) repeat(3, minmax(92px, 1fr))', gap: 8, alignItems: 'center', minWidth: 0 }}>
+      <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr', gap: 8, width: '100%' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(118px, .7fr) repeat(3, minmax(0, 1fr))', gap: 10, alignItems: 'center', minWidth: 0 }}>
           <div />
           <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Théorique</div>
           <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Réel</div>
