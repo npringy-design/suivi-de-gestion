@@ -303,6 +303,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [importStatus, setImportStatus] = useState('');
   const [importPreview, setImportPreview] = useState<Array<{ label: string; value: string }>>([]);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [expandedCashDetail, setExpandedCashDetail] = useState<'ancv' | 'tr' | null>(null);
+  const [isCashValidationModalOpen, setIsCashValidationModalOpen] = useState(false);
+  const [cashValidationDraft, setCashValidationDraft] = useState('');
   const [selectedEntryDay, setSelectedEntryDay] = useState(() => {
     const now = new Date();
     return initialMonth === now.getMonth() && year === now.getFullYear() ? now.getDate() : 1;
@@ -1337,14 +1340,49 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     );
   };
 
-  const renderRealCaisseControl = (label: string, theorique: string, value: string, onChange: (value: string) => void) => {
+  const renderRealCaisseControl = (
+    label: string,
+    theorique: string,
+    value: string,
+    onChange: (value: string) => void,
+    options: { detailId?: 'ancv' | 'tr'; details?: React.ReactNode } = {}
+  ) => {
     const hasValues = Boolean(theorique || value);
     const ecart = parseCaisseNumber(value) - parseCaisseNumber(theorique);
     const ecartDisplay = hasValues ? ecart.toFixed(2) : '-';
+    const isExpanded = options.detailId && expandedCashDetail === options.detailId;
 
     return (
-      <label key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(118px, .7fr) repeat(3, minmax(0, 1fr))', gap: 10, alignItems: 'center', minWidth: 0 }}>
-        <span style={{ fontSize: 10, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+      <div key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(118px, .7fr) repeat(3, minmax(0, 1fr))', gap: 10, alignItems: 'center', minWidth: 0 }}>
+        {options.detailId ? (
+          <button
+            type="button"
+            onClick={() => setExpandedCashDetail(isExpanded ? null : options.detailId || null)}
+            style={{
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              border: 'none',
+              background: 'transparent',
+              padding: 0,
+              color: isExpanded ? '#0f766e' : '#334155',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontWeight: 950,
+              letterSpacing: '.03em',
+              textAlign: 'left',
+              textTransform: 'uppercase',
+              textDecoration: isExpanded ? 'underline' : 'none',
+              textUnderlineOffset: 3,
+            }}
+            title="Afficher le détail du nombre"
+          >
+            {label}
+          </button>
+        ) : (
+          <span style={{ fontSize: 10, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+        )}
         {renderAutoValue(theorique)}
         <DebouncedInput
           dataRow={`cash-${selectedDayRowIndex}`}
@@ -1355,7 +1393,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           placeholder=""
         />
         {renderAutoValue(ecartDisplay, { style: { color: hasValues && ecart < -0.001 ? '#dc2626' : hasValues && ecart > 0.001 ? '#059669' : '#475569' } })}
-      </label>
+        {isExpanded && options.details ? (
+          <div style={{ gridColumn: '2 / -1', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 8, padding: 8, border: '1px solid #99f6e4', borderRadius: 8, background: '#f0fdfa' }}>
+            {options.details}
+          </div>
+        ) : null}
+      </div>
     );
   };
 
@@ -1375,6 +1418,51 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const clickCollect = monthData?.clickCollect?.[day];
     const trPapier = monthData?.saisieTR?.[day]?.edenred?.[0];
     const theorique = monthData?.theorique?.[day];
+    const cashValidationComment = nepting?.commentaire || '';
+    const cashValidationLabel = cashValidationComment ? 'Validation enregistrée' : 'Non validé';
+
+    const renderCashDetailField = (label: string, value: string, onChange: (value: string) => void) => (
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+        <span style={{ fontSize: 10, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</span>
+        <DebouncedInput
+          dataRow={`cash-detail-${selectedDayRowIndex}`}
+          dataCol={label}
+          value={value}
+          onChange={nextValue => onChange(String(nextValue).replace(/[^0-9]/g, ''))}
+          className="w-full h-8 rounded-md border-2 border-teal-300 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all focus:border-teal-600 focus:ring-2 focus:ring-teal-500/25"
+          placeholder=""
+        />
+      </label>
+    );
+
+    const cashRows = [
+      { label: 'CB', theorique: theorique?.cb || '', value: nepting?.saisie_reel_nepting || '' },
+      { label: 'Pourboires', theorique: '', value: nepting?.pourboire_sunday || '' },
+      { label: 'Espèces coffre', theorique: theorique?.especes || '', value: especes?.mis_au_coffre || '' },
+      { label: 'Pièces', theorique: '', value: especes?.pieces || '' },
+      { label: 'AMEX/ANCV carte', theorique: theorique?.amex || '', value: amexAncv?.reel_nepting || '' },
+      { label: 'TR carte', theorique: theorique?.tr_carte || '', value: conecs?.conecs_reel_nepting || '' },
+      { label: 'ANCV papier', theorique: theorique?.ancv || '', value: ancv?.montant_total || '' },
+      { label: 'TR papier', theorique: theorique?.tr_papier || '', value: trPapier?.valeur || '' },
+      { label: 'Sunday', theorique: theorique?.sunday || '', value: sunday?.reel || '' },
+      { label: 'Uber', theorique: theorique?.uber || '', value: uber?.reel || '' },
+      { label: 'Deliveroo', theorique: theorique?.deliveroo || '', value: deliveroo?.reel || '' },
+      { label: 'Click & collect', theorique: theorique?.click_collect || '', value: clickCollect?.reel || '' },
+    ];
+    const totalTheorique = cashRows.reduce((sum, row) => sum + parseCaisseNumber(row.theorique), 0);
+    const totalReel = cashRows.reduce((sum, row) => sum + parseCaisseNumber(row.value), 0);
+    const totalEcart = totalReel - totalTheorique;
+    const hasTotalEcart = Math.abs(totalEcart) > 0.001;
+    const totalEcartColor = totalEcart < -0.001 ? '#dc2626' : totalEcart > 0.001 ? '#059669' : '#475569';
+
+    const handleCashValidation = () => {
+      if (hasTotalEcart) {
+        setCashValidationDraft(cashValidationComment.replace(/^Validation caisse\s*:\s*/i, ''));
+        setIsCashValidationModalOpen(true);
+        return;
+      }
+      updateNepting(month, day, 'commentaire', `Validation caisse : OK sans écart le ${new Date().toLocaleDateString('fr-FR')}`);
+    };
 
     return (
       <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr', gap: 8, width: '100%' }}>
@@ -1390,15 +1478,39 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         {renderRealCaisseControl('Pièces', '', especes?.pieces || '', value => updateEspeces(month, day, 'pieces', value))}
         {renderRealCaisseControl('AMEX/ANCV carte', theorique?.amex || '', amexAncv?.reel_nepting || '', value => updateAmexAncv(month, day, 'reel_nepting', value))}
         {renderRealCaisseControl('TR carte', theorique?.tr_carte || '', conecs?.conecs_reel_nepting || '', value => updateConecs(month, day, 'conecs_reel_nepting', value))}
-        {renderRealCaisseControl('ANCV papier', theorique?.ancv || '', ancv?.montant_total || '', value => updateAncvPapiers(month, day, 'montant_total', value))}
+        {renderRealCaisseControl('ANCV papier', theorique?.ancv || '', ancv?.montant_total || '', value => updateAncvPapiers(month, day, 'montant_total', value), {
+          detailId: 'ancv',
+          details: renderCashDetailField('Nombre ANCV papier', ancv?.nombre_ancv || '', value => updateAncvPapiers(month, day, 'nombre_ancv', value)),
+        })}
         {renderRealCaisseControl('TR papier', theorique?.tr_papier || '', trPapier?.valeur || '', value => {
           updateSaisieTR(month, day, 'edenred', 0, 'valeur', value);
-          updateSaisieTR(month, day, 'edenred', 0, 'nombre', value ? '1' : '');
+        }, {
+          detailId: 'tr',
+          details: renderCashDetailField('Nombre TR papier', trPapier?.nombre || '', value => updateSaisieTR(month, day, 'edenred', 0, 'nombre', value)),
         })}
         {renderRealCaisseControl('Sunday', theorique?.sunday || '', sunday?.reel || '', value => updateSunday(month, day, 'reel', value))}
         {renderRealCaisseControl('Uber', theorique?.uber || '', uber?.reel || '', value => updateUber(month, day, 'reel', value))}
         {renderRealCaisseControl('Deliveroo', theorique?.deliveroo || '', deliveroo?.reel || '', value => updateDeliveroo(month, day, 'reel', value))}
         {renderRealCaisseControl('Click & collect', theorique?.click_collect || '', clickCollect?.reel || '', value => updateClickCollect(month, day, 'reel', value))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(118px, .7fr) repeat(3, minmax(0, 1fr))', gap: 10, alignItems: 'center', marginTop: 4, paddingTop: 10, borderTop: '1px solid #cbd5e1' }}>
+          <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em' }}>Total caisse</div>
+          {renderAutoValue(totalTheorique.toFixed(2))}
+          {renderAutoValue(totalReel.toFixed(2))}
+          {renderAutoValue(totalEcart.toFixed(2), { style: { color: totalEcartColor } })}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', padding: '10px 12px', border: `1px solid ${hasTotalEcart ? '#fecaca' : '#bbf7d0'}`, borderRadius: 8, background: hasTotalEcart ? '#fef2f2' : '#f0fdf4' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 950, color: hasTotalEcart ? '#991b1b' : '#166534', textTransform: 'uppercase', letterSpacing: '.04em' }}>Écart total : {totalEcart.toFixed(2)}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cashValidationLabel}</div>
+          </div>
+          <button
+            type="button"
+            onClick={handleCashValidation}
+            style={{ border: 'none', borderRadius: 7, background: hasTotalEcart ? '#dc2626' : '#16a34a', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 950, padding: '8px 12px', whiteSpace: 'nowrap' }}
+          >
+            Valider
+          </button>
+        </div>
       </div>
     );
   };
@@ -1785,6 +1897,59 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             )
           ), '#9333ea')}
         </div>
+        {isCashValidationModalOpen && selectedDayRow?.dayIndex ? (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 18, background: 'rgba(15, 23, 42, .55)' }}>
+            <div style={{ width: 'min(520px, 100%)', borderRadius: 14, background: '#fff', boxShadow: '0 24px 70px rgba(15, 23, 42, .28)', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '18px 20px', borderBottom: '1px solid #e2e8f0' }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 950, color: '#0f172a' }}>Commentaire d'écart caisse</div>
+                  <div style={{ marginTop: 3, fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'capitalize' }}>{selectedDayLabel}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCashValidationModalOpen(false)}
+                  style={{ border: 'none', background: 'transparent', color: '#64748b', cursor: 'pointer', padding: 4 }}
+                  aria-label="Fermer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 950, color: '#334155', textTransform: 'uppercase', letterSpacing: '.05em' }}>Commentaire obligatoire</span>
+                  <textarea
+                    value={cashValidationDraft}
+                    onChange={event => setCashValidationDraft(event.target.value)}
+                    rows={4}
+                    style={{ width: '100%', resize: 'vertical', border: '2px solid #fecaca', borderRadius: 10, padding: 10, outline: 'none', fontSize: 13, fontWeight: 700, color: '#0f172a', background: '#fff7ed' }}
+                    placeholder="Exemple : écart lié à un ticket papier manquant, correction prévue demain..."
+                  />
+                </label>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsCashValidationModalOpen(false)}
+                    style={{ border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', color: '#334155', cursor: 'pointer', fontSize: 13, fontWeight: 900, padding: '9px 12px' }}
+                  >
+                    Réessayer
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!cashValidationDraft.trim()}
+                    onClick={() => {
+                      if (!selectedDayRow?.dayIndex || !cashValidationDraft.trim()) return;
+                      updateNepting(month, selectedDayRow.dayIndex, 'commentaire', `Validation caisse : ${cashValidationDraft.trim()}`);
+                      setIsCashValidationModalOpen(false);
+                    }}
+                    style={{ border: 'none', borderRadius: 8, background: cashValidationDraft.trim() ? '#dc2626' : '#fca5a5', color: '#fff', cursor: cashValidationDraft.trim() ? 'pointer' : 'not-allowed', fontSize: 13, fontWeight: 950, padding: '9px 12px' }}
+                  >
+                    Valider avec commentaire
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   };
