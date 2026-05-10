@@ -1343,10 +1343,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     theorique: string,
     value: string,
     onChange: (value: string) => void,
-    options: { detailId?: 'ancv' | 'tr'; details?: React.ReactNode } = {}
+    options: { detailId?: 'ancv' | 'tr'; details?: React.ReactNode; invertEcart?: boolean } = {}
   ) => {
     const hasValues = Boolean(theorique || value);
-    const ecart = parseCaisseNumber(value) - parseCaisseNumber(theorique);
+    const realValue = parseCaisseNumber(value) * (options.invertEcart ? -1 : 1);
+    const ecart = realValue - parseCaisseNumber(theorique);
     const ecartDisplay = hasValues ? ecart.toFixed(2) : '-';
     const isExpanded = options.detailId && expandedCashDetail === options.detailId;
 
@@ -1444,7 +1445,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
     const cashRows = [
       { label: 'CB', theorique: theorique?.cb || '', value: nepting?.saisie_reel_nepting || '' },
-      { label: 'Pourboires', theorique: '', value: nepting?.pourboire_sunday || '' },
+      { label: 'Pourboires', theorique: '', value: nepting?.pourboire_sunday || '', multiplier: -1 },
       { label: 'Espèces coffre', theorique: theorique?.especes || '', value: especes?.mis_au_coffre || '' },
       { label: 'Pièces', theorique: '', value: especes?.pieces || '' },
       { label: 'AMEX/ANCV carte', theorique: theorique?.amex || '', value: amexAncv?.reel_nepting || '' },
@@ -1457,7 +1458,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       { label: 'Click & collect', theorique: theorique?.click_collect || '', value: clickCollect?.reel || '' },
     ];
     const totalTheorique = cashRows.reduce((sum, row) => sum + parseCaisseNumber(row.theorique), 0);
-    const totalReel = cashRows.reduce((sum, row) => sum + parseCaisseNumber(row.value), 0);
+    const totalReel = cashRows.reduce((sum, row) => sum + parseCaisseNumber(row.value) * (row.multiplier || 1), 0);
     const totalEcart = totalReel - totalTheorique;
     const hasTotalEcart = Math.abs(totalEcart) > 0.001;
     const totalEcartColor = totalEcart < -0.001 ? '#dc2626' : totalEcart > 0.001 ? '#059669' : '#475569';
@@ -1480,7 +1481,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Écart</div>
         </div>
         {renderRealCaisseControl('CB', theorique?.cb || '', nepting?.saisie_reel_nepting || '', value => updateNepting(month, day, 'saisie_reel_nepting', value))}
-        {renderRealCaisseControl('Pourboires', '', nepting?.pourboire_sunday || '', value => updateNepting(month, day, 'pourboire_sunday', value))}
+        {renderRealCaisseControl('Pourboires', '', nepting?.pourboire_sunday || '', value => updateNepting(month, day, 'pourboire_sunday', value), { invertEcart: true })}
         {renderRealCaisseControl('Espèces coffre', theorique?.especes || '', especes?.mis_au_coffre || '', value => updateEspeces(month, day, 'mis_au_coffre', value))}
         {renderRealCaisseControl('Pièces', '', especes?.pieces || '', value => updateEspeces(month, day, 'pieces', value))}
         {renderRealCaisseControl('AMEX/ANCV carte', theorique?.amex || '', amexAncv?.reel_nepting || '', value => updateAmexAncv(month, day, 'reel_nepting', value))}
