@@ -1278,7 +1278,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const getDailyDisplayValue = (col: number) => formatValue(getDailyCellValue(col), dynamicColumns[col] || ['', '', '', '']);
   const isDailyFieldFocused = (col: number) => focusedCell === `${selectedDayRowIndex}-${col}`;
 
-  const dailyInputClass = "w-full h-8 rounded-md border-2 border-slate-900 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all hover:border-slate-700 focus:border-slate-950 focus:ring-2 focus:ring-slate-900/20";
+  const dailyInputClass = "w-full h-8 rounded-md border border-slate-400 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
   const dailyReadOnlyClass = "flex h-8 items-center justify-end gap-1 overflow-hidden rounded-md border border-slate-300 bg-slate-100/90 px-2 text-sm font-bold text-slate-700 shadow-inner";
 
   const renderAutoValue = (value: string | number, options: { className?: string; style?: React.CSSProperties } = {}) => (
@@ -1436,7 +1436,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           dataCol={label}
           value={value}
           onChange={nextValue => onChange(String(nextValue).replace(/[^0-9]/g, ''))}
-          className="w-full h-8 rounded-md border-2 border-slate-900 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all focus:border-slate-950 focus:ring-2 focus:ring-slate-900/20"
+          className="w-full h-8 rounded-md border border-slate-400 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15"
           placeholder=""
         />
       </label>
