@@ -1307,9 +1307,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     );
   };
 
-  const renderRealCaisseControl = (label: string, value: string, onChange: (value: string) => void) => (
-    <label key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(86px, 1fr) minmax(110px, 1.2fr)', gap: 8, alignItems: 'center', minWidth: 0 }}>
-      <span style={{ fontSize: 11, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+  const renderRealCaisseControl = (label: string, theorique: string, value: string, onChange: (value: string) => void) => (
+    <label key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(92px, 1.05fr) minmax(88px, .95fr) minmax(96px, 1fr)', gap: 8, alignItems: 'center', minWidth: 0 }}>
+      <span style={{ fontSize: 10, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+      <div className={dailyReadOnlyClass}>{theorique || '-'}</div>
       <DebouncedInput
         dataRow={`cash-${selectedDayRowIndex}`}
         dataCol={label}
@@ -1336,24 +1337,30 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const deliveroo = monthData?.deliveroo?.[day];
     const clickCollect = monthData?.clickCollect?.[day];
     const trPapier = monthData?.saisieTR?.[day]?.edenred?.[0];
+    const theorique = monthData?.theorique?.[day];
 
     return (
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-        {renderRealCaisseControl('CB', nepting?.saisie_reel_nepting || '', value => updateNepting(month, day, 'saisie_reel_nepting', value))}
-        {renderRealCaisseControl('Pourboires', nepting?.pourboire_sunday || '', value => updateNepting(month, day, 'pourboire_sunday', value))}
-        {renderRealCaisseControl('Espèces coffre', especes?.mis_au_coffre || '', value => updateEspeces(month, day, 'mis_au_coffre', value))}
-        {renderRealCaisseControl('Pièces', especes?.pieces || '', value => updateEspeces(month, day, 'pieces', value))}
-        {renderRealCaisseControl('AMEX/ANCV carte', amexAncv?.reel_nepting || '', value => updateAmexAncv(month, day, 'reel_nepting', value))}
-        {renderRealCaisseControl('TR carte', conecs?.conecs_reel_nepting || '', value => updateConecs(month, day, 'conecs_reel_nepting', value))}
-        {renderRealCaisseControl('ANCV papier', ancv?.montant_total || '', value => updateAncvPapiers(month, day, 'montant_total', value))}
-        {renderRealCaisseControl('TR papier', trPapier?.valeur || '', value => {
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(92px, 1.05fr) minmax(88px, .95fr) minmax(96px, 1fr)', gap: 8, alignItems: 'center', minWidth: 0 }}>
+          <div />
+          <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Théorique</div>
+          <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Réel</div>
+        </div>
+        {renderRealCaisseControl('CB', theorique?.cb || '', nepting?.saisie_reel_nepting || '', value => updateNepting(month, day, 'saisie_reel_nepting', value))}
+        {renderRealCaisseControl('Pourboires', '', nepting?.pourboire_sunday || '', value => updateNepting(month, day, 'pourboire_sunday', value))}
+        {renderRealCaisseControl('Espèces coffre', theorique?.especes || '', especes?.mis_au_coffre || '', value => updateEspeces(month, day, 'mis_au_coffre', value))}
+        {renderRealCaisseControl('Pièces', '', especes?.pieces || '', value => updateEspeces(month, day, 'pieces', value))}
+        {renderRealCaisseControl('AMEX/ANCV carte', theorique?.amex || '', amexAncv?.reel_nepting || '', value => updateAmexAncv(month, day, 'reel_nepting', value))}
+        {renderRealCaisseControl('TR carte', theorique?.tr_carte || '', conecs?.conecs_reel_nepting || '', value => updateConecs(month, day, 'conecs_reel_nepting', value))}
+        {renderRealCaisseControl('ANCV papier', theorique?.ancv || '', ancv?.montant_total || '', value => updateAncvPapiers(month, day, 'montant_total', value))}
+        {renderRealCaisseControl('TR papier', theorique?.tr_papier || '', trPapier?.valeur || '', value => {
           updateSaisieTR(month, day, 'edenred', 0, 'valeur', value);
           updateSaisieTR(month, day, 'edenred', 0, 'nombre', value ? '1' : '');
         })}
-        {renderRealCaisseControl('Sunday', sunday?.reel || '', value => updateSunday(month, day, 'reel', value))}
-        {renderRealCaisseControl('Uber', uber?.reel || '', value => updateUber(month, day, 'reel', value))}
-        {renderRealCaisseControl('Deliveroo', deliveroo?.reel || '', value => updateDeliveroo(month, day, 'reel', value))}
-        {renderRealCaisseControl('Click & collect', clickCollect?.reel || '', value => updateClickCollect(month, day, 'reel', value))}
+        {renderRealCaisseControl('Sunday', theorique?.sunday || '', sunday?.reel || '', value => updateSunday(month, day, 'reel', value))}
+        {renderRealCaisseControl('Uber', theorique?.uber || '', uber?.reel || '', value => updateUber(month, day, 'reel', value))}
+        {renderRealCaisseControl('Deliveroo', theorique?.deliveroo || '', deliveroo?.reel || '', value => updateDeliveroo(month, day, 'reel', value))}
+        {renderRealCaisseControl('Click & collect', theorique?.click_collect || '', clickCollect?.reel || '', value => updateClickCollect(month, day, 'reel', value))}
       </div>
     );
   };
@@ -1680,31 +1687,33 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(620px, 1.35fr) minmax(360px, .9fr)', gap: 10, alignItems: 'start' }}>
-            {renderDailySection('Réalisé', 'Saisie du CA et des couverts par service', (
-              <>
-                {renderDailySingleRow('VAE', 17)}
-                {renderDailyServiceRow('Midi', 18, 25, 26)}
-                {renderDailyServiceRow('Soir', 19, 27, 28)}
-                {renderDailyServiceRow('Limonade', 20, 34, 35)}
-                {renderDailyTotalRow([
-                  { label: 'Total CA', col: 21 },
-                  { label: 'Total couverts', col: 29 },
-                  { label: 'Ticket moyen', col: 30 },
-                ])}
-              </>
-            ), '#2563eb')}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
+              {renderDailySection('Réalisé', 'Saisie du CA et des couverts par service', (
+                <>
+                  {renderDailySingleRow('VAE', 17)}
+                  {renderDailyServiceRow('Midi', 18, 25, 26)}
+                  {renderDailyServiceRow('Soir', 19, 27, 28)}
+                  {renderDailyServiceRow('Limonade', 20, 34, 35)}
+                  {renderDailyTotalRow([
+                    { label: 'Total CA', col: 21 },
+                    { label: 'Total couverts', col: 29 },
+                    { label: 'Ticket moyen', col: 30 },
+                  ])}
+                </>
+              ), '#2563eb')}
+
+              {renderDailySection('Événements', 'Notes particulières du jour', (
+                <>
+                  {renderDailyField('Événement restaurant', 37, { text: true })}
+                  {renderDailyField('Événement national', 38, { text: true })}
+                </>
+              ), '#f59e0b')}
+            </div>
 
             {renderDailySection('Réel caisse', 'Saisie réelle des encaissements', (
               renderRealCaisseTable()
             ), '#0f766e')}
           </div>
-
-          {renderDailySection('Événements', 'Notes particulières du jour', (
-            <>
-              {renderDailyField('Événement restaurant', 37, { text: true })}
-              {renderDailyField('Événement national', 38, { text: true })}
-            </>
-          ), '#0f766e')}
 
           {renderDailySection('Démarques', 'Personnel, opérationnel et total démarques', (
             <>
