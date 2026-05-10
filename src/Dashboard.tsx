@@ -283,6 +283,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importStatus, setImportStatus] = useState('');
+  const [importPreview, setImportPreview] = useState<Array<{ label: string; value: string }>>([]);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [selectedEntryDay, setSelectedEntryDay] = useState(() => {
     const now = new Date();
@@ -1085,6 +1087,115 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const selectMonth = (nextMonth: number) => {
     setMonth(nextMonth);
     setSelectedMonth(nextMonth);
+  };
+
+  const parseCaisseNumber = (value: string) => Number(value.replace(/\s/g, '').replace(',', '.')) || 0;
+  const formatImportedNumber = (value: number, decimals = 2) => value > 0 ? value.toFixed(decimals) : '';
+  const findCaisseAmount = (text: string, label: string) => {
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = text.match(new RegExp(`${escaped}\\s+[-\\d\\s,.]+\\s+([-\\d\\s]+,\\d{2})`, 'i'));
+    return match ? parseCaisseNumber(match[1]) : 0;
+  };
+
+  const extractPdfText = async (file: File) => {
+    const loadPdfJs = new Function('url', 'return import(url)') as (url: string) => Promise<any>;
+    const pdfjs = await loadPdfJs('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
+    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs';
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjs.getDocument({ data: bytes }).promise;
+    const pages: string[] = [];
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+      pages.push(content.items.map((item: { str?: string }) => item.str || '').join(' '));
+    }
+    return pages.join('\n');
+  };
+
+  const parseCaisseRealise = (text: string) => {
+    const dateMatch = text.match(/Du\s+(\d{2})\/(\d{2})\/(\d{2})/i);
+    const pdfDay = dateMatch ? Number(dateMatch[1]) : null;
+    const pdfMonth = dateMatch ? Number(dateMatch[2]) - 1 : null;
+    const pdfYear = dateMatch ? 2000 + Number(dateMatch[3]) : null;
+
+    const livraisonTtc = findCaisseAmount(text, 'Livraison');
+    const totalHtMatch = text.match(/TVA\s+TOTAL[\s\S]*?TOTAL\s+([-.\d\s]+,\d{2})\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}/i);
+    const totalHt = totalHtMatch ? parseCaisseNumber(totalHtMatch[1]) : 0;
+    const livraisonHtMatch = text.match(/LIVRAISON[\s\S]*?TOTAL\s+([-.\d\s]+,\d{2})\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}/i);
+    const vaeHt = livraisonHtMatch ? parseCaisseNumber(livraisonHtMatch[1]) : 0;
+    const serviceMatch = text.match(/Total\s+([-.\d\s]+,\d{2})\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}\s+([-.\d\s]+,\d{2})\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}/i);
+    const totalMidiHt = serviceMatch ? parseCaisseNumber(serviceMatch[1]) : 0;
+    const totalSoirHt = serviceMatch ? parseCaisseNumber(serviceMatch[2]) : 0;
+    const serviceLineMatch = text.match(/Sur-place\s+(\d+)\s+(\d+)\s+\d+\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}\s+[-.\d\s]+,\d{2}/i);
+    const midiCovers = serviceLineMatch ? Number(serviceLineMatch[1]) : 0;
+    const soirCovers = serviceLineMatch ? Number(serviceLineMatch[2]) : 0;
+    const deliveryLineMatch = text.match(/Livraison\s+-\s+Livraison\s+\d+\s+\d+\s+\d+\s+([-.\d\s]+,\d{2})\s+([-.\d\s]+,\d{2})/i);
+    const deliveryMidiTtc = deliveryLineMatch ? parseCaisseNumber(deliveryLineMatch[1]) : 0;
+    const deliverySoirTtc = deliveryLineMatch ? parseCaisseNumber(deliveryLineMatch[2]) : 0;
+    const midiDeliveryHt = livraisonTtc > 0 ? vaeHt * (deliveryMidiTtc / livraisonTtc) : 0;
+    const soirDeliveryHt = livraisonTtc > 0 ? vaeHt * (deliverySoirTtc / livraisonTtc) : 0;
+
+    const caVae = vaeHt;
+    const caMidi = Math.max(0, totalMidiHt - midiDeliveryHt);
+    const caSoir = Math.max(0, totalSoirHt - soirDeliveryHt);
+
+    if (!totalHt || (!caMidi && !caSoir && !caVae)) {
+      throw new Error("La feuille de caisse n'a pas pu être lue automatiquement.");
+    }
+
+    return {
+      pdfDay,
+      pdfMonth,
+      pdfYear,
+      values: {
+        17: caVae,
+        18: caMidi,
+        19: caSoir,
+        20: 0,
+        25: midiCovers,
+        27: soirCovers,
+        34: 0,
+      } as Record<number, number>,
+    };
+  };
+
+  const handleDailyRealiseImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImportStatus('Lecture de la feuille de caisse...');
+    setImportPreview([]);
+
+    try {
+      const text = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+        ? await extractPdfText(file)
+        : await file.text();
+      const parsed = parseCaisseRealise(text);
+      const targetDayEntry = parsed.pdfDay && parsed.pdfMonth === month && parsed.pdfYear === year
+        ? dayRows.find(item => item.row.dayIndex === parsed.pdfDay)
+        : selectedDayEntry;
+      const targetRowIndex = targetDayEntry?.index ?? selectedDayRowIndex;
+
+      if (targetRowIndex < 0) throw new Error('Aucune journée cible trouvée pour importer ces données.');
+
+      Object.entries(parsed.values).forEach(([col, value]) => {
+        handleCellChange(targetRowIndex, Number(col), formatImportedNumber(value, Number(col) === 25 || Number(col) === 27 || Number(col) === 34 ? 0 : 2));
+      });
+      if (targetDayEntry?.row.dayIndex) setSelectedEntryDay(targetDayEntry.row.dayIndex);
+
+      setImportPreview([
+        { label: 'VAE HT', value: formatImportedNumber(parsed.values[17]) || '-' },
+        { label: 'CA midi HT hors VAE', value: formatImportedNumber(parsed.values[18]) || '-' },
+        { label: 'CA soir HT hors VAE', value: formatImportedNumber(parsed.values[19]) || '-' },
+        { label: 'Couverts midi', value: formatImportedNumber(parsed.values[25], 0) || '-' },
+        { label: 'Couverts soir', value: formatImportedNumber(parsed.values[27], 0) || '-' },
+      ]);
+      setImportStatus(`Import réalisé sur le ${targetDayEntry?.row.label || selectedDayLabel}.`);
+    } catch (error) {
+      setImportStatus(`Erreur : ${error instanceof Error ? error.message : "L'import a échoué."}`);
+    } finally {
+      event.target.value = '';
+    }
   };
 
   const getDailyCellValue = (col: number) => selectedDayRowIndex >= 0 ? calculatedData[`${selectedDayRowIndex}-${col}`] || '' : '';
@@ -2488,12 +2599,47 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               </button>
             </div>
             <div style={{ padding: 24 }}>
-              <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, marginBottom: 24 }}>
+              <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, marginBottom: 18 }}>
+                Importez une feuille de caisse PDF. Seule la partie realise du suivi quotidien sera remplie :
+                VAE, CA midi, CA soir et couverts.
+              </p>
+
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 16, border: '1px dashed #93c5fd', borderRadius: 10, background: '#eff6ff' }}>
+                <span style={{ fontSize: 12, fontWeight: 900, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '.04em' }}>Feuille de caisse</span>
+                <input
+                  type="file"
+                  accept=".pdf,.txt,text/plain,application/pdf"
+                  onChange={handleDailyRealiseImport}
+                  style={{ fontSize: 13, color: '#0f172a' }}
+                />
+              </label>
+
+              {importStatus && (
+                <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: importStatus.startsWith('Erreur') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${importStatus.startsWith('Erreur') ? '#fecaca' : '#bbf7d0'}`, color: importStatus.startsWith('Erreur') ? '#991b1b' : '#166534', fontSize: 13, fontWeight: 800 }}>
+                  {importStatus}
+                </div>
+              )}
+
+              {importPreview.length > 0 && (
+                <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+                  {importPreview.map(item => (
+                    <div key={item.label} style={{ padding: 10, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
+                      <div style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>{item.label}</div>
+                      <div style={{ marginTop: 4, fontSize: 14, fontWeight: 950, color: '#0f172a' }}>{item.value}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ marginTop: 16, marginBottom: 18, padding: 12, borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: 12, lineHeight: 1.5, color: '#64748b' }}>
+                Si la date du PDF correspond au mois affiche, l'import remplit directement ce jour. Sinon il remplit le jour actuellement selectionne.
+              </div>
+              <p style={{ display: 'none', fontSize: 14, color: '#475569', lineHeight: 1.6, marginBottom: 24 }}>
                 Pour importer vos données, nous devons définir le format exact de votre fichier source. 
                 Veuillez nous indiquer comment vous souhaitez procéder :
               </p>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'none', flexDirection: 'column', gap: 16 }}>
                 <div style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
                   <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>Option A : Format CSV Standard</h4>
                   <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
@@ -2520,3 +2666,4 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     </div>
   );
 }
+
