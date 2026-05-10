@@ -1844,7 +1844,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(620px, 1.35fr) minmax(360px, .9fr)', gap: 10, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(660px, 1.35fr) minmax(420px, .9fr)', gap: 10, alignItems: 'start' }}>
+            {renderDailySection('Réel caisse', 'Saisie réelle des encaissements', (
+              renderRealCaisseTable()
+            ), '#0f766e')}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
               {renderDailySection('Réalisé', 'Saisie du CA et des couverts par service', (
                 <>
@@ -1868,9 +1872,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               ), '#f59e0b')}
             </div>
 
-            {renderDailySection('Réel caisse', 'Saisie réelle des encaissements', (
-              renderRealCaisseTable()
-            ), '#0f766e')}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(360px, .85fr) minmax(620px, 1.15fr)', gap: 10, alignItems: 'start' }}>
