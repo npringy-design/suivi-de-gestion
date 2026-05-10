@@ -1253,27 +1253,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       updateTheorique(month, targetDay, 'uber', formatImportedNumber(parsed.theoriqueValues.uber));
       updateTheorique(month, targetDay, 'deliveroo', formatImportedNumber(parsed.theoriqueValues.deliveroo));
       updateTheorique(month, targetDay, 'sunday', formatImportedNumber(parsed.theoriqueValues.sunday));
-      updateNepting(month, targetDay, 'saisie_reel_nepting', formatImportedNumber(parsed.realValues.cb));
-      updateNepting(month, targetDay, 'pourboire_sunday', formatImportedNumber(parsed.realValues.pourboires));
-      updateEspeces(month, targetDay, 'mis_au_coffre', formatImportedNumber(parsed.realValues.especes));
-      updateEspeces(month, targetDay, 'pieces', formatImportedNumber(parsed.realValues.pieces));
-      updateAmexAncv(month, targetDay, 'reel_nepting', formatImportedNumber(parsed.realValues.amexAncvCarte));
-      updateConecs(month, targetDay, 'conecs_reel_nepting', formatImportedNumber(parsed.realValues.trCarte));
-      updateAncvPapiers(month, targetDay, 'montant_total', formatImportedNumber(parsed.realValues.ancvPapier));
-      updateSaisieTR(month, targetDay, 'edenred', 0, 'valeur', formatImportedNumber(parsed.realValues.trPapier));
-      updateSaisieTR(month, targetDay, 'edenred', 0, 'nombre', parsed.realValues.trPapier > 0 ? '1' : '');
-      updateSunday(month, targetDay, 'reel', formatImportedNumber(parsed.realValues.sunday));
-      updateUber(month, targetDay, 'reel', formatImportedNumber(parsed.realValues.uber));
-      updateDeliveroo(month, targetDay, 'reel', formatImportedNumber(parsed.realValues.deliveroo));
-      updateClickCollect(month, targetDay, 'reel', formatImportedNumber(parsed.realValues.clickCollect));
       if (targetDayEntry?.row.dayIndex) setSelectedEntryDay(targetDayEntry.row.dayIndex);
 
       setImportPreview([
         { label: 'VAE HT', value: formatImportedNumber(parsed.values[17]) || '-' },
         { label: 'CA midi HT hors VAE', value: formatImportedNumber(parsed.values[18]) || '-' },
         { label: 'CA soir HT hors VAE', value: formatImportedNumber(parsed.values[19]) || '-' },
-        { label: 'CB réel', value: formatImportedNumber(parsed.realValues.cb) || '-' },
-        { label: 'Encaissements réels', value: formatImportedNumber(parsed.realValues.cb + parsed.realValues.especes + parsed.realValues.amexAncvCarte + parsed.realValues.trCarte + parsed.realValues.ancvPapier + parsed.realValues.trPapier + parsed.realValues.sunday + parsed.realValues.uber + parsed.realValues.deliveroo + parsed.realValues.clickCollect) || '-' },
+        { label: 'Théorique caisse', value: formatImportedNumber(parsed.theoriqueValues.cb + parsed.theoriqueValues.especes + parsed.theoriqueValues.amex + parsed.theoriqueValues.tr_carte + parsed.theoriqueValues.ancv + parsed.theoriqueValues.tr_papier + parsed.theoriqueValues.sunday + parsed.theoriqueValues.uber + parsed.theoriqueValues.deliveroo + parsed.theoriqueValues.click_collect) || '-' },
         { label: 'Couverts midi', value: formatImportedNumber(parsed.values[25], 0) || '-' },
         { label: 'Couverts soir', value: formatImportedNumber(parsed.values[27], 0) || '-' },
       ]);
@@ -1759,23 +1745,25 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             ), '#0f766e')}
           </div>
 
-          {renderDailySection('Démarques', 'Personnel, opérationnel et total démarques', (
-            <>
-              {renderDailyField('Démarque personnel', 39)}
-              {renderDailyField('Démarque opérationnel', 41)}
-              {renderDailyField('Total démarque', 43, { readOnly: true })}
-              {renderDailyField('Explication démarque', 44, { text: true })}
-            </>
-          ), '#f59e0b')}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(360px, .85fr) minmax(620px, 1.15fr)', gap: 10, alignItems: 'start' }}>
+            {renderDailySection('Démarques', 'Personnel, opérationnel et total démarques', (
+              <>
+                {renderDailyField('Démarque personnel', 39)}
+                {renderDailyField('Démarque opérationnel', 41)}
+                {renderDailyField('Total démarque', 43, { readOnly: true })}
+                {renderDailyField('Explication démarque', 44, { text: true })}
+              </>
+            ), '#f59e0b')}
 
-          {renderDailySection('Achats / livraisons', 'Factures fournisseurs reçues dans la journée', (
-            <>
-              {achatFields}
-              {renderDailyTotalRow([
-                { label: 'Total achats HT', col: 58 },
-              ])}
-            </>
-          ), '#16a34a')}
+            {renderDailySection('Achats / livraisons', 'Factures fournisseurs reçues dans la journée', (
+              <>
+                {achatFields}
+                {renderDailyTotalRow([
+                  { label: 'Total achats HT', col: 58 },
+                ])}
+              </>
+            ), '#16a34a')}
+          </div>
 
           {renderDailySection('Personnel', 'Saisie des heures par équipe', (
             renderPersonnelTable(
