@@ -40,6 +40,7 @@ Le flux retenu est donc :
 - Si une colonne contient déjà un montant pour ce fournisseur, l'import ajoute le nouveau montant au total existant.
 - L'utilisateur peut corriger le fournisseur, le montant HT et la colonne cible avant validation.
 - Une facture non reconnue doit rester validable manuellement après correction.
+- Les noms des fournisseurs d'achats peuvent être modifiés dans la vue Complet. Ces libellés servent à l'affichage et à la sélection de la colonne cible.
 
 ## Fournisseurs ciblés dans la saisie journalière
 

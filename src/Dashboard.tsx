@@ -327,6 +327,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [importPreview, setImportPreview] = useState<Array<{ label: string; value: string }>>([]);
   const [invoiceImportStatus, setInvoiceImportStatus] = useState('');
   const [invoiceImportPreview, setInvoiceImportPreview] = useState<InvoiceImportPreview | null>(null);
+  const [purchaseSupplierNames, setPurchaseSupplierNames] = useState<Record<number, string>>(() => {
+    try {
+      const saved = localStorage.getItem('dashboard_purchase_supplier_names_v1');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [expandedCashDetail, setExpandedCashDetail] = useState<'ancv' | 'tr' | null>(null);
   const [isCashValidationModalOpen, setIsCashValidationModalOpen] = useState(false);
@@ -383,8 +391,23 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       updateHeader(97, 'apprenti', 'APPRENTI\nCUISINE');
       updateHeader(98, 'apprenti', 'APPRENTI\nSALLE');
     }
+    Object.entries(purchaseSupplierNames).forEach(([col, name]) => {
+      const colIndex = Number(col);
+      if (colIndex >= 45 && colIndex <= 57 && name.trim()) {
+        cols[colIndex] = [...cols[colIndex]];
+        cols[colIndex][2] = name.trim();
+      }
+    });
     return cols;
-  }, [C, globalData, month]);
+  }, [C, globalData, month, purchaseSupplierNames]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dashboard_purchase_supplier_names_v1', JSON.stringify(purchaseSupplierNames));
+    } catch {
+      // Les noms de fournisseurs restent modifiables même si le stockage navigateur est indisponible.
+    }
+  }, [purchaseSupplierNames]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -399,6 +422,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [activeTab, setActiveTab] = useState('PREVISIONS');
   const [tableViewMode, setTableViewMode] = useState<TableViewMode>('SAISIE');
   const [dragState, setDragState] = useState<null | { rIdx: number; cIdx: number; endRow: number; value: string }>(null);
+
+  const updatePurchaseSupplierName = (col: number, value: string) => {
+    setPurchaseSupplierNames(prev => ({
+      ...prev,
+      [col]: value,
+    }));
+  };
 
   const handleDragStart = (e: React.MouseEvent, rIdx: number, cIdx: number, value: string) => {
     e.preventDefault();
@@ -1064,7 +1094,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       return !isEditableColumn || contextColumns.has(colIndex);
     });
-  }, [activeTab, tableViewMode]);
+  }, [activeTab, tableViewMode, dynamicColumns]);
 
   const groups: Array<{ name: string; colspan: number; bg: string }> = [];
   let currentGroup: { name: string; colspan: number; bg: string } | null = null;
@@ -2583,11 +2613,36 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
                 const isRmLabel = c[0] === 'RESULTATS MENSUEL HT' && c[2] === 'Indicateur';
                 const isRmValue = c[0] === 'RESULTATS MENSUEL HT' && c[2] === 'Valeur';
+                const isEditableSupplierHeader = tableViewMode === 'COMPLET' && c.originalIndex >= 45 && c.originalIndex <= 57;
                 const minW = isRmLabel ? 180 : isRmValue ? 100 : 65;
 
                 return (
                   <th key={`c-${i}`} style={{ ...thBase, background: getBgColor(c[3]), color: '#374151', top: 90, height: 60, minWidth: minW, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : isSectionEnd ? '2px solid #94a3b8' : '1px solid #cbd5e1', borderBottom: '3px solid #374151' }}>
-                    {isEvt ? c[0] : c[2]}
+                    {isEditableSupplierHeader ? (
+                      <input
+                        value={c[2]}
+                        onChange={event => updatePurchaseSupplierName(c.originalIndex, event.target.value)}
+                        onClick={event => event.stopPropagation()}
+                        title="Modifier le nom du fournisseur"
+                        style={{
+                          width: '100%',
+                          minWidth: 74,
+                          height: 42,
+                          border: '1px solid #94a3b8',
+                          borderRadius: 6,
+                          background: '#fff',
+                          color: '#0f172a',
+                          fontSize: 9,
+                          fontWeight: 900,
+                          textAlign: 'center',
+                          padding: '3px 5px',
+                          outline: 'none',
+                          textTransform: 'uppercase',
+                        }}
+                      />
+                    ) : (
+                      isEvt ? c[0] : c[2]
+                    )}
                   </th>
                 );
               })}
