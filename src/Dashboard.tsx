@@ -1241,6 +1241,20 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       .replace(/\s+/g, ' ')
       .trim();
     const amountToken = '(-?\\d{1,3}(?:[\\s.]\\d{3})*(?:[,.]\\d{2})|-?\\d+[,.]\\d{2})';
+    const visualLines = text
+      .replace(/\u00a0/g, ' ')
+      .split(/\r?\n/)
+      .map(line => line.replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+    const taxTableHeaderIndex = visualLines.findIndex(line => /base\s*h\.?\s*t\.?|baseht/i.test(line) && /montant\s+tva|t\.?\s*t\.?\s*c\.?/i.test(line));
+    if (taxTableHeaderIndex >= 0) {
+      const candidateLines = visualLines.slice(taxTableHeaderIndex + 1, taxTableHeaderIndex + 7);
+      for (const line of candidateLines) {
+        const amounts = line.match(new RegExp(amountToken, 'g')) || [];
+        const firstAmount = amounts[0];
+        if (amounts.length >= 2 && firstAmount) return parseInvoiceNumber(firstAmount);
+      }
+    }
     const amountPatterns = [
       new RegExp(`(?:total|net|montant|base|sous[-\\s]?total)?\\s*h\\.?\\s*t\\.?\\s*(?:net)?\\s*(?:eur|euro|€)?\\s*[:\\-]?\\s*(?:eur|euro|€)?\\s*${amountToken}`, 'i'),
       new RegExp(`total\\s+hors\\s+taxe?s?\\s*(?:eur|euro|€)?\\s*[:\\-]?\\s*(?:eur|euro|€)?\\s*${amountToken}`, 'i'),
@@ -1253,12 +1267,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       if (match) return parseInvoiceNumber(match[match.length - 1]);
     }
 
-    const lines = text
-      .replace(/\u00a0/g, ' ')
-      .split(/\r?\n/)
-      .map(line => line.replace(/\s+/g, ' ').trim())
-      .filter(Boolean);
-    const htLines = lines.filter(line => /h\.?\s*t\.?|hors\s+taxe/i.test(line) && !/tva|ttc/i.test(line));
+    const htLines = visualLines.filter(line => /h\.?\s*t\.?|hors\s+taxe/i.test(line) && !/tva|ttc/i.test(line));
     for (const line of htLines) {
       const amounts = line.match(new RegExp(amountToken, 'g')) || [];
       if (amounts.length > 0) return parseInvoiceNumber(amounts[amounts.length - 1]);
@@ -1281,18 +1290,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         .filter(amount => amount > 0 && amount < ttcAmount)
         .sort((a, b) => b - a);
       if (candidates.length > 0) return candidates[0];
-    }
-
-    const allAmounts = Array.from(new Set((normalizedText.match(new RegExp(amountToken, 'g')) || []).map(parseInvoiceNumber).filter(amount => amount > 0)));
-    if (ttcMatch) {
-      const ttcAmount = parseInvoiceNumber(ttcMatch[1]);
-      const candidates = allAmounts.filter(amount => amount > 0 && amount < ttcAmount).sort((a, b) => b - a);
-      if (candidates.length > 0) return candidates[0];
-    }
-
-    if (/base\s*h\.?\s*t\.?|baseht|montant\s+tva|total\s*t\.?\s*t\.?\s*c\.?|net\s+a\s+payer/i.test(normalizedText)) {
-      const plausibleAmounts = allAmounts.filter(amount => amount >= 20 && amount < 20000).sort((a, b) => b - a);
-      if (plausibleAmounts.length >= 2) return plausibleAmounts[1];
     }
 
     return 0;
@@ -1326,6 +1323,46 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const content = await page.getTextContent();
       pages.push(content.items.map((item: { str?: string }) => item.str || '').join(' '));
     }
+    return pages.join('\n');
+  };
+
+  const extractPdfLayoutText = async (file: File) => {
+    const loadPdfJs = new Function('url', 'return import(url)') as (url: string) => Promise<any>;
+    const pdfjs = await loadPdfJs('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
+    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs';
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjs.getDocument({ data: bytes }).promise;
+    const pages: string[] = [];
+
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const rows = new Map<number, Array<{ x: number; text: string }>>();
+
+      content.items.forEach((item: { str?: string; transform?: number[] }) => {
+        const text = (item.str || '').trim();
+        if (!text || !item.transform) return;
+        const x = item.transform[4] || 0;
+        const y = item.transform[5] || 0;
+        const rowKey = Math.round(y / 3) * 3;
+        const row = rows.get(rowKey) || [];
+        row.push({ x, text });
+        rows.set(rowKey, row);
+      });
+
+      const pageLines = Array.from(rows.entries())
+        .sort((a, b) => b[0] - a[0])
+        .map(([, row]) => row
+          .sort((a, b) => a.x - b.x)
+          .map(item => item.text)
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim())
+        .filter(Boolean);
+
+      pages.push(pageLines.join('\n'));
+    }
+
     return pages.join('\n');
   };
 
@@ -1471,7 +1508,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
     try {
       const text = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-        ? await extractPdfText(file)
+        ? await extractPdfLayoutText(file)
         : await file.text();
       const parsed = parseInvoiceImport(text, file.name);
       setInvoiceImportPreview(parsed);
