@@ -1495,6 +1495,41 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       pages.push(pageLines.join('\n'));
     }
 
+    const extractedText = pages.join('\n');
+    const usefulTextLength = extractedText.replace(/[^A-Za-zÀ-ÿ0-9]/g, '').length;
+    if (usefulTextLength >= 120 && /\d{2}[./-]\d{2}[./-]\d{2,4}/.test(extractedText)) {
+      return extractedText;
+    }
+
+    return extractPdfOcrText(file, pdfjs);
+  };
+
+  const extractPdfOcrText = async (file: File, pdfjs?: any) => {
+    const loadModule = new Function('url', 'return import(url)') as (url: string) => Promise<any>;
+    const loadedPdfjs = pdfjs || await loadModule('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
+    loadedPdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs';
+    const tesseract = await loadModule('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js');
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const pdf = await loadedPdfjs.getDocument({ data: bytes }).promise;
+    const pages: string[] = [];
+
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: 2 });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) continue;
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      await page.render({ canvasContext: context, viewport }).promise;
+      const result = await tesseract.recognize(canvas.toDataURL('image/png'), 'fra+eng', {
+        workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
+        corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
+        langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+      });
+      pages.push(result?.data?.text || '');
+    }
+
     return pages.join('\n');
   };
 

@@ -29,11 +29,14 @@ L'import facture doit passer par une validation humaine, car les factures fourni
 Le flux retenu est donc :
 
 1. lecture du fichier ;
-2. détection du fournisseur, de la date de facture et du montant HT ;
-3. affichage d'une prévisualisation ;
-4. correction éventuelle par l'utilisateur ;
-5. validation ;
-6. ajout du montant dans la colonne fournisseur du jour de facture si cette date appartient au mois affiché, sinon dans le jour sélectionné.
+2. extraction du texte PDF quand il existe, sinon lecture OCR des pages image/scannées ;
+3. détection du fournisseur, de la date de facture et du montant HT ;
+4. affichage d'une prévisualisation ;
+5. correction éventuelle par l'utilisateur ;
+6. validation ;
+7. ajout du montant dans la colonne fournisseur du jour de facture si cette date appartient au mois affiché, sinon dans le jour sélectionné.
+
+L'OCR sert uniquement de secours quand le PDF ne contient pas assez de texte exploitable. Cette lecture est plus lente qu'une extraction texte classique, mais elle est nécessaire pour les factures scannées ou composées en images.
 
 ## Ligne de conduite métier
 
