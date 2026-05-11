@@ -66,3 +66,8 @@ Le workflow GitHub Actions exécute automatiquement :
 ## Architecture
 
 Voir `ARCHITECTURE.md` pour une description détaillée de l'architecture, du flux de données et des optimisations.
+
+## Documentation métier
+
+- `docs/IMPORT_CAISSE.md` : règles de fonctionnement pour l'import des feuilles de caisse, la sauvegarde des montants et le snapshot d'audit.
+- `docs/IMPORT_FACTURES.md` : règles de fonctionnement pour l'import léger des factures fournisseurs.

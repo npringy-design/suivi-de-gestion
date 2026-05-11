@@ -18,6 +18,14 @@ type DashboardRow = {
   weekIndex?: number;
 };
 
+type InvoiceImportPreview = {
+  fileName: string;
+  supplier: string;
+  amountHt: string;
+  targetCol: number;
+  status: string;
+};
+
 const C: DashboardColumn[] = [
   ['CA', 'Midi Saisie', 'CA HT MIDI', 'bg-[#ffe699]'],
   ['CA', 'Soir Saisie', 'CA HT SOIR', 'bg-[#ffe699]'],
@@ -147,6 +155,21 @@ const viewModes = [
 ] as const;
 
 type TableViewMode = (typeof viewModes)[number]['id'];
+const purchaseColumnAliases: Record<number, string[]> = {
+  45: ['C10'],
+  46: ['RICHARD VINS', 'RICHARD VINS DISTRIBUTION'],
+  47: ['CAFE RICHARD', 'CAFES RICHARD', 'RICHARD CAFE'],
+  48: ['STORIA'],
+  49: ['BRAKE', 'BRAKE FRANCE'],
+  50: ['POMONA', 'POMONA F&L', 'POMONA FL', 'TERREAZUR'],
+  51: ['SOCOPA'],
+  52: ['EPISAVEUR'],
+  53: ['MAMMAFIORE', 'MAMMA FIORE'],
+  54: ['COMPAGNIE DES DESSERTS', 'CIE DES DESSERTS'],
+  55: ['DISTRIPATE'],
+  56: ['METRO', 'METRO DEPANNAGE'],
+  57: ['MARTEL'],
+};
 const editableCols: number[] = [
   6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34, 37, 38, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90
 ];
@@ -302,6 +325,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importStatus, setImportStatus] = useState('');
   const [importPreview, setImportPreview] = useState<Array<{ label: string; value: string }>>([]);
+  const [invoiceImportStatus, setInvoiceImportStatus] = useState('');
+  const [invoiceImportPreview, setInvoiceImportPreview] = useState<InvoiceImportPreview | null>(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [expandedCashDetail, setExpandedCashDetail] = useState<'ancv' | 'tr' | null>(null);
   const [isCashValidationModalOpen, setIsCashValidationModalOpen] = useState(false);
@@ -1111,6 +1136,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const parseCaisseNumber = (value: string) => Number(value.replace(/\s/g, '').replace(',', '.')) || 0;
   const formatImportedNumber = (value: number, decimals = 2) => value > 0 ? value.toFixed(decimals) : '';
+  const normalizeImportText = (value: string) => value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z0-9]+/gi, ' ')
+    .trim()
+    .toUpperCase();
   const findCaisseAmounts = (text: string, label: string) => {
     const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const match = text.match(new RegExp(`${escaped}\\s+((?:-?\\d[\\d\\s]*,\\d{2}\\s*){1,3})`, 'i'));
@@ -1125,6 +1156,72 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return amounts.length >= 2 ? amounts[amounts.length - 2] : amounts[0] || 0;
   };
   const extractCaisseNumbers = (text: string) => (text.match(/-?\d[\d\s]*,\d{2}/g) || []).map(parseCaisseNumber);
+
+  const parseInvoiceNumber = (value: string) => Number(value.replace(/\s/g, '').replace(',', '.')) || 0;
+
+  const formatInvoiceAmount = (value: number) => value > 0 ? value.toFixed(2) : '';
+
+  const findInvoiceSupplier = (text: string) => {
+    const normalized = normalizeImportText(text);
+    for (const [col, aliases] of Object.entries(purchaseColumnAliases)) {
+      if (aliases.some(alias => normalized.includes(normalizeImportText(alias)))) {
+        return {
+          supplier: aliases[0],
+          targetCol: Number(col),
+        };
+      }
+    }
+
+    const lines = text
+      .split(/\r?\n/)
+      .map(line => line.replace(/\s+/g, ' ').trim())
+      .filter(line => line.length >= 3 && /[A-Za-zÀ-ÿ]/.test(line));
+    const ignored = /facture|invoice|avoir|client|date|page|total|montant|tva|siret|sirene|numero|n°|adresse/i;
+    const fallback = lines.find(line => !ignored.test(line)) || '';
+
+    return {
+      supplier: fallback.slice(0, 48),
+      targetCol: 56,
+    };
+  };
+
+  const findInvoiceAmountHt = (text: string) => {
+    const normalizedText = text.replace(/\u00a0/g, ' ').replace(/â‚¬/g, '€').replace(/\s+/g, ' ');
+    const amountPatterns = [
+      /(?:total\s+)?(?:net\s+)?(?:montant\s+)?h\.?\s*t\.?\s*(?:net)?\s*[:\-]?\s*(-?\d[\d\s]*[,.]\d{2})/i,
+      /total\s+hors\s+taxe?s?\s*[:\-]?\s*(-?\d[\d\s]*[,.]\d{2})/i,
+      /base\s+h\.?\s*t\.?\s*[:\-]?\s*(-?\d[\d\s]*[,.]\d{2})/i,
+    ];
+
+    for (const pattern of amountPatterns) {
+      const match = normalizedText.match(pattern);
+      if (match) return parseInvoiceNumber(match[1]);
+    }
+
+    const htWindow = normalizedText.match(/(.{0,80}(?:h\.?\s*t\.?|hors\s+taxe).{0,80})/i)?.[1] || '';
+    const htAmounts = htWindow.match(/-?\d[\d\s]*[,.]\d{2}/g) || [];
+    if (htAmounts.length > 0) return parseInvoiceNumber(htAmounts[htAmounts.length - 1]);
+
+    return 0;
+  };
+
+  const parseInvoiceImport = (sourceText: string, fileName: string): InvoiceImportPreview => {
+    const text = sourceText.replace(/\u00a0/g, ' ').replace(/â‚¬/g, '€');
+    const supplierMatch = findInvoiceSupplier(text);
+    const amountHt = findInvoiceAmountHt(text);
+
+    if (!amountHt) {
+      throw new Error("Le montant HT n'a pas pu être lu automatiquement.");
+    }
+
+    return {
+      fileName,
+      supplier: supplierMatch.supplier || 'Fournisseur non reconnu',
+      amountHt: formatInvoiceAmount(amountHt),
+      targetCol: supplierMatch.targetCol,
+      status: supplierMatch.supplier ? 'Lecture facture prête à valider.' : 'Fournisseur à vérifier avant validation.',
+    };
+  };
 
   const extractPdfText = async (file: File) => {
     const loadPdfJs = new Function('url', 'return import(url)') as (url: string) => Promise<any>;
@@ -1272,6 +1369,40 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     } finally {
       event.target.value = '';
     }
+  };
+
+  const handleInvoiceImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setInvoiceImportStatus('Lecture de la facture...');
+    setInvoiceImportPreview(null);
+
+    try {
+      const text = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+        ? await extractPdfText(file)
+        : await file.text();
+      const parsed = parseInvoiceImport(text, file.name);
+      setInvoiceImportPreview(parsed);
+      setInvoiceImportStatus(parsed.status);
+    } catch (error) {
+      setInvoiceImportStatus(`Erreur : ${error instanceof Error ? error.message : "La facture n'a pas pu être lue."}`);
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const applyInvoiceImport = () => {
+    if (!invoiceImportPreview || selectedDayRowIndex < 0) return;
+
+    const cellKey = `${selectedDayRowIndex}-${invoiceImportPreview.targetCol}`;
+    const existingAmount = parseInvoiceNumber(cellData[cellKey] || '');
+    const importedAmount = parseInvoiceNumber(invoiceImportPreview.amountHt);
+    const nextAmount = existingAmount + importedAmount;
+
+    handleCellChange(selectedDayRowIndex, invoiceImportPreview.targetCol, formatInvoiceAmount(nextAmount));
+    setInvoiceImportStatus(`Facture ajoutée sur ${dynamicColumns[invoiceImportPreview.targetCol]?.[2] || invoiceImportPreview.supplier} pour le ${selectedDayLabel}.`);
+    setInvoiceImportPreview(null);
   };
 
   const getDailyCellValue = (col: number) => selectedDayRowIndex >= 0 ? calculatedData[`${selectedDayRowIndex}-${col}`] || '' : '';
@@ -2959,6 +3090,70 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   style={{ fontSize: 13, color: '#0f172a' }}
                 />
               </label>
+
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14, padding: 16, border: '1px dashed #86efac', borderRadius: 10, background: '#f0fdf4' }}>
+                <span style={{ fontSize: 12, fontWeight: 900, color: '#166534', textTransform: 'uppercase', letterSpacing: '.04em' }}>Facture fournisseur</span>
+                <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
+                  Lecture test : fournisseur et montant HT uniquement. Le fichier n'est pas conserve.
+                </span>
+                <input
+                  type="file"
+                  accept=".pdf,.txt,text/plain,application/pdf"
+                  onChange={handleInvoiceImport}
+                  style={{ fontSize: 13, color: '#0f172a' }}
+                />
+              </label>
+
+              {invoiceImportStatus && (
+                <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: invoiceImportStatus.startsWith('Erreur') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${invoiceImportStatus.startsWith('Erreur') ? '#fecaca' : '#bbf7d0'}`, color: invoiceImportStatus.startsWith('Erreur') ? '#991b1b' : '#166534', fontSize: 13, fontWeight: 800 }}>
+                  {invoiceImportStatus}
+                </div>
+              )}
+
+              {invoiceImportPreview && (
+                <div style={{ marginTop: 12, padding: 12, border: '1px solid #bbf7d0', borderRadius: 10, background: '#f8fafc', display: 'grid', gap: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Fournisseur lu</span>
+                      <input
+                        value={invoiceImportPreview.supplier}
+                        onChange={event => setInvoiceImportPreview(prev => prev ? { ...prev, supplier: event.target.value } : prev)}
+                        style={{ height: 34, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
+                      />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Montant HT</span>
+                      <input
+                        value={invoiceImportPreview.amountHt}
+                        onChange={event => setInvoiceImportPreview(prev => prev ? { ...prev, amountHt: event.target.value.replace(/[^0-9.,-]/g, '').replace(',', '.') } : prev)}
+                        style={{ height: 34, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 900, color: '#0f172a', textAlign: 'right' }}
+                      />
+                    </label>
+                  </div>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Colonne cible</span>
+                    <select
+                      value={invoiceImportPreview.targetCol}
+                      onChange={event => setInvoiceImportPreview(prev => prev ? { ...prev, targetCol: Number(event.target.value) } : prev)}
+                      style={{ height: 34, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff' }}
+                    >
+                      {Array.from({ length: 13 }, (_, idx) => 45 + idx).map(col => (
+                        <option key={col} value={col}>{dynamicColumns[col]?.[2] || `Achat ${col}`}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700 }}>
+                    Fichier lu : {invoiceImportPreview.fileName}. La validation ajoute le montant au jour selectionne.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={applyInvoiceImport}
+                    style={{ height: 36, border: 'none', borderRadius: 8, background: '#166534', color: '#fff', fontSize: 13, fontWeight: 900, cursor: 'pointer' }}
+                  >
+                    Valider la facture
+                  </button>
+                </div>
+              )}
 
               {importStatus && (
                 <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: importStatus.startsWith('Erreur') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${importStatus.startsWith('Erreur') ? '#fecaca' : '#bbf7d0'}`, color: importStatus.startsWith('Erreur') ? '#991b1b' : '#166534', fontSize: 13, fontWeight: 800 }}>
