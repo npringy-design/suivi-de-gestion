@@ -156,21 +156,6 @@ const viewModes = [
 ] as const;
 
 type TableViewMode = (typeof viewModes)[number]['id'];
-const purchaseColumnAliases: Record<number, string[]> = {
-  45: ['C10'],
-  46: ['RICHARD VINS', 'RICHARD VINS DISTRIBUTION'],
-  47: ['CAFE RICHARD', 'CAFES RICHARD', 'RICHARD CAFE'],
-  48: ['STORIA'],
-  49: ['BRAKE', 'BRAKE FRANCE'],
-  50: ['POMONA', 'POMONA F&L', 'POMONA FL', 'TERREAZUR'],
-  51: ['SOCOPA'],
-  52: ['EPISAVEUR'],
-  53: ['MAMMAFIORE', 'MAMMA FIORE'],
-  54: ['COMPAGNIE DES DESSERTS', 'CIE DES DESSERTS'],
-  55: ['DISTRIPATE'],
-  56: ['METRO', 'METRO DEPANNAGE', 'DOMAFRAIS'],
-  57: ['MARTEL'],
-};
 const editableCols: number[] = [
   6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34, 37, 38, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90
 ];
@@ -505,7 +490,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const now = new Date();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const defaultDay = month === now.getMonth() && year === now.getFullYear() ? now.getDate() : 1;
-    setSelectedEntryDay(Math.min(defaultDay, daysInMonth));
+    setSelectedEntryDay(prev => Math.min(prev || defaultDay, daysInMonth));
   }, [month, year]);
 
   const getFgBoxLayout = (rIdx: number, N: number) => {
@@ -1173,6 +1158,25 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     .replace(/[^A-Z0-9]+/gi, ' ')
     .trim()
     .toUpperCase();
+  const supplierTokens = (value: string) => normalizeImportText(value)
+    .split(/\s+/)
+    .filter(token => token.length >= 3 && !['SAS', 'SARL', 'SA', 'SNC', 'EURL', 'FRANCE', 'AGENCE'].includes(token));
+  const getDashboardRowIndexForDay = (targetYear: number, targetMonth: number, targetDay: number) => {
+    let rowIndex = 0;
+    let weekCount = 1;
+    const numDays = new Date(targetYear, targetMonth + 1, 0).getDate();
+
+    for (let day = 1; day <= numDays; day += 1) {
+      if (day === targetDay) return rowIndex;
+      rowIndex += 1;
+      if (new Date(targetYear, targetMonth, day).getDay() === 0) {
+        rowIndex += 1;
+        weekCount += 1;
+      }
+    }
+
+    return -1;
+  };
   const findCaisseAmounts = (text: string, label: string) => {
     const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const match = text.match(new RegExp(`${escaped}\\s+((?:-?\\d[\\d\\s]*,\\d{2}\\s*){1,3})`, 'i'));
@@ -1232,45 +1236,43 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const findInvoiceSupplier = (text: string) => {
-    const normalized = normalizeImportText(text);
-    for (let col = 45; col <= 57; col += 1) {
-      const supplierName = dynamicColumns[col]?.[2] || '';
-      if (supplierName && normalized.includes(normalizeImportText(supplierName))) {
-        return {
-          supplier: supplierName,
-          targetCol: col,
-        };
-      }
-    }
-
-    for (const [col, aliases] of Object.entries(purchaseColumnAliases)) {
-      if (aliases.some(alias => normalized.includes(normalizeImportText(alias)))) {
-        return {
-          supplier: aliases[0],
-          targetCol: Number(col),
-        };
-      }
-    }
-
     const lines = text
       .split(/\r?\n/)
       .map(line => line.replace(/\s+/g, ' ').trim())
       .filter(line => line.length >= 3 && /[A-Za-zÀ-ÿ]/.test(line));
-    const supplierLine = lines.find(line => /DOMAFRAIS|BRAKE|METRO|POMONA|EPISAVEUR|SOCOPA|MARTEL|DISTRIPATE/i.test(line));
-    if (supplierLine) {
-      const supplier = (supplierLine.match(/DOMAFRAIS|BRAKE|METRO|POMONA|EPISAVEUR|SOCOPA|MARTEL|DISTRIPATE/i)?.[0] || supplierLine).toUpperCase();
-      return {
-        supplier,
-        targetCol: 56,
-      };
+    const supplierZoneEnd = lines.findIndex(line => /adresse\s+facturation|adresse\s+livraison|facture\b|code\s+art|designation/i.test(line));
+    const supplierZone = lines.slice(0, supplierZoneEnd > 0 ? supplierZoneEnd : Math.min(lines.length, 30));
+    const ignored = /agence|adresse|facturation|livraison|telephone|t[ée]l|fax|mail|www|client|compte|page|facture|invoice|avoir|date|total|montant|tva|siret|sirene|numero|n°|code\s+ape|capital|rcs|parc|rue|avenue|boulevard|cedex|france/i;
+
+    const cleanSupplierCandidate = (line: string) => line
+      .replace(/\b(S\.?\s*A\.?\s*S\.?|SAS|SARL|S\.?\s*A\.?|SNC|EURL)\b\.?/gi, '')
+      .replace(/\s+au\s+capital[\s\S]*$/i, '')
+      .replace(/\s+-\s+R\.?C\.?S[\s\S]*$/i, '')
+      .replace(/\s+RCS[\s\S]*$/i, '')
+      .replace(/\s+TVA[\s\S]*$/i, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const legalLine = supplierZone.find(line => /\b(S\.?\s*A\.?\s*S\.?|SAS|SARL|S\.?\s*A\.?|SNC|EURL)\b/i.test(line) && !/adresse|facturation|livraison|client/i.test(line));
+    const fallbackLine = supplierZone.find(line => !ignored.test(line) && supplierTokens(line).length > 0);
+    const supplier = cleanSupplierCandidate(legalLine || fallbackLine || '');
+    const supplierTokenSet = new Set(supplierTokens(supplier));
+
+    let targetCol = 56;
+    let bestScore = 0;
+    for (let col = 45; col <= 57; col += 1) {
+      const columnName = dynamicColumns[col]?.[2] || '';
+      const columnTokens = supplierTokens(columnName);
+      const score = columnTokens.reduce((sum, token) => sum + (supplierTokenSet.has(token) ? 1 : 0), 0);
+      if (score > bestScore) {
+        bestScore = score;
+        targetCol = col;
+      }
     }
 
-    const ignored = /facture|invoice|avoir|client|date|page|total|montant|tva|siret|sirene|numero|n°|adresse/i;
-    const fallback = lines.find(line => !ignored.test(line)) || '';
-
     return {
-      supplier: fallback.slice(0, 48),
-      targetCol: 56,
+      supplier: supplier || 'Fournisseur à renseigner',
+      targetCol,
     };
   };
 
@@ -1571,23 +1573,43 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const invoiceYear = dateMatch ? Number(dateMatch[1]) : null;
     const invoiceMonth = dateMatch ? Number(dateMatch[2]) - 1 : null;
     const invoiceDay = dateMatch ? Number(dateMatch[3]) : null;
-    const targetDayEntry = invoiceDay && invoiceMonth === month && invoiceYear === year
-      ? dayRows.find(item => item.row.dayIndex === invoiceDay)
-      : selectedDayEntry;
-    const targetRowIndex = targetDayEntry?.index ?? selectedDayRowIndex;
+    if (invoiceYear && invoiceYear !== year) {
+      setInvoiceImportStatus(`Erreur : la facture est datée de ${invoiceYear}. Passe d'abord sur cette année avant de valider l'import.`);
+      return;
+    }
+    const hasInvoiceTarget = invoiceDay && invoiceMonth !== null && invoiceYear;
+    const targetMonth = hasInvoiceTarget ? invoiceMonth : month;
+    const targetYear = hasInvoiceTarget ? invoiceYear : year;
+    const targetRowIndex = hasInvoiceTarget
+      ? getDashboardRowIndexForDay(targetYear, targetMonth, invoiceDay)
+      : selectedDayRowIndex;
+    const targetDayEntry = targetMonth === month && targetYear === year
+      ? dayRows.find(item => item.index === targetRowIndex)
+      : null;
 
     const cellKey = `${targetRowIndex}-${invoiceImportPreview.targetCol}`;
-    const existingAmount = parseInvoiceNumber(cellData[cellKey] || '');
+    const existingAmount = parseInvoiceNumber(globalData[targetMonth]?.dashboard?.[cellKey] || '');
     const importedAmount = parseInvoiceNumber(invoiceImportPreview.amountHt);
+    if (targetRowIndex < 0) {
+      setInvoiceImportStatus('Erreur : la date de facture ne correspond à aucun jour exploitable.');
+      return;
+    }
     if (!importedAmount) {
       setInvoiceImportStatus('Erreur : renseigne le montant HT avant de valider la facture.');
       return;
     }
     const nextAmount = existingAmount + importedAmount;
 
-    handleCellChange(targetRowIndex, invoiceImportPreview.targetCol, formatInvoiceAmount(nextAmount));
-    if (targetDayEntry?.row.dayIndex) setSelectedEntryDay(targetDayEntry.row.dayIndex);
-    setInvoiceImportStatus(`Facture ajoutée sur ${dynamicColumns[invoiceImportPreview.targetCol]?.[2] || invoiceImportPreview.supplier} pour le ${targetDayEntry?.row.label || selectedDayLabel}.`);
+    updateDashboard(targetMonth, cellKey, formatInvoiceAmount(nextAmount));
+    if (targetMonth !== month) {
+      setMonth(targetMonth);
+      setSelectedMonth(targetMonth);
+    }
+    if (invoiceDay) setSelectedEntryDay(invoiceDay);
+    const targetLabel = invoiceDay && invoiceMonth !== null && invoiceYear
+      ? `${String(invoiceDay).padStart(2, '0')}/${String(invoiceMonth + 1).padStart(2, '0')}/${invoiceYear}`
+      : targetDayEntry?.row.label || selectedDayLabel;
+    setInvoiceImportStatus(`Facture ajoutée sur ${dynamicColumns[invoiceImportPreview.targetCol]?.[2] || invoiceImportPreview.supplier} pour le ${targetLabel}.`);
     setInvoiceImportPreview(null);
   };
 

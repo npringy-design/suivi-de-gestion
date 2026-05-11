@@ -43,6 +43,8 @@ Le flux retenu est donc :
 - L'utilisateur peut corriger la date de facture avant validation.
 - Une facture non reconnue doit rester validable manuellement après correction.
 - Les noms des fournisseurs d'achats peuvent être modifiés dans la vue Complet. Ces libellés servent à l'affichage et à la sélection de la colonne cible.
+- Le fournisseur doit être détecté de façon générique depuis l'identité de l'émetteur de la facture, sans ajouter une exception par fournisseur.
+- Si la date de facture appartient à un autre mois de la même année, l'import écrit dans ce mois et bascule l'affichage sur ce jour.
 
 ## Fournisseurs ciblés dans la saisie journalière
 
