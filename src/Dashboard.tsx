@@ -22,6 +22,7 @@ type InvoiceImportPreview = {
   fileName: string;
   supplier: string;
   amountHt: string;
+  invoiceDate: string;
   targetCol: number;
   status: string;
 };
@@ -1191,6 +1192,45 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const formatInvoiceAmount = (value: number) => value > 0 ? value.toFixed(2) : '';
 
+  const normalizeInvoiceDate = (value: string) => {
+    const match = value.match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
+    if (!match) return '';
+    const [, day, monthValue, yearValue] = match;
+    if (!day || !monthValue || !yearValue) return '';
+    const fullYear = yearValue.length === 2 ? `20${yearValue}` : yearValue;
+    return `${fullYear}-${monthValue}-${day}`;
+  };
+
+  const formatInvoiceDateLabel = (value: string) => {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+  };
+
+  const findInvoiceDate = (text: string) => {
+    const lines = text
+      .replace(/\u00a0/g, ' ')
+      .split(/\r?\n/)
+      .map(line => line.replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+
+    const dateLinePatterns = [
+      /(?:date\s*:?\s*)?(\d{2}\/\d{2}\/\d{2,4}).{0,40}f\s*a\s*c\s*t\s*u\s*r\s*e/i,
+      /f\s*a\s*c\s*t\s*u\s*r\s*e.{0,40}(?:date\s*:?\s*)?(\d{2}\/\d{2}\/\d{2,4})/i,
+      /date\s*:?\s*(\d{2}\/\d{2}\/\d{2,4})/i,
+    ];
+
+    for (const line of lines) {
+      for (const pattern of dateLinePatterns) {
+        const match = line.match(pattern);
+        if (match?.[1]) return normalizeInvoiceDate(match[1]);
+      }
+    }
+
+    const allDates = lines.join(' ').match(/\d{2}\/\d{2}\/\d{2,4}/g) || [];
+    const plausibleDates = allDates.filter(date => !/^(?:27|28|29|30|31)\/(?:0[1-9]|1[0-2])\/(?:2[6-9]|20[2-9]\d)$/.test(date));
+    return normalizeInvoiceDate(plausibleDates[0] || allDates[0] || '');
+  };
+
   const findInvoiceSupplier = (text: string) => {
     const normalized = normalizeImportText(text);
     for (let col = 45; col <= 57; col += 1) {
@@ -1299,15 +1339,19 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const text = sourceText.replace(/\u00a0/g, ' ').replace(/â‚¬/g, '€');
     const supplierMatch = findInvoiceSupplier(text);
     const amountHt = findInvoiceAmountHt(text);
+    const invoiceDate = findInvoiceDate(text);
 
     return {
       fileName,
       supplier: supplierMatch.supplier || 'Fournisseur non reconnu',
       amountHt: formatInvoiceAmount(amountHt),
+      invoiceDate,
       targetCol: supplierMatch.targetCol,
-      status: amountHt
+      status: amountHt && invoiceDate
         ? 'Lecture facture prête à valider.'
-        : 'Montant HT à renseigner manuellement avant validation.',
+        : !amountHt
+          ? 'Montant HT à renseigner manuellement avant validation.'
+          : 'Date de facture à vérifier avant validation.',
     };
   };
 
@@ -1523,7 +1567,16 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const applyInvoiceImport = () => {
     if (!invoiceImportPreview || selectedDayRowIndex < 0) return;
 
-    const cellKey = `${selectedDayRowIndex}-${invoiceImportPreview.targetCol}`;
+    const dateMatch = invoiceImportPreview.invoiceDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const invoiceYear = dateMatch ? Number(dateMatch[1]) : null;
+    const invoiceMonth = dateMatch ? Number(dateMatch[2]) - 1 : null;
+    const invoiceDay = dateMatch ? Number(dateMatch[3]) : null;
+    const targetDayEntry = invoiceDay && invoiceMonth === month && invoiceYear === year
+      ? dayRows.find(item => item.row.dayIndex === invoiceDay)
+      : selectedDayEntry;
+    const targetRowIndex = targetDayEntry?.index ?? selectedDayRowIndex;
+
+    const cellKey = `${targetRowIndex}-${invoiceImportPreview.targetCol}`;
     const existingAmount = parseInvoiceNumber(cellData[cellKey] || '');
     const importedAmount = parseInvoiceNumber(invoiceImportPreview.amountHt);
     if (!importedAmount) {
@@ -1532,8 +1585,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     }
     const nextAmount = existingAmount + importedAmount;
 
-    handleCellChange(selectedDayRowIndex, invoiceImportPreview.targetCol, formatInvoiceAmount(nextAmount));
-    setInvoiceImportStatus(`Facture ajoutée sur ${dynamicColumns[invoiceImportPreview.targetCol]?.[2] || invoiceImportPreview.supplier} pour le ${selectedDayLabel}.`);
+    handleCellChange(targetRowIndex, invoiceImportPreview.targetCol, formatInvoiceAmount(nextAmount));
+    if (targetDayEntry?.row.dayIndex) setSelectedEntryDay(targetDayEntry.row.dayIndex);
+    setInvoiceImportStatus(`Facture ajoutée sur ${dynamicColumns[invoiceImportPreview.targetCol]?.[2] || invoiceImportPreview.supplier} pour le ${targetDayEntry?.row.label || selectedDayLabel}.`);
     setInvoiceImportPreview(null);
   };
 
@@ -3288,6 +3342,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     </label>
                   </div>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Date facture</span>
+                    <input
+                      type="date"
+                      value={invoiceImportPreview.invoiceDate}
+                      onChange={event => setInvoiceImportPreview(prev => prev ? { ...prev, invoiceDate: event.target.value } : prev)}
+                      style={{ height: 34, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                     <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Colonne cible</span>
                     <select
                       value={invoiceImportPreview.targetCol}
@@ -3300,7 +3363,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     </select>
                   </label>
                   <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700 }}>
-                    Fichier lu : {invoiceImportPreview.fileName}. La validation ajoute le montant au jour selectionne.
+                    Fichier lu : {invoiceImportPreview.fileName}. La validation ajoute le montant au {invoiceImportPreview.invoiceDate ? formatInvoiceDateLabel(invoiceImportPreview.invoiceDate) : 'jour selectionne si aucune date nest renseignee'}.
                   </div>
                   <button
                     type="button"
