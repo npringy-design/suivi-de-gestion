@@ -71,3 +71,4 @@ Voir `ARCHITECTURE.md` pour une description détaillée de l'architecture, du fl
 
 - `docs/IMPORT_CAISSE.md` : règles de fonctionnement pour l'import des feuilles de caisse, la sauvegarde des montants et le snapshot d'audit.
 - `docs/IMPORT_FACTURES.md` : règles de fonctionnement pour l'import léger des factures fournisseurs.
+- `docs/RAZ_LOCALE_PROVISOIRE.md` : bouton temporaire de remise à zéro des données locales pendant les tests.

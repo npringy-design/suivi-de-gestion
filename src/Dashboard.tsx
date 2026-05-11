@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 
-import { ChevronLeft, Download, Upload, FileDown, X } from 'lucide-react';
+import { ChevronLeft, Download, Upload, FileDown, Trash2, X } from 'lucide-react';
 // ── Constantes Dashboard inline (dashboardConstants.ts intégré) ─────────────
 type DashboardColumn = [string, string, string, string];
 type VisibleDashboardColumn = DashboardColumn & { originalIndex: number };
@@ -250,6 +250,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     customEvents,
     setSelectedYear,
     setSelectedMonth,
+    resetLocalData,
   } = useData();
   
   const getEaster = (y: number) => {
@@ -414,6 +415,23 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       ...prev,
       [col]: value,
     }));
+  };
+
+  const handleTemporaryResetLocalData = () => {
+    const confirmed = window.confirm('RAZ provisoire : effacer toutes les donnees locales de test de cette application ?');
+    if (!confirmed) return;
+
+    resetLocalData();
+    setPurchaseSupplierNames({});
+    try {
+      localStorage.removeItem('dashboard_purchase_supplier_names_v1');
+    } catch {
+      // La RAZ des données métier a déjà été appliquée en mémoire.
+    }
+    setInvoiceImportPreview(null);
+    setInvoiceImportStatus('');
+    setImportPreview([]);
+    setImportStatus('RAZ locale effectuee. Les donnees de test ont ete effacees.');
   };
 
   const handleDragStart = (e: React.MouseEvent, rIdx: number, cIdx: number, value: string) => {
@@ -2669,6 +2687,18 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               <button onClick={handleExport} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
                 <Download size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Excel'}
               </button>
+              {tableViewMode === 'SAISIE' && (
+                <button
+                  type="button"
+                  onClick={handleTemporaryResetLocalData}
+                  style={{ ...actionTileStyle, background: '#7f1d1d', borderColor: 'rgba(254, 202, 202, .35)', color: '#fee2e2' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#991b1b'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#7f1d1d'}
+                  title="RAZ provisoire des donnees locales"
+                >
+                  <Trash2 size={isMobile ? 14 : 16} /> {isMobile ? '' : 'RAZ'}
+                </button>
+              )}
             </div>
           </div>
 

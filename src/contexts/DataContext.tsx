@@ -228,6 +228,7 @@ type DataContextType = {
   customEvents: CustomEvent[];
   addCustomEvent: (event: CustomEvent) => void;
   removeCustomEvent: (id: string) => void;
+  resetLocalData: () => void;
 };
 
 const STORAGE_KEY_V2 = 'gestion_data_v2';
@@ -754,8 +755,22 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }));
   }, []);
 
+  const resetLocalData = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEY_V2);
+      localStorage.removeItem('gestion_data_v1');
+      localStorage.removeItem('config2025_data_v1');
+      localStorage.removeItem('custom_events_v1');
+    } catch {
+      // La remise à zéro reste possible en mémoire même si le stockage navigateur est indisponible.
+    }
+    setAllData({});
+    setConfig2025({ mensuel: {}, hebdo: {} });
+    setCustomEvents([]);
+  }, []);
+
   return (
-    <DataContext.Provider value={{ selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, data, allData, updateTheorique, updateNepting, updateEspeces, updateConecs, updateAncvPapiers, updateSaisieTR, updateVisuTRPapiers, updateSunday, updateUber, updateAmexAncv, updateDeliveroo, updateClickCollect, updateBilanSynthese, updateDepensesPetiteCaisse, updateDashboard, updateEdgMensuel, updateEdgMensuelRealise, updateEdgMensuelN1, updateMiseEnPaiement, updateSalariesConfig, config2025, updateConfig2025, customEvents, addCustomEvent, removeCustomEvent }}>
+    <DataContext.Provider value={{ selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, data, allData, updateTheorique, updateNepting, updateEspeces, updateConecs, updateAncvPapiers, updateSaisieTR, updateVisuTRPapiers, updateSunday, updateUber, updateAmexAncv, updateDeliveroo, updateClickCollect, updateBilanSynthese, updateDepensesPetiteCaisse, updateDashboard, updateEdgMensuel, updateEdgMensuelRealise, updateEdgMensuelN1, updateMiseEnPaiement, updateSalariesConfig, config2025, updateConfig2025, customEvents, addCustomEvent, removeCustomEvent, resetLocalData }}>
       {children}
     </DataContext.Provider>
   );
