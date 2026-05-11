@@ -58,6 +58,7 @@ La première version cible les colonnes d'achats de la saisie journalière :
 - Compagnie des Desserts ;
 - Distripate ;
 - Metro / Dépannage ;
+- Domafrais ;
 - Martel.
 
 ## Décision actuelle

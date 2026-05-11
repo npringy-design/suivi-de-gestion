@@ -167,7 +167,7 @@ const purchaseColumnAliases: Record<number, string[]> = {
   53: ['MAMMAFIORE', 'MAMMA FIORE'],
   54: ['COMPAGNIE DES DESSERTS', 'CIE DES DESSERTS'],
   55: ['DISTRIPATE'],
-  56: ['METRO', 'METRO DEPANNAGE'],
+  56: ['METRO', 'METRO DEPANNAGE', 'DOMAFRAIS'],
   57: ['MARTEL'],
 };
 const editableCols: number[] = [
@@ -1187,12 +1187,22 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
   const extractCaisseNumbers = (text: string) => (text.match(/-?\d[\d\s]*,\d{2}/g) || []).map(parseCaisseNumber);
 
-  const parseInvoiceNumber = (value: string) => Number(value.replace(/\s/g, '').replace(',', '.')) || 0;
+  const parseInvoiceNumber = (value: string) => Number(value.replace(/[^\d,.-]/g, '').replace(/\s/g, '').replace(',', '.')) || 0;
 
   const formatInvoiceAmount = (value: number) => value > 0 ? value.toFixed(2) : '';
 
   const findInvoiceSupplier = (text: string) => {
     const normalized = normalizeImportText(text);
+    for (let col = 45; col <= 57; col += 1) {
+      const supplierName = dynamicColumns[col]?.[2] || '';
+      if (supplierName && normalized.includes(normalizeImportText(supplierName))) {
+        return {
+          supplier: supplierName,
+          targetCol: col,
+        };
+      }
+    }
+
     for (const [col, aliases] of Object.entries(purchaseColumnAliases)) {
       if (aliases.some(alias => normalized.includes(normalizeImportText(alias)))) {
         return {
@@ -1206,6 +1216,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       .split(/\r?\n/)
       .map(line => line.replace(/\s+/g, ' ').trim())
       .filter(line => line.length >= 3 && /[A-Za-zÀ-ÿ]/.test(line));
+    const supplierLine = lines.find(line => /DOMAFRAIS|BRAKE|METRO|POMONA|EPISAVEUR|SOCOPA|MARTEL|DISTRIPATE/i.test(line));
+    if (supplierLine) {
+      const supplier = (supplierLine.match(/DOMAFRAIS|BRAKE|METRO|POMONA|EPISAVEUR|SOCOPA|MARTEL|DISTRIPATE/i)?.[0] || supplierLine).toUpperCase();
+      return {
+        supplier,
+        targetCol: 56,
+      };
+    }
+
     const ignored = /facture|invoice|avoir|client|date|page|total|montant|tva|siret|sirene|numero|n°|adresse/i;
     const fallback = lines.find(line => !ignored.test(line)) || '';
 
@@ -1216,21 +1235,65 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const findInvoiceAmountHt = (text: string) => {
-    const normalizedText = text.replace(/\u00a0/g, ' ').replace(/â‚¬/g, '€').replace(/\s+/g, ' ');
+    const normalizedText = text
+      .replace(/\u00a0/g, ' ')
+      .replace(/â‚¬/g, '€')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const amountToken = '(-?\\d{1,3}(?:[\\s.]\\d{3})*(?:[,.]\\d{2})|-?\\d+[,.]\\d{2})';
     const amountPatterns = [
-      /(?:total\s+)?(?:net\s+)?(?:montant\s+)?h\.?\s*t\.?\s*(?:net)?\s*[:\-]?\s*(-?\d[\d\s]*[,.]\d{2})/i,
-      /total\s+hors\s+taxe?s?\s*[:\-]?\s*(-?\d[\d\s]*[,.]\d{2})/i,
-      /base\s+h\.?\s*t\.?\s*[:\-]?\s*(-?\d[\d\s]*[,.]\d{2})/i,
+      new RegExp(`(?:total|net|montant|base|sous[-\\s]?total)?\\s*h\\.?\\s*t\\.?\\s*(?:net)?\\s*(?:eur|euro|€)?\\s*[:\\-]?\\s*(?:eur|euro|€)?\\s*${amountToken}`, 'i'),
+      new RegExp(`total\\s+hors\\s+taxe?s?\\s*(?:eur|euro|€)?\\s*[:\\-]?\\s*(?:eur|euro|€)?\\s*${amountToken}`, 'i'),
+      new RegExp(`hors\\s+taxe?s?\\s*(?:eur|euro|€)?\\s*[:\\-]?\\s*(?:eur|euro|€)?\\s*${amountToken}`, 'i'),
+      new RegExp(`net\\s+a\\s+payer\\s+h\\.?\\s*t\\.?\\s*(?:eur|euro|€)?\\s*[:\\-]?\\s*(?:eur|euro|€)?\\s*${amountToken}`, 'i'),
     ];
 
     for (const pattern of amountPatterns) {
       const match = normalizedText.match(pattern);
-      if (match) return parseInvoiceNumber(match[1]);
+      if (match) return parseInvoiceNumber(match[match.length - 1]);
     }
 
-    const htWindow = normalizedText.match(/(.{0,80}(?:h\.?\s*t\.?|hors\s+taxe).{0,80})/i)?.[1] || '';
-    const htAmounts = htWindow.match(/-?\d[\d\s]*[,.]\d{2}/g) || [];
+    const lines = text
+      .replace(/\u00a0/g, ' ')
+      .split(/\r?\n/)
+      .map(line => line.replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+    const htLines = lines.filter(line => /h\.?\s*t\.?|hors\s+taxe/i.test(line) && !/tva|ttc/i.test(line));
+    for (const line of htLines) {
+      const amounts = line.match(new RegExp(amountToken, 'g')) || [];
+      if (amounts.length > 0) return parseInvoiceNumber(amounts[amounts.length - 1]);
+    }
+
+    const htWindow = normalizedText.match(/(.{0,120}(?:h\.?\s*t\.?|hors\s+taxe).{0,120})/i)?.[1] || '';
+    const htAmounts = htWindow.match(new RegExp(amountToken, 'g')) || [];
     if (htAmounts.length > 0) return parseInvoiceNumber(htAmounts[htAmounts.length - 1]);
+
+    const ttcMatch = normalizedText.match(new RegExp(`total\\s*t\\.?\\s*t\\.?\\s*c\\.?\\s*(?:eur|euro|€)?\\s*${amountToken}`, 'i'))
+      || normalizedText.match(new RegExp(`${amountToken}\\s*\\d{2}/\\d{2}/\\d{4}\\s*(?:prelevements|pr[ée]l[èe]vements|virement|cheque|ch[eè]que)`, 'i'));
+    const invoiceTableMatch = normalizedText.match(new RegExp(`base\\s*h\\.?\\s*t\\.?[\\s\\S]{0,700}?${amountToken}\\s+${amountToken}\\s+${amountToken}`, 'i'));
+    if (invoiceTableMatch) {
+      const [, first, second, third] = invoiceTableMatch;
+      const firstAmount = parseInvoiceNumber(first);
+      const secondAmount = parseInvoiceNumber(second);
+      const thirdAmount = parseInvoiceNumber(third);
+      const ttcAmount = ttcMatch ? parseInvoiceNumber(ttcMatch[1]) : thirdAmount;
+      const candidates = [firstAmount, secondAmount, thirdAmount]
+        .filter(amount => amount > 0 && amount < ttcAmount)
+        .sort((a, b) => b - a);
+      if (candidates.length > 0) return candidates[0];
+    }
+
+    const allAmounts = Array.from(new Set((normalizedText.match(new RegExp(amountToken, 'g')) || []).map(parseInvoiceNumber).filter(amount => amount > 0)));
+    if (ttcMatch) {
+      const ttcAmount = parseInvoiceNumber(ttcMatch[1]);
+      const candidates = allAmounts.filter(amount => amount > 0 && amount < ttcAmount).sort((a, b) => b - a);
+      if (candidates.length > 0) return candidates[0];
+    }
+
+    if (/base\s*h\.?\s*t\.?|baseht|montant\s+tva|total\s*t\.?\s*t\.?\s*c\.?|net\s+a\s+payer/i.test(normalizedText)) {
+      const plausibleAmounts = allAmounts.filter(amount => amount >= 20 && amount < 20000).sort((a, b) => b - a);
+      if (plausibleAmounts.length >= 2) return plausibleAmounts[1];
+    }
 
     return 0;
   };
@@ -1240,16 +1303,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const supplierMatch = findInvoiceSupplier(text);
     const amountHt = findInvoiceAmountHt(text);
 
-    if (!amountHt) {
-      throw new Error("Le montant HT n'a pas pu être lu automatiquement.");
-    }
-
     return {
       fileName,
       supplier: supplierMatch.supplier || 'Fournisseur non reconnu',
       amountHt: formatInvoiceAmount(amountHt),
       targetCol: supplierMatch.targetCol,
-      status: supplierMatch.supplier ? 'Lecture facture prête à valider.' : 'Fournisseur à vérifier avant validation.',
+      status: amountHt
+        ? 'Lecture facture prête à valider.'
+        : 'Montant HT à renseigner manuellement avant validation.',
     };
   };
 
@@ -1428,6 +1489,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const cellKey = `${selectedDayRowIndex}-${invoiceImportPreview.targetCol}`;
     const existingAmount = parseInvoiceNumber(cellData[cellKey] || '');
     const importedAmount = parseInvoiceNumber(invoiceImportPreview.amountHt);
+    if (!importedAmount) {
+      setInvoiceImportStatus('Erreur : renseigne le montant HT avant de valider la facture.');
+      return;
+    }
     const nextAmount = existingAmount + importedAmount;
 
     handleCellChange(selectedDayRowIndex, invoiceImportPreview.targetCol, formatInvoiceAmount(nextAmount));
