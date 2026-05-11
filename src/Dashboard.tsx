@@ -1203,7 +1203,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const formatInvoiceAmount = (value: number) => value > 0 ? value.toFixed(2) : '';
 
   const normalizeInvoiceDate = (value: string) => {
-    const match = value.match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
+    const match = value.match(/(\d{2})[./-](\d{2})[./-](\d{2,4})/);
     if (!match) return '';
     const [, day, monthValue, yearValue] = match;
     if (!day || !monthValue || !yearValue) return '';
@@ -1224,9 +1224,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       .filter(Boolean);
 
     const dateLinePatterns = [
-      /(?:date\s*:?\s*)?(\d{2}\/\d{2}\/\d{2,4}).{0,40}f\s*a\s*c\s*t\s*u\s*r\s*e/i,
-      /f\s*a\s*c\s*t\s*u\s*r\s*e.{0,40}(?:date\s*:?\s*)?(\d{2}\/\d{2}\/\d{2,4})/i,
-      /date\s*:?\s*(\d{2}\/\d{2}\/\d{2,4})/i,
+      /f\s*a\s*c\s*t\s*u\s*r\s*e.{0,80}\bdu\s+(\d{2}[./-]\d{2}[./-]\d{2,4})/i,
+      /(?:date\s*:?\s*)?(\d{2}[./-]\d{2}[./-]\d{2,4}).{0,40}f\s*a\s*c\s*t\s*u\s*r\s*e/i,
+      /f\s*a\s*c\s*t\s*u\s*r\s*e.{0,40}(?:date\s*:?\s*)?(\d{2}[./-]\d{2}[./-]\d{2,4})/i,
+      /date\s+(?:de\s+facturation|facture)\s*:?\s*(\d{2}[./-]\d{2}[./-]\d{2,4})/i,
+      /date\s*:?\s*(\d{2}[./-]\d{2}[./-]\d{2,4})/i,
     ];
 
     for (const line of lines) {
@@ -1236,8 +1238,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       }
     }
 
-    const allDates = lines.join(' ').match(/\d{2}\/\d{2}\/\d{2,4}/g) || [];
-    const plausibleDates = allDates.filter(date => !/^(?:27|28|29|30|31)\/(?:0[1-9]|1[0-2])\/(?:2[6-9]|20[2-9]\d)$/.test(date));
+    const allDates = lines.join(' ').match(/\d{2}[./-]\d{2}[./-]\d{2,4}/g) || [];
+    const plausibleDates = allDates.filter(date => !/^(?:27|28|29|30|31)[./-](?:0[1-9]|1[0-2])[./-](?:2[6-9]|20[2-9]\d)$/.test(date));
     return normalizeInvoiceDate(plausibleDates[0] || allDates[0] || '');
   };
 
@@ -1301,6 +1303,24 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const amounts = line.match(new RegExp(amountToken, 'g')) || [];
         const firstAmount = amounts[0];
         if (amounts.length >= 2 && firstAmount) return parseInvoiceNumber(firstAmount);
+      }
+    }
+    const totalHtLineIndex = visualLines.findIndex(line => /total\s+h(?:ors\s+taxes|\.?\s*t\.?)/i.test(line) && !/article|designation|p\.?u\.?/i.test(line));
+    if (totalHtLineIndex >= 0) {
+      const candidateLines = visualLines.slice(totalHtLineIndex, totalHtLineIndex + 3);
+      for (const line of candidateLines) {
+        const amounts = line.match(new RegExp(amountToken, 'g')) || [];
+        const firstAmount = amounts[0];
+        if (firstAmount) return parseInvoiceNumber(firstAmount);
+      }
+    }
+    const amountHtHeaderIndex = visualLines.findIndex(line => /montant\s+h\.?\s*t\.?/i.test(line) && /tva|taxe/i.test(line) && !/article|designation|p\.?u\.?/i.test(line));
+    if (amountHtHeaderIndex >= 0) {
+      const candidateLines = visualLines.slice(amountHtHeaderIndex + 1, amountHtHeaderIndex + 4);
+      for (const line of candidateLines) {
+        const amounts = line.match(new RegExp(amountToken, 'g')) || [];
+        const firstAmount = amounts[0];
+        if (firstAmount) return parseInvoiceNumber(firstAmount);
       }
     }
     const amountPatterns = [
