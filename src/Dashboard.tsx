@@ -1161,6 +1161,37 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const supplierTokens = (value: string) => normalizeImportText(value)
     .split(/\s+/)
     .filter(token => token.length >= 3 && !['SAS', 'SARL', 'SA', 'SNC', 'EURL', 'FRANCE', 'AGENCE'].includes(token));
+  const findConfiguredPurchaseSupplier = (evidenceText: string) => {
+    const normalizedEvidence = normalizeImportText(evidenceText);
+    const compactEvidence = normalizedEvidence.replace(/\s+/g, '');
+    let targetCol = 56;
+    let supplier = '';
+    let bestScore = 0;
+    let bestCoverage = 0;
+
+    for (let col = 45; col <= 57; col += 1) {
+      const columnName = dynamicColumns[col]?.[2] || '';
+      const columnTokens = supplierTokens(columnName);
+      if (columnTokens.length === 0) continue;
+
+      const normalizedColumnName = normalizeImportText(columnName);
+      const compactColumnName = normalizedColumnName.replace(/\s+/g, '');
+      const reverseCompactColumnName = [...columnTokens].reverse().join('');
+      const matchedTokens = columnTokens.filter(token => normalizedEvidence.includes(token));
+      const coverage = matchedTokens.length / columnTokens.length;
+      const fullNameScore = normalizedEvidence.includes(normalizedColumnName) ? 4 : 0;
+      const compactScore = compactEvidence.includes(compactColumnName) || compactEvidence.includes(reverseCompactColumnName) ? 3 : 0;
+      const score = fullNameScore + compactScore + matchedTokens.length;
+      if (score > bestScore || (score === bestScore && coverage > bestCoverage)) {
+        bestScore = score;
+        bestCoverage = coverage;
+        targetCol = col;
+        supplier = columnName;
+      }
+    }
+
+    return bestScore >= 2 && bestCoverage >= 0.5 ? { supplier, targetCol } : null;
+  };
   const getDashboardRowIndexForDay = (targetYear: number, targetMonth: number, targetDay: number) => {
     let rowIndex = 0;
     let weekCount = 1;
@@ -1248,7 +1279,18 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       .split(/\r?\n/)
       .map(line => line.replace(/\s+/g, ' ').trim())
       .filter(line => line.length >= 3 && /[A-Za-zÀ-ÿ]/.test(line));
-    const supplierZoneEnd = lines.findIndex(line => /adresse\s+facturation|adresse\s+livraison|facture\b|code\s+art|designation/i.test(line));
+    const recipientZoneStart = lines.findIndex(line => /adresse\s+facturation|adresse\s+livraison|destinataire\s+facture|client\s*:|n°\s*client/i.test(line));
+    const issuerEvidenceLines = lines.filter((line, index) => {
+      const isBeforeRecipient = recipientZoneStart < 0 || index < recipientZoneStart;
+      const isIssuerLegalLine = /\b(S\.?\s*A\.?\s*S\.?|SAS|SARL|S\.?\s*A\.?|SNC|EURL)\b/i.test(line)
+        && /rcs|siret|capital|si[eè]ge\s+social|tva/i.test(line)
+        && !/destinataire|facturation|livraison|client/i.test(line);
+      return isBeforeRecipient || isIssuerLegalLine;
+    });
+    const configuredSupplier = findConfiguredPurchaseSupplier(issuerEvidenceLines.join(' '));
+    if (configuredSupplier) return configuredSupplier;
+
+    const supplierZoneEnd = lines.findIndex(line => /adresse\s+facturation|adresse\s+livraison|destinataire\s+facture|code\s+art|designation/i.test(line));
     const supplierZone = lines.slice(0, supplierZoneEnd > 0 ? supplierZoneEnd : Math.min(lines.length, 30));
     const ignored = /agence|adresse|facturation|livraison|telephone|t[ée]l|fax|mail|www|client|compte|page|facture|invoice|avoir|date|total|montant|tva|siret|sirene|numero|n°|code\s+ape|capital|rcs|parc|rue|avenue|boulevard|cedex|france/i;
 

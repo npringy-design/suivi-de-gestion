@@ -44,6 +44,8 @@ Le flux retenu est donc :
 - Une facture non reconnue doit rester validable manuellement après correction.
 - Les noms des fournisseurs d'achats peuvent être modifiés dans la vue Complet. Ces libellés servent à l'affichage et à la sélection de la colonne cible.
 - Le fournisseur doit être détecté de façon générique depuis l'identité de l'émetteur de la facture, sans ajouter une exception par fournisseur.
+- Pour distinguer l'émetteur du destinataire, la lecture compare d'abord la zone émetteur de la facture et les mentions légales aux noms de fournisseurs configurés dans les colonnes achats.
+- Quand plusieurs fournisseurs partagent un mot, par exemple Café Richard et Richard Vins, le rapprochement privilégie le nom complet, le nom collé comme dans un site web/logo, puis seulement les mots isolés.
 - Si la date de facture appartient à un autre mois de la même année, l'import écrit dans ce mois et bascule l'affichage sur ce jour.
 
 ## Fournisseurs ciblés dans la saisie journalière
