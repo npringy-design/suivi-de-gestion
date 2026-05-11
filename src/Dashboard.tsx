@@ -1192,7 +1192,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
   const extractCaisseNumbers = (text: string) => (text.match(/-?\d[\d\s]*,\d{2}/g) || []).map(parseCaisseNumber);
 
-  const parseInvoiceNumber = (value: string) => Number(value.replace(/[^\d,.-]/g, '').replace(/\s/g, '').replace(',', '.')) || 0;
+  const parseInvoiceNumber = (value: string) => {
+    const cleaned = value.replace(/[^\d,.-]/g, '').replace(/\s/g, '');
+    if (cleaned.includes(',')) {
+      return Number(cleaned.replace(/\./g, '').replace(',', '.')) || 0;
+    }
+    return Number(cleaned) || 0;
+  };
 
   const formatInvoiceAmount = (value: number) => value > 0 ? value.toFixed(2) : '';
 
