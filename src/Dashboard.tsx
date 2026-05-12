@@ -1877,26 +1877,73 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const getDailyDisplayValue = (col: number) => formatValue(getDailyCellValue(col), dynamicColumns[col] || ['', '', '', '']);
   const isDailyFieldFocused = (col: number) => focusedCell === `${selectedDayRowIndex}-${col}`;
 
-  const formatDailyRecapCurrency = (value: number) => `${value.toFixed(2)}€ HT`;
-  const formatDailyRecapTicket = (value: number) => `${value.toFixed(2)}€`;
+  const formatDailyRecapNumber = (value: number, decimals = 2) => new Intl.NumberFormat('fr-FR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
+  const formatDailyRecapCurrency = (value: number) => `${formatDailyRecapNumber(value)} EUR HT`;
+  const formatDailyRecapTicket = (value: number) => `${formatDailyRecapNumber(value)} EUR`;
+  const formatDailyRecapInteger = (value: number) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(value);
+  const formatDailyRecapDelta = (value: number, decimals = 2) => `${value > 0 ? '+' : ''}${formatDailyRecapNumber(value, decimals)}`;
+  const formatDailyRecapPercent = (delta: number, budget: number) => (
+    budget > 0 ? ` (${formatDailyRecapDelta((delta / budget) * 100, 1)}%)` : ''
+  );
+  const buildDailyRecapLine = (label: string, caCol: number, coversCol?: number, tmCol?: number, budgetCaCol?: number, budgetCoversCol?: number, budgetTmCol?: number) => {
+    const ca = parseDashboardNumber(getDailyCellValue(caCol));
+    const budgetCa = budgetCaCol !== undefined ? parseDashboardNumber(getDailyCellValue(budgetCaCol)) : 0;
+    const covers = coversCol !== undefined ? parseDashboardNumber(getDailyCellValue(coversCol)) : 0;
+    const budgetCovers = budgetCoversCol !== undefined ? parseDashboardNumber(getDailyCellValue(budgetCoversCol)) : 0;
+    const tm = tmCol !== undefined ? parseDashboardNumber(getDailyCellValue(tmCol)) : 0;
+    const budgetTm = budgetTmCol !== undefined ? parseDashboardNumber(getDailyCellValue(budgetTmCol)) : 0;
+    const parts = [`${label} : ${formatDailyRecapCurrency(ca)}`];
+
+    if (budgetCa > 0) parts.push(`vs budget ${formatDailyRecapCurrency(budgetCa)} soit ${formatDailyRecapDelta(ca - budgetCa)} EUR${formatDailyRecapPercent(ca - budgetCa, budgetCa)}`);
+    if (coversCol !== undefined) parts.push(`${formatDailyRecapInteger(covers)} couverts${budgetCovers > 0 ? ` vs ${formatDailyRecapInteger(budgetCovers)} budget (${formatDailyRecapDelta(covers - budgetCovers, 0)})` : ''}`);
+    if (tmCol !== undefined) parts.push(`TM ${formatDailyRecapTicket(tm)}${budgetTm > 0 ? ` vs ${formatDailyRecapTicket(budgetTm)} budget (${formatDailyRecapDelta(tm - budgetTm)} EUR)` : ''}`);
+
+    return `- ${parts.join(' | ')}`;
+  };
 
   const buildDailyRecapText = () => {
-    const covers = parseDashboardNumber(getDailyCellValue(29));
-    const ca = parseDashboardNumber(getDailyCellValue(21));
+    const totalCa = parseDashboardNumber(getDailyCellValue(21));
+    const budgetCa = parseDashboardNumber(getDailyCellValue(3));
+    const totalCovers = parseDashboardNumber(getDailyCellValue(29));
+    const budgetCovers = parseDashboardNumber(getDailyCellValue(10));
     const ticketMoyen = parseDashboardNumber(getDailyCellValue(30));
+    const budgetTicketMoyen = parseDashboardNumber(getDailyCellValue(11));
+    const eventRestaurant = String(getDailyCellValue(37) || '').trim();
+    const eventNational = String(getDailyCellValue(38) || '').trim();
+    const eventLines = [
+      eventRestaurant ? `- Restaurant : ${eventRestaurant}` : '',
+      eventNational ? `- National : ${eventNational}` : '',
+    ].filter(Boolean);
 
     return [
       'Bonsoir,',
       '',
-      'Voici les chiffres de la journee :',
-      `Couverts : ${covers.toFixed(0)}`,
-      `CA : ${formatDailyRecapCurrency(ca)}`,
-      `TM : ${formatDailyRecapTicket(ticketMoyen)}`,
+      `Voici le recap des chiffres realises du ${selectedDayLabel}.`,
+      '',
+      'Synthese journee',
+      `- CA HT realise : ${formatDailyRecapCurrency(totalCa)}${budgetCa > 0 ? ` vs budget ${formatDailyRecapCurrency(budgetCa)}, ecart ${formatDailyRecapDelta(totalCa - budgetCa)} EUR${formatDailyRecapPercent(totalCa - budgetCa, budgetCa)}` : ''}`,
+      `- Couverts : ${formatDailyRecapInteger(totalCovers)}${budgetCovers > 0 ? ` vs budget ${formatDailyRecapInteger(budgetCovers)}, ecart ${formatDailyRecapDelta(totalCovers - budgetCovers, 0)}` : ''}`,
+      `- Ticket moyen : ${formatDailyRecapTicket(ticketMoyen)}${budgetTicketMoyen > 0 ? ` vs budget ${formatDailyRecapTicket(budgetTicketMoyen)}, ecart ${formatDailyRecapDelta(ticketMoyen - budgetTicketMoyen)} EUR` : ''}`,
+      '',
+      'Detail par service',
+      buildDailyRecapLine('VAE', 17),
+      buildDailyRecapLine('Midi', 18, 25, 26, 0, 6, 7),
+      buildDailyRecapLine('Soir', 19, 27, 28, 1, 8, 9),
+      buildDailyRecapLine('Limonade', 20, 34, 35, 2, 14, 15),
+      '',
+      'Evenements',
+      ...(eventLines.length > 0 ? eventLines : ['- Aucun evenement renseigne.']),
+      '',
+      'Bonne soiree,',
     ].join('\n');
   };
 
   const handleCopyDailyRecap = async () => {
     const recapText = buildDailyRecapText();
+    const subject = `Chiffres du jour - ${selectedDayLabel}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(recapText);
@@ -1911,12 +1958,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         document.execCommand('copy');
         document.body.removeChild(textArea);
       }
-      setDailyRecapStatus('Recap copie, pret a coller dans le mail.');
+      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
+      setDailyRecapStatus('Mail prepare et recap copie dans le presse-papiers.');
     } catch {
-      setDailyRecapStatus("Impossible de copier automatiquement. Le recap est pret mais le presse-papiers a refuse l'acces.");
+      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
+      setDailyRecapStatus("Mail prepare. Si la messagerie ne s'ouvre pas, le navigateur a bloque le raccourci.");
     }
   };
-
   const dailyInputClass = "w-full h-8 rounded-md border border-slate-400 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
   const dailyReadOnlyClass = "flex h-8 items-center justify-end gap-1 overflow-hidden rounded-md border border-slate-300 bg-slate-100/90 px-2 text-sm font-bold text-slate-700 shadow-inner";
   const cashInputClass = "w-full h-7 rounded-md border border-slate-400 bg-white px-2 text-right text-xs font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
