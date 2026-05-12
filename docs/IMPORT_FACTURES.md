@@ -29,12 +29,13 @@ L'import facture doit passer par une validation humaine, car les factures fourni
 Le flux retenu est donc :
 
 1. lecture du fichier ;
-2. extraction du texte PDF quand il existe, sinon lecture OCR des pages image/scannées ;
-3. détection du fournisseur, de la date de facture et du montant HT ;
-4. affichage d'une prévisualisation ;
-5. correction éventuelle par l'utilisateur ;
-6. validation ;
-7. ajout du montant dans la colonne fournisseur du jour de facture si cette date appartient au mois affiché, sinon dans le jour sélectionné.
+2. pour les PDF, tentative de lecture IA Vision via une route serveur sécurisée si Gemini est configuré ;
+3. si l'IA n'est pas disponible ou ne retourne rien d'exploitable, extraction du texte PDF quand il existe, sinon lecture OCR des pages image/scannées ;
+4. détection du fournisseur, de la date de facture et du montant HT ;
+5. affichage d'une prévisualisation ;
+6. correction éventuelle par l'utilisateur ;
+7. validation ;
+8. ajout du montant dans la colonne fournisseur du jour de facture si cette date appartient au mois affiché, sinon dans le jour sélectionné.
 
 L'OCR sert uniquement de secours quand le PDF ne contient pas assez de texte exploitable. Cette lecture est plus lente qu'une extraction texte classique, mais elle est nécessaire pour les factures scannées ou composées en images.
 
@@ -54,7 +55,9 @@ L'OCR sert uniquement de secours quand le PDF ne contient pas assez de texte exp
 
 ## IA et sécurité
 
-Une lecture IA peut devenir utile pour les factures très variables, mais elle ne doit pas appeler directement Gemini depuis le navigateur avec une clé exposée. Si cette piste est retenue, l'appel devra passer par une route backend ou une fonction sécurisée qui garde la clé côté serveur, puis renvoie uniquement fournisseur, date de facture, montant HT et colonne cible.
+La lecture IA Vision passe par `/api/invoice-vision`. Le navigateur rend les pages PDF en images, puis les envoie à cette route. La clé `GEMINI_API_KEY` reste côté serveur et ne doit pas être préfixée `VITE_`.
+
+Si la route IA n'est pas disponible ou si Gemini n'est pas configuré, l'import retombe automatiquement sur l'extraction PDF/OCR puis sur les règles locales.
 
 ## Fournisseurs ciblés dans la saisie journalière
 

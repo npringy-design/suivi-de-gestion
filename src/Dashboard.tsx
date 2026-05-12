@@ -27,6 +27,11 @@ type InvoiceImportPreview = {
   status: string;
 };
 
+type InvoiceImagePart = {
+  mimeType: string;
+  data: string;
+};
+
 const C: DashboardColumn[] = [
   ['CA', 'Midi Saisie', 'CA HT MIDI', 'bg-[#ffe699]'],
   ['CA', 'Soir Saisie', 'CA HT SOIR', 'bg-[#ffe699]'],
@@ -1443,6 +1448,69 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     };
   };
 
+  const getKnownInvoiceSuppliers = () => Array.from({ length: 13 }, (_, idx) => 45 + idx)
+    .map(col => ({ col, name: (dynamicColumns[col]?.[2] || '').replace(/\n/g, ' ').trim() }))
+    .filter(supplier => supplier.name);
+
+  const renderPdfInvoiceImageParts = async (file: File): Promise<InvoiceImagePart[]> => {
+    const loadPdfJs = new Function('url', 'return import(url)') as (url: string) => Promise<any>;
+    const pdfjs = await loadPdfJs('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
+    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs';
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjs.getDocument({ data: bytes }).promise;
+    const imageParts: InvoiceImagePart[] = [];
+
+    for (let pageNumber = 1; pageNumber <= Math.min(pdf.numPages, 2); pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) continue;
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      await page.render({ canvasContext: context, viewport }).promise;
+      imageParts.push({
+        mimeType: 'image/jpeg',
+        data: canvas.toDataURL('image/jpeg', 0.85).split(',')[1] || '',
+      });
+    }
+
+    return imageParts.filter(part => part.data);
+  };
+
+  const parseInvoiceWithVision = async (file: File, fileName: string): Promise<InvoiceImportPreview | null> => {
+    const imageParts = await renderPdfInvoiceImageParts(file);
+    if (imageParts.length === 0) return null;
+
+    const response = await fetch('/api/invoice-vision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageParts,
+        knownSuppliers: getKnownInvoiceSuppliers(),
+      }),
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const parsed = data?.invoice;
+    if (!parsed) return null;
+
+    const targetCol = Number(parsed.targetCol);
+    const amountHt = Number(parsed.amountHt);
+    return {
+      fileName,
+      supplier: String(parsed.supplier || 'Fournisseur non reconnu'),
+      amountHt: Number.isFinite(amountHt) && amountHt > 0 ? amountHt.toFixed(2) : '',
+      invoiceDate: String(parsed.invoiceDate || ''),
+      targetCol: targetCol >= 45 && targetCol <= 57 ? targetCol : 45,
+      status: amountHt && parsed.invoiceDate
+        ? 'Lecture IA prête à valider.'
+        : 'Vérifie le montant ou la date avant validation.',
+    };
+  };
+
   const extractPdfText = async (file: File) => {
     const loadPdfJs = new Function('url', 'return import(url)') as (url: string) => Promise<any>;
     const pdfjs = await loadPdfJs('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
@@ -1693,7 +1761,18 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setInvoiceImportPreview(null);
 
     try {
-      const text = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (isPdf) {
+        setInvoiceImportStatus('Lecture IA de la facture...');
+        const visionResult = await parseInvoiceWithVision(file, file.name);
+        if (visionResult?.amountHt || visionResult?.invoiceDate) {
+          setInvoiceImportPreview(visionResult);
+          setInvoiceImportStatus(visionResult.status);
+          return;
+        }
+      }
+
+      const text = isPdf
         ? await extractPdfLayoutText(file, () => setInvoiceImportStatus('Lecture OCR de la facture scannée...'))
         : await file.text();
       const parsed = parseInvoiceImport(text, file.name);
