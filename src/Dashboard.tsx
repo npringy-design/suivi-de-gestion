@@ -2069,9 +2069,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const buildDailyRecapText = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).text;
   const buildDailyRecapHtml = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).html;
-  const buildOutlookComposeUrl = (subject: string) => {
+  const buildOutlookComposeUrl = (subject: string, textBody?: string) => {
     const baseUrl = 'https://outlook.office.com/mail/deeplink/compose';
-    return `${baseUrl}?subject=${encodeURIComponent(subject)}`;
+    const subjectParam = `subject=${encodeURIComponent(subject)}`;
+    if (!textBody) return `${baseUrl}?${subjectParam}`;
+
+    const url = `${baseUrl}?${subjectParam}&body=${encodeURIComponent(textBody)}`;
+    if (url.length < 8000) return url;
+
+    return `${baseUrl}?${subjectParam}`;
   };
 
   const openDailyRecapPreview = () => {
@@ -2081,7 +2087,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const handleValidateDailyRecapMail = async () => {
     const subject = `Chiffres du jour - ${selectedDayLabel}`;
-    const outlookUrl = buildOutlookComposeUrl(subject);
+    const recapOptions = {
+      managerMidi: dailyRecapManagers.midi,
+      managerSoir: dailyRecapManagers.soir,
+      commentMidi: dailyRecapServiceComments.midi,
+      commentSoir: dailyRecapServiceComments.soir,
+      googleRatings: dailyRecapGoogleRatings,
+    };
+    const { text: recapText, html: recapHtml } = buildDailyRecapReport(recapOptions);
+    const outlookUrl = buildOutlookComposeUrl(subject, recapText);
     const ClipboardItemCtor = (window as Window & { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
     const openOutlook = () => {
       const opened = window.open(outlookUrl, '_blank');
@@ -2119,7 +2133,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         await navigator.clipboard.write([new ClipboardItemCtor({ 'image/png': blob })]);
         openOutlook();
         setIsDailyRecapModalOpen(false);
-        setDailyRecapStatus('Image copiée. Dans Outlook, clique dans le corps du mail puis Ctrl+V.');
+        setDailyRecapStatus('Mail prérempli en texte et image copiée. Pour le rendu propre : Ctrl+A dans le corps, puis Ctrl+V.');
         return;
       } catch {
         // Si la capture image echoue, on tente le fallback HTML juste apres.
@@ -2131,14 +2145,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       }
     }
 
-    const recapOptions = {
-      managerMidi: dailyRecapManagers.midi,
-      managerSoir: dailyRecapManagers.soir,
-      commentMidi: dailyRecapServiceComments.midi,
-      commentSoir: dailyRecapServiceComments.soir,
-      googleRatings: dailyRecapGoogleRatings,
-    };
-    const { text: recapText, html: recapHtml } = buildDailyRecapReport(recapOptions);
     try {
       if (navigator.clipboard?.write && ClipboardItemCtor) {
         await navigator.clipboard.write([new ClipboardItemCtor({

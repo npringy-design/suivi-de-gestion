@@ -4,7 +4,7 @@ Ce document garde la trace du bouton de preparation du recap chiffre du jour.
 
 ## Objectif
 
-Le bouton `Recap mail`, visible dans la saisie journaliere, ouvre une page de verification avant envoi. Cette page permet de relire le mail, de saisir le responsable midi, le responsable soir, un commentaire midi, un commentaire soir et les notes Google du jour. La validation capture l'aperçu en image PNG, copie cette image dans le presse-papiers puis ouvre Outlook web avec le sujet pre-rempli.
+Le bouton `Recap mail`, visible dans la saisie journaliere, ouvre une page de verification avant envoi. Cette page permet de relire le mail, de saisir le responsable midi, le responsable soir, un commentaire midi, un commentaire soir et les notes Google du jour. La validation capture l'aperçu en image PNG, copie cette image dans le presse-papiers puis ouvre Outlook web avec le sujet et le corps texte pre-remplis.
 
 ## Donnees utilisees
 
@@ -40,7 +40,8 @@ Le mail contient :
 - Les lignes dont la valeur est a zero, comme limonade ou VAE, ne doivent pas etre ajoutees au mail.
 - Le recap HTML est copie avant l'ouverture de la messagerie pour permettre un collage manuel avec les couleurs si le client mail ne reprend pas le contenu.
 - Outlook web est utilise en priorite via son lien de composition, avec le sujet encode via `encodeURIComponent` pour eviter les `+` visibles.
-- Le rendu principal est une image PNG de l'aperçu : elle doit etre collee dans le corps du mail avec `Ctrl+V`.
+- Le mail Outlook est pre-rempli avec une version texte pour ne jamais ouvrir un corps vide.
+- Le rendu principal reste une image PNG de l'aperçu : elle peut remplacer le texte brut avec `Ctrl+A` dans le corps du mail puis `Ctrl+V`.
 - Cette solution preserve exactement les couleurs, les blocs et les tableaux, meme si le texte n'est plus selectionnable dans le mail.
 - Si la capture image echoue, l'application copie la version HTML dans le presse-papiers et ouvre Outlook pour collage manuel.
 - Si la copie riche echoue aussi, l'application revient au `mailto:` en texte brut pour ne pas bloquer l'envoi.
