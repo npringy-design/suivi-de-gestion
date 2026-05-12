@@ -3476,8 +3476,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       {/* Import Modal */}
       {isImportModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 500, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 10 : 18 }}>
+          <div style={{ background: '#fff', borderRadius: 16, width: 'min(1120px, 100%)', maxWidth: 'calc(100vw - 36px)', maxHeight: 'calc(100vh - 36px)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Upload size={20} color="#10b981" />
@@ -3487,35 +3487,37 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 <X size={20} />
               </button>
             </div>
-            <div style={{ padding: 24 }}>
-              <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, marginBottom: 18 }}>
+            <div style={{ padding: isMobile ? 14 : 20, overflow: 'auto' }}>
+              <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, margin: '0 0 14px' }}>
                 Importez une feuille de caisse PDF. Seule la partie realise du suivi quotidien sera remplie :
                 VAE, CA midi, CA soir et couverts.
               </p>
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 16, border: '1px dashed #93c5fd', borderRadius: 10, background: '#eff6ff' }}>
-                <span style={{ fontSize: 12, fontWeight: 900, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '.04em' }}>Feuille de caisse</span>
-                <input
-                  type="file"
-                  accept=".pdf,.txt,text/plain,application/pdf"
-                  onChange={handleDailyRealiseImport}
-                  style={{ fontSize: 13, color: '#0f172a' }}
-                />
-              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(260px, .85fr) minmax(320px, 1.15fr)', gap: 12 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #93c5fd', borderRadius: 10, background: '#eff6ff' }}>
+                  <span style={{ fontSize: 12, fontWeight: 900, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '.04em' }}>Feuille de caisse</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.txt,text/plain,application/pdf"
+                    onChange={handleDailyRealiseImport}
+                    style={{ fontSize: 13, color: '#0f172a' }}
+                  />
+                </label>
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14, padding: 16, border: '1px dashed #86efac', borderRadius: 10, background: '#f0fdf4' }}>
-                <span style={{ fontSize: 12, fontWeight: 900, color: '#166534', textTransform: 'uppercase', letterSpacing: '.04em' }}>Facture fournisseur</span>
-                <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                  Lecture locale : fournisseur, date et montant HT. Les fichiers ne sont pas conserves.
-                </span>
-                <input
-                  type="file"
-                  accept=".pdf,.txt,text/plain,application/pdf"
-                  onChange={handleInvoiceImport}
-                  multiple
-                  style={{ fontSize: 13, color: '#0f172a' }}
-                />
-              </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #86efac', borderRadius: 10, background: '#f0fdf4' }}>
+                  <span style={{ fontSize: 12, fontWeight: 900, color: '#166534', textTransform: 'uppercase', letterSpacing: '.04em' }}>Facture fournisseur</span>
+                  <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
+                    Lecture locale : fournisseur, date et montant HT. Les fichiers ne sont pas conserves.
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,.txt,text/plain,application/pdf"
+                    onChange={handleInvoiceImport}
+                    multiple
+                    style={{ fontSize: 13, color: '#0f172a' }}
+                  />
+                </label>
+              </div>
 
               {invoiceImportStatus && (
                 <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: invoiceImportStatus.startsWith('Erreur') ? '#fef2f2' : invoiceImportStatus.includes('verifier') ? '#fffbeb' : '#f0fdf4', border: `1px solid ${invoiceImportStatus.startsWith('Erreur') ? '#fecaca' : invoiceImportStatus.includes('verifier') ? '#fbbf24' : '#bbf7d0'}`, color: invoiceImportStatus.startsWith('Erreur') ? '#991b1b' : invoiceImportStatus.includes('verifier') ? '#92400e' : '#166534', fontSize: 13, fontWeight: 800 }}>
@@ -3532,10 +3534,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                         key={item.id}
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: 'minmax(130px, 1.2fr) minmax(130px, 1fr) 116px 104px minmax(150px, 1fr) 112px',
+                          gridTemplateColumns: isMobile ? 'minmax(140px, 1fr) minmax(140px, 1fr) 116px 104px minmax(150px, 1fr) 112px' : 'minmax(180px, 1.15fr) minmax(150px, 1fr) 130px 110px minmax(190px, 1fr) 112px',
                           gap: 8,
                           alignItems: 'end',
-                          minWidth: 840,
+                          minWidth: isMobile ? 840 : 980,
                           padding: 10,
                           border: `1px solid ${isVerified ? '#86efac' : '#fbbf24'}`,
                           borderRadius: 8,
