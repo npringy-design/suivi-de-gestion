@@ -51,6 +51,7 @@ L'OCR sert uniquement de secours quand le PDF ne contient pas assez de texte exp
 - Pour distinguer l'émetteur du destinataire, la lecture compare d'abord la zone émetteur de la facture et les mentions légales aux noms de fournisseurs configurés dans les colonnes achats.
 - Quand plusieurs fournisseurs partagent un mot, par exemple Café Richard et Richard Vins, le rapprochement privilégie le nom complet, le nom collé comme dans un site web/logo, puis seulement les mots isolés.
 - Les fournisseurs à un seul mot, par exemple Brake, Storia ou Martel, doivent pouvoir matcher avec un seul token complet. Aucun fournisseur ne doit être choisi silencieusement par défaut si aucune preuve n'est trouvée.
+- Les règles locales restent un filet de secours : elles peuvent fonctionner sur les PDF numériques bien structurés, mais les scans, photos, documents tournés ou fournisseurs absents des colonnes nécessitent une prévisualisation attentive, et idéalement la lecture IA Vision.
 - Si la date de facture appartient à un autre mois de la même année, l'import écrit dans ce mois et bascule l'affichage sur ce jour.
 
 ## IA et sécurité
