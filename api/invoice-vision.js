@@ -33,30 +33,23 @@ export default async function handler(req, res) {
       return;
     }
 
-    const prompt = `Tu es un assistant comptable pour un restaurant. Analyse cette facture et retourne UNIQUEMENT un objet JSON valide, sans markdown, sans backticks, sans texte avant ou apres.
+    const prompt = `Tu es un assistant comptable. Analyse cette facture et extrait exactement 3 informations.
 
-Colonnes fournisseurs disponibles dans notre systeme :
+1. Le nom du fournisseur (emetteur de la facture, pas le destinataire)
+2. La date de la facture (pas la date de livraison ni l'echeance)
+3. Le montant total HT de la facture entiere (hors TVA, hors TTC)
+
+Compare le nom du fournisseur avec cette liste de colonnes :
 ${knownSuppliers.map((supplier) => `- col ${supplier.col} : ${String(supplier.name || '').replace(/\n/g, ' ')}`).join('\n')}
 
-Regles de correspondance :
-- EPISAVEURS / EPISAVEUR -> colonne EPISAVEUR si disponible.
-- TERREAZUR / TERRE AZUR / POMONA -> colonne POMONA F&L si disponible.
-- RICHARD VINS / VINS RICHARD -> colonne RICHARD VINS si disponible.
-- CAFE RICHARD / CAFES RICHARD -> colonne CAFE RICHARD si disponible.
-- METRO -> colonne METRO / DEPANNAGE si disponible.
-- MARTEL / GH MARTEL -> colonne MARTEL si disponible.
-- BRAKE / BRAKES -> colonne BRAKE si disponible.
-- SOCOPA -> colonne SOCOPA si disponible.
-- Si le fournisseur n'existe pas dans les colonnes, choisis la colonne metier la plus proche selon la nature des produits. Si aucune correspondance claire, choisis METRO / DEPANNAGE.
+Choisis la colonne dont le nom ressemble le plus au fournisseur trouve. Si aucune ne correspond, prends la col 56.
 
-Le document peut etre scanne, photographie ou tourne. Lis-le comme une image.
-
-Retourne EXACTEMENT ce JSON :
+Retourne UNIQUEMENT ce JSON sans markdown :
 {
-  "supplier": "nom exact du fournisseur tel qu'il apparait sur la facture",
-  "targetCol": <numero entier entre 45 et 57>,
-  "amountHt": <TOTAL HT de la facture entiere, nombre decimal avec point, ex: 1394.29>,
-  "invoiceDate": "<date de facturation au format YYYY-MM-DD>"
+  "supplier": "nom du fournisseur tel qu'il apparait sur la facture",
+  "targetCol": <numero entier>,
+  "amountHt": <montant total HT en nombre decimal avec point>,
+  "invoiceDate": "<YYYY-MM-DD>"
 }`;
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
