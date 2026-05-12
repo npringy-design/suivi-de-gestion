@@ -1926,8 +1926,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   ) => {
     const budgetLines = [
       service.budgetCa > 0 ? dailyRecapTextLine('CA', `${formatDailyRecapDelta(service.ca - service.budgetCa)} €${formatDailyRecapPercent(service.ca - service.budgetCa, service.budgetCa)}`) : '',
-      service.budgetCovers > 0 && service.covers > 0 ? dailyRecapTextLine('Couverts', formatDailyRecapDelta(service.covers - service.budgetCovers, 0)) : '',
-      service.budgetTm > 0 && service.tm > 0 ? dailyRecapTextLine('Ticket moyen', `${formatDailyRecapDelta(service.tm - service.budgetTm)} €`) : '',
+      service.budgetCovers > 0 && service.covers > 0 ? dailyRecapTextLine('Couverts', `${formatDailyRecapDelta(service.covers - service.budgetCovers, 0)}${formatDailyRecapPercent(service.covers - service.budgetCovers, service.budgetCovers)}`) : '',
+      service.budgetTm > 0 && service.tm > 0 ? dailyRecapTextLine('Ticket moyen', `${formatDailyRecapDelta(service.tm - service.budgetTm)} €${formatDailyRecapPercent(service.tm - service.budgetTm, service.budgetTm)}`) : '',
     ].filter(Boolean);
     const lines = [
       `----- ${service.label.toUpperCase()} -----`,
@@ -1944,7 +1944,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     }
     if (budgetLines.length > 0) lines.push('', 'Écart vs budget', ...budgetLines);
     if (comment.trim()) lines.push('', `Commentaire : ${comment.trim()}`);
-    return lines.filter(Boolean);
+    return lines.filter(line => line !== null && line !== undefined);
   };
 
   const buildDailyRecapServiceHtml = (
@@ -1959,8 +1959,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     ].filter(Boolean).join('');
     const budgetRows = [
       service.budgetCa > 0 ? dailyRecapBudgetHtml('CA', service.ca - service.budgetCa, ' €', formatDailyRecapPercent(service.ca - service.budgetCa, service.budgetCa)) : '',
-      service.budgetCovers > 0 && service.covers > 0 ? dailyRecapBudgetHtml('Couverts', service.covers - service.budgetCovers, '') : '',
-      service.budgetTm > 0 && service.tm > 0 ? dailyRecapBudgetHtml('Ticket moyen', service.tm - service.budgetTm) : '',
+      service.budgetCovers > 0 && service.covers > 0 ? dailyRecapBudgetHtml('Couverts', service.covers - service.budgetCovers, '', formatDailyRecapPercent(service.covers - service.budgetCovers, service.budgetCovers)) : '',
+      service.budgetTm > 0 && service.tm > 0 ? dailyRecapBudgetHtml('Ticket moyen', service.tm - service.budgetTm, ' €', formatDailyRecapPercent(service.tm - service.budgetTm, service.budgetTm)) : '',
     ].filter(Boolean).join('');
     if (service.ca > 0 || service.covers > 0 || service.tm > 0) {
       return `<section style="margin:18px 0;padding:14px 16px;border:1px solid #dbe3ef;border-left:5px solid #0f766e;border-radius:10px;background:#ffffff">
@@ -1996,8 +1996,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
     const jourBudgetLines = [
       budgetCa > 0 ? dailyRecapTextLine('CA', `${formatDailyRecapDelta(totalCa - budgetCa)} €${formatDailyRecapPercent(totalCa - budgetCa, budgetCa)}`) : '',
-      budgetCovers > 0 ? dailyRecapTextLine('Couverts', formatDailyRecapDelta(totalCovers - budgetCovers, 0)) : '',
-      budgetTicketMoyen > 0 ? dailyRecapTextLine('Ticket moyen', `${formatDailyRecapDelta(ticketMoyen - budgetTicketMoyen)} €`) : '',
+      budgetCovers > 0 ? dailyRecapTextLine('Couverts', `${formatDailyRecapDelta(totalCovers - budgetCovers, 0)}${formatDailyRecapPercent(totalCovers - budgetCovers, budgetCovers)}`) : '',
+      budgetTicketMoyen > 0 ? dailyRecapTextLine('Ticket moyen', `${formatDailyRecapDelta(ticketMoyen - budgetTicketMoyen)} €${formatDailyRecapPercent(ticketMoyen - budgetTicketMoyen, budgetTicketMoyen)}`) : '',
     ].filter(Boolean);
     const jourText = [
       '----- JOURNÉE -----',
@@ -2037,8 +2037,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     ].filter(Boolean).join('');
     const jourBudgetHtmlRows = [
       budgetCa > 0 ? dailyRecapBudgetHtml('CA', totalCa - budgetCa, ' €', formatDailyRecapPercent(totalCa - budgetCa, budgetCa)) : '',
-      budgetCovers > 0 ? dailyRecapBudgetHtml('Couverts', totalCovers - budgetCovers, '') : '',
-      budgetTicketMoyen > 0 ? dailyRecapBudgetHtml('Ticket moyen', ticketMoyen - budgetTicketMoyen) : '',
+      budgetCovers > 0 ? dailyRecapBudgetHtml('Couverts', totalCovers - budgetCovers, '', formatDailyRecapPercent(totalCovers - budgetCovers, budgetCovers)) : '',
+      budgetTicketMoyen > 0 ? dailyRecapBudgetHtml('Ticket moyen', ticketMoyen - budgetTicketMoyen, ' €', formatDailyRecapPercent(ticketMoyen - budgetTicketMoyen, budgetTicketMoyen)) : '',
     ].filter(Boolean).join('');
     const optionalHtml = [
       eventRestaurant || eventNational ? `<section style="margin:18px 0;padding:14px 16px;border:1px solid #fde68a;border-left:5px solid #f59e0b;border-radius:10px;background:#fffbeb"><h3 style="margin:0 0 10px;font-size:16px;color:#92400e;text-transform:uppercase">Événements</h3>${eventRestaurant ? `<p style="margin:2px 0"><strong>Restaurant :</strong> ${escapeDailyRecapHtml(eventRestaurant)}</p>` : ''}${eventNational ? `<p style="margin:2px 0"><strong>National :</strong> ${escapeDailyRecapHtml(eventNational)}</p>` : ''}</section>` : '',
@@ -2104,13 +2104,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         document.execCommand('copy');
         document.body.removeChild(textArea);
       }
-      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
+      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}`;
       setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus('Mail préparé et récap copié dans le presse-papiers.');
+      setDailyRecapStatus('Mail ouvert et récap mis en forme copié. Colle-le dans le corps du mail.');
     } catch {
-      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
+      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}`;
       setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus("Mail préparé. Si la messagerie ne s'ouvre pas, le navigateur a bloqué le raccourci.");
+      setDailyRecapStatus("Mail ouvert. Si la messagerie ne s'ouvre pas, le navigateur a bloqué le raccourci.");
     }
   };
   const dailyInputClass = "w-full h-8 rounded-md border border-slate-400 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";

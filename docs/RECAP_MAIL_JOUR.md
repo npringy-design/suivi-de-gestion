@@ -4,7 +4,7 @@ Ce document garde la trace du bouton de preparation du recap chiffre du jour.
 
 ## Objectif
 
-Le bouton `Recap mail`, visible dans la saisie journaliere, ouvre une page de verification avant envoi. Cette page permet de relire le mail, de saisir le responsable midi, le responsable soir, un commentaire midi, un commentaire soir et les notes Google du jour. La validation copie une version HTML dans le presse-papiers puis ouvre la messagerie via un lien `mailto:` avec le sujet et le corps texte pre-remplis.
+Le bouton `Recap mail`, visible dans la saisie journaliere, ouvre une page de verification avant envoi. Cette page permet de relire le mail, de saisir le responsable midi, le responsable soir, un commentaire midi, un commentaire soir et les notes Google du jour. La validation copie une version HTML dans le presse-papiers puis ouvre la messagerie via un lien `mailto:` avec le sujet pre-rempli.
 
 ## Donnees utilisees
 
@@ -28,7 +28,7 @@ Le mail contient :
 - une section `Midi` avec un bloc `Realise`, un bloc `Ecart vs budget`, puis le commentaire midi si renseigne ;
 - une section `Soir` avec un bloc `Realise`, un bloc `Ecart vs budget`, puis le commentaire soir si renseigne ;
 - une section `Journee` avec un bloc `Synthese`, un bloc `Ecart vs budget`, VAE et limonade si ces elements existent ;
-- les ecarts VS budget quand un budget existe, affiches en vert si positif et rouge si negatif dans la version HTML ;
+- les ecarts VS budget quand un budget existe, avec pourcentage sur le CA, les couverts et le ticket moyen, affiches en vert si positif et rouge si negatif dans la version HTML ;
 - les evenements uniquement s'ils sont renseignes ;
 - les notes Google uniquement si au moins une case contient un nombre.
 
@@ -39,6 +39,6 @@ Le mail contient :
 - Les champs responsable et commentaire sont des ajouts manuels propres au mail et ne sont pas enregistres dans les donnees metier.
 - Les lignes dont la valeur est a zero, comme limonade ou VAE, ne doivent pas etre ajoutees au mail.
 - Le recap HTML est copie avant l'ouverture de la messagerie pour permettre un collage manuel avec les couleurs si le client mail ne reprend pas le contenu.
-- Le lien `mailto:` reste en texte brut selon les limites des clients mail ; il sert de raccourci d'ouverture et de secours.
+- Le lien `mailto:` ouvre seulement le mail avec le sujet : le corps HTML doit etre colle depuis le presse-papiers pour conserver la mise en forme Outlook.
 - La version texte doit rester lisible dans Outlook meme si la mise en forme HTML n'est pas reprise : titres de sections, valeurs alignees, et sous-blocs separes.
 - Si la messagerie ne s'ouvre pas, le message d'etat reste visible dans la page.
