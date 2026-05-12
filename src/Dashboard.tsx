@@ -320,7 +320,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [isDailyRecapModalOpen, setIsDailyRecapModalOpen] = useState(false);
   const [dailyRecapManagers, setDailyRecapManagers] = useState({ midi: '', soir: '' });
   const [dailyRecapServiceComments, setDailyRecapServiceComments] = useState({ midi: '', soir: '' });
-  const [dailyRecapComment, setDailyRecapComment] = useState('');
   const [dailyRecapGoogleRatings, setDailyRecapGoogleRatings] = useState<Record<number, string>>({ 1: '', 2: '', 3: '', 4: '', 5: '' });
   const [purchaseSupplierNames, setPurchaseSupplierNames] = useState<Record<number, string>>(() => {
     try {
@@ -1886,86 +1885,144 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value);
-  const formatDailyRecapCurrency = (value: number) => `${formatDailyRecapNumber(value)} EUR HT`;
-  const formatDailyRecapTicket = (value: number) => `${formatDailyRecapNumber(value)} EUR`;
+  const formatDailyRecapCurrency = (value: number, suffix = ' HT') => `${formatDailyRecapNumber(value)} €${suffix}`;
+  const formatDailyRecapTicket = (value: number) => `${formatDailyRecapNumber(value)} €`;
   const formatDailyRecapInteger = (value: number) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(value);
   const formatDailyRecapDelta = (value: number, decimals = 2) => `${value > 0 ? '+' : ''}${formatDailyRecapNumber(value, decimals)}`;
   const formatDailyRecapPercent = (delta: number, budget: number) => (
     budget > 0 ? ` (${formatDailyRecapDelta((delta / budget) * 100, 1)}%)` : ''
   );
-  const buildDailyRecapLine = (label: string, caCol: number, coversCol?: number, tmCol?: number, budgetCaCol?: number, budgetCoversCol?: number, budgetTmCol?: number, options: { includeBudget?: boolean } = {}) => {
+  const dailyRecapDeltaClass = (value: number) => value < 0 ? 'negative' : value > 0 ? 'positive' : 'neutral';
+  const dailyRecapDeltaHtml = (value: number, suffix = ' €') => `<span class="${dailyRecapDeltaClass(value)}">${formatDailyRecapDelta(value)}${suffix}</span>`;
+  const escapeDailyRecapHtml = (value: string) => value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  const getDailyRecapService = (label: string, caCol: number, coversCol: number, tmCol: number, budgetCaCol: number, budgetCoversCol: number, budgetTmCol: number) => {
     const ca = parseDashboardNumber(getDailyCellValue(caCol));
-    const budgetCa = budgetCaCol !== undefined ? parseDashboardNumber(getDailyCellValue(budgetCaCol)) : 0;
-    const covers = coversCol !== undefined ? parseDashboardNumber(getDailyCellValue(coversCol)) : 0;
-    const budgetCovers = budgetCoversCol !== undefined ? parseDashboardNumber(getDailyCellValue(budgetCoversCol)) : 0;
-    const tm = tmCol !== undefined ? parseDashboardNumber(getDailyCellValue(tmCol)) : 0;
-    const budgetTm = budgetTmCol !== undefined ? parseDashboardNumber(getDailyCellValue(budgetTmCol)) : 0;
-    if (ca <= 0 && covers <= 0 && tm <= 0) return null;
-
-    const parts = [`${label} : ${formatDailyRecapCurrency(ca)}`];
-    if (options.includeBudget && budgetCa > 0) parts.push(`vs budget ${formatDailyRecapCurrency(budgetCa)} soit ${formatDailyRecapDelta(ca - budgetCa)} EUR${formatDailyRecapPercent(ca - budgetCa, budgetCa)}`);
-    if (coversCol !== undefined && covers > 0) parts.push(`${formatDailyRecapInteger(covers)} couverts${options.includeBudget && budgetCovers > 0 ? ` vs ${formatDailyRecapInteger(budgetCovers)} budget (${formatDailyRecapDelta(covers - budgetCovers, 0)})` : ''}`);
-    if (tmCol !== undefined && tm > 0) parts.push(`TM ${formatDailyRecapTicket(tm)}${options.includeBudget && budgetTm > 0 ? ` vs ${formatDailyRecapTicket(budgetTm)} budget (${formatDailyRecapDelta(tm - budgetTm)} EUR)` : ''}`);
-
-    return `- ${parts.join(' | ')}`;
+    const covers = parseDashboardNumber(getDailyCellValue(coversCol));
+    const tm = parseDashboardNumber(getDailyCellValue(tmCol));
+    const budgetCa = parseDashboardNumber(getDailyCellValue(budgetCaCol));
+    const budgetCovers = parseDashboardNumber(getDailyCellValue(budgetCoversCol));
+    const budgetTm = parseDashboardNumber(getDailyCellValue(budgetTmCol));
+    return { label, ca, covers, tm, budgetCa, budgetCovers, budgetTm };
   };
 
-  const buildDailyRecapText = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; comment?: string; googleRatings?: Record<number, string> } = {}) => {
+  const buildDailyRecapServiceText = (
+    service: ReturnType<typeof getDailyRecapService>,
+    manager: string,
+    comment: string,
+  ) => {
+    const lines = [service.label, manager.trim() ? `- Responsable : ${manager.trim()}` : ''];
+    if (service.ca > 0 || service.covers > 0 || service.tm > 0) {
+      lines.push(
+        `- Réalisé ${service.label.toLowerCase()} :`,
+        `    CA réalisé HT : ${formatDailyRecapCurrency(service.ca)}`,
+        ...(service.covers > 0 ? [`    Couverts : ${formatDailyRecapInteger(service.covers)}`] : []),
+        ...(service.tm > 0 ? [`    Ticket moyen : ${formatDailyRecapTicket(service.tm)}`] : []),
+      );
+    }
+    if (service.budgetCa > 0) lines.push(`    VS budget CA : ${formatDailyRecapDelta(service.ca - service.budgetCa)} €${formatDailyRecapPercent(service.ca - service.budgetCa, service.budgetCa)}`);
+    if (service.budgetCovers > 0 && service.covers > 0) lines.push(`    VS budget couverts : ${formatDailyRecapDelta(service.covers - service.budgetCovers, 0)}`);
+    if (service.budgetTm > 0 && service.tm > 0) lines.push(`    VS budget ticket moyen : ${formatDailyRecapDelta(service.tm - service.budgetTm)} €`);
+    if (comment.trim()) lines.push(`- Commentaire : ${comment.trim()}`);
+    return lines.filter(Boolean);
+  };
+
+  const buildDailyRecapServiceHtml = (
+    service: ReturnType<typeof getDailyRecapService>,
+    manager: string,
+    comment: string,
+  ) => {
+    const rows = [manager.trim() ? `<p>- Responsable : ${escapeDailyRecapHtml(manager.trim())}</p>` : ''];
+    if (service.ca > 0 || service.covers > 0 || service.tm > 0) {
+      rows.push(`<p>- Réalisé ${service.label.toLowerCase()} :</p>`);
+      rows.push('<div class="metric-block">');
+      rows.push(`<div><span>CA réalisé HT :</span> <strong>${formatDailyRecapCurrency(service.ca)}</strong></div>`);
+      if (service.covers > 0) rows.push(`<div><span>Couverts :</span> <strong>${formatDailyRecapInteger(service.covers)}</strong></div>`);
+      if (service.tm > 0) rows.push(`<div><span>Ticket moyen :</span> <strong>${formatDailyRecapTicket(service.tm)}</strong></div>`);
+      rows.push('</div>');
+    }
+    if (service.budgetCa > 0) rows.push(`<p class="budget">- VS budget CA : ${dailyRecapDeltaHtml(service.ca - service.budgetCa)}${formatDailyRecapPercent(service.ca - service.budgetCa, service.budgetCa)}</p>`);
+    if (service.budgetCovers > 0 && service.covers > 0) rows.push(`<p class="budget">- VS budget couverts : ${dailyRecapDeltaHtml(service.covers - service.budgetCovers, '')}</p>`);
+    if (service.budgetTm > 0 && service.tm > 0) rows.push(`<p class="budget">- VS budget ticket moyen : ${dailyRecapDeltaHtml(service.tm - service.budgetTm)}</p>`);
+    if (comment.trim()) rows.push(`<p>- Commentaire : ${escapeDailyRecapHtml(comment.trim())}</p>`);
+    return `<section><h3>${service.label}</h3>${rows.filter(Boolean).join('')}</section>`;
+  };
+
+  const buildDailyRecapReport = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => {
     const totalCa = parseDashboardNumber(getDailyCellValue(21));
     const budgetCa = parseDashboardNumber(getDailyCellValue(3));
     const totalCovers = parseDashboardNumber(getDailyCellValue(29));
     const budgetCovers = parseDashboardNumber(getDailyCellValue(10));
     const ticketMoyen = parseDashboardNumber(getDailyCellValue(30));
     const budgetTicketMoyen = parseDashboardNumber(getDailyCellValue(11));
+    const vae = parseDashboardNumber(getDailyCellValue(17));
+    const limonade = parseDashboardNumber(getDailyCellValue(20));
+    const limonadeCovers = parseDashboardNumber(getDailyCellValue(34));
+    const limonadeTm = parseDashboardNumber(getDailyCellValue(35));
     const eventRestaurant = String(getDailyCellValue(37) || '').trim();
     const eventNational = String(getDailyCellValue(38) || '').trim();
-    const comment = options.comment?.trim();
-    const googleLines = [5, 4, 3, 2, 1]
+    const midi = getDailyRecapService('Midi', 18, 25, 26, 0, 6, 7);
+    const soir = getDailyRecapService('Soir', 19, 27, 28, 1, 8, 9);
+    const googleRatings = [5, 4, 3, 2, 1]
       .map(stars => ({ stars, value: Number(String(options.googleRatings?.[stars] || '').replace(',', '.')) || 0 }))
-      .filter(item => item.value > 0)
-      .map(item => `- ${item.stars} etoile${item.stars > 1 ? 's' : ''} : ${formatDailyRecapInteger(item.value)}`);
+      .filter(item => item.value > 0);
 
-    const midiLines = [
-      options.managerMidi?.trim() ? `- Responsable : ${options.managerMidi.trim()}` : '',
-      buildDailyRecapLine('Realise midi', 18, 25, 26, 0, 6, 7),
-      options.commentMidi?.trim() ? `- Commentaire : ${options.commentMidi.trim()}` : '',
+    const jourText = [
+      'Journée',
+      `- CA HT réalisé : ${formatDailyRecapCurrency(totalCa)}`,
+      budgetCa > 0 ? `    VS budget CA : ${formatDailyRecapDelta(totalCa - budgetCa)} €${formatDailyRecapPercent(totalCa - budgetCa, budgetCa)}` : '',
+      `- Couverts : ${formatDailyRecapInteger(totalCovers)}`,
+      budgetCovers > 0 ? `    VS budget couverts : ${formatDailyRecapDelta(totalCovers - budgetCovers, 0)}` : '',
+      `- Ticket moyen : ${formatDailyRecapTicket(ticketMoyen)}`,
+      budgetTicketMoyen > 0 ? `    VS budget ticket moyen : ${formatDailyRecapDelta(ticketMoyen - budgetTicketMoyen)} €` : '',
+      vae > 0 ? `- VAE : ${formatDailyRecapCurrency(vae)}` : '',
+      limonade > 0 ? `- Limonade : ${formatDailyRecapCurrency(limonade)}${limonadeCovers > 0 ? ` | ${formatDailyRecapInteger(limonadeCovers)} couverts` : ''}${limonadeTm > 0 ? ` | TM ${formatDailyRecapTicket(limonadeTm)}` : ''}` : '',
     ].filter(Boolean);
-    const soirLines = [
-      options.managerSoir?.trim() ? `- Responsable : ${options.managerSoir.trim()}` : '',
-      buildDailyRecapLine('Realise soir', 19, 27, 28, 1, 8, 9),
-      options.commentSoir?.trim() ? `- Commentaire : ${options.commentSoir.trim()}` : '',
-    ].filter(Boolean);
-    const jourLines = [
-      `- CA HT realise : ${formatDailyRecapCurrency(totalCa)}${budgetCa > 0 ? ` vs budget ${formatDailyRecapCurrency(budgetCa)}, ecart ${formatDailyRecapDelta(totalCa - budgetCa)} EUR${formatDailyRecapPercent(totalCa - budgetCa, budgetCa)}` : ''}`,
-      `- Couverts : ${formatDailyRecapInteger(totalCovers)}${budgetCovers > 0 ? ` vs budget ${formatDailyRecapInteger(budgetCovers)}, ecart ${formatDailyRecapDelta(totalCovers - budgetCovers, 0)}` : ''}`,
-      `- Ticket moyen : ${formatDailyRecapTicket(ticketMoyen)}${budgetTicketMoyen > 0 ? ` vs budget ${formatDailyRecapTicket(budgetTicketMoyen)}, ecart ${formatDailyRecapDelta(ticketMoyen - budgetTicketMoyen)} EUR` : ''}`,
-      buildDailyRecapLine('VAE', 17),
-      buildDailyRecapLine('Limonade', 20, 34, 35, 2, 14, 15),
-    ].filter(Boolean);
-    const optionalSections = [
-      eventRestaurant || eventNational ? ['', 'Evenements', ...(eventRestaurant ? [`- Restaurant : ${eventRestaurant}`] : []), ...(eventNational ? [`- National : ${eventNational}`] : [])] : [],
-      googleLines.length > 0 ? ['', 'Notes Google', ...googleLines] : [],
-      comment ? ['', 'Commentaire journee', `- ${comment}`] : [],
-    ].flat();
 
-    return [
+    const textSections = [
       'Bonsoir,',
       '',
-      `Voici le recap des chiffres realises du ${selectedDayLabel}.`,
+      `Voici le récap des chiffres réalisés du ${selectedDayLabel}.`,
       '',
-      'Midi',
-      ...(midiLines.length > 0 ? midiLines : ['- Aucun element midi renseigne.']),
+      ...buildDailyRecapServiceText(midi, options.managerMidi || '', options.commentMidi || ''),
       '',
-      'Soir',
-      ...(soirLines.length > 0 ? soirLines : ['- Aucun element soir renseigne.']),
+      ...buildDailyRecapServiceText(soir, options.managerSoir || '', options.commentSoir || ''),
       '',
-      'Journee',
-      ...jourLines,
-      ...optionalSections,
+      ...jourText,
+      ...(eventRestaurant || eventNational ? ['', 'Événements', ...(eventRestaurant ? [`- Restaurant : ${eventRestaurant}`] : []), ...(eventNational ? [`- National : ${eventNational}`] : [])] : []),
+      ...(googleRatings.length > 0 ? ['', 'Notes Google', ...googleRatings.map(item => `- ${item.stars} étoile${item.stars > 1 ? 's' : ''} : ${formatDailyRecapInteger(item.value)}`)] : []),
       '',
-      'Bonne soiree,',
-    ].join('\n');
+      'Bonne soirée,',
+      '',
+      'Cordialement,',
+    ];
+
+    const jourHtmlRows = [
+      `<p>- CA HT réalisé : <strong>${formatDailyRecapCurrency(totalCa)}</strong></p>`,
+      budgetCa > 0 ? `<p class="budget">- VS budget CA : ${dailyRecapDeltaHtml(totalCa - budgetCa)}${formatDailyRecapPercent(totalCa - budgetCa, budgetCa)}</p>` : '',
+      `<p>- Couverts : <strong>${formatDailyRecapInteger(totalCovers)}</strong></p>`,
+      budgetCovers > 0 ? `<p class="budget">- VS budget couverts : ${dailyRecapDeltaHtml(totalCovers - budgetCovers, '')}</p>` : '',
+      `<p>- Ticket moyen : <strong>${formatDailyRecapTicket(ticketMoyen)}</strong></p>`,
+      budgetTicketMoyen > 0 ? `<p class="budget">- VS budget ticket moyen : ${dailyRecapDeltaHtml(ticketMoyen - budgetTicketMoyen)}</p>` : '',
+      vae > 0 ? `<p>- VAE : <strong>${formatDailyRecapCurrency(vae)}</strong></p>` : '',
+      limonade > 0 ? `<p>- Limonade : <strong>${formatDailyRecapCurrency(limonade)}</strong>${limonadeCovers > 0 ? ` | ${formatDailyRecapInteger(limonadeCovers)} couverts` : ''}${limonadeTm > 0 ? ` | TM ${formatDailyRecapTicket(limonadeTm)}` : ''}</p>` : '',
+    ].filter(Boolean).join('');
+    const optionalHtml = [
+      eventRestaurant || eventNational ? `<section><h3>Événements</h3>${eventRestaurant ? `<p>- Restaurant : ${escapeDailyRecapHtml(eventRestaurant)}</p>` : ''}${eventNational ? `<p>- National : ${escapeDailyRecapHtml(eventNational)}</p>` : ''}</section>` : '',
+      googleRatings.length > 0 ? `<section><h3>Notes Google</h3>${googleRatings.map(item => `<p>- ${item.stars} étoile${item.stars > 1 ? 's' : ''} : ${formatDailyRecapInteger(item.value)}</p>`).join('')}</section>` : '',
+    ].filter(Boolean).join('');
+    const html = `<div class="daily-recap-mail"><style>.daily-recap-mail{font-family:Arial,sans-serif;color:#111827;line-height:1.45}.daily-recap-mail h3{margin:18px 0 6px}.daily-recap-mail p{margin:2px 0}.daily-recap-mail .metric-block{margin:0 0 6px 20px}.daily-recap-mail .metric-block div{margin:2px 0}.daily-recap-mail .positive{color:#15803d;font-weight:700}.daily-recap-mail .negative{color:#dc2626;font-weight:700}.daily-recap-mail .neutral{color:#334155;font-weight:700}.daily-recap-mail .budget{margin-left:20px}</style><p>Bonsoir,</p><p>Voici le récap des chiffres réalisés du ${escapeDailyRecapHtml(selectedDayLabel)}.</p>${buildDailyRecapServiceHtml(midi, options.managerMidi || '', options.commentMidi || '')}${buildDailyRecapServiceHtml(soir, options.managerSoir || '', options.commentSoir || '')}<section><h3>Journée</h3>${jourHtmlRows}</section>${optionalHtml}<p style="margin-top:18px">Bonne soirée,</p><p>Cordialement,</p></div>`;
+
+    return { text: textSections.filter(line => line !== null && line !== undefined).join('\n'), html };
   };
+
+  const buildDailyRecapText = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).text;
+  const buildDailyRecapHtml = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).html;
 
   const openDailyRecapPreview = () => {
     setDailyRecapStatus('');
@@ -1973,17 +2030,23 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const handleValidateDailyRecapMail = async () => {
-    const recapText = buildDailyRecapText({
+    const recapOptions = {
       managerMidi: dailyRecapManagers.midi,
       managerSoir: dailyRecapManagers.soir,
       commentMidi: dailyRecapServiceComments.midi,
       commentSoir: dailyRecapServiceComments.soir,
-      comment: dailyRecapComment,
       googleRatings: dailyRecapGoogleRatings,
-    });
+    };
+    const { text: recapText, html: recapHtml } = buildDailyRecapReport(recapOptions);
     const subject = `Chiffres du jour - ${selectedDayLabel}`;
     try {
-      if (navigator.clipboard?.writeText) {
+      const ClipboardItemCtor = (window as Window & { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+      if (navigator.clipboard?.write && ClipboardItemCtor) {
+        await navigator.clipboard.write([new ClipboardItemCtor({
+          'text/html': new Blob([recapHtml], { type: 'text/html' }),
+          'text/plain': new Blob([recapText], { type: 'text/plain' }),
+        })]);
+      } else if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(recapText);
       } else {
         const textArea = document.createElement('textarea');
@@ -1998,11 +2061,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       }
       window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
       setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus('Mail prepare et recap copie dans le presse-papiers.');
+      setDailyRecapStatus('Mail préparé et récap copié dans le presse-papiers.');
     } catch {
       window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
       setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus("Mail prepare. Si la messagerie ne s'ouvre pas, le navigateur a bloque le raccourci.");
+      setDailyRecapStatus("Mail préparé. Si la messagerie ne s'ouvre pas, le navigateur a bloqué le raccourci.");
     }
   };
   const dailyInputClass = "w-full h-8 rounded-md border border-slate-400 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
@@ -2989,8 +3052,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 <Upload size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Importer'}
               </button>
               {tableViewMode === 'SAISIE' && (
-                <button onClick={openDailyRecapPreview} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme} title={dailyRecapStatus || 'Preparer le recap mail du jour'}>
-                  <Clipboard size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Recap mail'}
+                <button onClick={openDailyRecapPreview} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme} title={dailyRecapStatus || 'Préparer le récap mail du jour'}>
+                  <Clipboard size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Récap mail'}
                 </button>
               )}
               <button onClick={handleExportPDF} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
@@ -3776,21 +3839,21 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     ))}
                   </div>
                 </div>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Commentaire journee</span>
-                  <textarea
-                    value={dailyRecapComment}
-                    onChange={event => setDailyRecapComment(event.target.value)}
-                    style={{ minHeight: 132, resize: 'vertical', border: '1px solid #cbd5e1', borderRadius: 8, padding: 10, fontWeight: 700, color: '#0f172a', lineHeight: 1.45 }}
-                    placeholder="Contexte, point d'attention, meteo, service particulier..."
-                  />
-                </label>
               </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>Aperçu du mail</div>
-                <pre style={{ margin: 0, minHeight: 360, maxHeight: '55vh', overflow: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', border: '1px solid #cbd5e1', borderRadius: 10, background: '#f8fafc', padding: 14, color: '#0f172a', fontSize: 13, lineHeight: 1.5, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                  {buildDailyRecapText({ managerMidi: dailyRecapManagers.midi, managerSoir: dailyRecapManagers.soir, commentMidi: dailyRecapServiceComments.midi, commentSoir: dailyRecapServiceComments.soir, comment: dailyRecapComment, googleRatings: dailyRecapGoogleRatings })}
-                </pre>
+                <div
+                  style={{ margin: 0, minHeight: 360, maxHeight: '55vh', overflow: 'auto', border: '1px solid #cbd5e1', borderRadius: 10, background: '#f8fafc', padding: 16, color: '#0f172a', fontSize: 14, lineHeight: 1.5, fontFamily: "'DM Sans', system-ui, sans-serif" }}
+                  dangerouslySetInnerHTML={{
+                    __html: buildDailyRecapHtml({
+                      managerMidi: dailyRecapManagers.midi,
+                      managerSoir: dailyRecapManagers.soir,
+                      commentMidi: dailyRecapServiceComments.midi,
+                      commentSoir: dailyRecapServiceComments.soir,
+                      googleRatings: dailyRecapGoogleRatings,
+                    }),
+                  }}
+                />
               </div>
             </div>
             <div style={{ padding: '14px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
