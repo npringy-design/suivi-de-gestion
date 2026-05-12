@@ -1458,7 +1458,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return pages.join('\n');
   };
 
-  const extractPdfLayoutText = async (file: File) => {
+  const extractPdfLayoutText = async (file: File, onOcrStart?: () => void) => {
     const loadPdfJs = new Function('url', 'return import(url)') as (url: string) => Promise<any>;
     const pdfjs = await loadPdfJs('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
     pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs';
@@ -1497,10 +1497,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
     const extractedText = pages.join('\n');
     const usefulTextLength = extractedText.replace(/[^A-Za-zÀ-ÿ0-9]/g, '').length;
-    if (usefulTextLength >= 120 && /\d{2}[./-]\d{2}[./-]\d{2,4}/.test(extractedText)) {
+    const normalizedExtractedText = normalizeImportText(extractedText);
+    const hasInvoiceStructure = /FACTURE|INVOICE|TOTAL|TVA|HORS TAXE|MONTANT|HT/.test(normalizedExtractedText);
+    const hasAmount = /-?\d{1,3}(?:[\s.]\d{3})*(?:[,.]\d{2})|-?\d+[,.]\d{2}/.test(extractedText);
+    if (usefulTextLength >= 120 && hasInvoiceStructure && hasAmount && /\d{2}[./-]\d{2}[./-]\d{2,4}/.test(extractedText)) {
       return extractedText;
     }
 
+    onOcrStart?.();
     return extractPdfOcrText(file, pdfjs);
   };
 
@@ -1509,25 +1513,40 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const loadedPdfjs = pdfjs || await loadModule('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
     loadedPdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs';
     const tesseract = await loadModule('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js');
+    const createWorker = tesseract.createWorker || tesseract.default?.createWorker;
+    if (!createWorker) throw new Error("L'OCR n'est pas disponible dans le navigateur.");
+    const ocrOptions = {
+      workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
+      corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
+      langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+    };
+    let worker: any;
+    try {
+      worker = await createWorker('fra+eng', 1, ocrOptions);
+    } catch {
+      worker = await createWorker(ocrOptions);
+      if (worker.loadLanguage) await worker.loadLanguage('fra+eng');
+      if (worker.initialize) await worker.initialize('fra+eng');
+    }
     const bytes = new Uint8Array(await file.arrayBuffer());
     const pdf = await loadedPdfjs.getDocument({ data: bytes }).promise;
     const pages: string[] = [];
 
-    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-      const page = await pdf.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: 2 });
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      if (!context) continue;
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
-      await page.render({ canvasContext: context, viewport }).promise;
-      const result = await tesseract.recognize(canvas.toDataURL('image/png'), 'fra+eng', {
-        workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
-        corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
-        langPath: 'https://tessdata.projectnaptha.com/4.0.0',
-      });
-      pages.push(result?.data?.text || '');
+    try {
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+        const page = await pdf.getPage(pageNumber);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) continue;
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        await page.render({ canvasContext: context, viewport }).promise;
+        const result = await worker.recognize(canvas);
+        pages.push(result?.data?.text || '');
+      }
+    } finally {
+      if (worker?.terminate) await worker.terminate();
     }
 
     return pages.join('\n');
@@ -1675,7 +1694,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
     try {
       const text = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-        ? await extractPdfLayoutText(file)
+        ? await extractPdfLayoutText(file, () => setInvoiceImportStatus('Lecture OCR de la facture scannée...'))
         : await file.text();
       const parsed = parseInvoiceImport(text, file.name);
       setInvoiceImportPreview(parsed);
