@@ -1904,10 +1904,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     .replace(/'/g, '&#39;');
   const dailyRecapTextLine = (label: string, value: string) => `  ${label.padEnd(18, ' ')} : ${value}`;
   const dailyRecapMetricHtml = (label: string, value: string) => (
-    `<tr><td style="padding:3px 18px 3px 0;color:#475569">${label}</td><td style="padding:3px 0;font-weight:700;color:#0f172a">${value}</td></tr>`
+    `<div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:start;margin:3px 0"><span style="color:#475569">${label}</span><strong style="color:#0f172a">${value}</strong></div>`
   );
   const dailyRecapBudgetHtml = (label: string, value: number, suffix = ' €', percent = '') => (
-    `<tr><td style="padding:3px 18px 3px 0;color:#475569">${label}</td><td style="padding:3px 0">${dailyRecapDeltaHtml(value, suffix)}${percent}</td></tr>`
+    `<div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:start;margin:3px 0"><span style="color:#475569">${label}</span><span>${dailyRecapDeltaHtml(value, suffix)}${percent}</span></div>`
   );
 
   const getDailyRecapService = (label: string, caCol: number, coversCol: number, tmCol: number, budgetCaCol: number, budgetCoversCol: number, budgetTmCol: number) => {
@@ -1968,8 +1968,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         <h3 style="margin:0 0 10px;font-size:16px;color:#0f172a;text-transform:uppercase">${service.label}</h3>
         ${manager.trim() ? `<p style="margin:0 0 12px;color:#334155"><strong>Responsable :</strong> ${escapeDailyRecapHtml(manager.trim())}</p>` : ''}
         <p style="margin:0 0 4px;font-weight:700;color:#0f766e">Réalisé</p>
-        <table cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 10px 0">${realisedRows}</table>
-        ${budgetRows ? `<p style="margin:10px 0 4px;font-weight:700;color:#64748b">Écart vs budget</p><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 10px 0">${budgetRows}</table>` : ''}
+        <div style="margin:0 0 10px 0">${realisedRows}</div>
+        ${budgetRows ? `<p style="margin:10px 0 4px;font-weight:700;color:#64748b">Écart vs budget</p><div style="margin:0 0 10px 0">${budgetRows}</div>` : ''}
         ${comment.trim() ? `<p style="margin:10px 0 0;padding:8px 10px;background:#f8fafc;border-radius:8px;color:#334155"><strong>Commentaire :</strong> ${escapeDailyRecapHtml(comment.trim())}</p>` : ''}
       </section>`;
     }
@@ -2043,7 +2043,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     ].filter(Boolean).join('');
     const optionalHtml = [
       eventRestaurant || eventNational ? `<section style="margin:18px 0;padding:14px 16px;border:1px solid #fde68a;border-left:5px solid #f59e0b;border-radius:10px;background:#fffbeb"><h3 style="margin:0 0 10px;font-size:16px;color:#92400e;text-transform:uppercase">Événements</h3>${eventRestaurant ? `<p style="margin:2px 0"><strong>Restaurant :</strong> ${escapeDailyRecapHtml(eventRestaurant)}</p>` : ''}${eventNational ? `<p style="margin:2px 0"><strong>National :</strong> ${escapeDailyRecapHtml(eventNational)}</p>` : ''}</section>` : '',
-      googleRatings.length > 0 ? `<section style="margin:18px 0;padding:14px 16px;border:1px solid #dbe3ef;border-left:5px solid #64748b;border-radius:10px;background:#ffffff"><h3 style="margin:0 0 10px;font-size:16px;color:#0f172a;text-transform:uppercase">Notes Google</h3><table cellspacing="0" cellpadding="0" style="border-collapse:collapse">${googleRatings.map(item => dailyRecapMetricHtml(`${item.stars} étoile${item.stars > 1 ? 's' : ''}`, formatDailyRecapInteger(item.value))).join('')}</table></section>` : '',
+      googleRatings.length > 0 ? `<section style="margin:18px 0;padding:14px 16px;border:1px solid #dbe3ef;border-left:5px solid #64748b;border-radius:10px;background:#ffffff"><h3 style="margin:0 0 10px;font-size:16px;color:#0f172a;text-transform:uppercase">Notes Google</h3><div>${googleRatings.map(item => dailyRecapMetricHtml(`${item.stars} étoile${item.stars > 1 ? 's' : ''}`, formatDailyRecapInteger(item.value))).join('')}</div></section>` : '',
     ].filter(Boolean).join('');
     const html = `<div style="font-family:Arial,sans-serif;color:#111827;line-height:1.45;max-width:720px">
       <p style="margin:0 0 12px">Bonsoir,</p>
@@ -2056,8 +2056,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       <section style="margin:18px 0;padding:14px 16px;border:1px solid #bfdbfe;border-left:5px solid #2563eb;border-radius:10px;background:#eff6ff">
         <h3 style="margin:0 0 10px;font-size:16px;color:#1e3a8a;text-transform:uppercase">Journée</h3>
         <p style="margin:0 0 4px;font-weight:700;color:#1d4ed8">Synthèse</p>
-        <table cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 10px 0">${jourHtmlRows}</table>
-        ${jourBudgetHtmlRows ? `<p style="margin:10px 0 4px;font-weight:700;color:#64748b">Écart vs budget</p><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 10px 0">${jourBudgetHtmlRows}</table>` : ''}
+        <div style="margin:0 0 10px 0">${jourHtmlRows}</div>
+        ${jourBudgetHtmlRows ? `<p style="margin:10px 0 4px;font-weight:700;color:#64748b">Écart vs budget</p><div style="margin:0 0 10px 0">${jourBudgetHtmlRows}</div>` : ''}
       </section>
       ${optionalHtml}
       <p style="margin:18px 0 0">Bonne soirée,</p>
@@ -2078,6 +2078,46 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     if (url.length < 8000) return url;
 
     return `${baseUrl}?${subjectParam}`;
+  };
+  const copyDailyRecapImageToClipboard = async (
+    recapHtml: string,
+    ClipboardItemCtor: typeof ClipboardItem,
+  ) => {
+    const captureHost = document.createElement('div');
+    captureHost.style.position = 'fixed';
+    captureHost.style.left = '-10000px';
+    captureHost.style.top = '0';
+    captureHost.style.width = '780px';
+    captureHost.style.padding = '24px';
+    captureHost.style.background = '#ffffff';
+    captureHost.style.zIndex = '-1';
+    captureHost.innerHTML = recapHtml;
+    document.body.appendChild(captureHost);
+
+    try {
+      await document.fonts?.ready;
+      await new Promise(resolve => window.requestAnimationFrame(resolve));
+      const target = (captureHost.firstElementChild as HTMLElement | null) || captureHost;
+      target.style.width = '720px';
+      target.style.maxWidth = '720px';
+      target.style.background = '#ffffff';
+
+      const blob = await domtoimage.toBlob(target, {
+        bgcolor: '#ffffff',
+        quality: 1,
+        width: target.scrollWidth,
+        height: target.scrollHeight,
+        style: {
+          width: '720px',
+          maxWidth: '720px',
+          overflow: 'visible',
+        },
+      });
+
+      await navigator.clipboard.write([new ClipboardItemCtor({ 'image/png': blob })]);
+    } finally {
+      document.body.removeChild(captureHost);
+    }
   };
 
   const openDailyRecapPreview = () => {
@@ -2102,46 +2142,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       if (!opened) window.location.href = outlookUrl;
     };
 
-    if (recapPreviewRef.current && navigator.clipboard?.write && ClipboardItemCtor) {
-      const previewElement = recapPreviewRef.current;
-      const previousScrollTop = previewElement.scrollTop;
-      const previousStyles = {
-        maxHeight: previewElement.style.maxHeight,
-        overflow: previewElement.style.overflow,
-        height: previewElement.style.height,
-      };
-
+    if (navigator.clipboard?.write && ClipboardItemCtor) {
       try {
-        previewElement.scrollTop = 0;
-        previewElement.style.maxHeight = 'none';
-        previewElement.style.overflow = 'visible';
-        previewElement.style.height = `${previewElement.scrollHeight}px`;
-        await new Promise(resolve => window.requestAnimationFrame(resolve));
-
-        const blob = await domtoimage.toBlob(previewElement, {
-          bgcolor: '#f8fafc',
-          quality: 1,
-          width: previewElement.scrollWidth,
-          height: previewElement.scrollHeight,
-          style: {
-            maxHeight: 'none',
-            overflow: 'visible',
-            height: `${previewElement.scrollHeight}px`,
-          },
-        });
-
-        await navigator.clipboard.write([new ClipboardItemCtor({ 'image/png': blob })]);
+        await copyDailyRecapImageToClipboard(recapHtml, ClipboardItemCtor);
         openOutlook();
         setIsDailyRecapModalOpen(false);
         setDailyRecapStatus('Mail prérempli en texte et image copiée. Pour le rendu propre : Ctrl+A dans le corps, puis Ctrl+V.');
         return;
       } catch {
         // Si la capture image echoue, on tente le fallback HTML juste apres.
-      } finally {
-        previewElement.style.maxHeight = previousStyles.maxHeight;
-        previewElement.style.overflow = previousStyles.overflow;
-        previewElement.style.height = previousStyles.height;
-        previewElement.scrollTop = previousScrollTop;
       }
     }
 
