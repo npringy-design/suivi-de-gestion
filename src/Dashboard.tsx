@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 
@@ -317,6 +317,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [invoiceImportStatus, setInvoiceImportStatus] = useState('');
   const [invoiceImportPreviews, setInvoiceImportPreviews] = useState<InvoiceImportPreview[]>([]);
   const [dailyRecapStatus, setDailyRecapStatus] = useState('');
+  const recapPreviewRef = useRef<HTMLDivElement>(null);
   const [isDailyRecapModalOpen, setIsDailyRecapModalOpen] = useState(false);
   const [dailyRecapManagers, setDailyRecapManagers] = useState({ midi: '', soir: '' });
   const [dailyRecapServiceComments, setDailyRecapServiceComments] = useState({ midi: '', soir: '' });
@@ -2068,11 +2069,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const buildDailyRecapText = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).text;
   const buildDailyRecapHtml = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).html;
-  const buildOutlookComposeUrl = (subject: string, textBody: string) => {
+  const buildOutlookComposeUrl = (subject: string) => {
     const baseUrl = 'https://outlook.office.com/mail/deeplink/compose';
-    const url = `${baseUrl}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(textBody)}`;
-    if (url.length < 8000) return url;
-
     return `${baseUrl}?subject=${encodeURIComponent(subject)}`;
   };
 
@@ -2082,6 +2080,57 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const handleValidateDailyRecapMail = async () => {
+    const subject = `Chiffres du jour - ${selectedDayLabel}`;
+    const outlookUrl = buildOutlookComposeUrl(subject);
+    const ClipboardItemCtor = (window as Window & { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+    const openOutlook = () => {
+      const opened = window.open(outlookUrl, '_blank');
+      if (!opened) window.location.href = outlookUrl;
+    };
+
+    if (recapPreviewRef.current && navigator.clipboard?.write && ClipboardItemCtor) {
+      const previewElement = recapPreviewRef.current;
+      const previousScrollTop = previewElement.scrollTop;
+      const previousStyles = {
+        maxHeight: previewElement.style.maxHeight,
+        overflow: previewElement.style.overflow,
+        height: previewElement.style.height,
+      };
+
+      try {
+        previewElement.scrollTop = 0;
+        previewElement.style.maxHeight = 'none';
+        previewElement.style.overflow = 'visible';
+        previewElement.style.height = `${previewElement.scrollHeight}px`;
+        await new Promise(resolve => window.requestAnimationFrame(resolve));
+
+        const blob = await domtoimage.toBlob(previewElement, {
+          bgcolor: '#f8fafc',
+          quality: 1,
+          width: previewElement.scrollWidth,
+          height: previewElement.scrollHeight,
+          style: {
+            maxHeight: 'none',
+            overflow: 'visible',
+            height: `${previewElement.scrollHeight}px`,
+          },
+        });
+
+        await navigator.clipboard.write([new ClipboardItemCtor({ 'image/png': blob })]);
+        openOutlook();
+        setIsDailyRecapModalOpen(false);
+        setDailyRecapStatus('Image copiée. Dans Outlook, clique dans le corps du mail puis Ctrl+V.');
+        return;
+      } catch {
+        // Si la capture image echoue, on tente le fallback HTML juste apres.
+      } finally {
+        previewElement.style.maxHeight = previousStyles.maxHeight;
+        previewElement.style.overflow = previousStyles.overflow;
+        previewElement.style.height = previousStyles.height;
+        previewElement.scrollTop = previousScrollTop;
+      }
+    }
+
     const recapOptions = {
       managerMidi: dailyRecapManagers.midi,
       managerSoir: dailyRecapManagers.soir,
@@ -2090,9 +2139,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       googleRatings: dailyRecapGoogleRatings,
     };
     const { text: recapText, html: recapHtml } = buildDailyRecapReport(recapOptions);
-    const subject = `Chiffres du jour - ${selectedDayLabel}`;
     try {
-      const ClipboardItemCtor = (window as Window & { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
       if (navigator.clipboard?.write && ClipboardItemCtor) {
         await navigator.clipboard.write([new ClipboardItemCtor({
           'text/html': new Blob([recapHtml], { type: 'text/html' }),
@@ -2111,9 +2158,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         document.execCommand('copy');
         document.body.removeChild(textArea);
       }
-      window.location.href = buildOutlookComposeUrl(subject, recapText);
+      openOutlook();
       setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus('HTML copié. Corps pré-rempli en texte. Pour les couleurs : Ctrl+A dans le corps, puis Ctrl+V.');
+      setDailyRecapStatus('Récap copié. Colle-le dans le corps du mail Outlook avec Ctrl+V.');
     } catch {
       window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
       setIsDailyRecapModalOpen(false);
@@ -3895,6 +3942,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>Aperçu du mail</div>
                 <div
+                  ref={recapPreviewRef}
                   style={{ margin: 0, minHeight: 360, maxHeight: '55vh', overflow: 'auto', border: '1px solid #cbd5e1', borderRadius: 10, background: '#f8fafc', padding: 16, color: '#0f172a', fontSize: 14, lineHeight: 1.5, fontFamily: "'DM Sans', system-ui, sans-serif" }}
                   dangerouslySetInnerHTML={{
                     __html: buildDailyRecapHtml({
