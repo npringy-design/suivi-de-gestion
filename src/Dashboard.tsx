@@ -2137,10 +2137,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       .map(stars => ({ stars, value: Number(String(options.googleRatings?.[stars] || '').replace(',', '.')) || 0 }))
       .filter(item => item.value > 0);
 
-    const width = 820;
-    const pad = 28;
-    const cardGap = 16;
-    const lineH = 24;
+    const width = 620;
+    const pad = 22;
+    const cardGap = 12;
+    const lineH = 20;
     const rows: Array<{ label: string; value: string; color?: string }> = [];
     const sections: Array<{ title: string; accent: string; rows: Array<{ label: string; value: string; color?: string }>; manager?: string; comment?: string }> = [];
     const deltaColor = (value: number) => value < 0 ? '#dc2626' : value > 0 ? '#15803d' : '#334155';
@@ -2178,10 +2178,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     }
 
     const cardHeight = (section: typeof sections[number]) => (
-      60 + section.rows.length * lineH + (section.manager ? 26 : 0) + (section.comment ? 34 : 0)
+      50 + section.rows.length * lineH + (section.manager ? 22 : 0) + (section.comment ? 30 : 0)
     );
-    const contentHeight = 116 + sections.reduce((sum, section) => sum + cardHeight(section) + cardGap, 0) + 40;
-    const dpr = Math.max(2, window.devicePixelRatio || 1);
+    const contentHeight = 106 + sections.reduce((sum, section) => sum + cardHeight(section) + cardGap, 0) + 90;
+    const dpr = 1;
     const canvas = document.createElement('canvas');
     canvas.width = width * dpr;
     canvas.height = contentHeight * dpr;
@@ -2204,50 +2204,50 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       ctx.quadraticCurveTo(x, y, x + r, y);
       ctx.closePath();
     };
-    const drawText = (text: string, x: number, y: number, size = 16, weight = '400', color = '#111827') => {
+    const drawText = (text: string, x: number, y: number, size = 13, weight = '400', color = '#111827') => {
       ctx.font = `${weight} ${size}px Arial, sans-serif`;
       ctx.fillStyle = color;
       ctx.fillText(text, x, y);
     };
 
-    drawText('Bonsoir,', pad, 34, 16, '400');
+    drawText('Bonsoir,', pad, 30, 13, '400');
     ctx.fillStyle = '#ecfeff';
-    roundRect(pad, 54, width - pad * 2, 56, 10);
+    roundRect(pad, 46, width - pad * 2, 48, 8);
     ctx.fill();
     ctx.strokeStyle = '#a5f3fc';
     ctx.stroke();
-    drawText('Récapitulatif de clôture', pad + 18, 78, 12, '700', '#0f766e');
-    drawText(selectedDayLabel, pad + 18, 100, 18, '700', '#0f172a');
+    drawText('Récapitulatif de clôture', pad + 14, 68, 10, '700', '#0f766e');
+    drawText(selectedDayLabel, pad + 14, 88, 15, '700', '#0f172a');
 
-    let y = 130;
+    let y = 112;
     sections.forEach(section => {
       const h = cardHeight(section);
       ctx.fillStyle = section.title === 'Journée' ? '#eff6ff' : '#ffffff';
-      roundRect(pad, y, width - pad * 2, h, 10);
+      roundRect(pad, y, width - pad * 2, h, 8);
       ctx.fill();
       ctx.strokeStyle = '#dbe3ef';
       ctx.stroke();
       ctx.fillStyle = section.accent;
-      roundRect(pad, y, 6, h, 6);
+      roundRect(pad, y, 5, h, 5);
       ctx.fill();
-      drawText(section.title.toUpperCase(), pad + 20, y + 28, 16, '700', '#0f172a');
-      let cy = y + 56;
+      drawText(section.title.toUpperCase(), pad + 16, y + 24, 13, '700', '#0f172a');
+      let cy = y + 46;
       if (section.manager) {
-        drawText(`Responsable : ${section.manager}`, pad + 20, cy, 14, '700', '#334155');
-        cy += 26;
+        drawText(`Responsable : ${section.manager}`, pad + 16, cy, 12, '700', '#334155');
+        cy += 22;
       }
       section.rows.forEach(row => {
-        drawText(row.label, pad + 20, cy, 14, '400', '#475569');
-        drawText(row.value, pad + 230, cy, 14, '700', row.color || '#0f172a');
+        drawText(row.label, pad + 16, cy, 12, '400', '#475569');
+        drawText(row.value, pad + 185, cy, 12, '700', row.color || '#0f172a');
         cy += lineH;
       });
       if (section.comment) {
-        drawText(`Commentaire : ${section.comment}`, pad + 20, cy + 8, 14, '700', '#334155');
+        drawText(`Commentaire : ${section.comment}`, pad + 16, cy + 8, 12, '700', '#334155');
       }
       y += h + cardGap;
     });
-    drawText('Bonne soirée,', pad, y + 8, 16, '400');
-    drawText('Cordialement,', pad, y + 36, 16, '400');
+    drawText('Bonne soirée,', pad, y + 8, 13, '400');
+    drawText('Cordialement,', pad, y + 32, 13, '400');
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(nextBlob => nextBlob ? resolve(nextBlob) : reject(new Error('Image non générée')), 'image/png');

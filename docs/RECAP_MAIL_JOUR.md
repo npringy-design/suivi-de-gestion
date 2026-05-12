@@ -40,6 +40,7 @@ Le mail contient :
 - Outlook web est utilise en priorite via son lien de composition, avec le sujet encode via `encodeURIComponent` pour eviter les `+` visibles.
 - Le corps Outlook reste vide volontairement : l'utilisateur colle directement l'image avec `Ctrl+V`, sans devoir faire `Ctrl+A`.
 - Le rendu principal est une image PNG generee en canvas, pour eviter les deformations de capture HTML et les bordures parasites.
+- L'image est volontairement generee en largeur reduite pour rester proportionnee dans Outlook et contient une marge basse de securite pour eviter les coupes.
 - Cette solution preserve les couleurs et les blocs, meme si le texte n'est plus selectionnable dans le mail.
 - Si la generation image echoue, l'application copie la version HTML dans le presse-papiers et ouvre Outlook pour collage manuel.
 - Si la copie riche echoue aussi, l'application revient au `mailto:` en texte brut pour ne pas bloquer l'envoi.
