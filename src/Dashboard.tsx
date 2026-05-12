@@ -2068,6 +2068,17 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const buildDailyRecapText = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).text;
   const buildDailyRecapHtml = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).html;
+  const buildOutlookComposeUrl = (subject: string, htmlBody: string, textBody: string) => {
+    const baseUrl = 'https://outlook.office.com/mail/deeplink/compose';
+    const params = new URLSearchParams({
+      subject,
+      body: htmlBody,
+    });
+    const url = `${baseUrl}?${params.toString()}`;
+    if (url.length < 7000) return url;
+
+    return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(textBody)}`;
+  };
 
   const openDailyRecapPreview = () => {
     setDailyRecapStatus('');
@@ -2104,9 +2115,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         document.execCommand('copy');
         document.body.removeChild(textArea);
       }
-      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
+      window.location.href = buildOutlookComposeUrl(subject, recapHtml, recapText);
       setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus('Mail ouvert avec le texte et récap mis en forme copié pour collage si besoin.');
+      setDailyRecapStatus('Mail Outlook ouvert avec le récap mis en forme.');
     } catch {
       window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
       setIsDailyRecapModalOpen(false);
