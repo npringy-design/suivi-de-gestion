@@ -1764,11 +1764,42 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       if (isPdf) {
         setInvoiceImportStatus('Lecture IA de la facture...');
-        const visionResult = await parseInvoiceWithVision(file, file.name);
-        if (visionResult?.amountHt || visionResult?.invoiceDate) {
-          setInvoiceImportPreview(visionResult);
-          setInvoiceImportStatus(visionResult.status);
-          return;
+        try {
+          const imageParts = await renderPdfInvoiceImageParts(file);
+          const response = imageParts.length > 0
+            ? await fetch('/api/invoice-vision', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                imageParts,
+                knownSuppliers: getKnownInvoiceSuppliers(),
+              }),
+            })
+            : null;
+
+          if (response?.ok) {
+            const data = await response.json();
+            const invoice = data?.invoice;
+            if (invoice) {
+              const targetCol = Number(invoice.targetCol);
+              const amountHt = Number(invoice.amountHt);
+              const preview: InvoiceImportPreview = {
+                fileName: file.name,
+                supplier: String(invoice.supplier || 'Fournisseur non reconnu'),
+                amountHt: Number.isFinite(amountHt) && amountHt > 0 ? amountHt.toFixed(2) : '',
+                invoiceDate: String(invoice.invoiceDate || ''),
+                targetCol: targetCol >= 45 && targetCol <= 57 ? targetCol : 45,
+                status: amountHt && invoice.invoiceDate
+                  ? 'Lecture IA prête à valider.'
+                  : 'Vérifie le montant ou la date avant validation.',
+              };
+              setInvoiceImportPreview(preview);
+              setInvoiceImportStatus(preview.status);
+              return;
+            }
+          }
+        } catch {
+          // Si l'IA n'est pas disponible, l'import continue avec la lecture locale.
         }
       }
 
