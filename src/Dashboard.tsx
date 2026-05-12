@@ -2119,6 +2119,141 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       document.body.removeChild(captureHost);
     }
   };
+  const copyDailyRecapCanvasImageToClipboard = async (
+    options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> },
+    ClipboardItemCtor: typeof ClipboardItem,
+  ) => {
+    const totalCa = parseDashboardNumber(getDailyCellValue(21));
+    const budgetCa = parseDashboardNumber(getDailyCellValue(3));
+    const totalCovers = parseDashboardNumber(getDailyCellValue(29));
+    const budgetCovers = parseDashboardNumber(getDailyCellValue(10));
+    const ticketMoyen = parseDashboardNumber(getDailyCellValue(30));
+    const budgetTicketMoyen = parseDashboardNumber(getDailyCellValue(11));
+    const vae = parseDashboardNumber(getDailyCellValue(17));
+    const limonade = parseDashboardNumber(getDailyCellValue(20));
+    const midi = getDailyRecapService('Midi', 18, 25, 26, 0, 6, 7);
+    const soir = getDailyRecapService('Soir', 19, 27, 28, 1, 8, 9);
+    const googleRatings = [5, 4, 3, 2, 1]
+      .map(stars => ({ stars, value: Number(String(options.googleRatings?.[stars] || '').replace(',', '.')) || 0 }))
+      .filter(item => item.value > 0);
+
+    const width = 820;
+    const pad = 28;
+    const cardGap = 16;
+    const lineH = 24;
+    const rows: Array<{ label: string; value: string; color?: string }> = [];
+    const sections: Array<{ title: string; accent: string; rows: Array<{ label: string; value: string; color?: string }>; manager?: string; comment?: string }> = [];
+    const deltaColor = (value: number) => value < 0 ? '#dc2626' : value > 0 ? '#15803d' : '#334155';
+    const deltaText = (value: number, suffix = '', budget = 0, decimals = 2) => `${formatDailyRecapDelta(value, decimals)}${suffix}${formatDailyRecapPercent(value, budget)}`;
+    const pushService = (service: ReturnType<typeof getDailyRecapService>, manager: string, comment: string, accent: string) => {
+      const serviceRows = [
+        { label: 'CA HT', value: formatDailyRecapCurrency(service.ca) },
+        ...(service.covers > 0 ? [{ label: 'Couverts', value: formatDailyRecapInteger(service.covers) }] : []),
+        ...(service.tm > 0 ? [{ label: 'Ticket moyen', value: formatDailyRecapTicket(service.tm) }] : []),
+        ...(service.budgetCa > 0 ? [{ label: 'VS budget CA', value: deltaText(service.ca - service.budgetCa, ' €', service.budgetCa), color: deltaColor(service.ca - service.budgetCa) }] : []),
+        ...(service.budgetCovers > 0 && service.covers > 0 ? [{ label: 'VS budget couverts', value: deltaText(service.covers - service.budgetCovers, '', service.budgetCovers, 0), color: deltaColor(service.covers - service.budgetCovers) }] : []),
+        ...(service.budgetTm > 0 && service.tm > 0 ? [{ label: 'VS budget TM', value: deltaText(service.tm - service.budgetTm, ' €', service.budgetTm), color: deltaColor(service.tm - service.budgetTm) }] : []),
+      ];
+      sections.push({ title: service.label, accent, rows: serviceRows, manager: manager.trim(), comment: comment.trim() });
+    };
+    pushService(midi, options.managerMidi || '', options.commentMidi || '', '#0f766e');
+    pushService(soir, options.managerSoir || '', options.commentSoir || '', '#0f766e');
+    rows.push(
+      { label: 'CA HT', value: formatDailyRecapCurrency(totalCa) },
+      { label: 'Couverts', value: formatDailyRecapInteger(totalCovers) },
+      { label: 'Ticket moyen', value: formatDailyRecapTicket(ticketMoyen) },
+    );
+    if (budgetCa > 0) rows.push({ label: 'VS budget CA', value: deltaText(totalCa - budgetCa, ' €', budgetCa), color: deltaColor(totalCa - budgetCa) });
+    if (budgetCovers > 0) rows.push({ label: 'VS budget couverts', value: deltaText(totalCovers - budgetCovers, '', budgetCovers, 0), color: deltaColor(totalCovers - budgetCovers) });
+    if (budgetTicketMoyen > 0) rows.push({ label: 'VS budget TM', value: deltaText(ticketMoyen - budgetTicketMoyen, ' €', budgetTicketMoyen), color: deltaColor(ticketMoyen - budgetTicketMoyen) });
+    if (vae > 0) rows.push({ label: 'VAE', value: formatDailyRecapCurrency(vae) });
+    if (limonade > 0) rows.push({ label: 'Limonade', value: formatDailyRecapCurrency(limonade) });
+    sections.push({ title: 'Journée', accent: '#2563eb', rows });
+    if (googleRatings.length > 0) {
+      sections.push({
+        title: 'Notes Google',
+        accent: '#64748b',
+        rows: googleRatings.map(item => ({ label: `${item.stars} étoile${item.stars > 1 ? 's' : ''}`, value: formatDailyRecapInteger(item.value) })),
+      });
+    }
+
+    const cardHeight = (section: typeof sections[number]) => (
+      60 + section.rows.length * lineH + (section.manager ? 26 : 0) + (section.comment ? 34 : 0)
+    );
+    const contentHeight = 116 + sections.reduce((sum, section) => sum + cardHeight(section) + cardGap, 0) + 40;
+    const dpr = Math.max(2, window.devicePixelRatio || 1);
+    const canvas = document.createElement('canvas');
+    canvas.width = width * dpr;
+    canvas.height = contentHeight * dpr;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas indisponible');
+    ctx.scale(dpr, dpr);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, contentHeight);
+
+    const roundRect = (x: number, y: number, w: number, h: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    };
+    const drawText = (text: string, x: number, y: number, size = 16, weight = '400', color = '#111827') => {
+      ctx.font = `${weight} ${size}px Arial, sans-serif`;
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y);
+    };
+
+    drawText('Bonsoir,', pad, 34, 16, '400');
+    ctx.fillStyle = '#ecfeff';
+    roundRect(pad, 54, width - pad * 2, 56, 10);
+    ctx.fill();
+    ctx.strokeStyle = '#a5f3fc';
+    ctx.stroke();
+    drawText('Récapitulatif de clôture', pad + 18, 78, 12, '700', '#0f766e');
+    drawText(selectedDayLabel, pad + 18, 100, 18, '700', '#0f172a');
+
+    let y = 130;
+    sections.forEach(section => {
+      const h = cardHeight(section);
+      ctx.fillStyle = section.title === 'Journée' ? '#eff6ff' : '#ffffff';
+      roundRect(pad, y, width - pad * 2, h, 10);
+      ctx.fill();
+      ctx.strokeStyle = '#dbe3ef';
+      ctx.stroke();
+      ctx.fillStyle = section.accent;
+      roundRect(pad, y, 6, h, 6);
+      ctx.fill();
+      drawText(section.title.toUpperCase(), pad + 20, y + 28, 16, '700', '#0f172a');
+      let cy = y + 56;
+      if (section.manager) {
+        drawText(`Responsable : ${section.manager}`, pad + 20, cy, 14, '700', '#334155');
+        cy += 26;
+      }
+      section.rows.forEach(row => {
+        drawText(row.label, pad + 20, cy, 14, '400', '#475569');
+        drawText(row.value, pad + 230, cy, 14, '700', row.color || '#0f172a');
+        cy += lineH;
+      });
+      if (section.comment) {
+        drawText(`Commentaire : ${section.comment}`, pad + 20, cy + 8, 14, '700', '#334155');
+      }
+      y += h + cardGap;
+    });
+    drawText('Bonne soirée,', pad, y + 8, 16, '400');
+    drawText('Cordialement,', pad, y + 36, 16, '400');
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(nextBlob => nextBlob ? resolve(nextBlob) : reject(new Error('Image non générée')), 'image/png');
+    });
+    await navigator.clipboard.write([new ClipboardItemCtor({ 'image/png': blob })]);
+  };
 
   const openDailyRecapPreview = () => {
     setDailyRecapStatus('');
@@ -2135,7 +2270,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       googleRatings: dailyRecapGoogleRatings,
     };
     const { text: recapText, html: recapHtml } = buildDailyRecapReport(recapOptions);
-    const outlookUrl = buildOutlookComposeUrl(subject, recapText);
+    const outlookUrl = buildOutlookComposeUrl(subject);
     const ClipboardItemCtor = (window as Window & { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
     const openOutlook = () => {
       const opened = window.open(outlookUrl, '_blank');
@@ -2144,10 +2279,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
     if (navigator.clipboard?.write && ClipboardItemCtor) {
       try {
-        await copyDailyRecapImageToClipboard(recapHtml, ClipboardItemCtor);
+        await copyDailyRecapCanvasImageToClipboard(recapOptions, ClipboardItemCtor);
         openOutlook();
         setIsDailyRecapModalOpen(false);
-        setDailyRecapStatus('Mail prérempli en texte et image copiée. Pour le rendu propre : Ctrl+A dans le corps, puis Ctrl+V.');
+        setDailyRecapStatus('Image copiée. Dans Outlook, clique dans le corps du mail puis Ctrl+V.');
         return;
       } catch {
         // Si la capture image echoue, on tente le fallback HTML juste apres.
