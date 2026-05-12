@@ -1893,13 +1893,21 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     budget > 0 ? ` (${formatDailyRecapDelta((delta / budget) * 100, 1)}%)` : ''
   );
   const dailyRecapDeltaClass = (value: number) => value < 0 ? 'negative' : value > 0 ? 'positive' : 'neutral';
-  const dailyRecapDeltaHtml = (value: number, suffix = ' €') => `<span class="${dailyRecapDeltaClass(value)}">${formatDailyRecapDelta(value)}${suffix}</span>`;
+  const dailyRecapDeltaColor = (value: number) => value < 0 ? '#dc2626' : value > 0 ? '#15803d' : '#334155';
+  const dailyRecapDeltaHtml = (value: number, suffix = ' €') => `<strong style="color:${dailyRecapDeltaColor(value)}">${formatDailyRecapDelta(value)}${suffix}</strong>`;
   const escapeDailyRecapHtml = (value: string) => value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+  const dailyRecapTextLine = (label: string, value: string) => `  ${label.padEnd(18, ' ')} : ${value}`;
+  const dailyRecapMetricHtml = (label: string, value: string) => (
+    `<tr><td style="padding:3px 18px 3px 0;color:#475569">${label}</td><td style="padding:3px 0;font-weight:700;color:#0f172a">${value}</td></tr>`
+  );
+  const dailyRecapBudgetHtml = (label: string, value: number, suffix = ' €', percent = '') => (
+    `<tr><td style="padding:3px 18px 3px 0;color:#475569">${label}</td><td style="padding:3px 0">${dailyRecapDeltaHtml(value, suffix)}${percent}</td></tr>`
+  );
 
   const getDailyRecapService = (label: string, caCol: number, coversCol: number, tmCol: number, budgetCaCol: number, budgetCoversCol: number, budgetTmCol: number) => {
     const ca = parseDashboardNumber(getDailyCellValue(caCol));
@@ -1916,19 +1924,26 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     manager: string,
     comment: string,
   ) => {
-    const lines = [service.label, manager.trim() ? `- Responsable : ${manager.trim()}` : ''];
+    const budgetLines = [
+      service.budgetCa > 0 ? dailyRecapTextLine('CA', `${formatDailyRecapDelta(service.ca - service.budgetCa)} €${formatDailyRecapPercent(service.ca - service.budgetCa, service.budgetCa)}`) : '',
+      service.budgetCovers > 0 && service.covers > 0 ? dailyRecapTextLine('Couverts', formatDailyRecapDelta(service.covers - service.budgetCovers, 0)) : '',
+      service.budgetTm > 0 && service.tm > 0 ? dailyRecapTextLine('Ticket moyen', `${formatDailyRecapDelta(service.tm - service.budgetTm)} €`) : '',
+    ].filter(Boolean);
+    const lines = [
+      `----- ${service.label.toUpperCase()} -----`,
+      manager.trim() ? `Responsable : ${manager.trim()}` : '',
+    ];
     if (service.ca > 0 || service.covers > 0 || service.tm > 0) {
       lines.push(
-        `- Réalisé ${service.label.toLowerCase()} :`,
-        `    CA réalisé HT : ${formatDailyRecapCurrency(service.ca)}`,
-        ...(service.covers > 0 ? [`    Couverts : ${formatDailyRecapInteger(service.covers)}`] : []),
-        ...(service.tm > 0 ? [`    Ticket moyen : ${formatDailyRecapTicket(service.tm)}`] : []),
+        '',
+        'Réalisé',
+        dailyRecapTextLine('CA HT', formatDailyRecapCurrency(service.ca)),
+        ...(service.covers > 0 ? [dailyRecapTextLine('Couverts', formatDailyRecapInteger(service.covers))] : []),
+        ...(service.tm > 0 ? [dailyRecapTextLine('Ticket moyen', formatDailyRecapTicket(service.tm))] : []),
       );
     }
-    if (service.budgetCa > 0) lines.push(`    VS budget CA : ${formatDailyRecapDelta(service.ca - service.budgetCa)} €${formatDailyRecapPercent(service.ca - service.budgetCa, service.budgetCa)}`);
-    if (service.budgetCovers > 0 && service.covers > 0) lines.push(`    VS budget couverts : ${formatDailyRecapDelta(service.covers - service.budgetCovers, 0)}`);
-    if (service.budgetTm > 0 && service.tm > 0) lines.push(`    VS budget ticket moyen : ${formatDailyRecapDelta(service.tm - service.budgetTm)} €`);
-    if (comment.trim()) lines.push(`- Commentaire : ${comment.trim()}`);
+    if (budgetLines.length > 0) lines.push('', 'Écart vs budget', ...budgetLines);
+    if (comment.trim()) lines.push('', `Commentaire : ${comment.trim()}`);
     return lines.filter(Boolean);
   };
 
@@ -1937,20 +1952,27 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     manager: string,
     comment: string,
   ) => {
-    const rows = [manager.trim() ? `<p>- Responsable : ${escapeDailyRecapHtml(manager.trim())}</p>` : ''];
+    const realisedRows = [
+      service.ca > 0 ? dailyRecapMetricHtml('CA HT', formatDailyRecapCurrency(service.ca)) : '',
+      service.covers > 0 ? dailyRecapMetricHtml('Couverts', formatDailyRecapInteger(service.covers)) : '',
+      service.tm > 0 ? dailyRecapMetricHtml('Ticket moyen', formatDailyRecapTicket(service.tm)) : '',
+    ].filter(Boolean).join('');
+    const budgetRows = [
+      service.budgetCa > 0 ? dailyRecapBudgetHtml('CA', service.ca - service.budgetCa, ' €', formatDailyRecapPercent(service.ca - service.budgetCa, service.budgetCa)) : '',
+      service.budgetCovers > 0 && service.covers > 0 ? dailyRecapBudgetHtml('Couverts', service.covers - service.budgetCovers, '') : '',
+      service.budgetTm > 0 && service.tm > 0 ? dailyRecapBudgetHtml('Ticket moyen', service.tm - service.budgetTm) : '',
+    ].filter(Boolean).join('');
     if (service.ca > 0 || service.covers > 0 || service.tm > 0) {
-      rows.push(`<p>- Réalisé ${service.label.toLowerCase()} :</p>`);
-      rows.push('<div class="metric-block">');
-      rows.push(`<div><span>CA réalisé HT :</span> <strong>${formatDailyRecapCurrency(service.ca)}</strong></div>`);
-      if (service.covers > 0) rows.push(`<div><span>Couverts :</span> <strong>${formatDailyRecapInteger(service.covers)}</strong></div>`);
-      if (service.tm > 0) rows.push(`<div><span>Ticket moyen :</span> <strong>${formatDailyRecapTicket(service.tm)}</strong></div>`);
-      rows.push('</div>');
+      return `<section style="margin:18px 0;padding:14px 16px;border:1px solid #dbe3ef;border-left:5px solid #0f766e;border-radius:10px;background:#ffffff">
+        <h3 style="margin:0 0 10px;font-size:16px;color:#0f172a;text-transform:uppercase">${service.label}</h3>
+        ${manager.trim() ? `<p style="margin:0 0 12px;color:#334155"><strong>Responsable :</strong> ${escapeDailyRecapHtml(manager.trim())}</p>` : ''}
+        <p style="margin:0 0 4px;font-weight:700;color:#0f766e">Réalisé</p>
+        <table cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 10px 0">${realisedRows}</table>
+        ${budgetRows ? `<p style="margin:10px 0 4px;font-weight:700;color:#64748b">Écart vs budget</p><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 10px 0">${budgetRows}</table>` : ''}
+        ${comment.trim() ? `<p style="margin:10px 0 0;padding:8px 10px;background:#f8fafc;border-radius:8px;color:#334155"><strong>Commentaire :</strong> ${escapeDailyRecapHtml(comment.trim())}</p>` : ''}
+      </section>`;
     }
-    if (service.budgetCa > 0) rows.push(`<p class="budget">- VS budget CA : ${dailyRecapDeltaHtml(service.ca - service.budgetCa)}${formatDailyRecapPercent(service.ca - service.budgetCa, service.budgetCa)}</p>`);
-    if (service.budgetCovers > 0 && service.covers > 0) rows.push(`<p class="budget">- VS budget couverts : ${dailyRecapDeltaHtml(service.covers - service.budgetCovers, '')}</p>`);
-    if (service.budgetTm > 0 && service.tm > 0) rows.push(`<p class="budget">- VS budget ticket moyen : ${dailyRecapDeltaHtml(service.tm - service.budgetTm)}</p>`);
-    if (comment.trim()) rows.push(`<p>- Commentaire : ${escapeDailyRecapHtml(comment.trim())}</p>`);
-    return `<section><h3>${service.label}</h3>${rows.filter(Boolean).join('')}</section>`;
+    return '';
   };
 
   const buildDailyRecapReport = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => {
@@ -1972,30 +1994,34 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       .map(stars => ({ stars, value: Number(String(options.googleRatings?.[stars] || '').replace(',', '.')) || 0 }))
       .filter(item => item.value > 0);
 
+    const jourBudgetLines = [
+      budgetCa > 0 ? dailyRecapTextLine('CA', `${formatDailyRecapDelta(totalCa - budgetCa)} €${formatDailyRecapPercent(totalCa - budgetCa, budgetCa)}`) : '',
+      budgetCovers > 0 ? dailyRecapTextLine('Couverts', formatDailyRecapDelta(totalCovers - budgetCovers, 0)) : '',
+      budgetTicketMoyen > 0 ? dailyRecapTextLine('Ticket moyen', `${formatDailyRecapDelta(ticketMoyen - budgetTicketMoyen)} €`) : '',
+    ].filter(Boolean);
     const jourText = [
-      'Journée',
-      `- CA HT réalisé : ${formatDailyRecapCurrency(totalCa)}`,
-      budgetCa > 0 ? `    VS budget CA : ${formatDailyRecapDelta(totalCa - budgetCa)} €${formatDailyRecapPercent(totalCa - budgetCa, budgetCa)}` : '',
-      `- Couverts : ${formatDailyRecapInteger(totalCovers)}`,
-      budgetCovers > 0 ? `    VS budget couverts : ${formatDailyRecapDelta(totalCovers - budgetCovers, 0)}` : '',
-      `- Ticket moyen : ${formatDailyRecapTicket(ticketMoyen)}`,
-      budgetTicketMoyen > 0 ? `    VS budget ticket moyen : ${formatDailyRecapDelta(ticketMoyen - budgetTicketMoyen)} €` : '',
-      vae > 0 ? `- VAE : ${formatDailyRecapCurrency(vae)}` : '',
-      limonade > 0 ? `- Limonade : ${formatDailyRecapCurrency(limonade)}${limonadeCovers > 0 ? ` | ${formatDailyRecapInteger(limonadeCovers)} couverts` : ''}${limonadeTm > 0 ? ` | TM ${formatDailyRecapTicket(limonadeTm)}` : ''}` : '',
+      '----- JOURNÉE -----',
+      'Synthèse',
+      dailyRecapTextLine('CA HT', formatDailyRecapCurrency(totalCa)),
+      dailyRecapTextLine('Couverts', formatDailyRecapInteger(totalCovers)),
+      dailyRecapTextLine('Ticket moyen', formatDailyRecapTicket(ticketMoyen)),
+      vae > 0 ? dailyRecapTextLine('VAE', formatDailyRecapCurrency(vae)) : '',
+      limonade > 0 ? dailyRecapTextLine('Limonade', `${formatDailyRecapCurrency(limonade)}${limonadeCovers > 0 ? ` | ${formatDailyRecapInteger(limonadeCovers)} couverts` : ''}${limonadeTm > 0 ? ` | TM ${formatDailyRecapTicket(limonadeTm)}` : ''}`) : '',
+      ...(jourBudgetLines.length > 0 ? ['', 'Écart vs budget', ...jourBudgetLines] : []),
     ].filter(Boolean);
 
     const textSections = [
       'Bonsoir,',
       '',
-      `Voici le récap des chiffres réalisés du ${selectedDayLabel}.`,
+      `Voici le récap de clôture du ${selectedDayLabel}.`,
       '',
       ...buildDailyRecapServiceText(midi, options.managerMidi || '', options.commentMidi || ''),
       '',
       ...buildDailyRecapServiceText(soir, options.managerSoir || '', options.commentSoir || ''),
       '',
       ...jourText,
-      ...(eventRestaurant || eventNational ? ['', 'Événements', ...(eventRestaurant ? [`- Restaurant : ${eventRestaurant}`] : []), ...(eventNational ? [`- National : ${eventNational}`] : [])] : []),
-      ...(googleRatings.length > 0 ? ['', 'Notes Google', ...googleRatings.map(item => `- ${item.stars} étoile${item.stars > 1 ? 's' : ''} : ${formatDailyRecapInteger(item.value)}`)] : []),
+      ...(eventRestaurant || eventNational ? ['', '----- ÉVÉNEMENTS -----', ...(eventRestaurant ? [dailyRecapTextLine('Restaurant', eventRestaurant)] : []), ...(eventNational ? [dailyRecapTextLine('National', eventNational)] : [])] : []),
+      ...(googleRatings.length > 0 ? ['', '----- NOTES GOOGLE -----', ...googleRatings.map(item => dailyRecapTextLine(`${item.stars} étoile${item.stars > 1 ? 's' : ''}`, formatDailyRecapInteger(item.value)))] : []),
       '',
       'Bonne soirée,',
       '',
@@ -2003,20 +2029,39 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     ];
 
     const jourHtmlRows = [
-      `<p>- CA HT réalisé : <strong>${formatDailyRecapCurrency(totalCa)}</strong></p>`,
-      budgetCa > 0 ? `<p class="budget">- VS budget CA : ${dailyRecapDeltaHtml(totalCa - budgetCa)}${formatDailyRecapPercent(totalCa - budgetCa, budgetCa)}</p>` : '',
-      `<p>- Couverts : <strong>${formatDailyRecapInteger(totalCovers)}</strong></p>`,
-      budgetCovers > 0 ? `<p class="budget">- VS budget couverts : ${dailyRecapDeltaHtml(totalCovers - budgetCovers, '')}</p>` : '',
-      `<p>- Ticket moyen : <strong>${formatDailyRecapTicket(ticketMoyen)}</strong></p>`,
-      budgetTicketMoyen > 0 ? `<p class="budget">- VS budget ticket moyen : ${dailyRecapDeltaHtml(ticketMoyen - budgetTicketMoyen)}</p>` : '',
-      vae > 0 ? `<p>- VAE : <strong>${formatDailyRecapCurrency(vae)}</strong></p>` : '',
-      limonade > 0 ? `<p>- Limonade : <strong>${formatDailyRecapCurrency(limonade)}</strong>${limonadeCovers > 0 ? ` | ${formatDailyRecapInteger(limonadeCovers)} couverts` : ''}${limonadeTm > 0 ? ` | TM ${formatDailyRecapTicket(limonadeTm)}` : ''}</p>` : '',
+      dailyRecapMetricHtml('CA HT', formatDailyRecapCurrency(totalCa)),
+      dailyRecapMetricHtml('Couverts', formatDailyRecapInteger(totalCovers)),
+      dailyRecapMetricHtml('Ticket moyen', formatDailyRecapTicket(ticketMoyen)),
+      vae > 0 ? dailyRecapMetricHtml('VAE', formatDailyRecapCurrency(vae)) : '',
+      limonade > 0 ? dailyRecapMetricHtml('Limonade', `${formatDailyRecapCurrency(limonade)}${limonadeCovers > 0 ? ` | ${formatDailyRecapInteger(limonadeCovers)} couverts` : ''}${limonadeTm > 0 ? ` | TM ${formatDailyRecapTicket(limonadeTm)}` : ''}`) : '',
+    ].filter(Boolean).join('');
+    const jourBudgetHtmlRows = [
+      budgetCa > 0 ? dailyRecapBudgetHtml('CA', totalCa - budgetCa, ' €', formatDailyRecapPercent(totalCa - budgetCa, budgetCa)) : '',
+      budgetCovers > 0 ? dailyRecapBudgetHtml('Couverts', totalCovers - budgetCovers, '') : '',
+      budgetTicketMoyen > 0 ? dailyRecapBudgetHtml('Ticket moyen', ticketMoyen - budgetTicketMoyen) : '',
     ].filter(Boolean).join('');
     const optionalHtml = [
-      eventRestaurant || eventNational ? `<section><h3>Événements</h3>${eventRestaurant ? `<p>- Restaurant : ${escapeDailyRecapHtml(eventRestaurant)}</p>` : ''}${eventNational ? `<p>- National : ${escapeDailyRecapHtml(eventNational)}</p>` : ''}</section>` : '',
-      googleRatings.length > 0 ? `<section><h3>Notes Google</h3>${googleRatings.map(item => `<p>- ${item.stars} étoile${item.stars > 1 ? 's' : ''} : ${formatDailyRecapInteger(item.value)}</p>`).join('')}</section>` : '',
+      eventRestaurant || eventNational ? `<section style="margin:18px 0;padding:14px 16px;border:1px solid #fde68a;border-left:5px solid #f59e0b;border-radius:10px;background:#fffbeb"><h3 style="margin:0 0 10px;font-size:16px;color:#92400e;text-transform:uppercase">Événements</h3>${eventRestaurant ? `<p style="margin:2px 0"><strong>Restaurant :</strong> ${escapeDailyRecapHtml(eventRestaurant)}</p>` : ''}${eventNational ? `<p style="margin:2px 0"><strong>National :</strong> ${escapeDailyRecapHtml(eventNational)}</p>` : ''}</section>` : '',
+      googleRatings.length > 0 ? `<section style="margin:18px 0;padding:14px 16px;border:1px solid #dbe3ef;border-left:5px solid #64748b;border-radius:10px;background:#ffffff"><h3 style="margin:0 0 10px;font-size:16px;color:#0f172a;text-transform:uppercase">Notes Google</h3><table cellspacing="0" cellpadding="0" style="border-collapse:collapse">${googleRatings.map(item => dailyRecapMetricHtml(`${item.stars} étoile${item.stars > 1 ? 's' : ''}`, formatDailyRecapInteger(item.value))).join('')}</table></section>` : '',
     ].filter(Boolean).join('');
-    const html = `<div class="daily-recap-mail"><style>.daily-recap-mail{font-family:Arial,sans-serif;color:#111827;line-height:1.45}.daily-recap-mail h3{margin:18px 0 6px}.daily-recap-mail p{margin:2px 0}.daily-recap-mail .metric-block{margin:0 0 6px 20px}.daily-recap-mail .metric-block div{margin:2px 0}.daily-recap-mail .positive{color:#15803d;font-weight:700}.daily-recap-mail .negative{color:#dc2626;font-weight:700}.daily-recap-mail .neutral{color:#334155;font-weight:700}.daily-recap-mail .budget{margin-left:20px}</style><p>Bonsoir,</p><p>Voici le récap des chiffres réalisés du ${escapeDailyRecapHtml(selectedDayLabel)}.</p>${buildDailyRecapServiceHtml(midi, options.managerMidi || '', options.commentMidi || '')}${buildDailyRecapServiceHtml(soir, options.managerSoir || '', options.commentSoir || '')}<section><h3>Journée</h3>${jourHtmlRows}</section>${optionalHtml}<p style="margin-top:18px">Bonne soirée,</p><p>Cordialement,</p></div>`;
+    const html = `<div style="font-family:Arial,sans-serif;color:#111827;line-height:1.45;max-width:720px">
+      <p style="margin:0 0 12px">Bonsoir,</p>
+      <div style="margin:0 0 18px;padding:14px 16px;border-radius:10px;background:#ecfeff;border:1px solid #a5f3fc">
+        <p style="margin:0;color:#0f766e;font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.04em">Récapitulatif de clôture</p>
+        <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:#0f172a">${escapeDailyRecapHtml(selectedDayLabel)}</p>
+      </div>
+      ${buildDailyRecapServiceHtml(midi, options.managerMidi || '', options.commentMidi || '')}
+      ${buildDailyRecapServiceHtml(soir, options.managerSoir || '', options.commentSoir || '')}
+      <section style="margin:18px 0;padding:14px 16px;border:1px solid #bfdbfe;border-left:5px solid #2563eb;border-radius:10px;background:#eff6ff">
+        <h3 style="margin:0 0 10px;font-size:16px;color:#1e3a8a;text-transform:uppercase">Journée</h3>
+        <p style="margin:0 0 4px;font-weight:700;color:#1d4ed8">Synthèse</p>
+        <table cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 10px 0">${jourHtmlRows}</table>
+        ${jourBudgetHtmlRows ? `<p style="margin:10px 0 4px;font-weight:700;color:#64748b">Écart vs budget</p><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 10px 0">${jourBudgetHtmlRows}</table>` : ''}
+      </section>
+      ${optionalHtml}
+      <p style="margin:18px 0 0">Bonne soirée,</p>
+      <p style="margin:12px 0 0">Cordialement,</p>
+    </div>`;
 
     return { text: textSections.filter(line => line !== null && line !== undefined).join('\n'), html };
   };

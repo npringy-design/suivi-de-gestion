@@ -25,9 +25,9 @@ Le recap reprend les valeurs calculees de la journee selectionnee :
 Le mail contient :
 
 - une salutation ;
-- une section `Midi` avec le responsable midi, les chiffres midi separes par lignes et le commentaire midi si renseigne ;
-- une section `Soir` avec le responsable soir, les chiffres soir separes par lignes et le commentaire soir si renseigne ;
-- une section `Journee` avec CA HT, couverts, ticket moyen, VAE et limonade si ces elements existent ;
+- une section `Midi` avec un bloc `Realise`, un bloc `Ecart vs budget`, puis le commentaire midi si renseigne ;
+- une section `Soir` avec un bloc `Realise`, un bloc `Ecart vs budget`, puis le commentaire soir si renseigne ;
+- une section `Journee` avec un bloc `Synthese`, un bloc `Ecart vs budget`, VAE et limonade si ces elements existent ;
 - les ecarts VS budget quand un budget existe, affiches en vert si positif et rouge si negatif dans la version HTML ;
 - les evenements uniquement s'ils sont renseignes ;
 - les notes Google uniquement si au moins une case contient un nombre.
@@ -40,4 +40,5 @@ Le mail contient :
 - Les lignes dont la valeur est a zero, comme limonade ou VAE, ne doivent pas etre ajoutees au mail.
 - Le recap HTML est copie avant l'ouverture de la messagerie pour permettre un collage manuel avec les couleurs si le client mail ne reprend pas le contenu.
 - Le lien `mailto:` reste en texte brut selon les limites des clients mail ; il sert de raccourci d'ouverture et de secours.
+- La version texte doit rester lisible dans Outlook meme si la mise en forme HTML n'est pas reprise : titres de sections, valeurs alignees, et sous-blocs separes.
 - Si la messagerie ne s'ouvre pas, le message d'etat reste visible dans la page.
