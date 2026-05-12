@@ -2104,11 +2104,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         document.execCommand('copy');
         document.body.removeChild(textArea);
       }
-      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}`;
+      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
       setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus('Mail ouvert et récap mis en forme copié. Colle-le dans le corps du mail.');
+      setDailyRecapStatus('Mail ouvert avec le texte et récap mis en forme copié pour collage si besoin.');
     } catch {
-      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}`;
+      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
       setIsDailyRecapModalOpen(false);
       setDailyRecapStatus("Mail ouvert. Si la messagerie ne s'ouvre pas, le navigateur a bloqué le raccourci.");
     }
