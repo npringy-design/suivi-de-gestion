@@ -2068,16 +2068,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const buildDailyRecapText = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).text;
   const buildDailyRecapHtml = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).html;
-  const buildOutlookComposeUrl = (subject: string, htmlBody: string, textBody: string) => {
+  const buildOutlookComposeUrl = (subject: string) => {
     const baseUrl = 'https://outlook.office.com/mail/deeplink/compose';
-    const params = new URLSearchParams({
-      subject,
-      body: htmlBody,
-    });
-    const url = `${baseUrl}?${params.toString()}`;
-    if (url.length < 7000) return url;
-
-    return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(textBody)}`;
+    const params = new URLSearchParams({ subject });
+    return `${baseUrl}?${params.toString()}`;
   };
 
   const openDailyRecapPreview = () => {
@@ -2115,13 +2109,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         document.execCommand('copy');
         document.body.removeChild(textArea);
       }
-      window.location.href = buildOutlookComposeUrl(subject, recapHtml, recapText);
+      window.location.href = buildOutlookComposeUrl(subject);
       setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus('Mail Outlook ouvert avec le récap mis en forme.');
+      setDailyRecapStatus('Récap copié. Colle-le dans le corps du mail avec Ctrl+V.');
     } catch {
       window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
       setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus("Mail ouvert. Si la messagerie ne s'ouvre pas, le navigateur a bloqué le raccourci.");
+      setDailyRecapStatus("Mail ouvert en texte brut. Si la messagerie ne s'ouvre pas, le navigateur a bloqué le raccourci.");
     }
   };
   const dailyInputClass = "w-full h-8 rounded-md border border-slate-400 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
