@@ -319,6 +319,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [dailyRecapStatus, setDailyRecapStatus] = useState('');
   const [isDailyRecapModalOpen, setIsDailyRecapModalOpen] = useState(false);
   const [dailyRecapManagers, setDailyRecapManagers] = useState({ midi: '', soir: '' });
+  const [dailyRecapServiceComments, setDailyRecapServiceComments] = useState({ midi: '', soir: '' });
   const [dailyRecapComment, setDailyRecapComment] = useState('');
   const [dailyRecapGoogleRatings, setDailyRecapGoogleRatings] = useState<Record<number, string>>({ 1: '', 2: '', 3: '', 4: '', 5: '' });
   const [purchaseSupplierNames, setPurchaseSupplierNames] = useState<Record<number, string>>(() => {
@@ -1892,7 +1893,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const formatDailyRecapPercent = (delta: number, budget: number) => (
     budget > 0 ? ` (${formatDailyRecapDelta((delta / budget) * 100, 1)}%)` : ''
   );
-  const buildDailyRecapLine = (label: string, caCol: number, coversCol?: number, tmCol?: number, budgetCaCol?: number, budgetCoversCol?: number, budgetTmCol?: number) => {
+  const buildDailyRecapLine = (label: string, caCol: number, coversCol?: number, tmCol?: number, budgetCaCol?: number, budgetCoversCol?: number, budgetTmCol?: number, options: { includeBudget?: boolean } = {}) => {
     const ca = parseDashboardNumber(getDailyCellValue(caCol));
     const budgetCa = budgetCaCol !== undefined ? parseDashboardNumber(getDailyCellValue(budgetCaCol)) : 0;
     const covers = coversCol !== undefined ? parseDashboardNumber(getDailyCellValue(coversCol)) : 0;
@@ -1902,14 +1903,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     if (ca <= 0 && covers <= 0 && tm <= 0) return null;
 
     const parts = [`${label} : ${formatDailyRecapCurrency(ca)}`];
-    if (budgetCa > 0) parts.push(`vs budget ${formatDailyRecapCurrency(budgetCa)} soit ${formatDailyRecapDelta(ca - budgetCa)} EUR${formatDailyRecapPercent(ca - budgetCa, budgetCa)}`);
-    if (coversCol !== undefined && covers > 0) parts.push(`${formatDailyRecapInteger(covers)} couverts${budgetCovers > 0 ? ` vs ${formatDailyRecapInteger(budgetCovers)} budget (${formatDailyRecapDelta(covers - budgetCovers, 0)})` : ''}`);
-    if (tmCol !== undefined && tm > 0) parts.push(`TM ${formatDailyRecapTicket(tm)}${budgetTm > 0 ? ` vs ${formatDailyRecapTicket(budgetTm)} budget (${formatDailyRecapDelta(tm - budgetTm)} EUR)` : ''}`);
+    if (options.includeBudget && budgetCa > 0) parts.push(`vs budget ${formatDailyRecapCurrency(budgetCa)} soit ${formatDailyRecapDelta(ca - budgetCa)} EUR${formatDailyRecapPercent(ca - budgetCa, budgetCa)}`);
+    if (coversCol !== undefined && covers > 0) parts.push(`${formatDailyRecapInteger(covers)} couverts${options.includeBudget && budgetCovers > 0 ? ` vs ${formatDailyRecapInteger(budgetCovers)} budget (${formatDailyRecapDelta(covers - budgetCovers, 0)})` : ''}`);
+    if (tmCol !== undefined && tm > 0) parts.push(`TM ${formatDailyRecapTicket(tm)}${options.includeBudget && budgetTm > 0 ? ` vs ${formatDailyRecapTicket(budgetTm)} budget (${formatDailyRecapDelta(tm - budgetTm)} EUR)` : ''}`);
 
     return `- ${parts.join(' | ')}`;
   };
 
-  const buildDailyRecapText = (options: { managerMidi?: string; managerSoir?: string; comment?: string; googleRatings?: Record<number, string> } = {}) => {
+  const buildDailyRecapText = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; comment?: string; googleRatings?: Record<number, string> } = {}) => {
     const totalCa = parseDashboardNumber(getDailyCellValue(21));
     const budgetCa = parseDashboardNumber(getDailyCellValue(3));
     const totalCovers = parseDashboardNumber(getDailyCellValue(29));
@@ -1927,10 +1928,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const midiLines = [
       options.managerMidi?.trim() ? `- Responsable : ${options.managerMidi.trim()}` : '',
       buildDailyRecapLine('Realise midi', 18, 25, 26, 0, 6, 7),
+      options.commentMidi?.trim() ? `- Commentaire : ${options.commentMidi.trim()}` : '',
     ].filter(Boolean);
     const soirLines = [
       options.managerSoir?.trim() ? `- Responsable : ${options.managerSoir.trim()}` : '',
       buildDailyRecapLine('Realise soir', 19, 27, 28, 1, 8, 9),
+      options.commentSoir?.trim() ? `- Commentaire : ${options.commentSoir.trim()}` : '',
     ].filter(Boolean);
     const jourLines = [
       `- CA HT realise : ${formatDailyRecapCurrency(totalCa)}${budgetCa > 0 ? ` vs budget ${formatDailyRecapCurrency(budgetCa)}, ecart ${formatDailyRecapDelta(totalCa - budgetCa)} EUR${formatDailyRecapPercent(totalCa - budgetCa, budgetCa)}` : ''}`,
@@ -1973,6 +1976,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const recapText = buildDailyRecapText({
       managerMidi: dailyRecapManagers.midi,
       managerSoir: dailyRecapManagers.soir,
+      commentMidi: dailyRecapServiceComments.midi,
+      commentSoir: dailyRecapServiceComments.soir,
       comment: dailyRecapComment,
       googleRatings: dailyRecapGoogleRatings,
     });
@@ -3727,6 +3732,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   />
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Commentaire midi</span>
+                  <textarea
+                    value={dailyRecapServiceComments.midi}
+                    onChange={event => setDailyRecapServiceComments(prev => ({ ...prev, midi: event.target.value }))}
+                    style={{ minHeight: 70, resize: 'vertical', border: '1px solid #cbd5e1', borderRadius: 8, padding: 10, fontWeight: 700, color: '#0f172a', lineHeight: 1.45 }}
+                    placeholder="Commentaire spécifique au service midi..."
+                  />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Responsable soir</span>
                   <input
                     value={dailyRecapManagers.soir}
@@ -3734,7 +3748,17 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     style={{ height: 38, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
                     placeholder="Nom du responsable"
                   />
-                </label>                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Commentaire soir</span>
+                  <textarea
+                    value={dailyRecapServiceComments.soir}
+                    onChange={event => setDailyRecapServiceComments(prev => ({ ...prev, soir: event.target.value }))}
+                    style={{ minHeight: 70, resize: 'vertical', border: '1px solid #cbd5e1', borderRadius: 8, padding: 10, fontWeight: 700, color: '#0f172a', lineHeight: 1.45 }}
+                    placeholder="Commentaire spécifique au service soir..."
+                  />
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Notes Google du jour</span>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
                     {[1, 2, 3, 4, 5].map(stars => (
@@ -3765,7 +3789,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>Aperçu du mail</div>
                 <pre style={{ margin: 0, minHeight: 360, maxHeight: '55vh', overflow: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', border: '1px solid #cbd5e1', borderRadius: 10, background: '#f8fafc', padding: 14, color: '#0f172a', fontSize: 13, lineHeight: 1.5, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                  {buildDailyRecapText({ managerMidi: dailyRecapManagers.midi, managerSoir: dailyRecapManagers.soir, comment: dailyRecapComment, googleRatings: dailyRecapGoogleRatings })}
+                  {buildDailyRecapText({ managerMidi: dailyRecapManagers.midi, managerSoir: dailyRecapManagers.soir, commentMidi: dailyRecapServiceComments.midi, commentSoir: dailyRecapServiceComments.soir, comment: dailyRecapComment, googleRatings: dailyRecapGoogleRatings })}
                 </pre>
               </div>
             </div>

@@ -4,7 +4,7 @@ Ce document garde la trace du bouton de preparation du recap chiffre du jour.
 
 ## Objectif
 
-Le bouton `Recap mail`, visible dans la saisie journaliere, ouvre une page de verification avant envoi. Cette page permet de relire le mail, de saisir le responsable midi, le responsable soir, les notes Google du jour et un commentaire de journee. La validation copie le texte dans le presse-papiers puis ouvre la messagerie via un lien `mailto:` avec le sujet et le corps pre-remplis.
+Le bouton `Recap mail`, visible dans la saisie journaliere, ouvre une page de verification avant envoi. Cette page permet de relire le mail, de saisir le responsable midi, le responsable soir, un commentaire midi, un commentaire soir, les notes Google du jour et un commentaire de journee. La validation copie le texte dans le presse-papiers puis ouvre la messagerie via un lien `mailto:` avec le sujet et le corps pre-remplis.
 
 ## Donnees utilisees
 
@@ -18,15 +18,15 @@ Le recap reprend les valeurs calculees de la journee selectionnee :
 - colonnes 17, 20, 34, 35 : VAE et limonade ;
 - colonnes 0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 14, 15 : budgets de comparaison ;
 - colonnes 37 et 38 : evenements restaurant et national.
-- saisie manuelle : responsable midi, responsable soir, notes Google 1 a 5 etoiles et commentaire journee.
+- saisie manuelle : responsable midi, responsable soir, commentaires midi/soir, notes Google 1 a 5 etoiles et commentaire journee.
 
 ## Format du mail
 
 Le mail contient :
 
 - une salutation ;
-- une section `Midi` avec le responsable midi et les chiffres midi ;
-- une section `Soir` avec le responsable soir et les chiffres soir ;
+- une section `Midi` avec le responsable midi, les chiffres midi et le commentaire midi si renseigne ;
+- une section `Soir` avec le responsable soir, les chiffres soir et le commentaire soir si renseigne ;
 - une section `Journee` avec CA HT, couverts, ticket moyen, VAE et limonade si ces elements existent ;
 - les ecarts VS budget quand un budget existe ;
 - les evenements uniquement s'ils sont renseignes ;
