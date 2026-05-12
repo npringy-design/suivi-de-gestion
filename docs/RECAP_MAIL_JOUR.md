@@ -4,7 +4,7 @@ Ce document garde la trace du bouton de preparation du recap chiffre du jour.
 
 ## Objectif
 
-Le bouton `Recap mail`, visible dans la saisie journaliere, ouvre une page de verification avant envoi. Cette page permet de relire le mail, de saisir le responsable midi, le responsable soir, un commentaire midi, un commentaire soir et les notes Google du jour. La validation copie une version HTML dans le presse-papiers puis ouvre Outlook web avec le sujet pre-rempli.
+Le bouton `Recap mail`, visible dans la saisie journaliere, ouvre une page de verification avant envoi. Cette page permet de relire le mail, de saisir le responsable midi, le responsable soir, un commentaire midi, un commentaire soir et les notes Google du jour. La validation copie une version HTML dans le presse-papiers puis ouvre Outlook web avec le sujet et le corps texte pre-remplis.
 
 ## Donnees utilisees
 
@@ -39,8 +39,9 @@ Le mail contient :
 - Les champs responsable et commentaire sont des ajouts manuels propres au mail et ne sont pas enregistres dans les donnees metier.
 - Les lignes dont la valeur est a zero, comme limonade ou VAE, ne doivent pas etre ajoutees au mail.
 - Le recap HTML est copie avant l'ouverture de la messagerie pour permettre un collage manuel avec les couleurs si le client mail ne reprend pas le contenu.
-- Outlook web est utilise en priorite via son lien de composition, avec le sujet uniquement. Le corps n'est pas passe dans l'URL car Outlook affiche le HTML brut au lieu de l'interpreter.
-- La version HTML est copiee dans le presse-papiers : elle doit etre collee dans Outlook avec `Ctrl+V` pour conserver les couleurs, les blocs et les tableaux.
+- Outlook web est utilise en priorite via son lien de composition, avec le sujet encode via `encodeURIComponent` pour eviter les `+` visibles.
+- Le corps est pre-rempli en texte brut pour que le mail soit toujours exploitable immediatement.
+- La version HTML est copiee dans le presse-papiers : elle peut remplacer le texte brut avec `Ctrl+A` dans le corps du mail puis `Ctrl+V` pour conserver les couleurs, les blocs et les tableaux.
 - Si la copie riche echoue, l'application revient au `mailto:` en texte brut pour ne pas bloquer l'envoi.
 - La version texte doit rester lisible dans Outlook meme si la mise en forme HTML n'est pas reprise : titres de sections, valeurs alignees, et sous-blocs separes.
 - Si la messagerie ne s'ouvre pas, le message d'etat reste visible dans la page.

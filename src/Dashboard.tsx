@@ -2068,10 +2068,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const buildDailyRecapText = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).text;
   const buildDailyRecapHtml = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).html;
-  const buildOutlookComposeUrl = (subject: string) => {
+  const buildOutlookComposeUrl = (subject: string, textBody: string) => {
     const baseUrl = 'https://outlook.office.com/mail/deeplink/compose';
-    const params = new URLSearchParams({ subject });
-    return `${baseUrl}?${params.toString()}`;
+    const url = `${baseUrl}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(textBody)}`;
+    if (url.length < 8000) return url;
+
+    return `${baseUrl}?subject=${encodeURIComponent(subject)}`;
   };
 
   const openDailyRecapPreview = () => {
@@ -2109,13 +2111,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         document.execCommand('copy');
         document.body.removeChild(textArea);
       }
-      window.location.href = buildOutlookComposeUrl(subject);
+      window.location.href = buildOutlookComposeUrl(subject, recapText);
       setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus('Récap copié. Colle-le dans le corps du mail avec Ctrl+V.');
+      setDailyRecapStatus('HTML copié. Corps pré-rempli en texte. Pour les couleurs : Ctrl+A dans le corps, puis Ctrl+V.');
     } catch {
       window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
       setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus("Mail ouvert en texte brut. Si la messagerie ne s'ouvre pas, le navigateur a bloqué le raccourci.");
+      setDailyRecapStatus("Mail ouvert en mode texte. Si la messagerie ne s'ouvre pas, le navigateur a bloqué le raccourci.");
     }
   };
   const dailyInputClass = "w-full h-8 rounded-md border border-slate-400 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
