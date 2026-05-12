@@ -2141,33 +2141,38 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const pad = 22;
     const cardGap = 12;
     const lineH = 20;
-    const rows: Array<{ label: string; value: string; color?: string }> = [];
-    const sections: Array<{ title: string; accent: string; rows: Array<{ label: string; value: string; color?: string }>; manager?: string; comment?: string }> = [];
+    type CanvasRecapRow = { label: string; value: string; color?: string; header?: boolean };
+    const rows: CanvasRecapRow[] = [];
+    const sections: Array<{ title: string; accent: string; rows: CanvasRecapRow[]; manager?: string; comment?: string }> = [];
     const deltaColor = (value: number) => value < 0 ? '#dc2626' : value > 0 ? '#15803d' : '#334155';
     const deltaText = (value: number, suffix = '', budget = 0, decimals = 2) => `${formatDailyRecapDelta(value, decimals)}${suffix}${formatDailyRecapPercent(value, budget)}`;
     const pushService = (service: ReturnType<typeof getDailyRecapService>, manager: string, comment: string, accent: string) => {
       const serviceRows = [
+        { label: 'Réalisé', value: '', header: true },
         { label: 'CA HT', value: formatDailyRecapCurrency(service.ca) },
         ...(service.covers > 0 ? [{ label: 'Couverts', value: formatDailyRecapInteger(service.covers) }] : []),
         ...(service.tm > 0 ? [{ label: 'Ticket moyen', value: formatDailyRecapTicket(service.tm) }] : []),
-        ...(service.budgetCa > 0 ? [{ label: 'VS budget CA', value: deltaText(service.ca - service.budgetCa, ' €', service.budgetCa), color: deltaColor(service.ca - service.budgetCa) }] : []),
-        ...(service.budgetCovers > 0 && service.covers > 0 ? [{ label: 'VS budget couverts', value: deltaText(service.covers - service.budgetCovers, '', service.budgetCovers, 0), color: deltaColor(service.covers - service.budgetCovers) }] : []),
-        ...(service.budgetTm > 0 && service.tm > 0 ? [{ label: 'VS budget TM', value: deltaText(service.tm - service.budgetTm, ' €', service.budgetTm), color: deltaColor(service.tm - service.budgetTm) }] : []),
+        ...(service.budgetCa > 0 || (service.budgetCovers > 0 && service.covers > 0) || (service.budgetTm > 0 && service.tm > 0) ? [{ label: 'Écart vs budget', value: '', header: true }] : []),
+        ...(service.budgetCa > 0 ? [{ label: 'CA', value: deltaText(service.ca - service.budgetCa, ' €', service.budgetCa), color: deltaColor(service.ca - service.budgetCa) }] : []),
+        ...(service.budgetCovers > 0 && service.covers > 0 ? [{ label: 'Couverts', value: deltaText(service.covers - service.budgetCovers, '', service.budgetCovers, 0), color: deltaColor(service.covers - service.budgetCovers) }] : []),
+        ...(service.budgetTm > 0 && service.tm > 0 ? [{ label: 'Ticket moyen', value: deltaText(service.tm - service.budgetTm, ' €', service.budgetTm), color: deltaColor(service.tm - service.budgetTm) }] : []),
       ];
       sections.push({ title: service.label, accent, rows: serviceRows, manager: manager.trim(), comment: comment.trim() });
     };
     pushService(midi, options.managerMidi || '', options.commentMidi || '', '#0f766e');
     pushService(soir, options.managerSoir || '', options.commentSoir || '', '#0f766e');
     rows.push(
+      { label: 'Synthèse', value: '', header: true },
       { label: 'CA HT', value: formatDailyRecapCurrency(totalCa) },
       { label: 'Couverts', value: formatDailyRecapInteger(totalCovers) },
       { label: 'Ticket moyen', value: formatDailyRecapTicket(ticketMoyen) },
     );
-    if (budgetCa > 0) rows.push({ label: 'VS budget CA', value: deltaText(totalCa - budgetCa, ' €', budgetCa), color: deltaColor(totalCa - budgetCa) });
-    if (budgetCovers > 0) rows.push({ label: 'VS budget couverts', value: deltaText(totalCovers - budgetCovers, '', budgetCovers, 0), color: deltaColor(totalCovers - budgetCovers) });
-    if (budgetTicketMoyen > 0) rows.push({ label: 'VS budget TM', value: deltaText(ticketMoyen - budgetTicketMoyen, ' €', budgetTicketMoyen), color: deltaColor(ticketMoyen - budgetTicketMoyen) });
     if (vae > 0) rows.push({ label: 'VAE', value: formatDailyRecapCurrency(vae) });
     if (limonade > 0) rows.push({ label: 'Limonade', value: formatDailyRecapCurrency(limonade) });
+    if (budgetCa > 0 || budgetCovers > 0 || budgetTicketMoyen > 0) rows.push({ label: 'Écart vs budget', value: '', header: true });
+    if (budgetCa > 0) rows.push({ label: 'CA', value: deltaText(totalCa - budgetCa, ' €', budgetCa), color: deltaColor(totalCa - budgetCa) });
+    if (budgetCovers > 0) rows.push({ label: 'Couverts', value: deltaText(totalCovers - budgetCovers, '', budgetCovers, 0), color: deltaColor(totalCovers - budgetCovers) });
+    if (budgetTicketMoyen > 0) rows.push({ label: 'Ticket moyen', value: deltaText(ticketMoyen - budgetTicketMoyen, ' €', budgetTicketMoyen), color: deltaColor(ticketMoyen - budgetTicketMoyen) });
     sections.push({ title: 'Journée', accent: '#2563eb', rows });
     if (googleRatings.length > 0) {
       sections.push({
@@ -2237,6 +2242,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         cy += 22;
       }
       section.rows.forEach(row => {
+        if (row.header) {
+          drawText(row.label, pad + 16, cy, 12, '700', section.accent === '#2563eb' ? '#1d4ed8' : section.accent);
+          cy += lineH;
+          return;
+        }
         drawText(row.label, pad + 16, cy, 12, '400', '#475569');
         drawText(row.value, pad + 185, cy, 12, '700', row.color || '#0f172a');
         cy += lineH;

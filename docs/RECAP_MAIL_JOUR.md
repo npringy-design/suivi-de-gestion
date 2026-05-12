@@ -25,9 +25,9 @@ Le recap reprend les valeurs calculees de la journee selectionnee :
 Le mail contient :
 
 - une salutation ;
-- une section `Midi` avec les chiffres realises, les ecarts vs budget et le commentaire midi si renseigne ;
-- une section `Soir` avec les chiffres realises, les ecarts vs budget et le commentaire soir si renseigne ;
-- une section `Journee` avec CA HT, couverts, ticket moyen, VAE et limonade si ces elements existent ;
+- une section `Midi` avec un sous-titre `Realise`, un sous-titre `Ecart vs budget` et le commentaire midi si renseigne ;
+- une section `Soir` avec un sous-titre `Realise`, un sous-titre `Ecart vs budget` et le commentaire soir si renseigne ;
+- une section `Journee` avec un sous-titre `Synthese`, un sous-titre `Ecart vs budget`, VAE et limonade si ces elements existent ;
 - les ecarts VS budget avec pourcentage sur le CA, les couverts et le ticket moyen ;
 - les notes Google uniquement si au moins une case contient un nombre.
 
