@@ -49,7 +49,12 @@ L'OCR sert uniquement de secours quand le PDF ne contient pas assez de texte exp
 - Le fournisseur doit être détecté de façon générique depuis l'identité de l'émetteur de la facture, sans ajouter une exception par fournisseur.
 - Pour distinguer l'émetteur du destinataire, la lecture compare d'abord la zone émetteur de la facture et les mentions légales aux noms de fournisseurs configurés dans les colonnes achats.
 - Quand plusieurs fournisseurs partagent un mot, par exemple Café Richard et Richard Vins, le rapprochement privilégie le nom complet, le nom collé comme dans un site web/logo, puis seulement les mots isolés.
+- Les fournisseurs à un seul mot, par exemple Brake, Storia ou Martel, doivent pouvoir matcher avec un seul token complet. Aucun fournisseur ne doit être choisi silencieusement par défaut si aucune preuve n'est trouvée.
 - Si la date de facture appartient à un autre mois de la même année, l'import écrit dans ce mois et bascule l'affichage sur ce jour.
+
+## IA et sécurité
+
+Une lecture IA peut devenir utile pour les factures très variables, mais elle ne doit pas appeler directement Gemini depuis le navigateur avec une clé exposée. Si cette piste est retenue, l'appel devra passer par une route backend ou une fonction sécurisée qui garde la clé côté serveur, puis renvoie uniquement fournisseur, date de facture, montant HT et colonne cible.
 
 ## Fournisseurs ciblés dans la saisie journalière
 
