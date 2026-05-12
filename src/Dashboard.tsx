@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 
-import { ChevronLeft, Download, Upload, FileDown, Trash2, X } from 'lucide-react';
+import { ChevronLeft, Download, Upload, FileDown, Trash2, X, Clipboard } from 'lucide-react';
 // ── Constantes Dashboard inline (dashboardConstants.ts intégré) ─────────────
 type DashboardColumn = [string, string, string, string];
 type VisibleDashboardColumn = DashboardColumn & { originalIndex: number };
@@ -316,6 +316,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [importPreview, setImportPreview] = useState<Array<{ label: string; value: string }>>([]);
   const [invoiceImportStatus, setInvoiceImportStatus] = useState('');
   const [invoiceImportPreviews, setInvoiceImportPreviews] = useState<InvoiceImportPreview[]>([]);
+  const [dailyRecapStatus, setDailyRecapStatus] = useState('');
   const [purchaseSupplierNames, setPurchaseSupplierNames] = useState<Record<number, string>>(() => {
     try {
       const saved = localStorage.getItem('dashboard_purchase_supplier_names_v1');
@@ -1876,6 +1877,46 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const getDailyDisplayValue = (col: number) => formatValue(getDailyCellValue(col), dynamicColumns[col] || ['', '', '', '']);
   const isDailyFieldFocused = (col: number) => focusedCell === `${selectedDayRowIndex}-${col}`;
 
+  const formatDailyRecapCurrency = (value: number) => `${value.toFixed(2)}€ HT`;
+  const formatDailyRecapTicket = (value: number) => `${value.toFixed(2)}€`;
+
+  const buildDailyRecapText = () => {
+    const covers = parseDashboardNumber(getDailyCellValue(29));
+    const ca = parseDashboardNumber(getDailyCellValue(21));
+    const ticketMoyen = parseDashboardNumber(getDailyCellValue(30));
+
+    return [
+      'Bonsoir,',
+      '',
+      'Voici les chiffres de la journee :',
+      `Couverts : ${covers.toFixed(0)}`,
+      `CA : ${formatDailyRecapCurrency(ca)}`,
+      `TM : ${formatDailyRecapTicket(ticketMoyen)}`,
+    ].join('\n');
+  };
+
+  const handleCopyDailyRecap = async () => {
+    const recapText = buildDailyRecapText();
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(recapText);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = recapText;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setDailyRecapStatus('Recap copie, pret a coller dans le mail.');
+    } catch {
+      setDailyRecapStatus("Impossible de copier automatiquement. Le recap est pret mais le presse-papiers a refuse l'acces.");
+    }
+  };
+
   const dailyInputClass = "w-full h-8 rounded-md border border-slate-400 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
   const dailyReadOnlyClass = "flex h-8 items-center justify-end gap-1 overflow-hidden rounded-md border border-slate-300 bg-slate-100/90 px-2 text-sm font-bold text-slate-700 shadow-inner";
   const cashInputClass = "w-full h-7 rounded-md border border-slate-400 bg-white px-2 text-right text-xs font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
@@ -2446,6 +2487,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             </div>
           </div>
 
+          {dailyRecapStatus && (
+            <div style={{ padding: '9px 12px', border: '1px solid #bbf7d0', borderRadius: 9, background: '#f0fdf4', color: '#166534', fontSize: 12, fontWeight: 850 }}>
+              {dailyRecapStatus}
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(660px, 1.35fr) minmax(420px, .9fr)', gap: 10, alignItems: 'start' }}>
             {renderDailySection('Réel caisse', 'Saisie réelle des encaissements', (
               renderRealCaisseTable()
@@ -2854,6 +2900,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               <button onClick={() => setIsImportModalOpen(true)} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
                 <Upload size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Importer'}
               </button>
+              {tableViewMode === 'SAISIE' && (
+                <button onClick={handleCopyDailyRecap} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme} title={dailyRecapStatus || 'Copier le recap mail du jour'}>
+                  <Clipboard size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Recap mail'}
+                </button>
+              )}
               <button onClick={handleExportPDF} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
                 <FileDown size={isMobile ? 14 : 16} /> {isMobile ? '' : 'PDF'}
               </button>
