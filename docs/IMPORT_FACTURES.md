@@ -32,7 +32,7 @@ Le flux retenu est donc :
 2. extraction rapide du texte PDF quand il existe ;
 3. detection du fournisseur, de la date de facture et du montant HT ;
 4. affichage des factures sous forme de lignes ;
-5. indicateur vert si les trois elements sont lus, indicateur orange si une verification humaine est necessaire ;
+5. indicateur vert uniquement si les trois elements sont lus avec une date valide et un montant HT trouve dans un contexte fiable de total/base HT ; indicateur orange dans tous les autres cas ;
 6. correction eventuelle par l'utilisateur ;
 7. validation ligne par ligne ;
 8. ajout du montant dans la colonne fournisseur du jour de facture si cette date appartient au mois affiche, sinon dans le jour selectionne.

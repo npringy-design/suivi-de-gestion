@@ -1256,12 +1256,27 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const [, day, monthValue, yearValue] = match;
     if (!day || !monthValue || !yearValue) return '';
     const fullYear = yearValue.length === 2 ? `20${yearValue}` : yearValue;
+    const parsedDate = new Date(Number(fullYear), Number(monthValue) - 1, Number(day));
+    if (
+      parsedDate.getFullYear() !== Number(fullYear)
+      || parsedDate.getMonth() !== Number(monthValue) - 1
+      || parsedDate.getDate() !== Number(day)
+    ) return '';
     return `${fullYear}-${monthValue}-${day}`;
   };
 
   const formatInvoiceDateLabel = (value: string) => {
     const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+  };
+
+  const isValidInvoiceDateValue = (value: string) => {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return false;
+    const parsedDate = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return parsedDate.getFullYear() === Number(match[1])
+      && parsedDate.getMonth() === Number(match[2]) - 1
+      && parsedDate.getDate() === Number(match[3]);
   };
 
   const findInvoiceDate = (text: string) => {
@@ -1449,10 +1464,51 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return 0;
   };
 
+  const isSameInvoiceAmount = (left: number, right: number) => Math.abs(left - right) < 0.01;
+
+  const isInvoiceAmountHtReliable = (text: string, amountHt: number) => {
+    if (amountHt <= 0) return false;
+
+    const amountToken = '(-?\\d{1,3}(?:[\\s.]\\d{3})*(?:[,.]\\d{2})|-?\\d+[,.]\\d{2})';
+    const visualLines = text
+      .replace(/\u00a0/g, ' ')
+      .split(/\r?\n/)
+      .map(line => line.replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+
+    const strongLineIndexes = visualLines
+      .map((line, index) => ({ line, index }))
+      .filter(({ line }) => (
+        /total\s+h(?:ors\s+taxes|\.?\s*t\.?)|total\s+hors\s+taxe?s?|base\s+h\.?\s*t\.?|baseht/i.test(line)
+        && !/article|designation|p\.?u\.?|prix\s+unitaire|qte|quantite|ref/i.test(line)
+      ))
+      .map(item => item.index);
+
+    for (const index of strongLineIndexes) {
+      const candidateLines = visualLines.slice(index, index + 4);
+      for (const line of candidateLines) {
+        const amounts = line.match(new RegExp(amountToken, 'g')) || [];
+        if (amounts.some(value => isSameInvoiceAmount(parseInvoiceNumber(value), amountHt))) return true;
+      }
+    }
+
+    const normalizedText = visualLines.join(' ');
+    const strongPatterns = [
+      new RegExp(`total\\s+hors\\s+taxe?s?\\s*(?:eur|euro|€)?\\s*[:\\-]?\\s*(?:eur|euro|€)?\\s*${amountToken}`, 'i'),
+      new RegExp(`total\\s+h\\.?\\s*t\\.?\\s*(?:eur|euro|€)?\\s*[:\\-]?\\s*(?:eur|euro|€)?\\s*${amountToken}`, 'i'),
+      new RegExp(`base\\s+h\\.?\\s*t\\.?[\\s\\S]{0,160}?${amountToken}`, 'i'),
+    ];
+
+    return strongPatterns.some(pattern => {
+      const match = normalizedText.match(pattern);
+      return match ? isSameInvoiceAmount(parseInvoiceNumber(match[match.length - 1]), amountHt) : false;
+    });
+  };
+
   const createInvoiceImportId = (fileName: string, index: number) => `${Date.now()}-${index}-${fileName}`;
 
-  const getInvoiceConfidence = (supplierNeedsCheck: boolean, amountHt: number, invoiceDate: string, targetCol: number): InvoiceImportPreview['confidence'] => (
-    !supplierNeedsCheck && amountHt > 0 && Boolean(invoiceDate) && targetCol >= 45 && targetCol <= 57
+  const getInvoiceConfidence = (supplierNeedsCheck: boolean, amountHt: number, invoiceDate: string, targetCol: number, amountReliable: boolean, hasReadableInvoiceText: boolean): InvoiceImportPreview['confidence'] => (
+    hasReadableInvoiceText && !supplierNeedsCheck && amountHt > 0 && amountReliable && isValidInvoiceDateValue(invoiceDate) && targetCol >= 45 && targetCol <= 57
       ? 'verified'
       : 'review'
   );
@@ -1464,7 +1520,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const amountHt = findInvoiceAmountHt(text);
     const invoiceDate = findInvoiceDate(text) || findInvoiceDateFromFileName(fileName);
     const supplierNeedsCheck = normalizeImportText(supplierMatch.supplier).includes('FOURNISSEUR A RENSEIGNER');
-    const confidence = getInvoiceConfidence(supplierNeedsCheck, amountHt, invoiceDate, supplierMatch.targetCol);
+    const amountReliable = isInvoiceAmountHtReliable(text, amountHt);
+    const dateReliable = isValidInvoiceDateValue(invoiceDate);
+    const confidence = getInvoiceConfidence(supplierNeedsCheck, amountHt, invoiceDate, supplierMatch.targetCol, amountReliable, hasReadableInvoiceText);
 
     return {
       id,
@@ -1478,12 +1536,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         : !hasReadableInvoiceText
           ? 'PDF scanne ou image : saisie manuelle a verifier.'
           : supplierNeedsCheck
-        ? 'Fournisseur et colonne cible à vérifier avant validation.'
-        : amountHt && invoiceDate
-        ? 'Lecture facture prête à valider.'
-        : !amountHt
-          ? 'Montant HT à renseigner manuellement avant validation.'
-          : 'Date de facture à vérifier avant validation.',
+            ? 'Fournisseur et colonne cible a verifier avant validation.'
+            : !dateReliable
+              ? 'Date de facture a verifier avant validation.'
+              : !amountHt
+                ? 'Montant HT a renseigner manuellement avant validation.'
+                : !amountReliable
+                  ? 'Montant HT trouve mais contexte a verifier.'
+                  : 'Lecture facture a verifier avant validation.',
       confidence,
     };
   };
