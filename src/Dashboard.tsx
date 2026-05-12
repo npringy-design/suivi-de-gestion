@@ -1178,14 +1178,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     .toUpperCase();
   const supplierTokens = (value: string) => normalizeImportText(value)
     .split(/\s+/)
-    .filter(token => token.length >= 3 && !['SAS', 'SARL', 'SA', 'SNC', 'EURL', 'FRANCE', 'AGENCE'].includes(token));
+    .filter(token => token.length >= 3 && !['SAS', 'SARL', 'SA', 'SNC', 'EURL', 'FRANCE', 'AGENCE', 'DEPANNAGE'].includes(token));
   const findConfiguredPurchaseSupplier = (evidenceText: string) => {
     const normalizedEvidence = normalizeImportText(evidenceText);
     const compactEvidence = normalizedEvidence.replace(/\s+/g, '');
-    let targetCol = 56;
-    let supplier = '';
-    let bestScore = 0;
-    let bestCoverage = 0;
+    const scores: Array<{ col: number; score: number; coverage: number; name: string }> = [];
 
     for (let col = 45; col <= 57; col += 1) {
       const columnName = dynamicColumns[col]?.[2] || '';
@@ -1200,15 +1197,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const fullNameScore = normalizedEvidence.includes(normalizedColumnName) ? 4 : 0;
       const compactScore = compactEvidence.includes(compactColumnName) || compactEvidence.includes(reverseCompactColumnName) ? 3 : 0;
       const score = fullNameScore + compactScore + matchedTokens.length;
-      if (score > bestScore || (score === bestScore && coverage > bestCoverage)) {
-        bestScore = score;
-        bestCoverage = coverage;
-        targetCol = col;
-        supplier = columnName;
-      }
+      if (score > 0) scores.push({ col, score, coverage, name: columnName });
     }
 
-    return bestScore >= 2 && bestCoverage >= 0.5 ? { supplier, targetCol } : null;
+    if (scores.length === 0) return null;
+
+    scores.sort((a, b) => b.score - a.score || b.coverage - a.coverage);
+    const best = scores[0];
+    const minScore = best.coverage >= 1 ? 1 : 2;
+    return best.score >= minScore ? { supplier: best.name, targetCol: best.col } : null;
   };
   const getDashboardRowIndexForDay = (targetYear: number, targetMonth: number, targetDay: number) => {
     let rowIndex = 0;
@@ -1326,7 +1323,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const supplier = cleanSupplierCandidate(legalLine || fallbackLine || '');
     const supplierTokenSet = new Set(supplierTokens(supplier));
 
-    let targetCol = 56;
+    let targetCol = 45;
     let bestScore = 0;
     for (let col = 45; col <= 57; col += 1) {
       const columnName = dynamicColumns[col]?.[2] || '';
@@ -1428,6 +1425,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const supplierMatch = findInvoiceSupplier(text);
     const amountHt = findInvoiceAmountHt(text);
     const invoiceDate = findInvoiceDate(text);
+    const supplierNeedsCheck = supplierMatch.supplier === 'Fournisseur à renseigner';
 
     return {
       fileName,
@@ -1435,7 +1433,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       amountHt: formatInvoiceAmount(amountHt),
       invoiceDate,
       targetCol: supplierMatch.targetCol,
-      status: amountHt && invoiceDate
+      status: supplierNeedsCheck
+        ? 'Fournisseur et colonne cible à vérifier avant validation.'
+        : amountHt && invoiceDate
         ? 'Lecture facture prête à valider.'
         : !amountHt
           ? 'Montant HT à renseigner manuellement avant validation.'
@@ -1476,7 +1476,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         if (!text || !item.transform) return;
         const x = item.transform[4] || 0;
         const y = item.transform[5] || 0;
-        const rowKey = Math.round(y / 3) * 3;
+        const rowKey = Math.round(y / 6) * 6;
         const row = rows.get(rowKey) || [];
         row.push({ x, text });
         rows.set(rowKey, row);
