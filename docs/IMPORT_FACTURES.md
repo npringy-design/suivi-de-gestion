@@ -29,7 +29,7 @@ L'import facture doit passer par une validation humaine, car les factures fourni
 Le flux retenu est donc :
 
 1. lecture locale du ou des fichiers ;
-2. extraction du texte PDF quand il existe, sinon lecture OCR locale des pages scannees ;
+2. extraction rapide du texte PDF quand il existe ;
 3. detection du fournisseur, de la date de facture et du montant HT ;
 4. affichage des factures sous forme de lignes ;
 5. indicateur vert si les trois elements sont lus, indicateur orange si une verification humaine est necessaire ;
@@ -37,7 +37,7 @@ Le flux retenu est donc :
 7. validation ligne par ligne ;
 8. ajout du montant dans la colonne fournisseur du jour de facture si cette date appartient au mois affiche, sinon dans le jour selectionne.
 
-L'OCR sert uniquement de secours quand le PDF ne contient pas assez de texte exploitable. Cette lecture est plus lente qu'une extraction texte classique et reste imparfaite pour les scans froisses, tournes ou de mauvaise qualite.
+L'OCR automatique est desactive pour les factures fournisseurs, car il ralentit trop l'import en lot et reste imparfait sur les scans froisses, tournes ou de mauvaise qualite. Quand le PDF ne contient pas assez de texte exploitable, l'application cree une ligne orange a verifier et essaie seulement de deduire la date ou le fournisseur depuis le nom du fichier.
 
 ## IA et securite
 

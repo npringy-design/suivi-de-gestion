@@ -1291,6 +1291,33 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return normalizeInvoiceDate(plausibleDates[0] || allDates[0] || '');
   };
 
+  const findInvoiceDateFromFileName = (fileName: string) => {
+    const baseName = fileName.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
+    const dateMatch = baseName.match(/\b(\d{1,2})[.\-/ ](\d{1,2})(?:[.\-/ ](\d{2,4}))?\b/);
+    if (!dateMatch) return '';
+    const day = Number(dateMatch[1]);
+    const monthValue = Number(dateMatch[2]);
+    const yearValue = dateMatch[3] ? Number(dateMatch[3]) : year;
+    const fullYear = yearValue < 100 ? 2000 + yearValue : yearValue;
+    if (day < 1 || day > 31 || monthValue < 1 || monthValue > 12) return '';
+    return `${fullYear}-${String(monthValue).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
+  const findInvoiceSupplierFromFileName = (fileName: string) => {
+    const cleanedName = fileName
+      .replace(/\.[^.]+$/, '')
+      .replace(/[_-]+/g, ' ')
+      .replace(/\b(?:facture|fac|invoice|avoir|scan|pdf)\b/gi, ' ')
+      .replace(/\b\d{1,2}[.\-/ ]\d{1,2}(?:[.\-/ ]\d{2,4})?\b/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const configuredSupplier = findConfiguredPurchaseSupplier(cleanedName);
+    return {
+      supplier: configuredSupplier?.supplier || cleanedName || 'Fournisseur à renseigner',
+      targetCol: configuredSupplier?.targetCol || 56,
+    };
+  };
+
   const findInvoiceSupplier = (text: string) => {
     const lines = text
       .split(/\r?\n/)
@@ -1432,9 +1459,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const parseInvoiceImport = (sourceText: string, fileName: string, id = createInvoiceImportId(fileName, 0)): InvoiceImportPreview => {
     const text = sourceText.replace(/\u00a0/g, ' ').replace(/â‚¬/g, '€');
-    const supplierMatch = findInvoiceSupplier(text);
+    const hasReadableInvoiceText = text.replace(/[^A-Za-z0-9]/g, '').length >= 80;
+    const supplierMatch = hasReadableInvoiceText ? findInvoiceSupplier(text) : findInvoiceSupplierFromFileName(fileName);
     const amountHt = findInvoiceAmountHt(text);
-    const invoiceDate = findInvoiceDate(text);
+    const invoiceDate = findInvoiceDate(text) || findInvoiceDateFromFileName(fileName);
     const supplierNeedsCheck = normalizeImportText(supplierMatch.supplier).includes('FOURNISSEUR A RENSEIGNER');
     const confidence = getInvoiceConfidence(supplierNeedsCheck, amountHt, invoiceDate, supplierMatch.targetCol);
 
@@ -1447,7 +1475,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       targetCol: supplierMatch.targetCol,
       status: confidence === 'verified'
         ? 'Lecture complete prete a valider.'
-        : supplierNeedsCheck
+        : !hasReadableInvoiceText
+          ? 'PDF scanne ou image : saisie manuelle a verifier.'
+          : supplierNeedsCheck
         ? 'Fournisseur et colonne cible à vérifier avant validation.'
         : amountHt && invoiceDate
         ? 'Lecture facture prête à valider.'
@@ -1473,7 +1503,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return pages.join('\n');
   };
 
-  const extractPdfLayoutText = async (file: File, onOcrStart?: () => void) => {
+  const extractPdfLayoutText = async (file: File, onOcrStart?: () => void, allowOcr = true) => {
     const loadPdfJs = new Function('url', 'return import(url)') as (url: string) => Promise<any>;
     const pdfjs = await loadPdfJs('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
     pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs';
@@ -1518,6 +1548,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     if (usefulTextLength >= 120 && hasInvoiceStructure && hasAmount && /\d{2}[./-]\d{2}[./-]\d{2,4}/.test(extractedText)) {
       return extractedText;
     }
+
+    if (!allowOcr) return extractedText;
 
     onOcrStart?.();
     return extractPdfOcrText(file, pdfjs);
@@ -1711,7 +1743,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       for (const [index, file] of files.entries()) {
         const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
         const text = isPdf
-          ? await extractPdfLayoutText(file, () => setInvoiceImportStatus('Lecture OCR locale de facture scannee...'))
+          ? await extractPdfLayoutText(file, undefined, false)
           : await file.text();
         parsedInvoices.push(parseInvoiceImport(text, file.name, createInvoiceImportId(file.name, index)));
       }
