@@ -2287,7 +2287,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       if (!opened) window.location.href = outlookUrl;
     };
 
-    if (navigator.clipboard?.write && ClipboardItemCtor) {
+    if (typeof navigator.clipboard?.write === 'function' && ClipboardItemCtor) {
       try {
         await copyDailyRecapCanvasImageToClipboard(recapOptions, ClipboardItemCtor);
         openOutlook();
