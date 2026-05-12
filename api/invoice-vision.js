@@ -33,12 +33,12 @@ export default async function handler(req, res) {
       return;
     }
 
-    const prompt = `Tu es un assistant comptable pour un restaurant. Analyse cette facture et retourne UNIQUEMENT un objet JSON valide, sans markdown, sans backticks, sans texte avant ou après.
+    const prompt = `Tu es un assistant comptable pour un restaurant. Analyse cette facture et retourne UNIQUEMENT un objet JSON valide, sans markdown, sans backticks, sans texte avant ou apres.
 
-Colonnes fournisseurs disponibles dans notre système :
+Colonnes fournisseurs disponibles dans notre systeme :
 ${knownSuppliers.map((supplier) => `- col ${supplier.col} : ${String(supplier.name || '').replace(/\n/g, ' ')}`).join('\n')}
 
-Règles de correspondance :
+Regles de correspondance :
 - EPISAVEURS / EPISAVEUR -> colonne EPISAVEUR si disponible.
 - TERREAZUR / TERRE AZUR / POMONA -> colonne POMONA F&L si disponible.
 - RICHARD VINS / VINS RICHARD -> colonne RICHARD VINS si disponible.
@@ -47,15 +47,15 @@ Règles de correspondance :
 - MARTEL / GH MARTEL -> colonne MARTEL si disponible.
 - BRAKE / BRAKES -> colonne BRAKE si disponible.
 - SOCOPA -> colonne SOCOPA si disponible.
-- Si le fournisseur n'existe pas dans les colonnes, choisis la colonne métier la plus proche selon la nature des produits. Si aucune correspondance claire, choisis METRO / DEPANNAGE.
+- Si le fournisseur n'existe pas dans les colonnes, choisis la colonne metier la plus proche selon la nature des produits. Si aucune correspondance claire, choisis METRO / DEPANNAGE.
 
-Le document peut être scanné, photographié ou tourné. Lis-le comme une image.
+Le document peut etre scanne, photographie ou tourne. Lis-le comme une image.
 
 Retourne EXACTEMENT ce JSON :
 {
-  "supplier": "nom exact du fournisseur tel qu'il apparaît sur la facture",
-  "targetCol": <numéro entier entre 45 et 57>,
-  "amountHt": <TOTAL HT de la facture entière, nombre décimal avec point, ex: 1394.29>,
+  "supplier": "nom exact du fournisseur tel qu'il apparait sur la facture",
+  "targetCol": <numero entier entre 45 et 57>,
+  "amountHt": <TOTAL HT de la facture entiere, nombre decimal avec point, ex: 1394.29>,
   "invoiceDate": "<date de facturation au format YYYY-MM-DD>"
 }`;
 
