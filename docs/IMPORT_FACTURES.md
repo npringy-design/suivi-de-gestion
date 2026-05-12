@@ -1,72 +1,70 @@
 # Import des factures fournisseurs
 
-Ce document fixe les règles de fonctionnement pour l'import léger des factures fournisseurs.
+Ce document fixe les regles de fonctionnement pour l'import leger des factures fournisseurs.
 
 ## Objectif
 
-L'import facture sert à accélérer la saisie des achats en lisant uniquement trois informations :
+L'import facture sert a accelerer la saisie des achats en lisant uniquement trois informations :
 
 - le fournisseur ;
 - la date de facture ;
 - le montant HT.
 
-La facture importée sert de source de lecture. Elle n'est pas conservée par l'application dans cette première version.
+La facture importee sert de source de lecture. Elle n'est pas conservee par l'application dans cette version.
 
-## Règles de sauvegarde
+## Regles de sauvegarde
 
-- Le fichier PDF importé ne doit pas être sauvegardé dans l'application.
-- Le texte complet extrait du PDF ne doit pas être sauvegardé.
-- Seules les données validées par l'utilisateur sont enregistrées dans les champs métier.
-- La première version ne sauvegarde pas encore de snapshot d'audit facture.
-- Si un snapshot facture est ajouté plus tard, il doit rester léger : date d'import, nom du fichier, date de facture, fournisseur, montant HT, colonne cible.
+- Le fichier PDF importe ne doit pas etre sauvegarde dans l'application.
+- Le texte complet extrait du PDF ne doit pas etre sauvegarde.
+- Seules les donnees validees par l'utilisateur sont enregistrees dans les champs metier.
+- La premiere version ne sauvegarde pas encore de snapshot d'audit facture.
+- Si un snapshot facture est ajoute plus tard, il doit rester leger : date d'import, nom du fichier, date de facture, fournisseur, montant HT, colonne cible.
 
-## Différence avec l'import caisse
+## Difference avec l'import caisse
 
 L'import caisse peut transcrire directement les montants, car la feuille de caisse suit un format connu.
 
-L'import facture doit passer par une validation humaine, car les factures fournisseurs peuvent avoir des formats différents.
+L'import facture doit passer par une validation humaine, car les factures fournisseurs peuvent avoir des formats differents.
 
 Le flux retenu est donc :
 
-1. lecture du fichier ;
-2. pour les PDF, tentative de lecture IA Vision via une route serveur sécurisée si Gemini est configuré ;
-3. si l'IA n'est pas disponible ou ne retourne rien d'exploitable, extraction du texte PDF quand il existe, sinon lecture OCR des pages image/scannées ;
-4. détection du fournisseur, de la date de facture et du montant HT ;
-5. affichage d'une prévisualisation ;
-6. correction éventuelle par l'utilisateur ;
-7. validation ;
-8. ajout du montant dans la colonne fournisseur du jour de facture si cette date appartient au mois affiché, sinon dans le jour sélectionné.
+1. lecture locale du ou des fichiers ;
+2. extraction du texte PDF quand il existe, sinon lecture OCR locale des pages scannees ;
+3. detection du fournisseur, de la date de facture et du montant HT ;
+4. affichage des factures sous forme de lignes ;
+5. indicateur vert si les trois elements sont lus, indicateur orange si une verification humaine est necessaire ;
+6. correction eventuelle par l'utilisateur ;
+7. validation ligne par ligne ;
+8. ajout du montant dans la colonne fournisseur du jour de facture si cette date appartient au mois affiche, sinon dans le jour selectionne.
 
-L'OCR sert uniquement de secours quand le PDF ne contient pas assez de texte exploitable. Cette lecture est plus lente qu'une extraction texte classique, mais elle est nécessaire pour les factures scannées ou composées en images.
+L'OCR sert uniquement de secours quand le PDF ne contient pas assez de texte exploitable. Cette lecture est plus lente qu'une extraction texte classique et reste imparfaite pour les scans froisses, tournes ou de mauvaise qualite.
 
-## Ligne de conduite métier
+## IA et securite
 
-- Ne jamais écraser silencieusement une saisie utilisateur.
-- Si une colonne contient déjà un montant pour ce fournisseur, l'import ajoute le nouveau montant au total existant.
-- L'utilisateur peut corriger le fournisseur, le montant HT et la colonne cible avant validation.
-- L'utilisateur peut corriger la date de facture avant validation.
-- Une facture non reconnue doit rester validable manuellement après correction.
-- Les noms des fournisseurs d'achats peuvent être modifiés dans la vue Complet. Ces libellés servent à l'affichage et à la sélection de la colonne cible.
-- Le fournisseur doit être détecté de façon générique depuis l'identité de l'émetteur de la facture, sans ajouter une exception par fournisseur.
-- Pour distinguer l'émetteur du destinataire, la lecture compare d'abord la zone émetteur de la facture et les mentions légales aux noms de fournisseurs configurés dans les colonnes achats.
-- Quand plusieurs fournisseurs partagent un mot, par exemple Café Richard et Richard Vins, le rapprochement privilégie le nom complet, le nom collé comme dans un site web/logo, puis seulement les mots isolés.
-- Les fournisseurs à un seul mot, par exemple Brake, Storia ou Martel, doivent pouvoir matcher avec un seul token complet. Aucun fournisseur ne doit être choisi silencieusement par défaut si aucune preuve n'est trouvée.
-- Les règles locales restent un filet de secours : elles peuvent fonctionner sur les PDF numériques bien structurés, mais les scans, photos, documents tournés ou fournisseurs absents des colonnes nécessitent une prévisualisation attentive, et idéalement la lecture IA Vision.
-- Si la date de facture appartient à un autre mois de la même année, l'import écrit dans ce mois et bascule l'affichage sur ce jour.
+La lecture IA Gemini Vision est desactivee pour l'import facture. Le navigateur n'appelle plus `/api/invoice-vision`, afin d'eviter des couts pour une lecture qui n'est pas assez fiable sur les cas reels testes : scans DSAC, tickets Metro froisses et documents retournes.
 
-## IA et sécurité
+La route serveur existe encore mais repond volontairement que la lecture IA est desactivee. Elle ne doit pas appeler Gemini tant que la decision metier n'est pas changee.
 
-La lecture IA Vision passe par `/api/invoice-vision`. Le navigateur rend les pages PDF en images, puis les envoie à cette route. La clé `GEMINI_API_KEY` reste côté serveur et ne doit pas être préfixée `VITE_`.
+## Ligne de conduite metier
 
-Si la route IA n'est pas disponible ou si Gemini n'est pas configuré, l'import retombe automatiquement sur l'extraction PDF/OCR puis sur les règles locales.
+- Ne jamais ecraser silencieusement une saisie utilisateur.
+- Si une colonne contient deja un montant pour ce fournisseur, l'import ajoute le nouveau montant au total existant.
+- L'utilisateur peut corriger le fournisseur, le montant HT, la date de facture et la colonne cible avant validation.
+- Une facture non reconnue doit rester validable manuellement apres correction.
+- Les noms des fournisseurs d'achats peuvent etre modifies dans la vue Complet. Ces libelles servent a l'affichage et a la selection de la colonne cible.
+- Le fournisseur doit etre detecte de facon generique depuis l'identite de l'emetteur de la facture, sans ajouter une exception par fournisseur.
+- Pour distinguer l'emetteur du destinataire, la lecture compare d'abord la zone emetteur de la facture et les mentions legales aux noms de fournisseurs configures dans les colonnes achats.
+- Quand plusieurs fournisseurs partagent un mot, par exemple Cafe Richard et Richard Vins, le rapprochement privilegie le nom complet, le nom colle comme dans un site web/logo, puis seulement les mots isoles.
+- Les fournisseurs a un seul mot, par exemple Brake, Storia ou Martel, doivent pouvoir matcher avec un seul token complet. Aucun fournisseur ne doit etre choisi silencieusement par defaut si aucune preuve n'est trouvee.
+- Si la date de facture appartient a un autre mois de la meme annee, l'import ecrit dans ce mois et bascule l'affichage sur ce jour.
 
-## Fournisseurs ciblés dans la saisie journalière
+## Fournisseurs cibles dans la saisie journaliere
 
-La première version cible les colonnes d'achats de la saisie journalière :
+La premiere version cible les colonnes d'achats de la saisie journaliere :
 
 - C10 ;
 - Richard Vins ;
-- Café Richard ;
+- Cafe Richard ;
 - Storia ;
 - Brake ;
 - Pomona F&L ;
@@ -75,16 +73,18 @@ La première version cible les colonnes d'achats de la saisie journalière :
 - Mammafiore ;
 - Compagnie des Desserts ;
 - Distripate ;
-- Metro / Dépannage ;
+- Metro / Depannage ;
 - Domafrais ;
 - Martel.
 
-## Décision actuelle
+## Decision actuelle
 
-Pour les factures fournisseurs, la règle retenue est :
+Pour les factures fournisseurs, la regle retenue est :
 
-- lecture du PDF à la demande ;
+- lecture locale du PDF a la demande ;
+- import possible de plusieurs factures en une fois ;
 - extraction fournisseur + date facture + montant HT uniquement ;
-- prévisualisation avant validation ;
-- absence de sauvegarde du fichier importé ;
-- ajout du montant validé dans la journée sélectionnée.
+- affichage en lignes avec statut vert ou orange ;
+- validation individuelle de chaque facture ;
+- absence de sauvegarde du fichier importe ;
+- ajout du montant valide dans la journee de la facture.

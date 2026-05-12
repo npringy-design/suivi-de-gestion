@@ -19,17 +19,14 @@ type DashboardRow = {
 };
 
 type InvoiceImportPreview = {
+  id: string;
   fileName: string;
   supplier: string;
   amountHt: string;
   invoiceDate: string;
   targetCol: number;
   status: string;
-};
-
-type InvoiceImagePart = {
-  mimeType: string;
-  data: string;
+  confidence: 'verified' | 'review';
 };
 
 const C: DashboardColumn[] = [
@@ -318,7 +315,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [importStatus, setImportStatus] = useState('');
   const [importPreview, setImportPreview] = useState<Array<{ label: string; value: string }>>([]);
   const [invoiceImportStatus, setInvoiceImportStatus] = useState('');
-  const [invoiceImportPreview, setInvoiceImportPreview] = useState<InvoiceImportPreview | null>(null);
+  const [invoiceImportPreviews, setInvoiceImportPreviews] = useState<InvoiceImportPreview[]>([]);
   const [purchaseSupplierNames, setPurchaseSupplierNames] = useState<Record<number, string>>(() => {
     try {
       const saved = localStorage.getItem('dashboard_purchase_supplier_names_v1');
@@ -433,7 +430,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     } catch {
       // La RAZ des données métier a déjà été appliquée en mémoire.
     }
-    setInvoiceImportPreview(null);
+    setInvoiceImportPreviews([]);
     setInvoiceImportStatus('');
     setImportPreview([]);
     setImportStatus('RAZ locale effectuee. Les donnees de test ont ete effacees.');
@@ -1425,89 +1422,39 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return 0;
   };
 
-  const parseInvoiceImport = (sourceText: string, fileName: string): InvoiceImportPreview => {
+  const createInvoiceImportId = (fileName: string, index: number) => `${Date.now()}-${index}-${fileName}`;
+
+  const getInvoiceConfidence = (supplierNeedsCheck: boolean, amountHt: number, invoiceDate: string, targetCol: number): InvoiceImportPreview['confidence'] => (
+    !supplierNeedsCheck && amountHt > 0 && Boolean(invoiceDate) && targetCol >= 45 && targetCol <= 57
+      ? 'verified'
+      : 'review'
+  );
+
+  const parseInvoiceImport = (sourceText: string, fileName: string, id = createInvoiceImportId(fileName, 0)): InvoiceImportPreview => {
     const text = sourceText.replace(/\u00a0/g, ' ').replace(/â‚¬/g, '€');
     const supplierMatch = findInvoiceSupplier(text);
     const amountHt = findInvoiceAmountHt(text);
     const invoiceDate = findInvoiceDate(text);
-    const supplierNeedsCheck = supplierMatch.supplier === 'Fournisseur à renseigner';
+    const supplierNeedsCheck = normalizeImportText(supplierMatch.supplier).includes('FOURNISSEUR A RENSEIGNER');
+    const confidence = getInvoiceConfidence(supplierNeedsCheck, amountHt, invoiceDate, supplierMatch.targetCol);
 
     return {
+      id,
       fileName,
       supplier: supplierMatch.supplier || 'Fournisseur non reconnu',
       amountHt: formatInvoiceAmount(amountHt),
       invoiceDate,
       targetCol: supplierMatch.targetCol,
-      status: supplierNeedsCheck
+      status: confidence === 'verified'
+        ? 'Lecture complete prete a valider.'
+        : supplierNeedsCheck
         ? 'Fournisseur et colonne cible à vérifier avant validation.'
         : amountHt && invoiceDate
         ? 'Lecture facture prête à valider.'
         : !amountHt
           ? 'Montant HT à renseigner manuellement avant validation.'
           : 'Date de facture à vérifier avant validation.',
-    };
-  };
-
-  const getKnownInvoiceSuppliers = () => Array.from({ length: 13 }, (_, idx) => 45 + idx)
-    .map(col => ({ col, name: (dynamicColumns[col]?.[2] || '').replace(/\n/g, ' ').trim() }))
-    .filter(supplier => supplier.name);
-
-  const renderPdfInvoiceImageParts = async (file: File): Promise<InvoiceImagePart[]> => {
-    const loadPdfJs = new Function('url', 'return import(url)') as (url: string) => Promise<any>;
-    const pdfjs = await loadPdfJs('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
-    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs';
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const pdf = await pdfjs.getDocument({ data: bytes }).promise;
-    const imageParts: InvoiceImagePart[] = [];
-
-    for (let pageNumber = 1; pageNumber <= Math.min(pdf.numPages, 2); pageNumber += 1) {
-      const page = await pdf.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: 1.5 });
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      if (!context) continue;
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
-      await page.render({ canvasContext: context, viewport }).promise;
-      imageParts.push({
-        mimeType: 'image/jpeg',
-        data: canvas.toDataURL('image/jpeg', 0.85).split(',')[1] || '',
-      });
-    }
-
-    return imageParts.filter(part => part.data);
-  };
-
-  const parseInvoiceWithVision = async (file: File, fileName: string): Promise<InvoiceImportPreview | null> => {
-    const imageParts = await renderPdfInvoiceImageParts(file);
-    if (imageParts.length === 0) return null;
-
-    const response = await fetch('/api/invoice-vision', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        imageParts,
-        knownSuppliers: getKnownInvoiceSuppliers(),
-      }),
-    });
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    const parsed = data?.invoice;
-    if (!parsed) return null;
-
-    const targetCol = Number(parsed.targetCol);
-    const amountHt = Number(parsed.amountHt);
-    return {
-      fileName,
-      supplier: String(parsed.supplier || 'Fournisseur non reconnu'),
-      amountHt: Number.isFinite(amountHt) && amountHt > 0 ? amountHt.toFixed(2) : '',
-      invoiceDate: String(parsed.invoiceDate || ''),
-      targetCol: targetCol >= 45 && targetCol <= 57 ? targetCol : 45,
-      status: amountHt && parsed.invoiceDate
-        ? 'Lecture IA prête à valider.'
-        : 'Vérifie le montant ou la date avant validation.',
+      confidence,
     };
   };
 
@@ -1754,69 +1701,40 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const handleInvoiceImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
 
-    setInvoiceImportStatus('Lecture de la facture...');
-    setInvoiceImportPreview(null);
+    setInvoiceImportStatus(`Lecture locale de ${files.length} facture${files.length > 1 ? 's' : ''}...`);
 
     try {
-      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-      if (isPdf) {
-        setInvoiceImportStatus('Lecture IA de la facture...');
-        try {
-          const imageParts = await renderPdfInvoiceImageParts(file);
-          const response = imageParts.length > 0
-            ? await fetch('/api/invoice-vision', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                imageParts,
-                knownSuppliers: getKnownInvoiceSuppliers(),
-              }),
-            })
-            : null;
-
-          if (response?.ok) {
-            const data = await response.json();
-            const invoice = data?.invoice;
-            if (invoice) {
-              const targetCol = Number(invoice.targetCol);
-              const amountHt = Number(invoice.amountHt);
-              const preview: InvoiceImportPreview = {
-                fileName: file.name,
-                supplier: String(invoice.supplier || 'Fournisseur non reconnu'),
-                amountHt: Number.isFinite(amountHt) && amountHt > 0 ? amountHt.toFixed(2) : '',
-                invoiceDate: String(invoice.invoiceDate || ''),
-                targetCol: targetCol >= 45 && targetCol <= 57 ? targetCol : 45,
-                status: amountHt && invoice.invoiceDate
-                  ? 'Lecture IA prête à valider.'
-                  : 'Vérifie le montant ou la date avant validation.',
-              };
-              setInvoiceImportPreview(preview);
-              setInvoiceImportStatus(preview.status);
-              return;
-            }
-          }
-        } catch {
-          // Si l'IA n'est pas disponible, l'import continue avec la lecture locale.
-        }
+      const parsedInvoices: InvoiceImportPreview[] = [];
+      for (const [index, file] of files.entries()) {
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        const text = isPdf
+          ? await extractPdfLayoutText(file, () => setInvoiceImportStatus('Lecture OCR locale de facture scannee...'))
+          : await file.text();
+        parsedInvoices.push(parseInvoiceImport(text, file.name, createInvoiceImportId(file.name, index)));
       }
 
-      const text = isPdf
-        ? await extractPdfLayoutText(file, () => setInvoiceImportStatus('Lecture OCR de la facture scannée...'))
-        : await file.text();
-      const parsed = parseInvoiceImport(text, file.name);
-      setInvoiceImportPreview(parsed);
-      setInvoiceImportStatus(parsed.status);
+      setInvoiceImportPreviews(prev => [...prev, ...parsedInvoices]);
+      const reviewCount = parsedInvoices.filter(item => item.confidence === 'review').length;
+      setInvoiceImportStatus(reviewCount > 0
+        ? `${parsedInvoices.length} facture${parsedInvoices.length > 1 ? 's' : ''} lue${parsedInvoices.length > 1 ? 's' : ''}. ${reviewCount} a verifier.`
+        : `${parsedInvoices.length} facture${parsedInvoices.length > 1 ? 's' : ''} lue${parsedInvoices.length > 1 ? 's' : ''}, prete${parsedInvoices.length > 1 ? 's' : ''} a valider.`);
     } catch (error) {
-      setInvoiceImportStatus(`Erreur : ${error instanceof Error ? error.message : "La facture n'a pas pu être lue."}`);
+      setInvoiceImportStatus(`Erreur : ${error instanceof Error ? error.message : "La facture n'a pas pu etre lue."}`);
     } finally {
       event.target.value = '';
     }
   };
 
-  const applyInvoiceImport = () => {
+  const updateInvoiceImportPreview = (id: string, updates: Partial<InvoiceImportPreview>) => {
+    setInvoiceImportPreviews(prev => prev.map(item => item.id === id
+      ? { ...item, ...updates, confidence: 'review', status: 'Valeurs modifiees manuellement, a verifier avant validation.' }
+      : item));
+  };
+
+  const applyInvoiceImport = (invoiceImportPreview: InvoiceImportPreview) => {
     if (!invoiceImportPreview || selectedDayRowIndex < 0) return;
 
     const dateMatch = invoiceImportPreview.invoiceDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -1824,7 +1742,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const invoiceMonth = dateMatch ? Number(dateMatch[2]) - 1 : null;
     const invoiceDay = dateMatch ? Number(dateMatch[3]) : null;
     if (invoiceYear && invoiceYear !== year) {
-      setInvoiceImportStatus(`Erreur : la facture est datée de ${invoiceYear}. Passe d'abord sur cette année avant de valider l'import.`);
+      setInvoiceImportStatus(`Erreur : la facture est datee de ${invoiceYear}. Passe d'abord sur cette annee avant de valider l'import.`);
       return;
     }
     const hasInvoiceTarget = invoiceDay && invoiceMonth !== null && invoiceYear;
@@ -1841,7 +1759,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const existingAmount = parseInvoiceNumber(globalData[targetMonth]?.dashboard?.[cellKey] || '');
     const importedAmount = parseInvoiceNumber(invoiceImportPreview.amountHt);
     if (targetRowIndex < 0) {
-      setInvoiceImportStatus('Erreur : la date de facture ne correspond à aucun jour exploitable.');
+      setInvoiceImportStatus('Erreur : la date de facture ne correspond a aucun jour exploitable.');
       return;
     }
     if (!importedAmount) {
@@ -1859,10 +1777,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const targetLabel = invoiceDay && invoiceMonth !== null && invoiceYear
       ? `${String(invoiceDay).padStart(2, '0')}/${String(invoiceMonth + 1).padStart(2, '0')}/${invoiceYear}`
       : targetDayEntry?.row.label || selectedDayLabel;
-    setInvoiceImportStatus(`Facture ajoutée sur ${dynamicColumns[invoiceImportPreview.targetCol]?.[2] || invoiceImportPreview.supplier} pour le ${targetLabel}.`);
-    setInvoiceImportPreview(null);
+    setInvoiceImportStatus(`Facture ajoutee sur ${dynamicColumns[invoiceImportPreview.targetCol]?.[2] || invoiceImportPreview.supplier} pour le ${targetLabel}.`);
+    setInvoiceImportPreviews(prev => prev.filter(item => item.id !== invoiceImportPreview.id));
   };
-
   const getDailyCellValue = (col: number) => selectedDayRowIndex >= 0 ? calculatedData[`${selectedDayRowIndex}-${col}`] || '' : '';
   const getDailyDisplayValue = (col: number) => formatValue(getDailyCellValue(col), dynamicColumns[col] || ['', '', '', '']);
   const isDailyFieldFocused = (col: number) => focusedCell === `${selectedDayRowIndex}-${col}`;
@@ -3589,76 +3506,100 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               <label style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14, padding: 16, border: '1px dashed #86efac', borderRadius: 10, background: '#f0fdf4' }}>
                 <span style={{ fontSize: 12, fontWeight: 900, color: '#166534', textTransform: 'uppercase', letterSpacing: '.04em' }}>Facture fournisseur</span>
                 <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                  Lecture test : fournisseur et montant HT uniquement. Le fichier n'est pas conserve.
+                  Lecture locale : fournisseur, date et montant HT. Les fichiers ne sont pas conserves.
                 </span>
                 <input
                   type="file"
                   accept=".pdf,.txt,text/plain,application/pdf"
                   onChange={handleInvoiceImport}
+                  multiple
                   style={{ fontSize: 13, color: '#0f172a' }}
                 />
               </label>
 
               {invoiceImportStatus && (
-                <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: invoiceImportStatus.startsWith('Erreur') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${invoiceImportStatus.startsWith('Erreur') ? '#fecaca' : '#bbf7d0'}`, color: invoiceImportStatus.startsWith('Erreur') ? '#991b1b' : '#166534', fontSize: 13, fontWeight: 800 }}>
+                <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: invoiceImportStatus.startsWith('Erreur') ? '#fef2f2' : invoiceImportStatus.includes('verifier') ? '#fffbeb' : '#f0fdf4', border: `1px solid ${invoiceImportStatus.startsWith('Erreur') ? '#fecaca' : invoiceImportStatus.includes('verifier') ? '#fbbf24' : '#bbf7d0'}`, color: invoiceImportStatus.startsWith('Erreur') ? '#991b1b' : invoiceImportStatus.includes('verifier') ? '#92400e' : '#166534', fontSize: 13, fontWeight: 800 }}>
                   {invoiceImportStatus}
                 </div>
               )}
 
-              {invoiceImportPreview && (
-                <div style={{ marginTop: 12, padding: 12, border: '1px solid #bbf7d0', borderRadius: 10, background: '#f8fafc', display: 'grid', gap: 10 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-                    <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                      <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Fournisseur lu</span>
-                      <input
-                        value={invoiceImportPreview.supplier}
-                        onChange={event => setInvoiceImportPreview(prev => prev ? { ...prev, supplier: event.target.value } : prev)}
-                        style={{ height: 34, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
-                      />
-                    </label>
-                    <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                      <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Montant HT</span>
-                      <input
-                        value={invoiceImportPreview.amountHt}
-                        onChange={event => setInvoiceImportPreview(prev => prev ? { ...prev, amountHt: event.target.value.replace(/[^0-9.,-]/g, '').replace(',', '.') } : prev)}
-                        style={{ height: 34, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 900, color: '#0f172a', textAlign: 'right' }}
-                      />
-                    </label>
-                  </div>
-                  <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                    <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Date facture</span>
-                    <input
-                      type="date"
-                      value={invoiceImportPreview.invoiceDate}
-                      onChange={event => setInvoiceImportPreview(prev => prev ? { ...prev, invoiceDate: event.target.value } : prev)}
-                      style={{ height: 34, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
-                    />
-                  </label>
-                  <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                    <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Colonne cible</span>
-                    <select
-                      value={invoiceImportPreview.targetCol}
-                      onChange={event => setInvoiceImportPreview(prev => prev ? { ...prev, targetCol: Number(event.target.value) } : prev)}
-                      style={{ height: 34, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff' }}
-                    >
-                      {Array.from({ length: 13 }, (_, idx) => 45 + idx).map(col => (
-                        <option key={col} value={col}>{dynamicColumns[col]?.[2] || `Achat ${col}`}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700 }}>
-                    Fichier lu : {invoiceImportPreview.fileName}. La validation ajoute le montant au {invoiceImportPreview.invoiceDate ? formatInvoiceDateLabel(invoiceImportPreview.invoiceDate) : 'jour selectionne si aucune date nest renseignee'}.
-                  </div>
-                  <button
-                    type="button"
-                    onClick={applyInvoiceImport}
-                    style={{ height: 36, border: 'none', borderRadius: 8, background: '#166534', color: '#fff', fontSize: 13, fontWeight: 900, cursor: 'pointer' }}
-                  >
-                    Valider la facture
-                  </button>
+              {invoiceImportPreviews.length > 0 && (
+                <div style={{ marginTop: 12, display: 'grid', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
+                  {invoiceImportPreviews.map(item => {
+                    const isVerified = item.confidence === 'verified';
+                    return (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'minmax(130px, 1.2fr) minmax(130px, 1fr) 116px 104px minmax(150px, 1fr) 112px',
+                          gap: 8,
+                          alignItems: 'end',
+                          minWidth: 840,
+                          padding: 10,
+                          border: `1px solid ${isVerified ? '#86efac' : '#fbbf24'}`,
+                          borderRadius: 8,
+                          background: isVerified ? '#f0fdf4' : '#fffbeb',
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                            <span style={{ padding: '2px 7px', borderRadius: 999, background: isVerified ? '#dcfce7' : '#fef3c7', color: isVerified ? '#166534' : '#92400e', fontSize: 10, fontWeight: 900, textTransform: 'uppercase' }}>
+                              {isVerified ? 'OK' : 'A verifier'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 900, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.fileName}>{item.fileName}</div>
+                          <div style={{ marginTop: 2, fontSize: 11, color: isVerified ? '#166534' : '#92400e', fontWeight: 700 }}>{item.status}</div>
+                        </div>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Fournisseur</span>
+                          <input
+                            value={item.supplier}
+                            onChange={event => updateInvoiceImportPreview(item.id, { supplier: event.target.value })}
+                            style={{ height: 34, minWidth: 0, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
+                          />
+                        </label>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Date</span>
+                          <input
+                            type="date"
+                            value={item.invoiceDate}
+                            onChange={event => updateInvoiceImportPreview(item.id, { invoiceDate: event.target.value })}
+                            style={{ height: 34, minWidth: 0, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
+                          />
+                        </label>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>HT</span>
+                          <input
+                            value={item.amountHt}
+                            onChange={event => updateInvoiceImportPreview(item.id, { amountHt: event.target.value.replace(/[^0-9.,-]/g, '').replace(',', '.') })}
+                            style={{ height: 34, minWidth: 0, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 900, color: '#0f172a', textAlign: 'right' }}
+                          />
+                        </label>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Colonne cible</span>
+                          <select
+                            value={item.targetCol}
+                            onChange={event => updateInvoiceImportPreview(item.id, { targetCol: Number(event.target.value) })}
+                            style={{ height: 34, minWidth: 0, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff' }}
+                          >
+                            {Array.from({ length: 13 }, (_, idx) => 45 + idx).map(col => (
+                              <option key={col} value={col}>{dynamicColumns[col]?.[2] || `Achat ${col}`}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => applyInvoiceImport(item)}
+                          style={{ height: 36, border: 'none', borderRadius: 8, background: isVerified ? '#166534' : '#b45309', color: '#fff', fontSize: 13, fontWeight: 900, cursor: 'pointer' }}
+                        >
+                          Valider
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
-
               {importStatus && (
                 <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: importStatus.startsWith('Erreur') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${importStatus.startsWith('Erreur') ? '#fecaca' : '#bbf7d0'}`, color: importStatus.startsWith('Erreur') ? '#991b1b' : '#166534', fontSize: 13, fontWeight: 800 }}>
                   {importStatus}
