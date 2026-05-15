@@ -111,7 +111,7 @@ Point important :
 
 ## Personnel - heures, salaires et cout horaire
 
-Statut : en cours, premiere brique validee.
+Statut : en cours, import salaires ajoute.
 
 Ce qui est en place :
 
@@ -120,15 +120,20 @@ Ce qui est en place :
 - ces formats sont convertis en `7.5` pour les calculs ;
 - les decimaux simples restent acceptes : `7.5`, `7,5` ;
 - la configuration des salaires utilise cette conversion pour calculer les couts horaires ;
-- la calculette salaires utilise cette conversion pour totaliser les heures.
+- la calculette salaires utilise cette conversion pour totaliser les heures ;
+- import Excel/CSV possible dans la configuration salaires pour remplir les noms, statuts, heures et couts globaux ;
+- l'import accepte aussi un cout horaire si le cout global n'est pas fourni, puis reconstitue le cout global necessaire au calcul existant ;
+- les statuts reconnus alimentent les sections cadre, maitrise, niveau I et II, niveau III et apprenti ;
+- le suivi quotidien utilise la meme conversion d'heures pour les calculs de frais de personnel projection et realise.
 
 Ou regarder :
 
 - documentation : `docs/HEURES_PERSONNEL.md`
 - fonction commune : `src/utils.ts`, fonction `parseHourInputToDecimal`
+- import salaires : `src/salaryImport.ts`
 - configuration salaires : `src/ConfigSalaires.tsx`
 - calculette salaires : `src/CalculetteSalaires.tsx`
-- tests : `src/test/utils.test.ts`
+- tests : `src/test/utils.test.ts`, `src/test/salaryImport.test.ts`
 
 Point important :
 

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { parseHourInputToDecimal } from '@/utils';
 
 import { ChevronLeft, Download, Upload, FileDown, Trash2, X, Clipboard } from 'lucide-react';
 // ── Constantes Dashboard inline (dashboardConstants.ts intégré) ─────────────
@@ -350,7 +351,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let validRowsCount = 0;
         rows.forEach((row: any) => {
           const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
-          const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
+          const heures = parseHourInputToDecimal(row.heures || '0');
           const provision = coutGlobal * 1.10;
           const coutHoraire = heures > 0 ? provision / heures : 0;
           if (coutHoraire > 0) {
@@ -710,7 +711,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           let validRowsCount = 0;
           rows.forEach((row: any) => {
             const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
-            const heures = parseFloat((row.heures || '0').replace(',', '.')) || 0;
+            const heures = parseHourInputToDecimal(row.heures || '0');
             const provision = coutGlobal * 1.10;
             const coutHoraire = heures > 0 ? provision / heures : 0;
             if (coutHoraire > 0) {
@@ -737,7 +738,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         for (let i = 0; i < 10; i++) {
           const colIdx = 78 + i; // PROJECTION S/C columns start at 76 (CADRE en 74+75 éditable séparément)
           if (data[`${rIdx}-${colIdx}`]) {
-            const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
+            const val = parseHourInputToDecimal(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresProj += val;
             coutGlobalProj += val * projRates[i];
             hasProjData = true;
@@ -763,7 +764,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         for (let i = 0; i < 10; i++) {
           const colIdx = 91 + i;
           if (data[`${rIdx}-${colIdx}`]) {
-            const val = parseFloat(data[`${rIdx}-${colIdx}`] || '0');
+            const val = parseHourInputToDecimal(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresReal += val;
             coutGlobalReal += val * projRates[i];
             hasRealData = true;
