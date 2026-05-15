@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { getDashboardRowIndices, getISOWeek } from '../utils';
+import { getDashboardRowIndices, getISOWeek, parseHourInputToDecimal } from '../utils';
 
 describe('utils', () => {
   describe('getDashboardRowIndices', () => {
@@ -46,6 +46,22 @@ describe('utils', () => {
       const week = getISOWeek(date);
       expect(week).toBeGreaterThan(0);
       expect(week).toBeLessThanOrEqual(53);
+    });
+  });
+
+  describe('parseHourInputToDecimal', () => {
+    it('converts common hour/minute inputs to decimal hours', () => {
+      expect(parseHourInputToDecimal('7h30')).toBe(7.5);
+      expect(parseHourInputToDecimal('7:30')).toBe(7.5);
+      expect(parseHourInputToDecimal('7.30')).toBe(7.5);
+      expect(parseHourInputToDecimal('7,30')).toBe(7.5);
+      expect(parseHourInputToDecimal('8h05')).toBe(8.0833);
+    });
+
+    it('keeps simple decimal values available for existing numeric entries', () => {
+      expect(parseHourInputToDecimal('7.5')).toBe(7.5);
+      expect(parseHourInputToDecimal('7,5')).toBe(7.5);
+      expect(parseHourInputToDecimal(7.5)).toBe(7.5);
     });
   });
 });

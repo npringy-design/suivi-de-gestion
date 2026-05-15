@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import type { MonthDataSalariesConfig, SalarieRow } from '@/contexts/DataContext';
+import { parseHourInputToDecimal } from '@/utils';
 
 const NAV = '#1e293b';
 const SALARY_CATEGORIES = ['cadre', 'maitrise', 'niv12', 'niv3', 'apprenti'] as const;
@@ -138,7 +139,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
 
     rows.forEach(row => {
       const coutGlobal = parseNum(row.coutGlobal);
-      const heures = parseNum(row.heures);
+      const heures = parseHourInputToDecimal(row.heures);
       const provision = coutGlobal * 1.10;
       const coutHoraire = heures > 0 ? provision / heures : 0;
 
@@ -297,7 +298,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
 
     const rowsWithCalculations: SalarieRowWithCalculations[] = rows.map(row => {
       const coutGlobal = parseNum(row.coutGlobal);
-      const heures = parseNum(row.heures);
+      const heures = parseHourInputToDecimal(row.heures);
       
       const provision = coutGlobal * 1.10;
       const coutHoraire = heures > 0 ? provision / heures : 0;
@@ -351,7 +352,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
                     <input disabled={isLocked} style={{ ...inputStyle, textAlign: 'left', cursor: isLocked ? 'not-allowed' : 'text' }} value={row.nom} onChange={e => handleSalarieChange(category, i, 'nom', e.target.value)} placeholder="Nom..." />
                   </td>
                   <td style={{ ...tdStyle, background: '#f1f5f9' }}>
-                    <input disabled={isLocked} style={{ ...inputStyle, cursor: isLocked ? 'not-allowed' : 'text' }} value={row.heures} onChange={e => handleSalarieChange(category, i, 'heures', e.target.value)} />
+                    <input disabled={isLocked} style={{ ...inputStyle, cursor: isLocked ? 'not-allowed' : 'text' }} value={row.heures} onChange={e => handleSalarieChange(category, i, 'heures', e.target.value)} placeholder="7h30" title="Formats acceptes : 7h30, 7:30, 7.30, 7,30" />
                   </td>
                   <td style={{ ...tdStyle, background: isLocked ? '#f1f5f9' : '#dbeafe' }}>
                     <input disabled={isLocked} style={{ ...inputStyle, cursor: isLocked ? 'not-allowed' : 'text' }} value={row.coutGlobal} onChange={e => handleSalarieChange(category, i, 'coutGlobal', e.target.value)} />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
-import type { EmployeeRow, SimulationRow, EquipeStructure, RoleData } from '@/types';
+import type { EquipeStructure, RoleData } from '@/types';
+import { parseHourInputToDecimal } from '@/utils';
 
 const NAV = '#1e293b';
 
@@ -98,7 +99,10 @@ export default function CalculetteSalaires({ onBack }: CalculetteSalairesProps) 
   };
 
   const calcEquipeTotal = (equipe: EquipeStructure, dept: 'cuisine' | 'salle', field: 'h' | 'n'): number => {
-    return (Object.values(equipe[dept]) as RoleData[]).reduce((sum: number, role: RoleData) => sum + parseNum(role[field]), 0);
+    return (Object.values(equipe[dept]) as RoleData[]).reduce((sum: number, role: RoleData) => {
+      const value = field === 'h' ? parseHourInputToDecimal(role[field]) : parseNum(role[field]);
+      return sum + value;
+    }, 0);
   };
 
   const thStyle: React.CSSProperties = {
@@ -131,13 +135,13 @@ export default function CalculetteSalaires({ onBack }: CalculetteSalairesProps) 
     <tr key={`${dept}-${role}`}>
       <td style={{ ...tdStyle, textAlign: 'left', background: dept === 'cuisine' ? '#e0f2fe' : '#fef3c7' }}>{label}</td>
       <td style={{ ...tdStyle, background: dept === 'cuisine' ? '#e0f2fe' : '#fef3c7' }}>
-        <input style={inputStyle} value={equipesActuelle[dept][role as keyof typeof equipesActuelle.cuisine].h} onChange={e => handleEquipeChange(true, dept, role, 'h', e.target.value)} />
+        <input style={inputStyle} value={equipesActuelle[dept][role as keyof typeof equipesActuelle.cuisine].h} onChange={e => handleEquipeChange(true, dept, role, 'h', e.target.value)} placeholder="7h30" title="Formats acceptes : 7h30, 7:30, 7.30, 7,30" />
       </td>
       <td style={{ ...tdStyle, background: dept === 'cuisine' ? '#e0f2fe' : '#fef3c7' }}>
         <input style={inputStyle} value={equipesActuelle[dept][role as keyof typeof equipesActuelle.cuisine].n} onChange={e => handleEquipeChange(true, dept, role, 'n', e.target.value)} />
       </td>
       <td style={{ ...tdStyle, background: dept === 'cuisine' ? '#e0f2fe' : '#fef3c7', borderLeft: '2px dashed #ef4444' }}>
-        <input style={inputStyle} value={equipesApres[dept][role as keyof typeof equipesApres.cuisine].h} onChange={e => handleEquipeChange(false, dept, role, 'h', e.target.value)} />
+        <input style={inputStyle} value={equipesApres[dept][role as keyof typeof equipesApres.cuisine].h} onChange={e => handleEquipeChange(false, dept, role, 'h', e.target.value)} placeholder="7h30" title="Formats acceptes : 7h30, 7:30, 7.30, 7,30" />
       </td>
       <td style={{ ...tdStyle, background: dept === 'cuisine' ? '#e0f2fe' : '#fef3c7' }}>
         <input style={inputStyle} value={equipesApres[dept][role as keyof typeof equipesApres.cuisine].n} onChange={e => handleEquipeChange(false, dept, role, 'n', e.target.value)} />
@@ -208,7 +212,7 @@ export default function CalculetteSalaires({ onBack }: CalculetteSalairesProps) 
                       <tr key={i}>
                         <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={emp.nom} onChange={e => handleEmployeeChange(i, 'nom', e.target.value)} /></td>
                         <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={emp.equipe} onChange={e => handleEmployeeChange(i, 'equipe', e.target.value)} /></td>
-                        <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={emp.heuresPayees} onChange={e => handleEmployeeChange(i, 'heuresPayees', e.target.value)} /></td>
+                        <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={emp.heuresPayees} onChange={e => handleEmployeeChange(i, 'heuresPayees', e.target.value)} placeholder="7h30" title="Formats acceptes : 7h30, 7:30, 7.30, 7,30" /></td>
                         <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={emp.coutTotalCharge} onChange={e => handleEmployeeChange(i, 'coutTotalCharge', e.target.value)} /></td>
                       </tr>
                     ))}
@@ -402,8 +406,8 @@ export default function CalculetteSalaires({ onBack }: CalculetteSalairesProps) 
                         <tr key={`minus-${i}`}>
                           <td style={{ ...tdStyle, background: '#f1f5f9', fontWeight: 800 }}>-</td>
                           <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.poste} onChange={e => handleSimMinusChange(i, 'poste', e.target.value)} /></td>
-                          <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.heuresHebdo} onChange={e => handleSimMinusChange(i, 'heuresHebdo', e.target.value)} /></td>
-                          <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.heuresMensuels} onChange={e => handleSimMinusChange(i, 'heuresMensuels', e.target.value)} /></td>
+                          <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.heuresHebdo} onChange={e => handleSimMinusChange(i, 'heuresHebdo', e.target.value)} placeholder="7h30" title="Formats acceptes : 7h30, 7:30, 7.30, 7,30" /></td>
+                          <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.heuresMensuels} onChange={e => handleSimMinusChange(i, 'heuresMensuels', e.target.value)} placeholder="7h30" title="Formats acceptes : 7h30, 7:30, 7.30, 7,30" /></td>
                           <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.nombre} onChange={e => handleSimMinusChange(i, 'nombre', e.target.value)} /></td>
                           <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.montant} onChange={e => handleSimMinusChange(i, 'montant', e.target.value)} /></td>
                           {i === 0 && (
@@ -431,8 +435,8 @@ export default function CalculetteSalaires({ onBack }: CalculetteSalairesProps) 
                         <tr key={`plus-${i}`}>
                           <td style={{ ...tdStyle, background: '#fed7aa', fontWeight: 800, color: '#9a3412' }}>+</td>
                           <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.poste} onChange={e => handleSimPlusChange(i, 'poste', e.target.value)} /></td>
-                          <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.heuresHebdo} onChange={e => handleSimPlusChange(i, 'heuresHebdo', e.target.value)} /></td>
-                          <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.heuresMensuels} onChange={e => handleSimPlusChange(i, 'heuresMensuels', e.target.value)} /></td>
+                          <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.heuresHebdo} onChange={e => handleSimPlusChange(i, 'heuresHebdo', e.target.value)} placeholder="7h30" title="Formats acceptes : 7h30, 7:30, 7.30, 7,30" /></td>
+                          <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.heuresMensuels} onChange={e => handleSimPlusChange(i, 'heuresMensuels', e.target.value)} placeholder="7h30" title="Formats acceptes : 7h30, 7:30, 7.30, 7,30" /></td>
                           <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.nombre} onChange={e => handleSimPlusChange(i, 'nombre', e.target.value)} /></td>
                           <td style={{ ...tdStyle, background: '#fff' }}><input style={inputStyle} value={sim.montant} onChange={e => handleSimPlusChange(i, 'montant', e.target.value)} /></td>
                         </tr>
