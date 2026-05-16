@@ -63,5 +63,15 @@ describe('utils', () => {
       expect(parseHourInputToDecimal('7,5')).toBe(7.5);
       expect(parseHourInputToDecimal(7.5)).toBe(7.5);
     });
+
+    it('converts minutes to exact hundredths without rounding to 0 or 5 endings', () => {
+      expect(Number(parseHourInputToDecimal('7h01').toFixed(2))).toBe(7.02);
+      expect(Number(parseHourInputToDecimal('7h05').toFixed(2))).toBe(7.08);
+      expect(Number(parseHourInputToDecimal('7h10').toFixed(2))).toBe(7.17);
+      expect(Number(parseHourInputToDecimal('7h20').toFixed(2))).toBe(7.33);
+      expect(Number(parseHourInputToDecimal('7h25').toFixed(2))).toBe(7.42);
+      expect(Number(parseHourInputToDecimal('7h40').toFixed(2))).toBe(7.67);
+      expect(Number(parseHourInputToDecimal('7h50').toFixed(2))).toBe(7.83);
+    });
   });
 });
