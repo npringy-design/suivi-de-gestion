@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { PersonnelInfo } from '../contexts/DataContext';
-import { averagePayrollRate, buildPayrollImportFromText } from '../personnelSalaryImport';
+import { averagePayrollRate, buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '../personnelSalaryImport';
 
 const personnel: PersonnelInfo[] = [
   { id: '1', nom: 'Pringy Nicolas', category: 'cadre', department: 'salle', aliases: 'Nicolas Pringy' },
@@ -10,6 +10,41 @@ const personnel: PersonnelInfo[] = [
 ];
 
 describe('personnelSalaryImport', () => {
+  it('detects the target month from the payroll PDF title', () => {
+    const result = getPayrollTargetPeriodFromText('Coûts salariaux - Avril 2026');
+
+    expect(result).toMatchObject({
+      sourceMonth: 3,
+      sourceYear: 2026,
+      targetMonth: 4,
+      targetYear: 2026,
+      sourceLabel: 'avril 2026',
+      targetLabel: 'mai 2026',
+    });
+  });
+
+  it('moves December payroll to January of the next year', () => {
+    const result = getPayrollTargetPeriodFromText('Coûts salariaux - Décembre 2026');
+
+    expect(result).toMatchObject({
+      sourceMonth: 11,
+      sourceYear: 2026,
+      targetMonth: 0,
+      targetYear: 2027,
+      sourceLabel: 'décembre 2026',
+      targetLabel: 'janvier 2027',
+    });
+  });
+
+  it('falls back to the most frequent numeric payroll month in table rows', () => {
+    const result = getPayrollTargetPeriodFromText([
+      'PRINGY NICOLAS 04/2026 151.67 6057.77',
+      'MARTIAL KIESHA 04/2026 166.25 3287.74',
+    ].join('\n'));
+
+    expect(result).toMatchObject({ sourceMonth: 3, sourceYear: 2026, targetMonth: 4, targetYear: 2026 });
+  });
+
   it('matches PDF text lines to personnel and stores their department', () => {
     const text = [
       'Pringy Nicolas heures 151,67 cout global 4500,00',
@@ -21,6 +56,7 @@ describe('personnelSalaryImport', () => {
     expect(result.matches).toHaveLength(2);
     expect(result.categories.cadre[0]).toMatchObject({ nom: 'Pringy Nicolas', department: 'salle', heures: '151,67', coutGlobal: '4500' });
     expect(result.categories.niv3[0]).toMatchObject({ nom: 'Martin Samir', department: 'cuisine' });
+    expect(result.categories.cadre[0].importSourceLine).toBeUndefined();
     expect(result.unmatched.map(item => item.nom)).toEqual(['Durand Lea']);
   });
 
