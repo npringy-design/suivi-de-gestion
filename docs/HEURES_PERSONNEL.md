@@ -23,26 +23,31 @@ Ces exemples sont tous convertis en `7.5` heures pour les calculs.
 
 La logique commune est centralisee dans `parseHourInputToDecimal` dans `src/utils.ts`.
 
-## Import salaires
+## Referentiel personnel
 
-La page `Configuration Salaires et Charges` permet d'importer un fichier `.xlsx`, `.xls` ou `.csv` sur le mois selectionne.
+La page `Info personnel` sert a faire le lien entre le nom lu dans un PDF de paie et la colonne du suivi quotidien.
 
-Colonnes attendues, avec noms souples :
+Chaque ligne contient :
 
-- nom du salarie : `Nom`, `Salarie`, `Collaborateur`, `Employe` ;
-- statut ou categorie : `Statut`, `Categorie`, `Poste`, `Niveau`, `Classification` ;
-- heures mensuelles : `Heures`, `Heures mensuelles`, `Heures payees` ;
-- cout global mensuel : `Cout global`, `Cout total charge`, `Cout mensuel` ;
-- ou, si le cout global n'est pas fourni, cout horaire : `Cout horaire`, `Taux horaire`, `Cout heure`.
+- nom attendu dans le PDF ;
+- statut : cadre, agent de maitrise, niveau I et II, niveau III, apprenti ;
+- section : salle ou cuisine ;
+- alias eventuels pour les variantes de nom.
 
-Les statuts reconnus alimentent les sections existantes :
+Exemple : `Pringy Nicolas | Cadre | Salle`.
 
-- cadre ;
-- agent de maitrise ;
-- niveau I et II ;
-- niveau III ;
-- apprenti.
+## Import PDF salaires
 
-L'import remplace les lignes du mois selectionne dans la configuration salaires. Si seul un cout horaire est fourni, le cout global est reconstitue a partir des heures mensuelles afin que le calcul existant conserve sa logique : `cout horaire = cout global avec provision CP / heures`.
+L'import se fait depuis la page `Suivi quotidien`, dans la fenetre `Importer`, avec un fichier PDF salaires.
 
-Le mois verrouille ne peut pas etre importe.
+Mecanique :
+
+- le PDF est lu localement, sans conservation du fichier ;
+- les noms sont compares au referentiel `Info personnel` ;
+- pour chaque salarie retrouve, l'import cherche les heures et le cout global sur la ligne ou autour de son nom ;
+- le taux horaire est calcule avec la logique existante : `cout global * 1,10 / heures` ;
+- les taux sont regroupes par statut et section ;
+- si plusieurs salaries correspondent a la meme colonne, une moyenne est appliquee ;
+- les taux du mois sont mis a jour dans le suivi quotidien pour les colonnes cuisine/salle concernees.
+
+Le mois verrouille dans la configuration salaires ne peut pas etre remplace par l'import PDF.

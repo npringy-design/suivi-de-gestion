@@ -166,11 +166,23 @@ export type SalarieRow = {
   coutGlobal: string;
   provision: string;
   coutHoraire: string;
+  department?: PersonnelDepartment;
 };
 
 export type MonthDataSalariesConfig = {
   locked: boolean;
   categories: Record<string, SalarieRow[]>;
+};
+
+export type PersonnelCategory = 'cadre' | 'maitrise' | 'niv12' | 'niv3' | 'apprenti';
+export type PersonnelDepartment = 'cuisine' | 'salle';
+
+export type PersonnelInfo = {
+  id: string;
+  nom: string;
+  category: PersonnelCategory;
+  department: PersonnelDepartment;
+  aliases: string;
 };
 
 export type MonthData = {
@@ -228,10 +240,13 @@ type DataContextType = {
   customEvents: CustomEvent[];
   addCustomEvent: (event: CustomEvent) => void;
   removeCustomEvent: (id: string) => void;
+  personnelInfos: PersonnelInfo[];
+  updatePersonnelInfos: (rows: PersonnelInfo[]) => void;
   resetLocalData: () => void;
 };
 
 const STORAGE_KEY_V2 = 'gestion_data_v2';
+const PERSONNEL_INFOS_STORAGE_KEY = 'personnel_infos_v1';
 
 const loadFromStorage = (): Record<number, Record<number, MonthData>> => {
   try {
@@ -289,6 +304,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   });
 
+  const [personnelInfos, setPersonnelInfos] = useState<PersonnelInfo[]>(() => {
+    try {
+      const saved = localStorage.getItem(PERSONNEL_INFOS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   useEffect(() => {
     saveToStorage(allData);
   }, [allData]);
@@ -309,12 +333,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [customEvents]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(PERSONNEL_INFOS_STORAGE_KEY, JSON.stringify(personnelInfos));
+    } catch {
+      // localStorage can be unavailable in restricted browser contexts.
+    }
+  }, [personnelInfos]);
+
   const addCustomEvent = useCallback((event: CustomEvent) => {
     setCustomEvents(prev => [...prev, event]);
   }, []);
 
   const removeCustomEvent = useCallback((id: string) => {
     setCustomEvents(prev => prev.filter(e => e.id !== id));
+  }, []);
+
+  const updatePersonnelInfos = useCallback((rows: PersonnelInfo[]) => {
+    setPersonnelInfos(rows);
   }, []);
 
   const updateTheorique = useCallback((month: number, day: number, field: keyof DayDataTheorique, value: string) => {
@@ -761,16 +797,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem('gestion_data_v1');
       localStorage.removeItem('config2025_data_v1');
       localStorage.removeItem('custom_events_v1');
+      localStorage.removeItem(PERSONNEL_INFOS_STORAGE_KEY);
     } catch {
       // La remise à zéro reste possible en mémoire même si le stockage navigateur est indisponible.
     }
     setAllData({});
     setConfig2025({ mensuel: {}, hebdo: {} });
     setCustomEvents([]);
+    setPersonnelInfos([]);
   }, []);
 
   return (
-    <DataContext.Provider value={{ selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, data, allData, updateTheorique, updateNepting, updateEspeces, updateConecs, updateAncvPapiers, updateSaisieTR, updateVisuTRPapiers, updateSunday, updateUber, updateAmexAncv, updateDeliveroo, updateClickCollect, updateBilanSynthese, updateDepensesPetiteCaisse, updateDashboard, updateEdgMensuel, updateEdgMensuelRealise, updateEdgMensuelN1, updateMiseEnPaiement, updateSalariesConfig, config2025, updateConfig2025, customEvents, addCustomEvent, removeCustomEvent, resetLocalData }}>
+    <DataContext.Provider value={{ selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, data, allData, updateTheorique, updateNepting, updateEspeces, updateConecs, updateAncvPapiers, updateSaisieTR, updateVisuTRPapiers, updateSunday, updateUber, updateAmexAncv, updateDeliveroo, updateClickCollect, updateBilanSynthese, updateDepensesPetiteCaisse, updateDashboard, updateEdgMensuel, updateEdgMensuelRealise, updateEdgMensuelN1, updateMiseEnPaiement, updateSalariesConfig, config2025, updateConfig2025, customEvents, addCustomEvent, removeCustomEvent, personnelInfos, updatePersonnelInfos, resetLocalData }}>
       {children}
     </DataContext.Provider>
   );

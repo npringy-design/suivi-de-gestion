@@ -1,15 +1,15 @@
-import React, { useRef, useState } from 'react';
-import * as XLSX from 'xlsx';
+import React, { useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import type { MonthDataSalariesConfig, SalarieRow } from '@/contexts/DataContext';
-import { createEmptySalaryCategories, parseSalaryImportRows, SALARY_CATEGORIES } from '@/salaryImport';
-import type { SalariesCategories, SalaryCategory } from '@/salaryImport';
+import { createEmptyPayrollCategories, PERSONNEL_CATEGORIES } from '@/personnelSalaryImport';
 import { parseHourInputToDecimal } from '@/utils';
 
 const NAV = '#1e293b';
 
 type SalarieField = keyof SalarieRow;
+type SalaryCategory = (typeof PERSONNEL_CATEGORIES)[number];
+type SalariesCategories = Record<SalaryCategory, SalarieRow[]>;
 type SalarieRowWithCalculations = SalarieRow & {
   provisionVal: number;
   coutHoraireVal: number;
@@ -27,14 +27,12 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   ];
   
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0);
-  const [importMessage, setImportMessage] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedMonth = MONTHS[selectedMonthIndex];
   
   // Initialisation à 1 ligne max par défaut pour chaque mois
   const emptySalarieRow = (): SalarieRow => ({ nom: '', heures: '', coutGlobal: '', provision: '', coutHoraire: '' });
 
-  const defaultCategories = createEmptySalaryCategories();
+  const defaultCategories = createEmptyPayrollCategories();
 
   const getCurrentConfig = (monthIdx: number): MonthDataSalariesConfig => {
     return data[monthIdx]?.salariesConfig || { locked: false, categories: defaultCategories };
@@ -99,7 +97,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     const monthData = getSalariesForMonth(selectedMonthIndex);
     const newMonthData: SalariesCategories = { ...monthData };
     
-    SALARY_CATEGORIES.forEach(cat => {
+    PERSONNEL_CATEGORIES.forEach(cat => {
       newMonthData[cat] = monthData[cat].map(row => ({
         ...row,
         heures: '',
@@ -119,48 +117,6 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
       ...currentConfig,
       locked: !currentConfig.locked
     });
-  };
-
-  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-
-    if (isMonthLocked(selectedMonthIndex)) {
-      setImportMessage('Import impossible : le mois selectionne est verrouille.');
-      return;
-    }
-
-    try {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
-      const firstSheetName = workbook.SheetNames[0];
-      const firstSheet = firstSheetName ? workbook.Sheets[firstSheetName] : undefined;
-
-      if (!firstSheet) {
-        setImportMessage('Import impossible : aucune feuille lisible dans le fichier.');
-        return;
-      }
-
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(firstSheet, { defval: '' });
-      const result = parseSalaryImportRows(rows);
-
-      if (result.importedCount === 0) {
-        setImportMessage('Aucune ligne importee. Colonnes attendues : nom, statut, heures, cout global ou cout horaire.');
-        return;
-      }
-
-      const currentConfig = getCurrentConfig(selectedMonthIndex);
-      updateSalariesConfig(selectedMonthIndex, {
-        ...currentConfig,
-        categories: result.categories,
-      });
-
-      const skippedText = result.skippedRows > 0 ? ` ${result.skippedRows} ligne(s) ignoree(s).` : '';
-      setImportMessage(`${result.importedCount} salarie(s) importe(s) sur ${selectedMonth}.${skippedText}`);
-    } catch {
-      setImportMessage('Import impossible : le fichier doit etre un Excel ou CSV lisible.');
-    }
   };
 
   const parseNum = (v: string | number) => {
@@ -448,44 +404,18 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
             <div style={{ width: 4, height: 24, background: '#ef4444', borderRadius: 2 }} />
             <h2 style={{ fontSize: 18, fontWeight: 800, color: NAV, margin: 0, letterSpacing: '.02em' }}>Calcul Coût Salarial</h2>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={handleImportFile}
-              style={{ display: 'none' }}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isMonthLocked(selectedMonthIndex)}
-              style={{
-                background: isMonthLocked(selectedMonthIndex) ? '#9ca3af' : '#2563eb', color: '#fff', border: 'none', borderRadius: 8,
-                padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: isMonthLocked(selectedMonthIndex) ? 'not-allowed' : 'pointer',
-                boxShadow: '0 1px 2px rgba(0,0,0,.1)', display: 'flex', alignItems: 'center', gap: 6
-              }}
-            >
-              Importer fichier salaires
-            </button>
-          <button 
+
+          <button
             onClick={handleRAZ}
-            style={{ 
-              background: '#ef4444', color: '#fff', border: 'none', borderRadius: 8, 
-              padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', 
+            style={{
+              background: '#ef4444', color: '#fff', border: 'none', borderRadius: 8,
+              padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
               boxShadow: '0 1px 2px rgba(0,0,0,.1)', display: 'flex', alignItems: 'center', gap: 6
             }}
           >
-            <span style={{ fontSize: 16 }}>↺</span> RAZ (Remise à zéro)
+            <span style={{ fontSize: 16 }}>â†º</span> RAZ (Remise Ã  zÃ©ro)
           </button>
         </div>
-
-        </div>
-
-        {importMessage && (
-          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: 13, fontWeight: 700 }}>
-            {importMessage}
-          </div>
-        )}
 
         {isMonthLocked(selectedMonthIndex) && (
           <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '12px 16px', borderRadius: 8, marginBottom: 24, fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>

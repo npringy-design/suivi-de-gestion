@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { averagePayrollRate, buildPayrollImportFromText } from '@/personnelSalaryImport';
 import { parseHourInputToDecimal } from '@/utils';
 
 import { ChevronLeft, Download, Upload, FileDown, Trash2, X, Clipboard } from 'lucide-react';
@@ -251,8 +252,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     updateDeliveroo,
     updateClickCollect,
     customEvents,
+    personnelInfos,
     setSelectedYear,
     setSelectedMonth,
+    updateSalariesConfig,
     resetLocalData,
   } = useData();
   
@@ -317,6 +320,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [importPreview, setImportPreview] = useState<Array<{ label: string; value: string }>>([]);
   const [invoiceImportStatus, setInvoiceImportStatus] = useState('');
   const [invoiceImportPreviews, setInvoiceImportPreviews] = useState<InvoiceImportPreview[]>([]);
+  const [salaryImportStatus, setSalaryImportStatus] = useState('');
   const [dailyRecapStatus, setDailyRecapStatus] = useState('');
   const recapPreviewRef = useRef<HTMLDivElement>(null);
   const [isDailyRecapModalOpen, setIsDailyRecapModalOpen] = useState(false);
@@ -345,47 +349,35 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const salariesConfig = globalData[month]?.salariesConfig?.categories;
     if (salariesConfig) {
       // Update FRAIS DE PERSONNEL PROJECTION headers
-      const updateHeader = (idx: number, category: string, label: string) => {
+      const updateHeader = (idx: number, category: string, label: string, department?: 'cuisine' | 'salle') => {
         const rows = salariesConfig[category] || [];
-        let totalCoutHoraire = 0;
-        let validRowsCount = 0;
-        rows.forEach((row: any) => {
-          const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
-          const heures = parseHourInputToDecimal(row.heures || '0');
-          const provision = coutGlobal * 1.10;
-          const coutHoraire = heures > 0 ? provision / heures : 0;
-          if (coutHoraire > 0) {
-            totalCoutHoraire += coutHoraire;
-            validRowsCount += 1;
-          }
-        });
-        const avg = validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
+        const avg = averagePayrollRate(rows, department);
         const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
         cols[idx] = [...cols[idx]];
         cols[idx][1] = 'PROJECTION S/C';
         cols[idx][2] = `${label}${avgStr}`;
       };
 
-      updateHeader(74, 'cadre',    'CADRE\nCUISINE');
-      updateHeader(75, 'cadre',    'CADRE\nSALLE');
-      updateHeader(76, 'maitrise', 'MAITRISE\nCUISINE');
-      updateHeader(77, 'maitrise', 'MAITRISE\nSALLE');
-      updateHeader(78, 'niv12',    'NIV I ET II\nCUISINE');
-      updateHeader(79, 'niv12',    'NIV I ET II\nSALLE');
-      updateHeader(80, 'niv3',     'NIV III\nCUISINE');
-      updateHeader(81, 'niv3',     'NIV III\nSALLE');
-      updateHeader(82, 'apprenti', 'APPRENTI\nCUISINE');
-      updateHeader(83, 'apprenti', 'APPRENTI\nSALLE');
-      updateHeader(89, 'cadre',    'CADRE\nCUISINE');
-      updateHeader(90, 'cadre',    'CADRE\nSALLE');
-      updateHeader(91, 'maitrise', 'MAITRISE\nCUISINE');
-      updateHeader(92, 'maitrise', 'MAITRISE\nSALLE');
-      updateHeader(93, 'niv12',    'NIV I ET II\nCUISINE');
-      updateHeader(94, 'niv12',    'NIV I ET II\nSALLE');
-      updateHeader(95, 'niv3',     'NIV III\nCUISINE');
-      updateHeader(96, 'niv3',     'NIV III\nSALLE');
-      updateHeader(97, 'apprenti', 'APPRENTI\nCUISINE');
-      updateHeader(98, 'apprenti', 'APPRENTI\nSALLE');
+      updateHeader(74, 'cadre',    'CADRE\nCUISINE', 'cuisine');
+      updateHeader(75, 'cadre',    'CADRE\nSALLE', 'salle');
+      updateHeader(76, 'maitrise', 'MAITRISE\nCUISINE', 'cuisine');
+      updateHeader(77, 'maitrise', 'MAITRISE\nSALLE', 'salle');
+      updateHeader(78, 'niv12',    'NIV I ET II\nCUISINE', 'cuisine');
+      updateHeader(79, 'niv12',    'NIV I ET II\nSALLE', 'salle');
+      updateHeader(80, 'niv3',     'NIV III\nCUISINE', 'cuisine');
+      updateHeader(81, 'niv3',     'NIV III\nSALLE', 'salle');
+      updateHeader(82, 'apprenti', 'APPRENTI\nCUISINE', 'cuisine');
+      updateHeader(83, 'apprenti', 'APPRENTI\nSALLE', 'salle');
+      updateHeader(89, 'cadre',    'CADRE\nCUISINE', 'cuisine');
+      updateHeader(90, 'cadre',    'CADRE\nSALLE', 'salle');
+      updateHeader(91, 'maitrise', 'MAITRISE\nCUISINE', 'cuisine');
+      updateHeader(92, 'maitrise', 'MAITRISE\nSALLE', 'salle');
+      updateHeader(93, 'niv12',    'NIV I ET II\nCUISINE', 'cuisine');
+      updateHeader(94, 'niv12',    'NIV I ET II\nSALLE', 'salle');
+      updateHeader(95, 'niv3',     'NIV III\nCUISINE', 'cuisine');
+      updateHeader(96, 'niv3',     'NIV III\nSALLE', 'salle');
+      updateHeader(97, 'apprenti', 'APPRENTI\nCUISINE', 'cuisine');
+      updateHeader(98, 'apprenti', 'APPRENTI\nSALLE', 'salle');
     }
     Object.entries(purchaseSupplierNames).forEach(([col, name]) => {
       const colIndex = Number(col);
@@ -439,6 +431,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     }
     setInvoiceImportPreviews([]);
     setInvoiceImportStatus('');
+    setSalaryImportStatus('');
     setImportPreview([]);
     setImportStatus('RAZ locale effectuee. Les donnees de test ont ete effacees.');
   };
@@ -704,35 +697,23 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let hasProjData = false;
         
         const salariesConfig = globalData[month]?.salariesConfig?.categories;
-        const getAvgRate = (category: string) => {
+        const getAvgRate = (category: string, department: 'cuisine' | 'salle') => {
           if (!salariesConfig) return 0;
           const rows = salariesConfig[category] || [];
-          let totalCoutHoraire = 0;
-          let validRowsCount = 0;
-          rows.forEach((row: any) => {
-            const coutGlobal = parseFloat((row.coutGlobal || '0').replace(',', '.')) || 0;
-            const heures = parseHourInputToDecimal(row.heures || '0');
-            const provision = coutGlobal * 1.10;
-            const coutHoraire = heures > 0 ? provision / heures : 0;
-            if (coutHoraire > 0) {
-              totalCoutHoraire += coutHoraire;
-              validRowsCount += 1;
-            }
-          });
-          return validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
+          return averagePayrollRate(rows, department);
         };
 
         const projRates = [
-          getAvgRate('cadre') || 38.54,
-          getAvgRate('cadre') || 38.54,
-          getAvgRate('maitrise') || 20.85,
-          getAvgRate('maitrise') || 20.85,
-          getAvgRate('niv12') || 16.04,
-          getAvgRate('niv12') || 16.04,
-          getAvgRate('niv3') || 18.35,
-          getAvgRate('niv3') || 18.35,
-          getAvgRate('apprenti') || 8.39,
-          getAvgRate('apprenti') || 8.39
+          getAvgRate('cadre', 'cuisine') || 38.54,
+          getAvgRate('cadre', 'salle') || 38.54,
+          getAvgRate('maitrise', 'cuisine') || 20.85,
+          getAvgRate('maitrise', 'salle') || 20.85,
+          getAvgRate('niv12', 'cuisine') || 16.04,
+          getAvgRate('niv12', 'salle') || 16.04,
+          getAvgRate('niv3', 'cuisine') || 18.35,
+          getAvgRate('niv3', 'salle') || 18.35,
+          getAvgRate('apprenti', 'cuisine') || 8.39,
+          getAvgRate('apprenti', 'salle') || 8.39
         ];
 
         for (let i = 0; i < 10; i++) {
@@ -1831,6 +1812,48 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setInvoiceImportPreviews(prev => prev.map(item => item.id === id
       ? { ...item, ...updates, confidence: 'review', status: 'Valeurs modifiees manuellement, a verifier avant validation.' }
       : item));
+  };
+
+  const handleSalaryPayrollImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setSalaryImportStatus('Lecture du PDF salaires...');
+
+    try {
+      const configuredPersonnel = personnelInfos.filter(item => item.nom.trim());
+      if (configuredPersonnel.length === 0) {
+        setSalaryImportStatus('Erreur : renseigne d abord la page Info personnel pour matcher les noms du PDF.');
+        return;
+      }
+
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      const text = isPdf ? await extractPdfLayoutText(file, undefined, false) : await file.text();
+      const result = buildPayrollImportFromText(text, configuredPersonnel);
+
+      if (result.matches.length === 0) {
+        setSalaryImportStatus('Erreur : aucun salarie de la page Info personnel n a ete retrouve avec heures et cout global dans ce fichier.');
+        return;
+      }
+
+      const currentConfig = globalData[month]?.salariesConfig || { locked: false, categories: result.categories };
+      if (currentConfig.locked) {
+        setSalaryImportStatus('Erreur : le mois est verrouille dans la configuration salaires.');
+        return;
+      }
+
+      updateSalariesConfig(month, {
+        ...currentConfig,
+        categories: result.categories,
+      });
+
+      const unmatchedText = result.unmatched.length > 0 ? ` ${result.unmatched.length} non matche(s).` : '';
+      setSalaryImportStatus(`${result.matches.length} salarie(s) importe(s) sur ${selectedMonthLabel}. Taux horaires mis a jour par statut et section.${unmatchedText}`);
+    } catch (error) {
+      setSalaryImportStatus(`Erreur : ${error instanceof Error ? error.message : "le PDF salaires n'a pas pu etre lu."}`);
+    } finally {
+      event.target.value = '';
+    }
   };
 
   const applyInvoiceImport = (invoiceImportPreview: InvoiceImportPreview) => {
@@ -4147,7 +4170,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 VAE, CA midi, CA soir et couverts.
               </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(260px, .85fr) minmax(320px, 1.15fr)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(240px, 1fr))', gap: 12 }}>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #93c5fd', borderRadius: 10, background: '#eff6ff' }}>
                   <span style={{ fontSize: 12, fontWeight: 900, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '.04em' }}>Feuille de caisse</span>
                   <input
@@ -4171,7 +4194,26 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     style={{ fontSize: 13, color: '#0f172a' }}
                   />
                 </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #c084fc', borderRadius: 10, background: '#faf5ff' }}>
+                  <span style={{ fontSize: 12, fontWeight: 900, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '.04em' }}>PDF salaires</span>
+                  <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
+                    Lit les noms, heures et couts globaux puis met a jour les taux par statut et section.
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,.txt,text/plain,application/pdf"
+                    onChange={handleSalaryPayrollImport}
+                    style={{ fontSize: 13, color: '#0f172a' }}
+                  />
+                </label>
               </div>
+
+              {salaryImportStatus && (
+                <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: salaryImportStatus.startsWith('Erreur') ? '#fef2f2' : '#faf5ff', border: `1px solid ${salaryImportStatus.startsWith('Erreur') ? '#fecaca' : '#e9d5ff'}`, color: salaryImportStatus.startsWith('Erreur') ? '#991b1b' : '#6b21a8', fontSize: 13, fontWeight: 800 }}>
+                  {salaryImportStatus}
+                </div>
+              )}
 
               {invoiceImportStatus && (
                 <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: invoiceImportStatus.startsWith('Erreur') ? '#fef2f2' : invoiceImportStatus.includes('verifier') ? '#fffbeb' : '#f0fdf4', border: `1px solid ${invoiceImportStatus.startsWith('Erreur') ? '#fecaca' : invoiceImportStatus.includes('verifier') ? '#fbbf24' : '#bbf7d0'}`, color: invoiceImportStatus.startsWith('Erreur') ? '#991b1b' : invoiceImportStatus.includes('verifier') ? '#92400e' : '#166534', fontSize: 13, fontWeight: 800 }}>

@@ -111,7 +111,7 @@ Point important :
 
 ## Personnel - heures, salaires et cout horaire
 
-Statut : en cours, import salaires ajoute.
+Statut : en cours, import PDF salaires ajoute.
 
 Ce qui est en place :
 
@@ -120,20 +120,22 @@ Ce qui est en place :
 - ces formats sont convertis en `7.5` pour les calculs ;
 - les decimaux simples restent acceptes : `7.5`, `7,5` ;
 - la configuration des salaires utilise cette conversion pour calculer les couts horaires ;
-- la calculette salaires utilise cette conversion pour totaliser les heures ;
-- import Excel/CSV possible dans la configuration salaires pour remplir les noms, statuts, heures et couts globaux ;
-- l'import accepte aussi un cout horaire si le cout global n'est pas fourni, puis reconstitue le cout global necessaire au calcul existant ;
-- les statuts reconnus alimentent les sections cadre, maitrise, niveau I et II, niveau III et apprenti ;
-- le suivi quotidien utilise la meme conversion d'heures pour les calculs de frais de personnel projection et realise.
+- la page `Info personnel` remplace la logique calculette comme referentiel de matching : nom, statut, section salle/cuisine et alias ;
+- l'import PDF salaires est disponible dans la fenetre `Importer` du suivi quotidien ;
+- l'import lit le PDF localement, matche les noms avec `Info personnel`, recupere heures et cout global, puis calcule le taux horaire ;
+- les taux sont regroupes par statut et section, avec moyenne si plusieurs salaries alimentent la meme colonne ;
+- le suivi quotidien utilise la meme conversion d'heures pour les calculs de frais de personnel projection et realise ;
+- les taux importes mettent a jour le mois courant dans la configuration salaires, sans modifier le PDF source.
 
 Ou regarder :
 
 - documentation : `docs/HEURES_PERSONNEL.md`
 - fonction commune : `src/utils.ts`, fonction `parseHourInputToDecimal`
-- import salaires : `src/salaryImport.ts`
+- import PDF salaires : `src/personnelSalaryImport.ts`
 - configuration salaires : `src/ConfigSalaires.tsx`
-- calculette salaires : `src/CalculetteSalaires.tsx`
-- tests : `src/test/utils.test.ts`, `src/test/salaryImport.test.ts`
+- info personnel : `src/CalculetteSalaires.tsx`
+- suivi quotidien : `src/Dashboard.tsx`
+- tests : `src/test/utils.test.ts`, `src/test/personnelSalaryImport.test.ts`
 
 Point important :
 

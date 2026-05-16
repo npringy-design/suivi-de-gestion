@@ -672,7 +672,7 @@ export default function Home() {
 
             <NavGroup title="Outils" icon={Settings}>
               <NavItem label="Config Salaires" onClick={navigationHandlers.goToConfigSalaires} />
-              <NavItem label="Calculette" onClick={navigationHandlers.goToCalculetteSalaires} />
+              <NavItem label="Info personnel" onClick={navigationHandlers.goToCalculetteSalaires} />
               <NavItem label="Vacances" onClick={navigationHandlers.goToVisuelVacances} />
             </NavGroup>
           </nav>
