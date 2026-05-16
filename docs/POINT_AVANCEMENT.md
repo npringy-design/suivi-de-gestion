@@ -111,21 +111,27 @@ Point important :
 
 ## Personnel - heures, salaires et cout horaire
 
-Statut : en cours, import PDF salaires ajoute.
+Statut : en cours, mecanique fortement avancee mais encore a tester en usage reel.
 
 Ce qui est en place :
 
-- conversion commune des heures saisies en heures decimales ;
-- formats acceptes : `7h30`, `7:30`, `7.30`, `7,30` ;
-- ces formats sont convertis en `7.5` pour les calculs ;
-- les decimaux simples restent acceptes : `7.5`, `7,5` ;
-- la configuration des salaires utilise cette conversion pour calculer les couts horaires ;
-- la page `Info personnel` remplace la logique calculette comme referentiel de matching : nom, statut, section salle/cuisine et alias ;
+- conversion commune des heures saisies ;
+- formats acceptes : `7`, `7h30`, `7:30`, `7.30`, `7,30`, `7 30` ;
+- en saisie quotidienne, l'affichage doit rester lisible en format horaire : `7h30` ;
+- en vue complete et dans les calculs, les heures sont converties au centieme : `7h30` devient `7,50` ;
+- les calculs doivent additionner les valeurs personnel arrondies au centieme ligne par ligne, pour que les totaux correspondent aux valeurs affichees ;
+- exemple attendu : si les lignes visibles donnent `6,45 + 8,52 + 4,75 + 7,25 + 7,75 + 17,57 + 16,67`, le total doit etre `68,96`, pas `68,95` ;
+- la page `Info personnel` sert de referentiel de matching : nom, statut, section salle/cuisine et alias ;
 - l'import PDF salaires est disponible dans la fenetre `Importer` du suivi quotidien ;
-- l'import lit le PDF localement, matche les noms avec `Info personnel`, recupere heures et cout global, puis calcule le taux horaire ;
-- les taux sont regroupes par statut et section, avec moyenne si plusieurs salaries alimentent la meme colonne ;
-- le suivi quotidien utilise la meme conversion d'heures pour les calculs de frais de personnel projection et realise ;
-- les taux importes mettent a jour le mois courant dans la configuration salaires, sans modifier le PDF source.
+- l'import lit le PDF localement, matche les noms avec `Info personnel`, recupere `Total heures` et `Cout global`, puis calcule le taux horaire ;
+- formule taux horaire : `cout global * 1,10 / heures` ;
+- pour les salaries avec `(forfait jour)`, les heures sont forcees a `151,67`, mais le cout global est recupere normalement ;
+- le mois est lu dans le PDF salaires : PDF `Avril 2026` alimente le mois suivant, donc `Mai 2026` ;
+- exemple : PDF `Aout 2026` alimente `Septembre 2026` ;
+- le PDF et le texte brut ne sont pas conserves ;
+- seul un snapshot utile est garde : categorie, section, heures, cout global, taux moyen par statut/section ;
+- les noms des salaries ne doivent pas apparaitre dans les en-tetes de la vue complete ;
+- les taux importes alimentent les colonnes frais de personnel projection et realise dans la vue complete.
 
 Ou regarder :
 
@@ -135,21 +141,36 @@ Ou regarder :
 - configuration salaires : `src/ConfigSalaires.tsx`
 - info personnel : `src/CalculetteSalaires.tsx`
 - suivi quotidien : `src/Dashboard.tsx`
+- patch temporaire Dashboard : `scripts/dashboardPayrollColumnPatch.ts`
+- activation du patch : `vite.config.ts`
 - tests : `src/test/utils.test.ts`, `src/test/personnelSalaryImport.test.ts`
 
-Point important :
+Points importants :
 
-- l'affichage peut garder la saisie utilisateur, mais les calculs doivent toujours passer par la conversion commune.
+- ne pas convertir les heures pendant la frappe, car cela rend la saisie non fluide ;
+- garder une saisie libre, puis afficher proprement en `7h30` cote saisie ;
+- convertir en centieme uniquement pour la vue complete et les calculs ;
+- la logique actuelle passe par un patch Vite sur `Dashboard.tsx`, car le fichier est tres gros et une modification massive directe serait risquee ;
+- a terme, il faudra probablement remplacer ce patch par une modification propre et directe du composant Dashboard, quand cette zone sera stabilisee.
 
 ## Dernieres verifications connues
 
-Verifications effectuees apres la mise en place de la conversion des heures :
+Verifications connues avant les dernieres corrections salaires :
 
 - `npm.cmd run test -- --run src/test/utils.test.ts` : OK
 - `npm.cmd run lint` : OK, avec warnings existants du projet
 - `npm.cmd run lint:ts` : OK
 - `npm.cmd run build` : OK
 
+A recontroler apres les dernieres corrections personnel :
+
+- build Vercel ;
+- ouverture de `Suivi quotidien` ;
+- saisie personnel avec `7`, `7h30`, `7.30`, `7,30`, `7:30`, `7 30` ;
+- affichage en saisie sous forme `7h30` ;
+- affichage en complet sous forme `7,50` ;
+- totaux semaine/mois correspondant a la somme des valeurs affichees au centieme.
+
 ## Phrase de reprise pour un nouveau clavardage
 
-Lire d'abord `docs/POINT_AVANCEMENT.md`, puis les docs detaillees dans `docs/`. Le recap mail est valide et ne doit pas etre modifie pour le moment. La suite du travail est sur la partie personnel, salaires, heures et cout horaire.
+Lire d'abord `docs/POINT_AVANCEMENT.md`, puis `docs/HEURES_PERSONNEL.md`. Le recap mail est valide et ne doit pas etre modifie. La zone active est `Personnel - heures, salaires et cout horaire`, avec un patch temporaire dans `scripts/dashboardPayrollColumnPatch.ts` qui modifie `Dashboard.tsx` au build. Avant toute nouvelle correction, verifier que le build Vercel passe et que la saisie des heures personnel reste fluide.
