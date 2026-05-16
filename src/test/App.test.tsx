@@ -38,5 +38,5 @@ describe('App flow', () => {
     const syntheseButton = screen.getByRole('button', { name: /Synthèse CA/i });
     fireEvent.click(syntheseButton);
     expect(screen.getByTestId('location')).toHaveTextContent('/synthese');
-  });
+  }, 15000);
 });

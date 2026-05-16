@@ -428,7 +428,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
               boxShadow: '0 1px 2px rgba(0,0,0,.1)', display: 'flex', alignItems: 'center', gap: 6
             }}
           >
-            <span style={{ fontSize: 16 }}>â†º</span> RAZ (Remise Ã  zÃ©ro)
+            <span style={{ fontSize: 16 }}>RAZ</span> Remise a zero
           </button>
         </div>
 
