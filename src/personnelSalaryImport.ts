@@ -3,6 +3,8 @@ import { parseHourInputToDecimal } from '@/utils';
 
 export const PERSONNEL_CATEGORIES = ['cadre', 'maitrise', 'niv12', 'niv3', 'apprenti'] as const;
 
+const FORFAIT_JOUR_HOURS = 151.67;
+
 type PersonnelCategory = (typeof PERSONNEL_CATEGORIES)[number];
 type SalariesCategories = Record<PersonnelCategory, SalarieRow[]>;
 
@@ -52,13 +54,13 @@ const parsePayrollNumber = (value: string) => {
 const formatPayrollNumber = (value: number) => String(Math.round(value * 100) / 100).replace('.', ',');
 
 const numberMatches = (text: string) =>
-  Array.from(text.matchAll(/\d[\d\s]*(?:[,.]\d{1,2})?/g))
+  Array.from(text.matchAll(/[-+]?(?:\d{1,3}(?:[\s\u00a0]\d{3})+|\d+)(?:[,.]\d{1,2})?/g))
     .map(match => ({
       raw: match[0],
       value: parsePayrollNumber(match[0]),
       index: match.index || 0,
     }))
-    .filter(item => item.value > 0);
+    .filter(item => item.value !== 0);
 
 const extractNumberNearLabels = (text: string, labels: string[]) => {
   const normalizedText = normalizePersonnelText(text);
@@ -75,9 +77,34 @@ const extractNumberNearLabels = (text: string, labels: string[]) => {
   return 0;
 };
 
+const isForfaitJourLine = (line: string) => normalizePersonnelText(line).includes('FORFAIT JOUR');
+
+const extractPayrollTableValues = (sourceLine: string) => {
+  const line = sourceLine.replace(/\u00a0/g, ' ');
+  const monthMatches = Array.from(line.matchAll(/\b(?:0[1-9]|1[0-2])\/20\d{2}\b/g));
+  const payrollMonth = monthMatches.at(-1);
+  if (!payrollMonth || payrollMonth.index === undefined) return null;
+
+  const afterMonth = line.slice(payrollMonth.index + payrollMonth[0].length);
+  const values = numberMatches(afterMonth).map(item => item.value);
+  if (values.length < 2) return null;
+
+  // Dans le tableau PDF, les 6 dernières valeurs sont :
+  // Brut, Charges patronales, % charges patronales, Supp. coût global, Coût global, Taux h. moyen.
+  const coutGlobal = values[values.length - 2] || 0;
+  const heures = isForfaitJourLine(line)
+    ? FORFAIT_JOUR_HOURS
+    : values.slice(0, Math.max(0, values.length - 6)).at(-1) || 0;
+
+  return heures > 0 && coutGlobal > 0 ? { hours: heures, cost: coutGlobal } : null;
+};
+
 const extractPayrollValues = (sourceLine: string, context: string) => {
+  const tableValues = extractPayrollTableValues(sourceLine);
+  if (tableValues) return tableValues;
+
   const text = `${sourceLine} ${context}`;
-  const labeledHours = extractNumberNearLabels(text, ['heures payees', 'heures mensuelles', 'heures', 'hrs']);
+  const labeledHours = extractNumberNearLabels(text, ['total heures', 'heures payees', 'heures mensuelles', 'heures', 'hrs']);
   const labeledCost = extractNumberNearLabels(text, ['cout global', 'cout total charge', 'cout total', 'salaire charge', 'total charge']);
   const numbers = numberMatches(sourceLine);
   const hours = labeledHours || numbers.find(item => item.value > 0 && item.value <= 260)?.value || 0;
