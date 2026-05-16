@@ -1,0 +1,63 @@
+import type { Plugin } from 'vite';
+
+const mustReplace = (code: string, pattern: RegExp | string, replacement: string, label: string) => {
+  const next = code.replace(pattern as any, replacement);
+  if (next === code) throw new Error(`Patch Dashboard salaires non applique : ${label}`);
+  return next;
+};
+
+const replaceEvery = (code: string, from: string, to: string, label: string) => {
+  if (!code.includes(from)) throw new Error(`Patch Dashboard salaires non applique : ${label}`);
+  return code.split(from).join(to);
+};
+
+export const dashboardPayrollColumnPatch = (): Plugin => ({
+  name: 'dashboard-payroll-column-patch',
+  enforce: 'pre',
+  transform(code, id) {
+    if (!id.replace(/\\/g, '/').endsWith('/src/Dashboard.tsx')) return null;
+    let next = code;
+
+    next = mustReplace(next, /const editableCols: number\[] = \[[\s\S]*?\n\];/, `const editableCols: number[] = [\n  6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34, 37, 38, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86\n];`, 'colonnes editables personnel');
+
+    next = mustReplace(next, "cols[idx][1] = 'PROJECTION S/C';", "cols[idx][1] = idx >= 77 ? 'FRAIS PERSONNEL REALISE' : 'PROJECTION S/C';", 'entete projection/realise');
+    next = mustReplace(next, /updateHeader\(74[\s\S]*?updateHeader\(98, 'apprenti', 'APPRENTI\\nSALLE', 'salle'\);/, `updateHeader(62, 'cadre', 'CADRE\\nCUISINE', 'cuisine');\n      updateHeader(63, 'cadre', 'CADRE\\nSALLE', 'salle');\n      updateHeader(64, 'maitrise', 'MAITRISE\\nCUISINE', 'cuisine');\n      updateHeader(65, 'maitrise', 'MAITRISE\\nSALLE', 'salle');\n      updateHeader(66, 'niv12', 'NIV I ET II\\nCUISINE', 'cuisine');\n      updateHeader(67, 'niv12', 'NIV I ET II\\nSALLE', 'salle');\n      updateHeader(68, 'niv3', 'NIV III\\nCUISINE', 'cuisine');\n      updateHeader(69, 'niv3', 'NIV III\\nSALLE', 'salle');\n      updateHeader(70, 'apprenti', 'APPRENTI\\nCUISINE', 'cuisine');\n      updateHeader(71, 'apprenti', 'APPRENTI\\nSALLE', 'salle');\n      updateHeader(77, 'cadre', 'CADRE\\nCUISINE', 'cuisine');\n      updateHeader(78, 'cadre', 'CADRE\\nSALLE', 'salle');\n      updateHeader(79, 'maitrise', 'MAITRISE\\nCUISINE', 'cuisine');\n      updateHeader(80, 'maitrise', 'MAITRISE\\nSALLE', 'salle');\n      updateHeader(81, 'niv12', 'NIV I ET II\\nCUISINE', 'cuisine');\n      updateHeader(82, 'niv12', 'NIV I ET II\\nSALLE', 'salle');\n      updateHeader(83, 'niv3', 'NIV III\\nCUISINE', 'cuisine');\n      updateHeader(84, 'niv3', 'NIV III\\nSALLE', 'salle');\n      updateHeader(85, 'apprenti', 'APPRENTI\\nCUISINE', 'cuisine');\n      updateHeader(86, 'apprenti', 'APPRENTI\\nSALLE', 'salle');`, 'colonnes entetes salaires');
+
+    next = mustReplace(next, /const colIdx = 78 \+ i;[^\n]*/, 'const colIdx = 62 + i;', 'colonnes saisie projection');
+    next = mustReplace(next, 'const colIdx = 91 + i;', 'const colIdx = 77 + i;', 'colonnes saisie realise');
+
+    next = replaceEvery(next, "data[`${rIdx}-65`] = totalHeuresProj.toFixed(2);", "data[`${rIdx}-61`] = totalHeuresProj.toFixed(2);", 'total heures projection jour');
+    next = replaceEvery(next, "data[`${rIdx}-83`] = coutGlobalReal.toFixed(2);", "data[`${rIdx}-87`] = coutGlobalReal.toFixed(2);", 'cout realise jour');
+    next = replaceEvery(next, "data[`${rIdx}-84`] = (realiseTotalJour / totalHeuresReal).toFixed(2);", "data[`${rIdx}-88`] = (realiseTotalJour / totalHeuresReal).toFixed(2);", 'productivite realise jour');
+    next = replaceEvery(next, "data[`${rIdx}-85`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';", "data[`${rIdx}-89`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';", 'pourcentage realise jour');
+    next = replaceEvery(next, "data[`${rIdx}-87`] = (totalHeuresReal - totalHeuresProj).toFixed(2);", "data[`${rIdx}-91`] = (totalHeuresReal - totalHeuresProj).toFixed(2);", 'ecart heures jour');
+    next = replaceEvery(next, "data[`${rIdx}-88`] = (pctReal - pctProj).toFixed(2) + '%';", "data[`${rIdx}-92`] = (pctReal - pctProj).toFixed(2) + '%';", 'ecart sc jour');
+
+    next = replaceEvery(next, '[7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 35, 59, 60, 73, 74, 77, 78, 79, 84, 85, 88]', '[7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 35, 59, 60, 73, 74, 75, 88, 89, 90, 91, 92]', 'colonnes calculees totaux');
+
+    next = replaceEvery(next, "const totalHeuresProjW = parseFloat(data[`${rIdx}-65`] || '0');", "const totalHeuresProjW = parseFloat(data[`${rIdx}-61`] || '0');", 'total heures projection semaine');
+    next = replaceEvery(next, "const coutGlobalRealW = parseFloat(data[`${rIdx}-83`] || '0');", "const coutGlobalRealW = parseFloat(data[`${rIdx}-87`] || '0');", 'cout realise semaine');
+    next = replaceEvery(next, "data[`${rIdx}-86`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';", "data[`${rIdx}-90`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';", 'ratio realise semaine');
+    next = replaceEvery(next, "data[`${rIdx}-88`] = (pctRealW - pctProjW).toFixed(2) + '%';", "data[`${rIdx}-92`] = (pctRealW - pctProjW).toFixed(2) + '%';", 'ecart sc semaine');
+    next = replaceEvery(next, "if (totalHeuresRealW > 0) data[`${rIdx}-84`] = (realiseCAW / totalHeuresRealW).toFixed(2);", "if (totalHeuresRealW > 0) data[`${rIdx}-88`] = (realiseCAW / totalHeuresRealW).toFixed(2);", 'productivite realise semaine');
+    next = replaceEvery(next, "data[`${rIdx}-85`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';", "data[`${rIdx}-89`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';", 'pourcentage realise semaine');
+    next = replaceEvery(next, "data[`${rIdx}-87`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);", "data[`${rIdx}-91`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);", 'ecart heures semaine');
+
+    next = replaceEvery(next, "const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-65`] || '0');", "const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-61`] || '0');", 'total heures projection mois');
+    next = replaceEvery(next, "const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-83`] || '0');", "const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-87`] || '0');", 'cout realise mois');
+    next = replaceEvery(next, "if (totalHeuresRealM > 0) data[`${monthTotalIdx}-84`] = (realiseCAM / totalHeuresRealM).toFixed(2);", "if (totalHeuresRealM > 0) data[`${monthTotalIdx}-88`] = (realiseCAM / totalHeuresRealM).toFixed(2);", 'productivite realise mois');
+    next = replaceEvery(next, "data[`${monthTotalIdx}-85`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';", "data[`${monthTotalIdx}-89`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';", 'pourcentage realise mois');
+    next = replaceEvery(next, "data[`${monthTotalIdx}-86`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';", "data[`${monthTotalIdx}-90`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';", 'ratio realise mois');
+    next = replaceEvery(next, "data[`${monthTotalIdx}-87`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);", "data[`${monthTotalIdx}-91`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);", 'ecart heures mois');
+    next = replaceEvery(next, "data[`${monthTotalIdx}-88`] = (pctRealM - pctProjM).toFixed(2) + '%';", "data[`${monthTotalIdx}-92`] = (pctRealM - pctProjM).toFixed(2) + '%';", 'ecart sc mois');
+
+    next = replaceEvery(next, "fraisPersonnel: parseDashboardNumber(calculatedData[`${monthTotalIdx}-83`]),", "fraisPersonnel: parseDashboardNumber(calculatedData[`${monthTotalIdx}-87`]),", 'kpi frais personnel');
+    next = replaceEvery(next, '65, 72, 73, 74, 76, 83, 84, 85, 87, 88,', '61, 72, 73, 74, 75, 76, 87, 88, 89, 90, 91, 92,', 'colonnes contexte personnel');
+    next = replaceEvery(next, "const nbHBudget  = parseFloat(calculatedData[`${mtIdx}-77`]  || '0');", "const nbHBudget  = parseFloat(calculatedData[`${mtIdx}-61`] || '0');", 'resultats nb heures budget');
+    next = replaceEvery(next, "const coutProj   = parseFloat(calculatedData[`${mtIdx}-88`]  || '0');", "const coutProj   = parseFloat(calculatedData[`${mtIdx}-72`] || '0');", 'resultats cout projection');
+    next = replaceEvery(next, "const nbHReel    = parseFloat(calculatedData[`${mtIdx}-92`]  || '0');", "const nbHReel    = parseFloat(calculatedData[`${mtIdx}-76`] || '0');", 'resultats nb heures reel');
+    next = replaceEvery(next, "const coutReel   = parseFloat(calculatedData[`${mtIdx}-103`] || '0');", "const coutReel   = parseFloat(calculatedData[`${mtIdx}-87`] || '0');", 'resultats cout reel');
+
+    return { code: next, map: null };
+  },
+});
