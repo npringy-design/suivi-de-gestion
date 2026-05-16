@@ -18,6 +18,8 @@ export const dashboardPayrollColumnPatch = (): Plugin => ({
     if (!id.replace(/\\/g, '/').endsWith('/src/Dashboard.tsx')) return null;
     let next = code;
 
+    next = mustReplace(next, "import { averagePayrollRate, buildPayrollImportFromText } from '@/personnelSalaryImport';", "import { averagePayrollRate, buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '@/personnelSalaryImport';", 'import detection periode salaires');
+
     next = mustReplace(next, /const editableCols: number\[] = \[[\s\S]*?\n\];/, `const editableCols: number[] = [\n  6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34, 37, 38, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86\n];`, 'colonnes editables personnel');
 
     next = mustReplace(next, "cols[idx][1] = 'PROJECTION S/C';", "cols[idx][1] = idx >= 77 ? 'FRAIS PERSONNEL REALISE' : 'PROJECTION S/C';", 'entete projection/realise');
@@ -58,6 +60,13 @@ export const dashboardPayrollColumnPatch = (): Plugin => ({
     next = replaceEvery(next, "const coutProj   = parseFloat(calculatedData[`${mtIdx}-88`]  || '0');", "const coutProj   = parseFloat(calculatedData[`${mtIdx}-72`] || '0');", 'resultats cout projection');
     next = replaceEvery(next, "const nbHReel    = parseFloat(calculatedData[`${mtIdx}-92`]  || '0');", "const nbHReel    = parseFloat(calculatedData[`${mtIdx}-76`] || '0');", 'resultats nb heures reel');
     next = replaceEvery(next, "const coutReel   = parseFloat(calculatedData[`${mtIdx}-103`] || '0');", "const coutReel   = parseFloat(calculatedData[`${mtIdx}-87`] || '0');", 'resultats cout reel');
+
+    next = replaceEvery(next, "const result = buildPayrollImportFromText(text, configuredPersonnel);", "const payrollPeriod = getPayrollTargetPeriodFromText(text);\n      if (!payrollPeriod) {\n        setSalaryImportStatus('Erreur : le mois du PDF salaires n a pas pu etre detecte.');\n        return;\n      }\n      const result = buildPayrollImportFromText(text, configuredPersonnel);", 'detection mois pdf salaires');
+
+    next = replaceEvery(next, "const currentConfig = globalData[month]?.salariesConfig || { locked: false, categories: result.categories };", "const targetMonth = payrollPeriod.targetMonth;\n      const currentConfig = globalData[targetMonth]?.salariesConfig || { locked: false, categories: result.categories };", 'mois cible config salaires');
+
+    next = replaceEvery(next, "updateSalariesConfig(month, {", "updateSalariesConfig(targetMonth, {", 'sauvegarde snapshot mois cible');
+    next = replaceEvery(next, "setSalaryImportStatus(`${result.matches.length} salarie(s) importe(s) sur ${selectedMonthLabel}. Taux horaires mis a jour par statut et section.${unmatchedText}`);", "setMonth(targetMonth);\n      setSelectedMonth(targetMonth);\n      setSalaryImportStatus(`${result.matches.length} salarie(s) importe(s). PDF ${payrollPeriod.sourceLabel} applique sur ${payrollPeriod.targetLabel}. Snapshot des taux sauvegarde, aucun import brut conserve.${unmatchedText}`);", 'message import salaires mois cible');
 
     return { code: next, map: null };
   },
