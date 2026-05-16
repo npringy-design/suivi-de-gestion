@@ -148,6 +148,7 @@ export const buildPayrollImportFromText = (text: string, personnelInfos: Personn
       provision: '',
       coutHoraire: '',
       department: personnel.department,
+      importSourceLine: sourceLine,
     });
   });
 

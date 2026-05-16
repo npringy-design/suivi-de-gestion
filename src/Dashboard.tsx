@@ -352,10 +352,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const updateHeader = (idx: number, category: string, label: string, department?: 'cuisine' | 'salle') => {
         const rows = salariesConfig[category] || [];
         const avg = averagePayrollRate(rows, department);
+        const names = rows
+          .filter((row: any) => !department || !row.department || row.department === department)
+          .map((row: any) => String(row.nom || '').trim())
+          .filter(Boolean);
+        const namesStr = names.length > 0 ? `\n${names.join(' + ')}` : '';
         const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
         cols[idx] = [...cols[idx]];
         cols[idx][1] = 'PROJECTION S/C';
-        cols[idx][2] = `${label}${avgStr}`;
+        cols[idx][2] = `${label}${namesStr}${avgStr}`;
       };
 
       updateHeader(74, 'cadre',    'CADRE\nCUISINE', 'cuisine');

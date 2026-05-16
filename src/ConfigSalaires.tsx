@@ -125,6 +125,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   };
 
   const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
+  const formatDepartment = (value?: string) => value === 'cuisine' ? 'Cuisine' : value === 'salle' ? 'Salle' : '-';
 
   const getAverageForCategory = (monthIdx: number, category: SalaryCategory) => {
     const rows = getSalariesForMonth(monthIdx)[category];
@@ -310,6 +311,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     });
 
     const moyenneCoutHoraire = validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
+    const averageRowSpan = rowsWithCalculations.length + rowsWithCalculations.filter(row => row.importSourceLine).length;
     const isLocked = isMonthLocked(selectedMonthIndex);
 
     return (
@@ -331,7 +333,8 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
           <table style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%' }}>
             <thead>
               <tr>
-                <th style={{ ...thStyle, width: '25%' }}>NOM DU SALARIE</th>
+                <th style={{ ...thStyle, width: '22%' }}>NOM DU SALARIE</th>
+                <th style={{ ...thStyle, width: '10%' }}>Section</th>
                 <th style={{ ...thStyle, width: '15%' }}>Nombre d'heure mensuel</th>
                 <th style={{ ...thStyle, width: '15%' }}>Coût global</th>
                 <th style={{ ...thStyle, width: '15%' }}>Total avec Provision CP</th>
@@ -341,9 +344,13 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
             </thead>
             <tbody>
               {rowsWithCalculations.map((row, i) => (
-                <tr key={i}>
+                <React.Fragment key={i}>
+                <tr>
                   <td style={{ ...tdStyle, background: isLocked ? '#f1f5f9' : '#dbeafe' }}>
                     <input disabled={isLocked} style={{ ...inputStyle, textAlign: 'left', cursor: isLocked ? 'not-allowed' : 'text' }} value={row.nom} onChange={e => handleSalarieChange(category, i, 'nom', e.target.value)} placeholder="Nom..." />
+                  </td>
+                  <td style={{ ...tdStyle, background: '#fff', fontWeight: 800, color: '#475569' }}>
+                    {formatDepartment(row.department)}
                   </td>
                   <td style={{ ...tdStyle, background: '#f1f5f9' }}>
                     <input disabled={isLocked} style={{ ...inputStyle, cursor: isLocked ? 'not-allowed' : 'text' }} value={row.heures} onChange={e => handleSalarieChange(category, i, 'heures', e.target.value)} placeholder="7h30" title="Formats acceptes : 7h30, 7:30, 7.30, 7,30" />
@@ -358,11 +365,19 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
                     {row.coutHoraireVal > 0 ? formatCurrency(row.coutHoraireVal) : '-'}
                   </td>
                   {i === 0 && (
-                    <td rowSpan={rowsWithCalculations.length} style={{ ...tdStyle, background: '#fff', verticalAlign: 'middle', fontWeight: 800, fontSize: 13, color: NAV }}>
+                    <td rowSpan={averageRowSpan} style={{ ...tdStyle, background: '#fff', verticalAlign: 'middle', fontWeight: 800, fontSize: 13, color: NAV }}>
                       {moyenneCoutHoraire > 0 ? formatCurrency(moyenneCoutHoraire) : '-'}
                     </td>
                   )}
                 </tr>
+                {row.importSourceLine && (
+                  <tr>
+                    <td colSpan={6} style={{ ...tdStyle, background: '#f8fafc', textAlign: 'left', color: '#64748b', fontSize: 10, fontWeight: 700 }}>
+                      Ligne PDF lue : {row.importSourceLine}
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>

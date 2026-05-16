@@ -167,6 +167,7 @@ export type SalarieRow = {
   provision: string;
   coutHoraire: string;
   department?: PersonnelDepartment;
+  importSourceLine?: string;
 };
 
 export type MonthDataSalariesConfig = {
