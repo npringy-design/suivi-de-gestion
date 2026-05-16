@@ -4,6 +4,20 @@ import { parseHourInputToDecimal } from '@/utils';
 export const PERSONNEL_CATEGORIES = ['cadre', 'maitrise', 'niv12', 'niv3', 'apprenti'] as const;
 
 const FORFAIT_JOUR_HOURS = 151.67;
+const PAYROLL_MONTHS = [
+  'janvier',
+  'février',
+  'mars',
+  'avril',
+  'mai',
+  'juin',
+  'juillet',
+  'août',
+  'septembre',
+  'octobre',
+  'novembre',
+  'décembre',
+] as const;
 
 type PersonnelCategory = (typeof PERSONNEL_CATEGORIES)[number];
 type SalariesCategories = Record<PersonnelCategory, SalarieRow[]>;
@@ -14,6 +28,15 @@ export type PayrollMatch = {
   coutGlobal: number;
   coutHoraire: number;
   sourceLine: string;
+};
+
+export type PayrollTargetPeriod = {
+  sourceMonth: number;
+  sourceYear: number;
+  targetMonth: number;
+  targetYear: number;
+  sourceLabel: string;
+  targetLabel: string;
 };
 
 export type PayrollImportResult = {
@@ -39,6 +62,55 @@ export const normalizePersonnelText = (value: string) =>
     .trim();
 
 const compactPersonnelText = (value: string) => normalizePersonnelText(value).replace(/\s+/g, '');
+
+const formatPayrollMonthLabel = (month: number, year: number) => `${PAYROLL_MONTHS[month]} ${year}`;
+
+export const getPayrollTargetPeriodFromText = (text: string): PayrollTargetPeriod | null => {
+  const normalizedText = normalizePersonnelText(text);
+  let sourceMonth = -1;
+  let sourceYear = 0;
+
+  for (const [index, monthName] of PAYROLL_MONTHS.entries()) {
+    const normalizedMonth = normalizePersonnelText(monthName);
+    const titleMatch = normalizedText.match(new RegExp(`COUTS? SALARIAUX ${normalizedMonth} (20\\d{2})`))
+      || normalizedText.match(new RegExp(`${normalizedMonth} (20\\d{2})`));
+    if (titleMatch?.[1]) {
+      sourceMonth = index;
+      sourceYear = Number(titleMatch[1]);
+      break;
+    }
+  }
+
+  if (sourceMonth < 0 || sourceYear <= 0) {
+    const counts = new Map<string, { month: number; year: number; count: number }>();
+    Array.from(text.matchAll(/\b(0[1-9]|1[0-2])\/(20\d{2})\b/g)).forEach(match => {
+      const month = Number(match[1]) - 1;
+      const year = Number(match[2]);
+      const key = `${month}-${year}`;
+      const current = counts.get(key) || { month, year, count: 0 };
+      counts.set(key, { ...current, count: current.count + 1 });
+    });
+    const best = [...counts.values()].sort((a, b) => b.count - a.count)[0];
+    if (best) {
+      sourceMonth = best.month;
+      sourceYear = best.year;
+    }
+  }
+
+  if (sourceMonth < 0 || sourceYear <= 0) return null;
+
+  const targetMonth = sourceMonth === 11 ? 0 : sourceMonth + 1;
+  const targetYear = sourceMonth === 11 ? sourceYear + 1 : sourceYear;
+
+  return {
+    sourceMonth,
+    sourceYear,
+    targetMonth,
+    targetYear,
+    sourceLabel: formatPayrollMonthLabel(sourceMonth, sourceYear),
+    targetLabel: formatPayrollMonthLabel(targetMonth, targetYear),
+  };
+};
 
 const splitAliases = (value: string) =>
   value
@@ -175,7 +247,6 @@ export const buildPayrollImportFromText = (text: string, personnelInfos: Personn
       provision: '',
       coutHoraire: '',
       department: personnel.department,
-      importSourceLine: sourceLine,
     });
   });
 
