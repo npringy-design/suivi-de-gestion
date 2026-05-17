@@ -1,5 +1,7 @@
 # Import des feuilles de caisse
 
+Note : l'import caisse accepte maintenant plusieurs feuilles avec validation unitaire avant application.
+
 Ce document fixe les règles de fonctionnement pour l'import des feuilles de caisse dans la saisie journalière.
 
 ## Objectif

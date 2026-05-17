@@ -31,6 +31,49 @@ type InvoiceImportPreview = {
   confidence: 'verified' | 'review';
 };
 
+type ParsedCaisseImport = {
+  pdfDay: number | null;
+  pdfMonth: number | null;
+  pdfYear: number | null;
+  values: Record<number, number>;
+  theoriqueValues: {
+    total_ca: number;
+    cb: number;
+    amex: number;
+    tr_papier: number;
+    tr_carte: number;
+    ancv: number;
+    especes: number;
+    click_collect: number;
+    uber: number;
+    deliveroo: number;
+    sunday: number;
+  };
+  realValues: {
+    cb: number;
+    pourboires: number;
+    especes: number;
+    pieces: number;
+    amexAncvCarte: number;
+    trCarte: number;
+    ancvPapier: number;
+    trPapier: number;
+    sunday: number;
+    uber: number;
+    deliveroo: number;
+    clickCollect: number;
+  };
+};
+
+type CaisseImportPreview = {
+  id: string;
+  fileName: string;
+  businessDate: string;
+  confidence: 'verified' | 'review';
+  status: string;
+  parsed: ParsedCaisseImport;
+};
+
 const C: DashboardColumn[] = [
   ['CA', 'Midi Saisie', 'CA HT MIDI', 'bg-[#ffe699]'],
   ['CA', 'Soir Saisie', 'CA HT SOIR', 'bg-[#ffe699]'],
@@ -336,6 +379,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importStatus, setImportStatus] = useState('');
   const [importPreview, setImportPreview] = useState<Array<{ label: string; value: string }>>([]);
+  const [caisseImportPreviews, setCaisseImportPreviews] = useState<CaisseImportPreview[]>([]);
   const [invoiceImportStatus, setInvoiceImportStatus] = useState('');
   const [invoiceImportPreviews, setInvoiceImportPreviews] = useState<InvoiceImportPreview[]>([]);
   const [salaryImportStatus, setSalaryImportStatus] = useState('');
@@ -455,7 +499,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setInvoiceImportPreviews([]);
     setInvoiceImportStatus('');
     setSalaryImportStatus('');
-    setImportPreview([]);
+    setCaisseImportPreviews([]);
     setImportStatus('RAZ locale effectuee. Les donnees de test ont ete effacees.');
   };
 
@@ -1177,6 +1221,22 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const parseCaisseNumber = (value: string) => Number(value.replace(/\s/g, '').replace(',', '.')) || 0;
   const formatImportedNumber = (value: number, decimals = 2) => value > 0 ? value.toFixed(decimals) : '';
+  const formatImportedCurrencyLabel = (value: number, decimals = 2) => formatImportedNumber(value, decimals) || '-';
+  const formatImportedIntegerLabel = (value: number) => formatImportedNumber(value, 0) || '-';
+  const formatImportBusinessDate = (day: number | null, monthValue: number | null, yearValue: number | null) => {
+    if (!day || monthValue === null || monthValue < 0 || !yearValue) return '';
+    const parsedDate = new Date(yearValue, monthValue, day);
+    if (
+      parsedDate.getFullYear() !== yearValue
+      || parsedDate.getMonth() !== monthValue
+      || parsedDate.getDate() !== day
+    ) return '';
+    return `${yearValue}-${String(monthValue + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+  const formatImportBusinessDateLabel = (value: string) => {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
+  };
   const normalizeImportText = (value: string) => value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -1664,7 +1724,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return pages.join('\n');
   };
 
-  const parseCaisseRealise = (sourceText: string) => {
+  const parseCaisseRealise = (sourceText: string): ParsedCaisseImport => {
     const text = sourceText.replace(/\u00a0/g, ' ').replace(/€/g, '').replace(/\s+/g, ' ');
     const dateMatch = text.match(/Du\s+(\d{2})\/(\d{2})\/(\d{2})/i);
     const pdfDay = dateMatch ? Number(dateMatch[1]) : null;
@@ -1745,14 +1805,50 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     };
   };
 
-  const handleDailyRealiseImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const createCaisseImportId = (fileName: string, index: number) => `${Date.now()}-caisse-${index}-${fileName}`;
+  const parseCaisseImport = (sourceText: string, fileName: string, id = createCaisseImportId(fileName, 0)): CaisseImportPreview => {
+    const parsed = parseCaisseRealise(sourceText);
+    const businessDate = formatImportBusinessDate(parsed.pdfDay, parsed.pdfMonth, parsed.pdfYear);
+    const dateMatchesCurrentMonth = businessDate !== '' && parsed.pdfMonth === month && parsed.pdfYear === year;
+    const status = dateMatchesCurrentMonth
+      ? 'Date detectee, feuille prete a valider sur son jour.'
+      : businessDate
+        ? 'Date detectee hors mois affiche, import sur le jour selectionne sauf correction.'
+        : 'Date non detectee, import sur le jour selectionne.';
 
-    setImportStatus('Lecture de la feuille de caisse...');
-    setImportPreview([]);
+    return {
+      id,
+      fileName,
+      businessDate,
+      confidence: dateMatchesCurrentMonth ? 'verified' : 'review',
+      status,
+      parsed,
+    };
+  };
+
+  const handleDailyRealiseImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+    const file = files[0];
+
+    setImportStatus(`Lecture locale de ${files.length} feuille${files.length > 1 ? 's' : ''} de caisse...`);
 
     try {
+      const parsedImports: CaisseImportPreview[] = [];
+      for (const [index, currentFile] of files.entries()) {
+        const isPdf = currentFile.type === 'application/pdf' || currentFile.name.toLowerCase().endsWith('.pdf');
+        const text = isPdf ? await extractPdfText(currentFile) : await currentFile.text();
+        parsedImports.push(parseCaisseImport(text, currentFile.name, createCaisseImportId(currentFile.name, index)));
+      }
+
+      setImportPreview([]);
+      setCaisseImportPreviews(prev => [...prev, ...parsedImports]);
+      const reviewCount = parsedImports.filter(item => item.confidence === 'review').length;
+      setImportStatus(reviewCount > 0
+        ? `${parsedImports.length} feuille${parsedImports.length > 1 ? 's' : ''} lue${parsedImports.length > 1 ? 's' : ''}. ${reviewCount} a verifier.`
+        : `${parsedImports.length} feuille${parsedImports.length > 1 ? 's' : ''} lue${parsedImports.length > 1 ? 's' : ''}, prete${parsedImports.length > 1 ? 's' : ''} a valider.`);
+      return;
+
       const text = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
         ? await extractPdfText(file)
         : await file.text();
@@ -1779,7 +1875,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       updateTheorique(month, targetDay, 'uber', formatImportedNumber(parsed.theoriqueValues.uber));
       updateTheorique(month, targetDay, 'deliveroo', formatImportedNumber(parsed.theoriqueValues.deliveroo));
       updateTheorique(month, targetDay, 'sunday', formatImportedNumber(parsed.theoriqueValues.sunday));
-      if (targetDayEntry?.row.dayIndex) setSelectedEntryDay(targetDayEntry.row.dayIndex);
+      const targetDayIndex = targetDayEntry?.row.dayIndex;
+      if (typeof targetDayIndex === 'number') setSelectedEntryDay(targetDayIndex as number);
 
       setImportPreview([
         { label: 'VAE HT', value: formatImportedNumber(parsed.values[17]) || '-' },
@@ -1795,6 +1892,72 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     } finally {
       event.target.value = '';
     }
+  };
+
+  const updateCaisseImportPreview = (id: string, updates: Partial<CaisseImportPreview>) => {
+    setCaisseImportPreviews(prev => prev.map(item => item.id === id
+      ? (() => {
+        const nextItem = { ...item, ...updates };
+        const dateMatch = nextItem.businessDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        const matchesCurrentMonth = !!dateMatch && Number(dateMatch[1]) === year && Number(dateMatch[2]) - 1 === month;
+        return {
+          ...nextItem,
+          confidence: matchesCurrentMonth ? 'verified' : 'review',
+          status: nextItem.businessDate !== ''
+            ? matchesCurrentMonth
+              ? 'Date ajustee, feuille prete a valider sur son jour.'
+              : 'Date ajustee hors mois affiche, import sur le jour selectionne.'
+            : 'Date vide, import sur le jour selectionne.',
+        };
+      })()
+      : item));
+  };
+
+  const applyCaisseImport = (caisseImportPreview: CaisseImportPreview) => {
+    if (!caisseImportPreview || selectedDayRowIndex < 0) return;
+
+    const dateMatch = caisseImportPreview.businessDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const importYear = dateMatch ? Number(dateMatch[1]) : null;
+    const importMonth = dateMatch ? Number(dateMatch[2]) - 1 : null;
+    const importDay = dateMatch ? Number(dateMatch[3]) : null;
+
+    if (importYear && importYear !== year) {
+      setImportStatus(`Erreur : la feuille de caisse est datee de ${importYear}. Passe d'abord sur cette annee avant de valider l'import.`);
+      return;
+    }
+
+    const usePdfDay = importDay && importMonth === month && importYear === year;
+    const targetDayEntry = usePdfDay
+      ? dayRows.find(item => item.row.dayIndex === importDay)
+      : selectedDayEntry;
+    const targetRowIndex = targetDayEntry?.index ?? selectedDayRowIndex;
+    if (targetRowIndex < 0) {
+      setImportStatus('Erreur : aucune journee cible trouvee pour importer cette feuille.');
+      return;
+    }
+
+    const targetDay = targetDayEntry?.row.dayIndex || selectedEntryDay;
+    const parsed = caisseImportPreview.parsed;
+    Object.entries(parsed.values).forEach(([col, value]) => {
+      handleCellChange(targetRowIndex, Number(col), formatImportedNumber(value, Number(col) === 25 || Number(col) === 27 || Number(col) === 34 ? 0 : 2));
+    });
+    updateTheorique(month, targetDay, 'total_ca', formatImportedNumber(parsed.theoriqueValues.total_ca));
+    updateTheorique(month, targetDay, 'cb', formatImportedNumber(parsed.theoriqueValues.cb));
+    updateTheorique(month, targetDay, 'amex', formatImportedNumber(parsed.theoriqueValues.amex));
+    updateTheorique(month, targetDay, 'tr_papier', formatImportedNumber(parsed.theoriqueValues.tr_papier));
+    updateTheorique(month, targetDay, 'tr_carte', formatImportedNumber(parsed.theoriqueValues.tr_carte));
+    updateTheorique(month, targetDay, 'ancv', formatImportedNumber(parsed.theoriqueValues.ancv));
+    updateTheorique(month, targetDay, 'especes', formatImportedNumber(parsed.theoriqueValues.especes));
+    updateTheorique(month, targetDay, 'click_collect', formatImportedNumber(parsed.theoriqueValues.click_collect));
+    updateTheorique(month, targetDay, 'uber', formatImportedNumber(parsed.theoriqueValues.uber));
+    updateTheorique(month, targetDay, 'deliveroo', formatImportedNumber(parsed.theoriqueValues.deliveroo));
+    updateTheorique(month, targetDay, 'sunday', formatImportedNumber(parsed.theoriqueValues.sunday));
+
+    if (targetDayEntry?.row.dayIndex) setSelectedEntryDay(targetDayEntry.row.dayIndex);
+
+    const targetLabel = targetDayEntry?.row.label || selectedDayLabel;
+    setImportStatus(`Import realise sur le ${targetLabel}.`);
+    setCaisseImportPreviews(prev => prev.filter(item => item.id !== caisseImportPreview.id));
   };
 
   const handleInvoiceImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -4187,10 +4350,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(240px, 1fr))', gap: 12 }}>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #93c5fd', borderRadius: 10, background: '#eff6ff' }}>
                   <span style={{ fontSize: 12, fontWeight: 900, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '.04em' }}>Feuille de caisse</span>
+                  <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
+                    Lecture locale de plusieurs feuilles possible, avec validation une par une avant application.
+                  </span>
                   <input
                     type="file"
                     accept=".pdf,.txt,text/plain,application/pdf"
                     onChange={handleDailyRealiseImport}
+                    multiple
                     style={{ fontSize: 13, color: '#0f172a' }}
                   />
                 </label>
@@ -4312,6 +4479,82 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   })}
                 </div>
               )}
+              {caisseImportPreviews.length > 0 && (
+                <div style={{ marginTop: 12, display: 'grid', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
+                  {caisseImportPreviews.map(item => {
+                    const isVerified = item.confidence === 'verified';
+                    const theoriqueTotal = item.parsed.theoriqueValues.cb
+                      + item.parsed.theoriqueValues.especes
+                      + item.parsed.theoriqueValues.amex
+                      + item.parsed.theoriqueValues.tr_carte
+                      + item.parsed.theoriqueValues.ancv
+                      + item.parsed.theoriqueValues.tr_papier
+                      + item.parsed.theoriqueValues.sunday
+                      + item.parsed.theoriqueValues.uber
+                      + item.parsed.theoriqueValues.deliveroo
+                      + item.parsed.theoriqueValues.click_collect;
+
+                    return (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: isMobile ? 'minmax(150px, 1fr) 130px minmax(250px, 1.2fr) 112px' : 'minmax(190px, 1fr) 138px minmax(420px, 1.5fr) 112px',
+                          gap: 8,
+                          alignItems: 'end',
+                          minWidth: isMobile ? 760 : 960,
+                          padding: 10,
+                          border: `1px solid ${isVerified ? '#93c5fd' : '#fbbf24'}`,
+                          borderRadius: 8,
+                          background: isVerified ? '#eff6ff' : '#fffbeb',
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                            <span style={{ padding: '2px 7px', borderRadius: 999, background: isVerified ? '#dbeafe' : '#fef3c7', color: isVerified ? '#1d4ed8' : '#92400e', fontSize: 10, fontWeight: 900, textTransform: 'uppercase' }}>
+                              {isVerified ? 'OK' : 'A verifier'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 900, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.fileName}>{item.fileName}</div>
+                          <div style={{ marginTop: 2, fontSize: 11, color: isVerified ? '#1d4ed8' : '#92400e', fontWeight: 700 }}>{item.status}</div>
+                        </div>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Date</span>
+                          <input
+                            type="date"
+                            value={item.businessDate}
+                            onChange={event => updateCaisseImportPreview(item.id, { businessDate: event.target.value })}
+                            style={{ height: 34, minWidth: 0, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
+                          />
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                          {[
+                            { label: 'VAE HT', value: formatImportedCurrencyLabel(item.parsed.values[17]) },
+                            { label: 'CA midi', value: formatImportedCurrencyLabel(item.parsed.values[18]) },
+                            { label: 'CA soir', value: formatImportedCurrencyLabel(item.parsed.values[19]) },
+                            { label: 'Cts midi', value: formatImportedIntegerLabel(item.parsed.values[25]) },
+                            { label: 'Cts soir', value: formatImportedIntegerLabel(item.parsed.values[27]) },
+                            { label: 'Theo caisse', value: formatImportedCurrencyLabel(theoriqueTotal) },
+                          ].map(metric => (
+                            <div key={`${item.id}-${metric.label}`} style={{ padding: '8px 10px', border: '1px solid #dbe5ec', borderRadius: 8, background: '#fff' }}>
+                              <div style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>{metric.label}</div>
+                              <div style={{ marginTop: 4, fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{metric.value}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => applyCaisseImport(item)}
+                          style={{ height: 36, border: 'none', borderRadius: 8, background: isVerified ? '#1d4ed8' : '#b45309', color: '#fff', fontSize: 13, fontWeight: 900, cursor: 'pointer' }}
+                        >
+                          Valider
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {importStatus && (
                 <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: importStatus.startsWith('Erreur') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${importStatus.startsWith('Erreur') ? '#fecaca' : '#bbf7d0'}`, color: importStatus.startsWith('Erreur') ? '#991b1b' : '#166534', fontSize: 13, fontWeight: 800 }}>
                   {importStatus}
