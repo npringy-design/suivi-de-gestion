@@ -1,14 +1,15 @@
-# Accueil - infobulle cout salarial
+# Accueil - tuile cout salarial
 
 Statut : ajoute, a valider en visuel apres redeploiement.
 
-Objectif : afficher sur la page d'accueil un indicateur compact du ratio cout salarial / CA realise.
+Objectif : afficher sur la page d'accueil un indicateur visible du ratio cout salarial / CA realise, sans ouvrir une page supplementaire.
 
 Affichage :
 
-- bouton compact `S/C Cout salarial` sur l'accueil ;
-- valeur principale : semaine en cours si disponible, sinon mois ou veille ;
-- au clic : detail veille, semaine en cours, semaines passees et mois en cours.
+- vraie tuile visuelle dans le style des cartes de l'accueil ;
+- zone gauche : `S/C Veille` et `S/C Mois` ;
+- zone droite : detail `S/C Semaine` avec les semaines passees et la semaine en cours ;
+- la valeur principale affiche en priorite la semaine en cours, sinon le mois ou la veille.
 
 Calcul :
 
