@@ -10,3 +10,10 @@ Avant toute modification :
 - Ne jamais corriger des problèmes annexes non demandés.
 - Ne jamais pousser sur main sans validation explicite.
 - Répondre court : fichiers modifiés + vérification faite.
+
+# Push et sécurité
+
+- Le commit/push est autorisé.
+- Ne pas élargir la tâche avant push.
+- Ne modifier que les fichiers nécessaires.
+- Si la correction nécessite plus de 3 fichiers, expliquer brièvement pourquoi.
