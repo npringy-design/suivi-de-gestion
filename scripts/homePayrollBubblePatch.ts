@@ -36,11 +36,16 @@ const payrollMemoBlock = `
     };
 
     const averageRate = (category: string, department: string, fallback: number) => {
-      const values = ((salaries as Record<string, Array<{ coutHoraire?: string; department?: string }>>)[category] || [])
-        .filter(row => !row.department || row.department === department)
-        .map(row => parseValue(row.coutHoraire))
-        .filter(value => value > 0);
-      return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) / values.length : fallback;
+      const rows = ((salaries as Record<string, Array<{ heures?: string; coutGlobal?: string; department?: string }>>)[category] || [])
+        .filter(row => !row.department || row.department === department);
+      const rates = rows
+        .map(row => {
+          const heures = parseHour(row.heures);
+          const coutGlobal = parseValue(row.coutGlobal);
+          return heures > 0 && coutGlobal > 0 ? (coutGlobal * 1.1) / heures : 0;
+        })
+        .filter(rate => rate > 0);
+      return rates.length > 0 ? rates.reduce((sum, rate) => sum + rate, 0) / rates.length : fallback;
     };
 
     const payrollColumns = [
