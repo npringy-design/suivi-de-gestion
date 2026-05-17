@@ -16,6 +16,7 @@ Calcul :
 - ratio = cout salarial realise / CA realise ;
 - CA realise lu dans le suivi quotidien : VAE, midi, soir, limonade ;
 - cout salarial reconstruit depuis les heures realisees par statut/section et les taux horaires du snapshot salaires ;
+- les taux horaires sont recalcules avec la meme regle que la version complete : `cout global * 1,10 / heures` ;
 - fallback sur les taux par defaut si aucun snapshot salaires n'est disponible ;
 - lecture des nouvelles colonnes realisees et fallback sur les anciennes colonnes pour eviter de perdre les donnees deja saisies.
 
