@@ -163,6 +163,24 @@ type TableViewMode = (typeof viewModes)[number]['id'];
 const editableCols: number[] = [
   6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34, 37, 38, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90
 ];
+const contextColumns = new Set([
+  0, 1, 2, 3, 4, 10, 11, 12,
+  21, 22, 23, 29, 30, 31, 32, 33, 35, 36,
+  49, 58, 59, 60,
+  65, 72, 73, 74, 76, 83, 84, 85, 87, 88,
+]);
+const dailyPersonnelRows = [
+  ['Cadre', 77, 78],
+  ['Agent de maîtrise', 79, 80],
+  ['NIV I et II', 81, 82],
+  ['NIV III', 83, 84],
+  ['Apprenti', 85, 86],
+] as const;
+const dailyPersonnelTotals = [
+  { label: 'Total heures', col: 76 },
+  { label: 'Masse salariale', col: 87 },
+  { label: 'Masse / CA', col: 89 },
+];
 // ─────────────────────────────────────────────────────────────────────────────
 import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -1076,12 +1094,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       const isEditableColumn = editableCols.includes(colIndex) || group === 'FRAIS GENERAUX' || group === 'CONTRAT MENSUALISES';
       const isDailyDemarqueColumn = group === 'DEMARQUES';
-      const contextColumns = new Set([
-        0, 1, 2, 3, 4, 10, 11, 12,
-        21, 22, 23, 29, 30, 31, 32, 33, 35, 36,
-        49, 58, 59, 60,
-        65, 72, 73, 74, 76, 83, 84, 85, 87, 88,
-      ]);
 
       if (tableViewMode === 'SAISIE') {
         return isDailyDemarqueColumn || isEditableColumn || contextColumns.has(colIndex);
@@ -2982,14 +2994,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             </>
           ), '#16a34a')}
 
-          {renderDailySection('Personnel', 'Saisie des heures par équipe', (
+          {renderDailySection('Personnel', 'Saisie des heures par équipe et masse salariale liée au CA du jour', (
             renderPersonnelTable(
               <>
-                {renderPersonnelRow('Cadre', 77, 78)}
-                {renderPersonnelRow('Agent de maîtrise', 79, 80)}
-                {renderPersonnelRow('NIV I et II', 81, 82)}
-                {renderPersonnelRow('NIV III', 83, 84)}
-                {renderPersonnelRow('Apprenti', 85, 86)}
+                {dailyPersonnelRows.map(([label, cuisineCol, salleCol]) => renderPersonnelRow(label, cuisineCol, salleCol))}
+                {renderDailyTotalRow(dailyPersonnelTotals)}
               </>
             )
           ), '#9333ea')}

@@ -133,6 +133,7 @@ Regles de calcul :
 
 - les heures saisies sont converties au centieme ;
 - les montants frais de personnel sont calcules avec les taux horaires importes ;
+- en saisie journaliere, les heures realisees alimentent un recap calcule avec total heures, masse salariale du jour et ratio masse salariale / CA realise ;
 - les totaux semaine et mois doivent correspondre a la somme des lignes visibles au centieme.
 
 ## Fichiers concernes

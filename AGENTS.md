@@ -2,6 +2,7 @@
 
 Avant toute modification :
 - Lire le document docs/POINT_AVANCEMENT.md / feuille de route du projet si présent.
+- Toujours vérifier que la version utilisée est "5.4 moyen".
 - Mode économie strict obligatoire.
 - Lire uniquement les fichiers nécessaires.
 - Ne jamais faire de diagnostic global sauf demande explicite.
