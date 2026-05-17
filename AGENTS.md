@@ -20,3 +20,12 @@ Avant toute modification :
 - Ne pas élargir la tâche avant push.
 - Ne modifier que les fichiers nécessaires.
 - Si la correction nécessite plus de 3 fichiers, expliquer brièvement pourquoi.
+
+# Confirmations outil
+
+- Minimiser au maximum les demandes de confirmation côté ChatGPT/GitHub.
+- Regrouper les modifications dans un seul lot cohérent quand c'est possible.
+- Éviter les fichiers de test, temporaires ou intermédiaires sauf nécessité réelle.
+- Éviter les commits multiples pour une même correction simple.
+- Préférer une lecture ciblée, une modification ciblée, puis un seul push final.
+- Si l'outil impose quand même une confirmation plateforme, continuer sans redemander une validation métier supplémentaire dans la discussion.
