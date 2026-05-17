@@ -111,6 +111,10 @@ const payrollMemoBlock = `
     const currentWeekRatio = ratioForDays(currentWeekDays);
     const monthRatio = ratioForDays(monthDays);
     const yesterdayRatio = yesterdayDay ? ratioForDays([yesterdayDay]) : null;
+    const weekRows = [
+      ...previousWeeks,
+      { label: 'Semaine ' + currentWeekNumber + ' en cours', value: formatPercent(currentWeekRatio) },
+    ];
 
     return {
       headline: formatPercent(currentWeekRatio ?? monthRatio ?? yesterdayRatio),
@@ -119,55 +123,48 @@ const payrollMemoBlock = `
       currentWeekLabel: 'Semaine ' + currentWeekNumber,
       month: formatPercent(monthRatio),
       previousWeeks,
+      weekRows,
     };
   }, [data, month, year, dashboardRowIndices]);
 `;
 
-const payrollBubbleMarkup = `
-            <section className="relative z-30 shrink-0">
-              <div className="flex justify-end">
-                <div className="relative w-full sm:w-auto">
-                  <button
-                    type="button"
-                    onClick={() => setIsPayrollBubbleOpen(value => !value)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-cyan-900/10 bg-white/85 px-3 py-2 text-left shadow-sm shadow-slate-950/5 ring-1 ring-white/60 transition-all hover:bg-white hover:shadow-md sm:w-auto"
-                    aria-expanded={isPayrollBubbleOpen}
-                  >
-                    <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-600">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-cyan-950 text-[10px] font-black text-cyan-50">S/C</span>
-                      Cout salarial
-                    </span>
-                    <span className="text-sm font-black text-cyan-800">{payrollCostBubble.headline}</span>
-                  </button>
-
-                  {isPayrollBubbleOpen && (
-                    <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-full min-w-[280px] rounded-2xl border border-cyan-900/10 bg-white p-3 shadow-2xl shadow-slate-950/20 ring-1 ring-white/70 sm:w-[340px]">
-                      <div className="mb-2 flex items-center justify-between border-b border-slate-100 pb-2">
-                        <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Ratio S/C</div>
-                        <div className="text-xs font-bold text-slate-400">Cout / CA realise</div>
-                      </div>
-                      <div className="grid gap-1.5 text-sm">
-                        <div className="flex items-center justify-between rounded-lg bg-slate-50 px-2.5 py-2">
-                          <span className="font-bold text-slate-600">Veille</span>
-                          <span className="font-black text-slate-950">{payrollCostBubble.yesterday}</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-lg bg-cyan-50 px-2.5 py-2">
-                          <span className="font-bold text-cyan-900">{payrollCostBubble.currentWeekLabel} en cours</span>
-                          <span className="font-black text-cyan-900">{payrollCostBubble.currentWeek}</span>
-                        </div>
-                        {payrollCostBubble.previousWeeks.map(item => (
-                          <div key={item.label} className="flex items-center justify-between rounded-lg bg-white px-2.5 py-1.5 ring-1 ring-slate-100">
-                            <span className="font-semibold text-slate-500">{item.label}</span>
-                            <span className="font-black text-slate-800">{item.value}</span>
-                          </div>
-                        ))}
-                        <div className="mt-1 flex items-center justify-between rounded-lg bg-amber-50 px-2.5 py-2">
-                          <span className="font-bold text-amber-900">Mois en cours</span>
-                          <span className="font-black text-amber-900">{payrollCostBubble.month}</span>
-                        </div>
+const payrollTileMarkup = `
+            <section className="shrink-0">
+              <div className="home-summary-card group relative min-h-[112px] overflow-hidden rounded-2xl border border-cyan-200/25 bg-gradient-to-br from-[#061f28] via-[#073846] to-[#0b5a62] p-[clamp(0.8rem,1vw,1.15rem)] shadow-sm shadow-slate-950/10 backdrop-blur-sm transition-all duration-500 hover:border-cyan-200/50 hover:shadow-xl hover:shadow-cyan-950/20">
+                <div className="pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full bg-cyan-200/10 blur-2xl" />
+                <div className="relative grid gap-3 lg:grid-cols-[minmax(250px,0.9fr)_minmax(300px,1.1fr)] lg:items-stretch">
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                    <div className="rounded-xl border border-cyan-100/20 bg-cyan-950/25 px-3 py-2 ring-1 ring-white/5">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70">S/C Veille</div>
+                      <div className="mt-1 text-[clamp(1.7rem,2.1vw,2.25rem)] font-black leading-none text-amber-50 drop-shadow-sm">
+                        {payrollCostBubble.yesterday}
                       </div>
                     </div>
-                  )}
+                    <div className="rounded-xl border border-cyan-100/20 bg-cyan-950/25 px-3 py-2 ring-1 ring-white/5">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70">S/C Mois</div>
+                      <div className="mt-1 text-[clamp(1.7rem,2.1vw,2.25rem)] font-black leading-none text-amber-50 drop-shadow-sm">
+                        {payrollCostBubble.month}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-cyan-100/20 bg-white/8 px-3 py-2 ring-1 ring-white/10">
+                    <div className="mb-2 flex items-center justify-between gap-3 border-b border-cyan-100/20 pb-2">
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/75">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-cyan-300/10 text-[10px] text-cyan-50 ring-1 ring-cyan-100/20">S/C</span>
+                        Semaine
+                      </div>
+                      <div className="text-sm font-black text-amber-50">{payrollCostBubble.headline}</div>
+                    </div>
+                    <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
+                      {payrollCostBubble.weekRows.map(item => (
+                        <div key={item.label} className="flex items-center justify-between gap-2 rounded-lg bg-cyan-950/25 px-2.5 py-1.5 ring-1 ring-cyan-100/10">
+                          <span className="truncate text-[11px] font-bold text-cyan-50/75">{item.label}</span>
+                          <span className="shrink-0 text-[12px] font-black text-amber-50">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -182,23 +179,16 @@ export const homePayrollBubblePatch = (): Plugin => ({
 
     next = replaceRequired(
       next,
-      "  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);",
-      "  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);\n  const [isPayrollBubbleOpen, setIsPayrollBubbleOpen] = useState(false);",
-      'etat infobulle'
-    );
-
-    next = replaceRequired(
-      next,
       "  const chartDataCA = useMemo(() => {",
       payrollMemoBlock + "\n  const chartDataCA = useMemo(() => {",
-      'calcul infobulle'
+      'calcul tuile'
     );
 
     next = replaceRequired(
       next,
       "\n            <section className=\"home-chart-section grid flex-1 gap-3 overflow-hidden lg:min-h-0 lg:grid-cols-2 xl:gap-4\">",
-      payrollBubbleMarkup + "\n            <section className=\"home-chart-section grid flex-1 gap-3 overflow-hidden lg:min-h-0 lg:grid-cols-2 xl:gap-4\">",
-      'affichage infobulle'
+      payrollTileMarkup + "\n            <section className=\"home-chart-section grid flex-1 gap-3 overflow-hidden lg:min-h-0 lg:grid-cols-2 xl:gap-4\">",
+      'affichage tuile'
     );
 
     return { code: next, map: null };
