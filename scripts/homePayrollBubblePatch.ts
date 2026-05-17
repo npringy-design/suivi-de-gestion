@@ -5,6 +5,89 @@ const replaceRequired = (code: string, from: string, to: string, label: string) 
   return code.replace(from, to);
 };
 
+const currencyFormatSource = `const fe = (v: number) =>
+  new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  }).format(v);`;
+
+const currencyFormatReplacement = `const fe = (v: number) =>
+  new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(v);`;
+
+const kpisMemoSource = `  const kpis = useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) {
+      return { caMois: 0, caJour: 0, tmJour: 0, budgetCouvert: 0 };
+    }
+
+    const caMois = moisIndex >= 0 ? n(data[moisIndex]?.CA_Realise) : 0;
+    const caJour = jourIndex >= 0 ? n(data[jourIndex]?.CA_Realise) : 0;
+    const nbCouverts = jourIndex >= 0 ? n(data[jourIndex]?.Nombre_de_Couverts) : 0;
+    const tmJour = nbCouverts > 0 ? caJour / nbCouverts : 0;
+
+    let totalBudgetCA = 0;
+    let totalRealiseCA = 0;
+
+    for (let i = rowFirstDay; i <= rowLastDay && i < data.length; i++) {
+      totalBudgetCA += n(data[i]?.CA_Budget);
+      totalRealiseCA += n(data[i]?.CA_Realise);
+    }
+
+    const budgetCouvert = totalBudgetCA > 0 ? (totalRealiseCA / totalBudgetCA) * 100 : 0;
+
+    return { caMois, caJour, tmJour, budgetCouvert };
+  }, [data, moisIndex, jourIndex, rowFirstDay, rowLastDay]);`;
+
+const kpisMemoReplacement = `  const kpis = useMemo(() => {
+    const monthData = data?.[month];
+    const dashboard = monthData?.dashboard || {};
+    const parseDashboardValue = (value: unknown) => {
+      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+      return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
+    };
+    const dashboardValue = (rowIndex: number, colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const now = new Date();
+    const selectedDay = now.getFullYear() === year && now.getMonth() === month ? Math.min(now.getDate(), daysInMonth) : 1;
+    const rowIndexForDay = (day: number) => dashboardRowIndices[day];
+    const realisedDayCA = (day: number) => {
+      const rowIndex = rowIndexForDay(day);
+      if (typeof rowIndex !== 'number') return 0;
+      return [17, 18, 19, 20].reduce((sum, col) => sum + dashboardValue(rowIndex, col), 0);
+    };
+    const budgetDayCA = (day: number) => {
+      const rowIndex = rowIndexForDay(day);
+      if (typeof rowIndex !== 'number') return 0;
+      const savedTotal = dashboardValue(rowIndex, 3);
+      if (savedTotal > 0) return savedTotal;
+      const caMidi = dashboardValue(rowIndex, 0) || dashboardValue(rowIndex, 6) * dashboardValue(rowIndex, 7);
+      const caSoir = dashboardValue(rowIndex, 1) || dashboardValue(rowIndex, 8) * dashboardValue(rowIndex, 9);
+      const caLimo = dashboardValue(rowIndex, 2) || dashboardValue(rowIndex, 14) * dashboardValue(rowIndex, 15);
+      return caMidi + caSoir + caLimo;
+    };
+
+    let caMois = 0;
+    let totalBudgetCA = 0;
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      caMois += realisedDayCA(day);
+      totalBudgetCA += budgetDayCA(day);
+    }
+
+    const caJour = realisedDayCA(selectedDay);
+    const selectedRowIndex = rowIndexForDay(selectedDay);
+    const nbCouverts = typeof selectedRowIndex === 'number' ? dashboardValue(selectedRowIndex, 25) + dashboardValue(selectedRowIndex, 27) : 0;
+    const caRestaurant = typeof selectedRowIndex === 'number' ? dashboardValue(selectedRowIndex, 18) + dashboardValue(selectedRowIndex, 19) : 0;
+    const tmJour = nbCouverts > 0 ? caRestaurant / nbCouverts : 0;
+    const budgetCouvert = totalBudgetCA > 0 ? (caMois / totalBudgetCA) * 100 : 0;
+
+    return { caMois, caJour, tmJour, budgetCouvert };
+  }, [data, month, year, dashboardRowIndices, moisIndex, jourIndex, rowFirstDay, rowLastDay]);`;
+
 const payrollMemoBlock = `
   const payrollCostBubble = useMemo(() => {
     const monthData = data?.[month];
@@ -106,7 +189,7 @@ const payrollMemoBlock = `
     const yesterdayDate = new Date(now);
     yesterdayDate.setDate(now.getDate() - 1);
     const yesterdayDay = yesterdayDate.getFullYear() === year && yesterdayDate.getMonth() === month ? yesterdayDate.getDate() : null;
-    const formatPercent = (value: number | null) => value === null ? '-' : value.toFixed(1).replace('.', ',') + ' %';
+    const formatPercent = (value: number | null) => value === null ? '-' : value.toFixed(2).replace('.', ',') + ' %';
 
     const currentWeekDays = weeks.find(entry => entry.week === currentWeekNumber)?.days.filter(day => day <= referenceDay) || [];
     const monthDays = Array.from({ length: referenceDay }, (_, index) => index + 1);
@@ -181,6 +264,9 @@ export const homePayrollBubblePatch = (): Plugin => ({
   transform(code, id) {
     if (!id.replace(/\\/g, '/').endsWith('/src/Home.tsx')) return null;
     let next = code;
+
+    next = replaceRequired(next, currencyFormatSource, currencyFormatReplacement, 'format euros centimes');
+    next = replaceRequired(next, kpisMemoSource, kpisMemoReplacement, 'kpi accueil depuis dashboard');
 
     next = replaceRequired(
       next,
