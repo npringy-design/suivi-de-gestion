@@ -9,12 +9,15 @@ Affichage :
 - vraie tuile visuelle dans le style des cartes de l'accueil ;
 - zone gauche : `S/C Veille` et `S/C Mois` ;
 - zone droite : detail `S/C Semaine` avec les semaines passees et la semaine en cours ;
-- la valeur principale affiche en priorite la semaine en cours, sinon le mois ou la veille.
+- la valeur principale affiche en priorite la semaine en cours, sinon le mois ou la veille ;
+- affichage des pourcentages en deux decimales, comme la version complete ;
+- affichage des montants de l'accueil avec centimes pour eviter les arrondis non demandes.
 
 Calcul :
 
 - ratio = cout salarial realise / CA realise ;
 - CA realise lu dans le suivi quotidien : VAE, midi, soir, limonade ;
+- la tuile `CA realise` de l'accueil lit maintenant le CA total realise du mois depuis les donnees dashboard du suivi quotidien complet ;
 - cout salarial reconstruit depuis les heures realisees par statut/section et les taux horaires du snapshot salaires ;
 - les taux horaires sont recalcules avec la meme regle que la version complete : `cout global * 1,10 / heures` ;
 - fallback sur les taux par defaut si aucun snapshot salaires n'est disponible ;
