@@ -1,383 +1,387 @@
-import { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 
 import { useData } from '@/contexts/DataContext';
-import { getDashboardRowIndices, parseHourInputToDecimal } from './utils';
+
+import { getDashboardRowIndices, getISOWeek } from './utils';
+
+const NAV = '#1e293b';
+const AMBER = '#f59e0b';
+const BLUE = '#3b82f6';
+const GREEN = '#10b981';
+
+const WEEKS = Array.from({ length: 52 }, (_, i) => `S${i + 1}`);
+
+const n = (v?: string) => parseFloat((v || '0').replace(',', '.')) || 0;
+const fe = (v: number) => v === 0 ? '0,00 €' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
+const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '—';
 
 interface ReportingProps {
   onBack: () => void;
   hideHeader?: boolean;
 }
 
-type Section = 'cuisine' | 'salle';
-
-type PayrollColumn = {
-  label: string;
-  section: Section;
-  category: string;
-  col: number;
-  legacyCol: number;
-  fallbackRate: number;
-};
-
-type DayAnalysis = {
-  day: number;
-  label: string;
-  week: number;
-  caTotal: number;
-  caResto: number;
-  caVae: number;
-  caLimo: number;
-  covers: number;
-  tmResto: number;
-  hoursCuisine: number;
-  hoursSalle: number;
-  costCuisine: number;
-  costSalle: number;
-  costTotal: number;
-  scTotal: number | null;
-  scCuisine: number | null;
-  scSalle: number | null;
-};
-
-const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-const weekdayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-
-const payrollColumns: PayrollColumn[] = [
-  { label: 'Cadre cuisine', section: 'cuisine', category: 'cadre', col: 77, legacyCol: 91, fallbackRate: 38.54 },
-  { label: 'Cadre salle', section: 'salle', category: 'cadre', col: 78, legacyCol: 92, fallbackRate: 38.54 },
-  { label: 'Maitrise cuisine', section: 'cuisine', category: 'maitrise', col: 79, legacyCol: 93, fallbackRate: 20.85 },
-  { label: 'Maitrise salle', section: 'salle', category: 'maitrise', col: 80, legacyCol: 94, fallbackRate: 20.85 },
-  { label: 'Niv I-II cuisine', section: 'cuisine', category: 'niv12', col: 81, legacyCol: 95, fallbackRate: 16.04 },
-  { label: 'Niv I-II salle', section: 'salle', category: 'niv12', col: 82, legacyCol: 96, fallbackRate: 16.04 },
-  { label: 'Niv III cuisine', section: 'cuisine', category: 'niv3', col: 83, legacyCol: 97, fallbackRate: 18.35 },
-  { label: 'Niv III salle', section: 'salle', category: 'niv3', col: 84, legacyCol: 98, fallbackRate: 18.35 },
-  { label: 'Apprenti cuisine', section: 'cuisine', category: 'apprenti', col: 85, legacyCol: 99, fallbackRate: 8.39 },
-  { label: 'Apprenti salle', section: 'salle', category: 'apprenti', col: 86, legacyCol: 100, fallbackRate: 8.39 },
-];
-
-const numberValue = (value: unknown) => {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-  return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
-};
-
-const euro = (value: number) => new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-}).format(value || 0);
-
-const percent = (value: number | null) => value === null || !Number.isFinite(value)
-  ? '-'
-  : `${value.toFixed(2).replace('.', ',')} %`;
-
-const integer = (value: number) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(value || 0);
-
-const ratio = (numerator: number, denominator: number) => denominator > 0 ? (numerator / denominator) * 100 : null;
-
-const summarize = (rows: DayAnalysis[]): DayAnalysis => {
-  const total = rows.reduce((acc, row) => ({
-    ...acc,
-    caTotal: acc.caTotal + row.caTotal,
-    caResto: acc.caResto + row.caResto,
-    caVae: acc.caVae + row.caVae,
-    caLimo: acc.caLimo + row.caLimo,
-    covers: acc.covers + row.covers,
-    hoursCuisine: acc.hoursCuisine + row.hoursCuisine,
-    hoursSalle: acc.hoursSalle + row.hoursSalle,
-    costCuisine: acc.costCuisine + row.costCuisine,
-    costSalle: acc.costSalle + row.costSalle,
-    costTotal: acc.costTotal + row.costTotal,
-  }), {
-    day: 0,
-    label: 'Total',
-    week: 0,
-    caTotal: 0,
-    caResto: 0,
-    caVae: 0,
-    caLimo: 0,
-    covers: 0,
-    tmResto: 0,
-    hoursCuisine: 0,
-    hoursSalle: 0,
-    costCuisine: 0,
-    costSalle: 0,
-    costTotal: 0,
-    scTotal: null,
-    scCuisine: null,
-    scSalle: null,
-  } as DayAnalysis);
-
-  total.tmResto = total.covers > 0 ? total.caResto / total.covers : 0;
-  total.scTotal = ratio(total.costTotal, total.caTotal);
-  total.scCuisine = ratio(total.costCuisine, total.caTotal);
-  total.scSalle = ratio(total.costSalle, total.caTotal);
-  return total;
-};
-
 export default function Reporting({ onBack, hideHeader = false }: ReportingProps) {
-  const { data, selectedMonth, selectedYear, setSelectedMonth, setSelectedYear } = useData();
+  const { data, selectedYear } = useData();
+  const YEAR = selectedYear;
+  const MONTHS_SHORT = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'].map(m => `${m}-${YEAR.toString().slice(-2)}`);
+  
+  const [activeTab, setActiveTab] = useState<'mensuel' | 'hebdo_ca' | 'hebdo_rh'>('mensuel');
 
-  const years = [selectedYear - 1, selectedYear, selectedYear + 1];
+  const { monthlyTotals, weeklyTotals } = useMemo(() => {
+    const monthly: Record<number, Record<number, number>> = {};
+    const weekly: Record<number, Record<number, number>> = {};
 
-  const analysis = useMemo(() => {
-    const monthData = data[selectedMonth];
-    const dashboard = monthData?.dashboard || {};
-    const salaries = monthData?.salariesConfig?.categories || {};
-    const indices = getDashboardRowIndices(selectedMonth, selectedYear);
-    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-
-    const cell = (row: number, col: number) => dashboard[`${row}-${col}`];
-    const rateFor = (column: PayrollColumn) => {
-      const rows = ((salaries as Record<string, Array<{ heures?: string; coutGlobal?: string; department?: string }>>)[column.category] || [])
-        .filter(row => !row.department || row.department === column.section);
-      const rates = rows
-        .map(row => {
-          const hours = parseHourInputToDecimal(row.heures || '0');
-          const cost = numberValue(row.coutGlobal);
-          return hours > 0 && cost > 0 ? (cost * 1.1) / hours : 0;
-        })
-        .filter(value => value > 0);
-      return rates.length > 0 ? rates.reduce((sum, value) => sum + value, 0) / rates.length : column.fallbackRate;
-    };
-
-    const rates = payrollColumns.map(column => ({ ...column, rate: rateFor(column) }));
-    const days: DayAnalysis[] = [];
-
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      const rowIndex = indices[day];
-      const date = new Date(selectedYear, selectedMonth, day);
-      let week = 1;
-      for (let d = 1; d < day; d += 1) {
-        if (new Date(selectedYear, selectedMonth, d).getDay() === 0) week += 1;
-      }
-
-      const caVae = numberValue(cell(rowIndex, 17));
-      const caMidi = numberValue(cell(rowIndex, 18));
-      const caSoir = numberValue(cell(rowIndex, 19));
-      const caLimo = numberValue(cell(rowIndex, 20));
-      const caTotal = caVae + caMidi + caSoir + caLimo;
-      const caResto = caMidi + caSoir;
-      const covers = numberValue(cell(rowIndex, 25)) + numberValue(cell(rowIndex, 27));
-
-      let hoursCuisine = 0;
-      let hoursSalle = 0;
-      let costCuisine = 0;
-      let costSalle = 0;
-
-      rates.forEach(column => {
-        const rawHours = cell(rowIndex, column.col) || cell(rowIndex, column.legacyCol) || '';
-        const hours = Math.round(parseHourInputToDecimal(rawHours || '0') * 100) / 100;
-        const cost = hours * column.rate;
-        if (column.section === 'cuisine') {
-          hoursCuisine += hours;
-          costCuisine += cost;
-        } else {
-          hoursSalle += hours;
-          costSalle += cost;
-        }
-      });
-
-      const costTotal = costCuisine + costSalle;
-      days.push({
-        day,
-        label: `${weekdayNames[date.getDay()]} ${day}`,
-        week,
-        caTotal,
-        caResto,
-        caVae,
-        caLimo,
-        covers,
-        tmResto: covers > 0 ? caResto / covers : 0,
-        hoursCuisine,
-        hoursSalle,
-        costCuisine,
-        costSalle,
-        costTotal,
-        scTotal: ratio(costTotal, caTotal),
-        scCuisine: ratio(costCuisine, caTotal),
-        scSalle: ratio(costSalle, caTotal),
-      });
+    for (let m = 0; m < 12; m++) {
+      monthly[m] = {};
+      for (let i = 0; i < 110; i++) monthly[m][i] = 0;
     }
 
-    const weeks = Array.from(new Set(days.map(day => day.week))).map(week => ({
-      week,
-      rows: days.filter(day => day.week === week),
-      total: summarize(days.filter(day => day.week === week)),
-    }));
+    for (let w = 1; w <= 52; w++) {
+      weekly[w] = {};
+      for (let i = 0; i < 110; i++) weekly[w][i] = 0;
+    }
 
-    const monthTotal = summarize(days);
-    const bestDay = [...days].filter(day => day.caTotal > 0).sort((a, b) => (a.scTotal || 999) - (b.scTotal || 999))[0];
-    const worstDay = [...days].filter(day => day.caTotal > 0).sort((a, b) => (b.scTotal || 0) - (a.scTotal || 0))[0];
+    for (let m = 0; m < 12; m++) {
+      const md = data[m]?.dashboard || {};
+      const indices = getDashboardRowIndices(m, YEAR);
+      const numDays = new Date(YEAR, m + 1, 0).getDate();
 
-    return { days, weeks, monthTotal, bestDay, worstDay };
-  }, [data, selectedMonth, selectedYear]);
+      for (let d = 1; d <= numDays; d++) {
+        const rIdx = indices[d];
+        const date = new Date(YEAR, m, d);
+        const isoWeek = getISOWeek(date);
 
-  const cardStyle = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm';
-  const headerCell = 'px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.12em] text-slate-500';
-  const bodyCell = 'px-3 py-2 text-sm font-semibold text-slate-700';
-  const totalCell = 'px-3 py-2 text-sm font-black text-slate-950';
+        for (let cIdx = 0; cIdx < 110; cIdx++) {
+          const val = parseFloat(md[`${rIdx}-${cIdx}`] || '0');
+          if (!isNaN(val)) {
+            monthly[m][cIdx] += val;
+            if (isoWeek >= 1 && isoWeek <= 52) {
+              weekly[isoWeek][cIdx] += val;
+            }
+          }
+        }
+      }
+    }
+
+    // Recalculate averages and percentages for monthly
+    for (let m = 0; m < 12; m++) {
+      const totals = monthly[m];
+      if (totals[6] > 0) totals[7] = totals[0] / totals[6]; // CVTS MOY HT MIDI
+      if (totals[8] > 0) totals[9] = totals[1] / totals[8]; // CVTS MOY HT SOIR
+      if (totals[10] > 0) totals[11] = totals[3] / totals[10]; // CVTS MOY HT JOUR
+      if (totals[14] > 0) totals[15] = totals[2] / totals[14]; // CVTS MOY HT LIMONADE
+      
+      if (totals[33] > 0) totals[34] = totals[18] / totals[33]; // MIDI CVTS MOY (Realise)
+      if (totals[35] > 0) totals[36] = totals[20] / totals[35]; // SOIR CVTS MOY (Realise)
+      if (totals[37] > 0) totals[38] = (totals[18] + totals[20]) / totals[37]; // JOUR CVTS MOY (Realise)
+      if (totals[43] > 0) totals[44] = totals[22] / totals[43]; // JOUR CVTS MOY LIMONADE (Realise)
+    }
+
+    // Recalculate averages and percentages for weekly
+    for (let w = 1; w <= 52; w++) {
+      const totals = weekly[w];
+      if (totals[6] > 0) totals[7] = totals[0] / totals[6]; // CVTS MOY HT MIDI
+      if (totals[8] > 0) totals[9] = totals[1] / totals[8]; // CVTS MOY HT SOIR
+      if (totals[10] > 0) totals[11] = totals[3] / totals[10]; // CVTS MOY HT JOUR
+      if (totals[14] > 0) totals[15] = totals[2] / totals[14]; // CVTS MOY HT LIMONADE
+      
+      if (totals[33] > 0) totals[34] = totals[18] / totals[33]; // MIDI CVTS MOY (Realise)
+      if (totals[35] > 0) totals[36] = totals[20] / totals[35]; // SOIR CVTS MOY (Realise)
+      if (totals[37] > 0) totals[38] = (totals[18] + totals[20]) / totals[37]; // JOUR CVTS MOY (Realise)
+      if (totals[43] > 0) totals[44] = totals[22] / totals[43]; // JOUR CVTS MOY LIMONADE (Realise)
+
+      if (totals[92] > 0) totals[104] = totals[24] / totals[92]; // PRODUCTIVITE
+      if (totals[24] > 0) {
+        totals[105] = (totals[103] / totals[24]) * 100; // FRAIS DE PERSONNEL REEL
+        totals[106] = totals[105]; // RATIO A DATE
+      }
+    }
+
+    return { monthlyTotals: monthly, weeklyTotals: weekly };
+  }, [data]);
+
+  const thBase: React.CSSProperties = {
+    position: 'sticky',
+    borderTop: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1',
+    borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1',
+    padding: '6px 8px', fontSize: 10, fontWeight: 700,
+    textTransform: 'uppercase', letterSpacing: '.03em',
+    textAlign: 'center', whiteSpace: 'pre-line', lineHeight: 1.25,
+    background: '#f8fafc', color: '#334155'
+  };
+
+  const tdBase: React.CSSProperties = {
+    borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0',
+    borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0',
+    padding: '6px 8px', fontSize: 11, textAlign: 'center',
+    fontWeight: 500, color: '#334155', whiteSpace: 'nowrap',
+  };
+
+  const renderMensuel = () => (
+    <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: '100%' }}>
+      <thead>
+        <tr>
+          <th rowSpan={2} style={{ ...thBase, left: 0, zIndex: 30, background: NAV, color: '#fff' }}>DATE</th>
+          <th colSpan={6} style={{ ...thBase, background: '#dbeafe', color: '#1e40af' }}>GLOBAL</th>
+          <th colSpan={5} style={{ ...thBase, background: '#fef3c7', color: '#92400e' }}>COUVERTS RESTAURANT</th>
+          <th colSpan={3} style={{ ...thBase, background: '#dcfce7', color: '#166534' }}>COUVERTS LIMONADE</th>
+        </tr>
+        <tr>
+          <th style={{ ...thBase, background: '#eff6ff' }}>VAE<br/>CA HT VAE</th>
+          <th style={{ ...thBase, background: '#eff6ff' }}>MIDI<br/>CA HT MIDI</th>
+          <th style={{ ...thBase, background: '#eff6ff' }}>SOIR<br/>CA HT SOIR</th>
+          <th style={{ ...thBase, background: '#eff6ff' }}>LIMONADE<br/>CA HT</th>
+          <th style={{ ...thBase, background: '#eff6ff' }}>MOIS<br/>CAHT MOIS</th>
+          <th style={{ ...thBase, background: '#eff6ff' }}>CUMUL<br/>CA HT CUMUL</th>
+          
+          <th style={{ ...thBase, background: '#fffbeb' }}>MIDI<br/>NB CVTS</th>
+          <th style={{ ...thBase, background: '#fffbeb' }}>MIDI<br/>CVTS MOY</th>
+          <th style={{ ...thBase, background: '#fffbeb' }}>SOIR<br/>NB CVTS</th>
+          <th style={{ ...thBase, background: '#fffbeb' }}>SOIR<br/>CVTS MOY</th>
+          <th style={{ ...thBase, background: '#fffbeb' }}>MOIS<br/>NB CVTS</th>
+          
+          <th style={{ ...thBase, background: '#f0fdf4' }}>MOIS<br/>NB CVTS</th>
+          <th style={{ ...thBase, background: '#f0fdf4' }}>MOIS<br/>CVTS MOY</th>
+          <th style={{ ...thBase, background: '#f0fdf4' }}>MOIS<br/>CVTS CUMUL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {MONTHS_SHORT.map((m, i) => {
+          const dt = monthlyTotals[i];
+          let cumulCA = 0;
+          let cumulCvtsLimo = 0;
+          for (let j = 0; j <= i; j++) {
+            cumulCA += monthlyTotals[j][24] || 0;
+            cumulCvtsLimo += monthlyTotals[j][43] || 0;
+          }
+          
+          return (
+            <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc' }}>
+              <td style={{ ...tdBase, position: 'sticky', left: 0, background: '#f1f5f9', fontWeight: 700, zIndex: 10 }}>{m}</td>
+              <td style={{ ...tdBase }}>{fe(dt[17])}</td>
+              <td style={{ ...tdBase }}>{fe(dt[18])}</td>
+              <td style={{ ...tdBase }}>{fe(dt[20])}</td>
+              <td style={{ ...tdBase }}>{fe(dt[22])}</td>
+              <td style={{ ...tdBase, fontWeight: 700 }}>{fe(dt[24])}</td>
+              <td style={{ ...tdBase, fontWeight: 700, color: BLUE }}>{fe(cumulCA)}</td>
+              
+              <td style={{ ...tdBase }}>{dt[33]}</td>
+              <td style={{ ...tdBase }}>{fe(dt[34])}</td>
+              <td style={{ ...tdBase }}>{dt[35]}</td>
+              <td style={{ ...tdBase }}>{fe(dt[36])}</td>
+              <td style={{ ...tdBase, fontWeight: 700 }}>{dt[37]}</td>
+              
+              <td style={{ ...tdBase }}>{dt[43]}</td>
+              <td style={{ ...tdBase }}>{fe(dt[44])}</td>
+              <td style={{ ...tdBase, fontWeight: 700, color: GREEN }}>{cumulCvtsLimo}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+
+  const renderHebdoCA = () => (
+    <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: '100%' }}>
+      <thead>
+        <tr>
+          <th rowSpan={2} style={{ ...thBase, left: 0, zIndex: 30, background: NAV, color: '#fff' }}>DATE</th>
+          <th colSpan={6} style={{ ...thBase, background: '#dbeafe', color: '#1e40af' }}>CA HT</th>
+          <th colSpan={4} style={{ ...thBase, background: '#fef3c7', color: '#92400e' }}>COUVERTS RESTAURANT</th>
+          <th colSpan={3} style={{ ...thBase, background: '#f3e8ff', color: '#6b21a8' }}>SEMAINE RESTAURANT (SANS VAE)</th>
+          <th colSpan={3} style={{ ...thBase, background: '#dcfce7', color: '#166534' }}>SEMAINE LIMONADE</th>
+        </tr>
+        <tr>
+          <th style={{ ...thBase, background: '#eff6ff' }}>VAE<br/>CA HT VAE</th>
+          <th style={{ ...thBase, background: '#eff6ff' }}>MIDI<br/>CA HT MIDI</th>
+          <th style={{ ...thBase, background: '#eff6ff' }}>SOIR<br/>CA HT SOIR</th>
+          <th style={{ ...thBase, background: '#eff6ff' }}>LIMONADE<br/>CA HT</th>
+          <th style={{ ...thBase, background: '#eff6ff' }}>SEMAINE<br/>CA HT SEMAINE</th>
+          <th style={{ ...thBase, background: '#eff6ff' }}>CUMUL ANNUEL<br/>CA HT CUMUL</th>
+          
+          <th style={{ ...thBase, background: '#fffbeb' }}>MIDI<br/>NB CVTS</th>
+          <th style={{ ...thBase, background: '#fffbeb' }}>MIDI<br/>CVTS MOY</th>
+          <th style={{ ...thBase, background: '#fffbeb' }}>SOIR<br/>NB CVTS</th>
+          <th style={{ ...thBase, background: '#fffbeb' }}>SOIR<br/>CVTS MOY</th>
+          
+          <th style={{ ...thBase, background: '#faf5ff' }}>NB CVTS</th>
+          <th style={{ ...thBase, background: '#faf5ff' }}>CVTS MOY</th>
+          <th style={{ ...thBase, background: '#faf5ff' }}>CVTS CUMUL</th>
+          
+          <th style={{ ...thBase, background: '#f0fdf4' }}>NB CVTS</th>
+          <th style={{ ...thBase, background: '#f0fdf4' }}>CVTS MOY</th>
+          <th style={{ ...thBase, background: '#f0fdf4' }}>CVTS CUMUL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {WEEKS.map((w, i) => {
+          const weekNum = i + 1;
+          const dt = weeklyTotals[weekNum] || {};
+          let cumulCA = 0;
+          let cumulCvtsResto = 0;
+          let cumulCvtsLimo = 0;
+          for (let j = 1; j <= weekNum; j++) {
+            cumulCA += weeklyTotals[j]?.[24] || 0;
+            cumulCvtsResto += weeklyTotals[j]?.[37] || 0;
+            cumulCvtsLimo += weeklyTotals[j]?.[43] || 0;
+          }
+
+          return (
+            <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc' }}>
+              <td style={{ ...tdBase, position: 'sticky', left: 0, background: '#f1f5f9', fontWeight: 700, zIndex: 10 }}>{w}</td>
+              <td style={{ ...tdBase }}>{fe(dt[17])}</td>
+              <td style={{ ...tdBase }}>{fe(dt[18])}</td>
+              <td style={{ ...tdBase }}>{fe(dt[20])}</td>
+              <td style={{ ...tdBase }}>{fe(dt[22])}</td>
+              <td style={{ ...tdBase, fontWeight: 700 }}>{fe(dt[24])}</td>
+              <td style={{ ...tdBase, fontWeight: 700, color: BLUE }}>{fe(cumulCA)}</td>
+              
+              <td style={{ ...tdBase }}>{dt[33] || 0}</td>
+              <td style={{ ...tdBase }}>{fe(dt[34])}</td>
+              <td style={{ ...tdBase }}>{dt[35] || 0}</td>
+              <td style={{ ...tdBase }}>{fe(dt[36])}</td>
+              
+              <td style={{ ...tdBase, fontWeight: 700 }}>{dt[37] || 0}</td>
+              <td style={{ ...tdBase }}>{fe(dt[38])}</td>
+              <td style={{ ...tdBase, fontWeight: 700, color: '#7e22ce' }}>{cumulCvtsResto}</td>
+              
+              <td style={{ ...tdBase, fontWeight: 700 }}>{dt[43] || 0}</td>
+              <td style={{ ...tdBase }}>{fe(dt[44])}</td>
+              <td style={{ ...tdBase, fontWeight: 700, color: GREEN }}>{cumulCvtsLimo}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+
+  const renderHebdoRH = () => (
+    <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: '100%' }}>
+      <thead>
+        <tr>
+          <th rowSpan={2} style={{ ...thBase, left: 0, zIndex: 30, background: NAV, color: '#fff' }}>DATE</th>
+          <th colSpan={11} style={{ ...thBase, background: '#fce4d6', color: '#c2410c' }}>FRAIS DE PERSONNEL REALISES</th>
+          <th colSpan={5} style={{ ...thBase, background: '#ffedd5', color: '#9a3412' }}>INDICATEURS</th>
+        </tr>
+        <tr>
+          <th style={{ ...thBase, background: '#fff7ed' }}>TOTAL HEURES<br/>TRAVAILLEES</th>
+          <th style={{ ...thBase, background: '#fff7ed' }}>CADRE<br/>CUISINE<br/>(38,54 €)</th>
+          <th style={{ ...thBase, background: '#fff7ed' }}>CADRE<br/>SALLE<br/>(38,54 €)</th>
+          <th style={{ ...thBase, background: '#fff7ed' }}>MAITRISE<br/>CUISINE<br/>(20,85 €)</th>
+          <th style={{ ...thBase, background: '#fff7ed' }}>MAITRISE<br/>SALLE<br/>(20,85 €)</th>
+          <th style={{ ...thBase, background: '#fff7ed' }}>NIV I ET II<br/>CUISINE<br/>(16,04 €)</th>
+          <th style={{ ...thBase, background: '#fff7ed' }}>NIV I ET II<br/>SALLE<br/>(16,04 €)</th>
+          <th style={{ ...thBase, background: '#fff7ed' }}>NIV III<br/>CUISINE<br/>(18,35 €)</th>
+          <th style={{ ...thBase, background: '#fff7ed' }}>NIV III<br/>SALLE<br/>(18,35 €)</th>
+          <th style={{ ...thBase, background: '#fff7ed' }}>APPRENTI<br/>CUISINE<br/>(8,39 €)</th>
+          <th style={{ ...thBase, background: '#fff7ed' }}>APPRENTI<br/>SALLE<br/>(8,39 €)</th>
+          
+          <th style={{ ...thBase, background: '#ffedd5' }}>COUT<br/>GLOBAL</th>
+          <th style={{ ...thBase, background: '#ffedd5' }}>PRODUCTIVITE<br/>CIBLE<br/>(50,00)</th>
+          <th style={{ ...thBase, background: '#ffedd5' }}>FRAIS DE PERSONNEL<br/>REEL<br/>(35,00%)</th>
+          <th style={{ ...thBase, background: '#ffedd5' }}>RATIO<br/>A DATE</th>
+          <th style={{ ...thBase, background: '#ffedd5' }}>RATIO<br/>ANNUEL %</th>
+        </tr>
+      </thead>
+      <tbody>
+        {WEEKS.map((w, i) => {
+          const weekNum = i + 1;
+          const dt = weeklyTotals[weekNum] || {};
+          let cumulCA = 0;
+          let cumulCoutGlobal = 0;
+          for (let j = 1; j <= weekNum; j++) {
+            cumulCA += weeklyTotals[j]?.[24] || 0;
+            cumulCoutGlobal += weeklyTotals[j]?.[103] || 0;
+          }
+          const ratioAnnuel = cumulCA > 0 ? (cumulCoutGlobal / cumulCA) * 100 : 0;
+
+          return (
+            <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc' }}>
+              <td style={{ ...tdBase, position: 'sticky', left: 0, background: '#f1f5f9', fontWeight: 700, zIndex: 10 }}>{w}</td>
+              <td style={{ ...tdBase }}>{dt[92]?.toFixed(2) || '0.00'}</td>
+              <td style={{ ...tdBase }}>{dt[93]?.toFixed(2) || '0.00'}</td>
+              <td style={{ ...tdBase }}>{dt[94]?.toFixed(2) || '0.00'}</td>
+              <td style={{ ...tdBase }}>{dt[95]?.toFixed(2) || '0.00'}</td>
+              <td style={{ ...tdBase }}>{dt[96]?.toFixed(2) || '0.00'}</td>
+              <td style={{ ...tdBase }}>{dt[97]?.toFixed(2) || '0.00'}</td>
+              <td style={{ ...tdBase }}>{dt[98]?.toFixed(2) || '0.00'}</td>
+              <td style={{ ...tdBase }}>{dt[99]?.toFixed(2) || '0.00'}</td>
+              <td style={{ ...tdBase }}>{dt[100]?.toFixed(2) || '0.00'}</td>
+              <td style={{ ...tdBase }}>{dt[101]?.toFixed(2) || '0.00'}</td>
+              <td style={{ ...tdBase }}>{dt[102]?.toFixed(2) || '0.00'}</td>
+              
+              <td style={{ ...tdBase, fontWeight: 700 }}>{fe(dt[103])}</td>
+              <td style={{ ...tdBase }}>{dt[104]?.toFixed(2) || '0.00'}</td>
+              <td style={{ ...tdBase }}>{fe(dt[103])}</td>
+              <td style={{ ...tdBase, fontWeight: 700 }}>{fp(dt[106])}</td>
+              <td style={{ ...tdBase, fontWeight: 700, color: '#c2410c' }}>{fp(ratioAnnuel)}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50/40 to-amber-50/30 p-4 lg:p-6">
-      {!hideHeader && (
-        <div className="mb-5 flex flex-col gap-3 rounded-3xl bg-slate-950 p-4 text-white shadow-xl lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <button onClick={onBack} className="mb-2 rounded-xl bg-white/10 px-3 py-1.5 text-sm font-bold text-cyan-50 hover:bg-white/15">
-              ← Retour accueil
-            </button>
-            <h1 className="text-2xl font-black tracking-tight lg:text-3xl">Analyse opérationnelle</h1>
-            <p className="mt-1 text-sm font-medium text-cyan-100/75">CA, S/C, cuisine et salle — lecture synthétique issue du suivi quotidien complet.</p>
-          </div>
+    <div style={{ height: hideHeader ? '100%' : '100vh', background: '#f1f5f9', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none}`}</style>
 
-          <div className="grid grid-cols-2 gap-2 sm:w-[320px]">
-            <select value={selectedMonth} onChange={event => setSelectedMonth(Number(event.target.value))} className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-black text-white outline-none">
-              {monthNames.map((label, index) => <option key={label} value={index} className="text-slate-950">{label}</option>)}
-            </select>
-            <select value={selectedYear} onChange={event => setSelectedYear(Number(event.target.value))} className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-black text-white outline-none">
-              {years.map(year => <option key={year} value={year} className="text-slate-950">{year}</option>)}
-            </select>
+      {!hideHeader && (
+        <header style={{ background: NAV, height: 52, padding: '0 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#94a3b8', cursor: 'pointer', background: 'none', border: 'none', padding: '6px 0', fontSize: 12, fontWeight: 700, fontFamily: 'inherit', transition: 'color .2s', textTransform: 'uppercase', letterSpacing: '.05em' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#fff')} onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+            Retour Accueil
+          </button>
+          <div style={{ color: '#fff', fontSize: 15, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+            📊 Reporting · {YEAR}
           </div>
-        </div>
+          <div style={{ background: '#f59e0b18', border: '1px solid #f59e0b30', borderRadius: 6, padding: '4px 14px', color: AMBER, fontSize: 11, fontWeight: 700, letterSpacing: '.04em' }}>
+            BURO MONTE
+          </div>
+        </header>
       )}
 
-      <section className="mb-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <div className={cardStyle}>
-          <div className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">CA réalisé mois</div>
-          <div className="mt-2 text-3xl font-black text-slate-950">{euro(analysis.monthTotal.caTotal)}</div>
-          <div className="mt-1 text-xs font-semibold text-slate-500">Restaurant + VAE + limonade</div>
-        </div>
-        <div className={cardStyle}>
-          <div className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">S/C mois</div>
-          <div className="mt-2 text-3xl font-black text-cyan-800">{percent(analysis.monthTotal.scTotal)}</div>
-          <div className="mt-1 text-xs font-semibold text-slate-500">Coût salarial réalisé / CA réalisé</div>
-        </div>
-        <div className={cardStyle}>
-          <div className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">Cuisine</div>
-          <div className="mt-2 text-2xl font-black text-amber-700">{euro(analysis.monthTotal.costCuisine)}</div>
-          <div className="mt-1 text-xs font-semibold text-slate-500">{percent(analysis.monthTotal.scCuisine)} du CA</div>
-        </div>
-        <div className={cardStyle}>
-          <div className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">Salle</div>
-          <div className="mt-2 text-2xl font-black text-teal-700">{euro(analysis.monthTotal.costSalle)}</div>
-          <div className="mt-1 text-xs font-semibold text-slate-500">{percent(analysis.monthTotal.scSalle)} du CA</div>
-        </div>
-      </section>
+      <div style={{ padding: '12px 28px', display: 'flex', gap: 8, background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+        {([
+          { key: 'mensuel' as const, label: 'Suivi de gestion & budget', icon: '📅', accentBg: '#3b82f6', accentColor: '#fff' },
+          { key: 'hebdo_ca' as const, label: 'CA & Couverts', icon: '📊', accentBg: '#92400e', accentColor: '#fff' },
+          { key: 'hebdo_rh' as const, label: 'Frais de personnel réalisés', icon: '👥', accentBg: '#6b21a8', accentColor: '#fff' },
+        ]).map(tab => {
+          const isActive = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '9px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+                background: isActive ? tab.accentBg : '#f8fafc',
+                border: `1.5px solid ${isActive ? tab.accentBg : '#e2e8f0'}`,
+                boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all .15s',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <span style={{ fontSize: 14 }}>{tab.icon}</span>
+              <span style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? tab.accentColor : '#334155', letterSpacing: '.02em', lineHeight: 1.3 }}>{tab.label}</span>
+              </span>
+              {isActive && (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 2 }}>
+                  <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-      <section className="mb-5 grid gap-3 lg:grid-cols-2">
-        <div className={cardStyle}>
-          <div className="mb-3 text-sm font-black uppercase tracking-[0.15em] text-slate-600">Récap semaine</div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] border-separate border-spacing-0">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className={headerCell}>Semaine</th>
-                  <th className={headerCell}>CA</th>
-                  <th className={headerCell}>S/C</th>
-                  <th className={headerCell}>Cuisine</th>
-                  <th className={headerCell}>Salle</th>
-                  <th className={headerCell}>TM resto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analysis.weeks.map(({ week, total }) => (
-                  <tr key={week} className="border-t border-slate-100 odd:bg-white even:bg-slate-50/60">
-                    <td className={bodyCell}>Semaine {week}</td>
-                    <td className={bodyCell}>{euro(total.caTotal)}</td>
-                    <td className={bodyCell}>{percent(total.scTotal)}</td>
-                    <td className={bodyCell}>{euro(total.costCuisine)} · {percent(total.scCuisine)}</td>
-                    <td className={bodyCell}>{euro(total.costSalle)} · {percent(total.scSalle)}</td>
-                    <td className={bodyCell}>{euro(total.tmResto)}</td>
-                  </tr>
-                ))}
-                <tr className="bg-cyan-50">
-                  <td className={totalCell}>Total mois</td>
-                  <td className={totalCell}>{euro(analysis.monthTotal.caTotal)}</td>
-                  <td className={totalCell}>{percent(analysis.monthTotal.scTotal)}</td>
-                  <td className={totalCell}>{euro(analysis.monthTotal.costCuisine)} · {percent(analysis.monthTotal.scCuisine)}</td>
-                  <td className={totalCell}>{euro(analysis.monthTotal.costSalle)} · {percent(analysis.monthTotal.scSalle)}</td>
-                  <td className={totalCell}>{euro(analysis.monthTotal.tmResto)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className={cardStyle}>
-          <div className="mb-3 text-sm font-black uppercase tracking-[0.15em] text-slate-600">Lecture rapide</div>
-          <div className="grid gap-3">
-            <div className="rounded-xl bg-emerald-50 p-3">
-              <div className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">Meilleur jour S/C</div>
-              <div className="mt-1 text-xl font-black text-emerald-950">{analysis.bestDay ? `${analysis.bestDay.label} · ${percent(analysis.bestDay.scTotal)}` : '-'}</div>
-            </div>
-            <div className="rounded-xl bg-rose-50 p-3">
-              <div className="text-xs font-black uppercase tracking-[0.12em] text-rose-700">Jour le plus lourd</div>
-              <div className="mt-1 text-xl font-black text-rose-950">{analysis.worstDay ? `${analysis.worstDay.label} · ${percent(analysis.worstDay.scTotal)}` : '-'}</div>
-            </div>
-            <div className="rounded-xl bg-slate-50 p-3">
-              <div className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">Heures réalisées</div>
-              <div className="mt-1 text-xl font-black text-slate-950">
-                Cuisine {analysis.monthTotal.hoursCuisine.toFixed(2).replace('.', ',')} h · Salle {analysis.monthTotal.hoursSalle.toFixed(2).replace('.', ',')} h
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className={cardStyle}>
-        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="text-sm font-black uppercase tracking-[0.15em] text-slate-600">Analyse journalière</div>
-            <div className="text-xs font-semibold text-slate-500">Une ligne par jour, avec CA, S/C, coût cuisine et coût salle.</div>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1080px] border-separate border-spacing-0">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className={headerCell}>Jour</th>
-                <th className={headerCell}>CA total</th>
-                <th className={headerCell}>CA resto</th>
-                <th className={headerCell}>Couverts</th>
-                <th className={headerCell}>TM resto</th>
-                <th className={headerCell}>S/C</th>
-                <th className={headerCell}>Cuisine €</th>
-                <th className={headerCell}>Cuisine %</th>
-                <th className={headerCell}>Salle €</th>
-                <th className={headerCell}>Salle %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {analysis.days.map(day => (
-                <tr key={day.day} className="odd:bg-white even:bg-slate-50/60">
-                  <td className={bodyCell}>{day.label}</td>
-                  <td className={bodyCell}>{euro(day.caTotal)}</td>
-                  <td className={bodyCell}>{euro(day.caResto)}</td>
-                  <td className={bodyCell}>{integer(day.covers)}</td>
-                  <td className={bodyCell}>{euro(day.tmResto)}</td>
-                  <td className={`${bodyCell} font-black text-cyan-800`}>{percent(day.scTotal)}</td>
-                  <td className={bodyCell}>{euro(day.costCuisine)}</td>
-                  <td className={bodyCell}>{percent(day.scCuisine)}</td>
-                  <td className={bodyCell}>{euro(day.costSalle)}</td>
-                  <td className={bodyCell}>{percent(day.scSalle)}</td>
-                </tr>
-              ))}
-              <tr className="bg-cyan-50">
-                <td className={totalCell}>Total fin de mois</td>
-                <td className={totalCell}>{euro(analysis.monthTotal.caTotal)}</td>
-                <td className={totalCell}>{euro(analysis.monthTotal.caResto)}</td>
-                <td className={totalCell}>{integer(analysis.monthTotal.covers)}</td>
-                <td className={totalCell}>{euro(analysis.monthTotal.tmResto)}</td>
-                <td className={`${totalCell} text-cyan-900`}>{percent(analysis.monthTotal.scTotal)}</td>
-                <td className={totalCell}>{euro(analysis.monthTotal.costCuisine)}</td>
-                <td className={totalCell}>{percent(analysis.monthTotal.scCuisine)}</td>
-                <td className={totalCell}>{euro(analysis.monthTotal.costSalle)}</td>
-                <td className={totalCell}>{percent(analysis.monthTotal.scSalle)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+        {activeTab === 'mensuel' && renderMensuel()}
+        {activeTab === 'hebdo_ca' && renderHebdoCA()}
+        {activeTab === 'hebdo_rh' && renderHebdoRH()}
+      </div>
     </div>
   );
 }
