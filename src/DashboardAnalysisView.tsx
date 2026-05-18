@@ -65,7 +65,6 @@ const percent = (value: number | null | undefined) => value === null || value ==
   : `${value.toFixed(2).replace('.', ',')} %`;
 
 const number2 = (value: number) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value || 0);
-const integer = (value: number) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(value || 0);
 
 const summarize = (rows: AnalysisRow[], label: string, weekIndex = 0): AnalysisRow => {
   const totals = rows.reduce((acc, row) => ({
@@ -151,134 +150,97 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
       })
       .filter(Boolean) as AnalysisRow[];
 
-    const weeks = Array.from(new Set(days.map(day => day.weekIndex))).map(weekIndex => summarize(days.filter(day => day.weekIndex === weekIndex), `Semaine ${weekIndex}`, weekIndex));
     const monthTotal = summarize(days, 'Total fin de mois');
     const activeDays = days.filter(day => day.caTotal > 0 || day.coutTotal > 0);
     const bestDay = [...activeDays].sort((a, b) => (a.scTotal || 999) - (b.scTotal || 999))[0] || null;
     const worstDay = [...activeDays].sort((a, b) => (b.scTotal || 0) - (a.scTotal || 0))[0] || null;
 
-    return { days, weeks, monthTotal, bestDay, worstDay };
+    return { days, monthTotal, bestDay, worstDay };
   }, [rows, calculatedData, salariesConfig]);
 
-  const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5';
-  const th = 'px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.12em] text-slate-500';
-  const td = 'px-3 py-2 text-sm font-semibold text-slate-700';
+  const tableHead = 'px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.12em] text-cyan-100/70';
+  const tableCell = 'px-3 py-2 text-sm font-semibold text-cyan-50/90';
+  const panel = 'rounded-2xl border border-cyan-200/15 bg-white/8 shadow-sm shadow-slate-950/10 backdrop-blur-sm ring-1 ring-white/10';
 
-  const MiniList = ({ title, value, color, children }: { title: string; value: string; color: string; children: React.ReactNode }) => (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5">
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3">
-        <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-600">{title}</div>
-        <div className="text-sm font-black" style={{ color }}>{value}</div>
-      </div>
-      <div className="grid max-h-[390px] gap-1.5 overflow-y-auto p-2">{children}</div>
-    </div>
-  );
-
-  const RowValue = ({ label, value }: { label: string; value: string }) => (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
-      <span className="text-sm font-bold capitalize text-slate-600">{label}</span>
-      <span className="text-sm font-black text-slate-950">{value}</span>
+  const SummaryCard = ({ label, value, detail, colorClass }: { label: string; value: string; detail: string; colorClass: string }) => (
+    <div className="rounded-2xl border border-cyan-200/15 bg-cyan-950/35 p-4 shadow-sm shadow-slate-950/10 ring-1 ring-white/10">
+      <div className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-100/65">{label}</div>
+      <div className={`mt-2 text-2xl font-black leading-none ${colorClass}`}>{value}</div>
+      <div className="mt-2 text-xs font-bold text-cyan-50/65">{detail}</div>
     </div>
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <section className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-4'}`}>
-        <div className={card}>
-          <div className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">CA réalisé mois</div>
-          <div className="mt-2 text-2xl font-black text-slate-950">{euro(analysis.monthTotal.caTotal)}</div>
-          <div className="mt-1 text-xs font-semibold text-slate-500">Total suivi quotidien complet</div>
-        </div>
-        <div className={card}>
-          <div className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">S/C mois</div>
-          <div className="mt-2 text-2xl font-black text-cyan-800">{percent(analysis.monthTotal.scTotal)}</div>
-          <div className="mt-1 text-xs font-semibold text-slate-500">Coût salarial / CA</div>
-        </div>
-        <div className={card}>
-          <div className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">Cuisine</div>
-          <div className="mt-2 text-2xl font-black text-amber-700">{euro(analysis.monthTotal.coutCuisine)}</div>
-          <div className="mt-1 text-xs font-semibold text-slate-500">{percent(analysis.monthTotal.scCuisine)} du CA</div>
-        </div>
-        <div className={card}>
-          <div className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">Salle</div>
-          <div className="mt-2 text-2xl font-black text-teal-700">{euro(analysis.monthTotal.coutSalle)}</div>
-          <div className="mt-1 text-xs font-semibold text-slate-500">{percent(analysis.monthTotal.scSalle)} du CA</div>
-        </div>
-      </section>
+    <div className="min-h-0 flex-1 rounded-3xl border border-cyan-200/15 bg-gradient-to-br from-[#061f28] via-[#073846] to-[#0b5a62] p-4 shadow-xl shadow-slate-950/15 ring-1 ring-white/10">
+      <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-4'}`}>
+        <SummaryCard label="CA réalisé mois" value={euro(analysis.monthTotal.caTotal)} detail="Total suivi quotidien complet" colorClass="text-amber-50" />
+        <SummaryCard label="S/C mois" value={percent(analysis.monthTotal.scTotal)} detail="Coût salarial / CA" colorClass="text-cyan-100" />
+        <SummaryCard label="Cuisine" value={euro(analysis.monthTotal.coutCuisine)} detail={`${percent(analysis.monthTotal.scCuisine)} du CA`} colorClass="text-amber-200" />
+        <SummaryCard label="Salle" value={euro(analysis.monthTotal.coutSalle)} detail={`${percent(analysis.monthTotal.scSalle)} du CA`} colorClass="text-teal-100" />
+      </div>
 
-      <section className={`grid min-h-0 gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
-        <MiniList title="S/C par jour" value={percent(analysis.monthTotal.scTotal)} color="#0e7490">
-          {analysis.days.map(day => <RowValue key={day.key} label={day.label} value={percent(day.scTotal)} />)}
-        </MiniList>
-        <MiniList title="CA par jour" value={euro(analysis.monthTotal.caTotal)} color="#2563eb">
-          {analysis.days.map(day => <RowValue key={day.key} label={day.label} value={euro(day.caTotal)} />)}
-        </MiniList>
-      </section>
-
-      <section className={`grid min-h-0 gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-[minmax(0,1.35fr)_minmax(320px,.65fr)]'}`}>
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5">
-          <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-600">Cuisine / Salle par jour</div>
-            <div className="mt-1 text-xs font-semibold text-slate-500">Coût et poids dans le CA réalisé.</div>
+      <div className={`mt-4 grid min-h-0 gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-[minmax(0,1fr)_300px]'}`}>
+        <div className={panel}>
+          <div className="border-b border-cyan-100/15 px-4 py-3">
+            <div className="text-xs font-black uppercase tracking-[0.16em] text-cyan-50/80">Cuisine / Salle par jour</div>
+            <div className="mt-1 text-xs font-semibold text-cyan-100/55">Coût et poids dans le CA réalisé.</div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] border-separate border-spacing-0">
               <thead>
-                <tr className="bg-slate-50">
-                  <th className={th}>Jour</th><th className={th}>CA</th><th className={th}>S/C</th><th className={th}>Cuisine €</th><th className={th}>Cuisine %</th><th className={th}>Salle €</th><th className={th}>Salle %</th><th className={th}>TM resto</th>
+                <tr className="bg-cyan-950/25">
+                  <th className={tableHead}>Jour</th><th className={tableHead}>CA</th><th className={tableHead}>S/C</th><th className={tableHead}>Cuisine €</th><th className={tableHead}>Cuisine %</th><th className={tableHead}>Salle €</th><th className={tableHead}>Salle %</th><th className={tableHead}>TM resto</th>
                 </tr>
               </thead>
               <tbody>
                 {analysis.days.map(day => (
-                  <tr key={day.key} className="odd:bg-white even:bg-slate-50/60">
-                    <td className={`${td} font-black capitalize`}>{day.label}</td>
-                    <td className={td}>{euro(day.caTotal)}</td>
-                    <td className={`${td} font-black text-cyan-800`}>{percent(day.scTotal)}</td>
-                    <td className={td}>{euro(day.coutCuisine)}</td>
-                    <td className={td}>{percent(day.scCuisine)}</td>
-                    <td className={td}>{euro(day.coutSalle)}</td>
-                    <td className={td}>{percent(day.scSalle)}</td>
-                    <td className={td}>{euro(day.tmRestaurant)}</td>
+                  <tr key={day.key} className="odd:bg-white/5 even:bg-cyan-950/18">
+                    <td className={`${tableCell} font-black capitalize`}>{day.label}</td>
+                    <td className={tableCell}>{euro(day.caTotal)}</td>
+                    <td className={`${tableCell} font-black text-cyan-100`}>{percent(day.scTotal)}</td>
+                    <td className={tableCell}>{euro(day.coutCuisine)}</td>
+                    <td className={tableCell}>{percent(day.scCuisine)}</td>
+                    <td className={tableCell}>{euro(day.coutSalle)}</td>
+                    <td className={tableCell}>{percent(day.scSalle)}</td>
+                    <td className={tableCell}>{euro(day.tmRestaurant)}</td>
                   </tr>
                 ))}
-                <tr className="bg-cyan-50">
-                  <td className={`${td} font-black`}>Total fin de mois</td>
-                  <td className={`${td} font-black`}>{euro(analysis.monthTotal.caTotal)}</td>
-                  <td className={`${td} font-black text-cyan-900`}>{percent(analysis.monthTotal.scTotal)}</td>
-                  <td className={`${td} font-black`}>{euro(analysis.monthTotal.coutCuisine)}</td>
-                  <td className={`${td} font-black`}>{percent(analysis.monthTotal.scCuisine)}</td>
-                  <td className={`${td} font-black`}>{euro(analysis.monthTotal.coutSalle)}</td>
-                  <td className={`${td} font-black`}>{percent(analysis.monthTotal.scSalle)}</td>
-                  <td className={`${td} font-black`}>{euro(analysis.monthTotal.tmRestaurant)}</td>
+                <tr className="bg-amber-100/15">
+                  <td className={`${tableCell} font-black text-amber-50`}>Total fin de mois</td>
+                  <td className={`${tableCell} font-black text-amber-50`}>{euro(analysis.monthTotal.caTotal)}</td>
+                  <td className={`${tableCell} font-black text-amber-50`}>{percent(analysis.monthTotal.scTotal)}</td>
+                  <td className={`${tableCell} font-black text-amber-50`}>{euro(analysis.monthTotal.coutCuisine)}</td>
+                  <td className={`${tableCell} font-black text-amber-50`}>{percent(analysis.monthTotal.scCuisine)}</td>
+                  <td className={`${tableCell} font-black text-amber-50`}>{euro(analysis.monthTotal.coutSalle)}</td>
+                  <td className={`${tableCell} font-black text-amber-50`}>{percent(analysis.monthTotal.scSalle)}</td>
+                  <td className={`${tableCell} font-black text-amber-50`}>{euro(analysis.monthTotal.tmRestaurant)}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <div className="grid gap-3">
-          <div className={card}>
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-600">Récap semaine</div>
-            <div className="mt-3 grid gap-2">
-              {analysis.weeks.map(week => (
-                <div key={week.key} className="rounded-xl bg-slate-50 p-3">
-                  <div className="flex items-center justify-between gap-3"><strong>{week.label}</strong><strong className="text-cyan-800">{percent(week.scTotal)}</strong></div>
-                  <div className="mt-1 flex items-center justify-between gap-3 text-xs font-bold text-slate-500"><span>CA {euro(week.caTotal)}</span><span>TM {euro(week.tmRestaurant)}</span></div>
-                  <div className="mt-1 text-xs font-bold text-slate-500">Cuisine {euro(week.coutCuisine)} · Salle {euro(week.coutSalle)}</div>
-                </div>
-              ))}
-            </div>
+        <div className={panel}>
+          <div className="border-b border-cyan-100/15 px-4 py-3">
+            <div className="text-xs font-black uppercase tracking-[0.16em] text-cyan-50/80">Lecture rapide</div>
           </div>
-          <div className={card}>
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-600">Lecture rapide</div>
-            <div className="mt-3 grid gap-2">
-              <div className="rounded-xl bg-emerald-50 p-3"><div className="text-[11px] font-black uppercase text-emerald-700">Meilleur jour S/C</div><div className="mt-1 font-black capitalize text-emerald-950">{analysis.bestDay ? `${analysis.bestDay.label} · ${percent(analysis.bestDay.scTotal)}` : '-'}</div></div>
-              <div className="rounded-xl bg-rose-50 p-3"><div className="text-[11px] font-black uppercase text-rose-700">Jour le plus lourd</div><div className="mt-1 font-black capitalize text-rose-950">{analysis.worstDay ? `${analysis.worstDay.label} · ${percent(analysis.worstDay.scTotal)}` : '-'}</div></div>
-              <div className="rounded-xl bg-slate-50 p-3"><div className="text-[11px] font-black uppercase text-slate-500">Heures réalisées</div><div className="mt-1 font-black text-slate-950">Cuisine {number2(analysis.monthTotal.heuresCuisine)} h · Salle {number2(analysis.monthTotal.heuresSalle)} h</div></div>
+          <div className="grid gap-2 p-3">
+            <div className="rounded-xl bg-emerald-300/10 p-3 ring-1 ring-emerald-200/20">
+              <div className="text-[11px] font-black uppercase text-emerald-100/80">Meilleur jour S/C</div>
+              <div className="mt-1 font-black capitalize text-emerald-50">{analysis.bestDay ? `${analysis.bestDay.label} · ${percent(analysis.bestDay.scTotal)}` : '-'}</div>
+            </div>
+            <div className="rounded-xl bg-rose-300/10 p-3 ring-1 ring-rose-200/20">
+              <div className="text-[11px] font-black uppercase text-rose-100/80">Jour le plus lourd</div>
+              <div className="mt-1 font-black capitalize text-rose-50">{analysis.worstDay ? `${analysis.worstDay.label} · ${percent(analysis.worstDay.scTotal)}` : '-'}</div>
+            </div>
+            <div className="rounded-xl bg-cyan-950/25 p-3 ring-1 ring-cyan-100/10">
+              <div className="text-[11px] font-black uppercase text-cyan-100/65">Heures réalisées</div>
+              <div className="mt-1 font-black text-cyan-50">Cuisine {number2(analysis.monthTotal.heuresCuisine)} h</div>
+              <div className="mt-1 font-black text-cyan-50">Salle {number2(analysis.monthTotal.heuresSalle)} h</div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
