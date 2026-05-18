@@ -21,6 +21,20 @@ export const dashboardAnalysisModePatch = (): Plugin => ({
 
     next = replaceRequired(
       next,
+      "{tableViewMode !== 'SAISIE' && (",
+      "{tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && (",
+      'masquer kpi haut analyse'
+    );
+
+    next = replaceRequired(
+      next,
+      "{tableViewMode !== 'SAISIE' && tabs.map(tab => {",
+      "{tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && tabs.map(tab => {",
+      'masquer onglets metier analyse'
+    );
+
+    next = replaceRequired(
+      next,
       "            renderDailyEntryView()\n          ) : (",
       "            renderDailyEntryView()\n          ) : tableViewMode === 'ANALYSE' ? (\n            React.createElement(DashboardAnalysisView, { rows, calculatedData, salariesConfig: globalData[month]?.salariesConfig?.categories, isMobile })\n          ) : (",
       'rendu analyse'
