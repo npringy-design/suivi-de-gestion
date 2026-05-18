@@ -1,6 +1,6 @@
 # Suivi quotidien - vue Analyse
 
-Statut : premiere refonte ajoutee, a valider visuellement apres redeploiement.
+Statut : refonte ajoutee, a valider visuellement apres redeploiement.
 
 Objectif : transformer la vue `Analyse` de la page `Suivi quotidien` en vraie lecture operationnelle, sans remplacer la vue complete.
 
@@ -12,12 +12,17 @@ Fichiers :
 
 Contenu affiche :
 
-- KPI mois : CA realise, S/C mois, cout cuisine, cout salle ;
-- liste S/C par jour du mois, avec total fin de mois ;
-- liste CA par jour du mois, avec total fin de mois ;
+- theme sombre bleu/vert dans le ton de l'accueil ;
+- KPI mois integres dans la vue Analyse : CA realise, S/C mois, cout cuisine, cout salle ;
 - tableau journalier : CA, S/C, cout cuisine en euros et %, cout salle en euros et %, ticket moyen restaurant ;
-- recap semaine ;
 - lecture rapide : meilleur jour S/C, jour le plus lourd, heures cuisine/salle.
+
+Elements volontairement masques en vue Analyse :
+
+- barre KPI standard du haut ;
+- onglets metier `Previsions`, `Realise`, `Cout matiere`, `Personnel`, `Frais generaux`, `Resultats` ;
+- listes separees `S/C par jour`, `CA par jour` ;
+- bloc recap semaine.
 
 Calculs :
 
