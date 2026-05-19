@@ -50,7 +50,7 @@ export const dashboardLimonadeSplitPatch = (): Plugin => ({
     next = replaceRequired(
       next,
       "{renderDailyServiceRow('Limonade', 20, 34, 35)}",
-      "{renderDailyServiceRow('Limonade midi', 110, 113, 114)}\n                  {renderDailyServiceRow('Limonade soir', 111, 115, 116)}\n                  {renderDailyServiceRow('Limonade total', 112, 117, 35)}",
+      "{renderDailyServiceRow('Limonade midi', 110, 113, 114)}\n                  {renderDailyServiceRow('Limonade soir', 111, 115, 116)}",
       'vue saisie detail limonade'
     );
 
