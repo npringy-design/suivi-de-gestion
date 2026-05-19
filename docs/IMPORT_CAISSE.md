@@ -54,17 +54,19 @@ Le modèle déjà en place reste pris en charge.
 
 Détection : présence de `Récap période` et `CA / PERIODE JOURNEE`.
 
-Mapping :
+Mapping réalisé :
 
+- `REPRISE ACOMPTES 428` -> VAE ;
 - `COUVERT MIDI 438` -> CA midi et couverts midi ;
 - `COUVERT SOIR 440` -> CA soir et couverts soir ;
-- `LIMO & WEB 452`, sinon `LIMO & WEB 26`, sinon `CA LIMO & WEB 79` -> VAE ;
-- `PAX MIDI 444` + `PAX SOIR 446` -> couverts limonade ;
-- la colonne CA limonade reste à 0 sur ce modèle, car `LIMO & WEB` est affecté à la VAE ;
-- les montants TTC sont convertis en HT avec le ratio `total HT / total TTC net`.
+- `PAX MIDI 444` -> part limonade midi ;
+- `PAX SOIR 446` -> part limonade soir ;
+- `PAX MIDI 444` + `PAX SOIR 446` -> CA limonade et couverts limonade ;
+- les lignes `LIMO & WEB` ne sont plus utilisées pour le réalisé, car elles ne correspondent pas au mapping demandé.
 
-Règlements :
+Mapping caisse / théorique :
 
+- `REGLEMENTS -> Total` -> total encaissements TTC ;
 - `ESPECES` -> espèces ;
 - `ANCV` -> ANCV papier ;
 - `TR EDENRED` -> TR carte ;
