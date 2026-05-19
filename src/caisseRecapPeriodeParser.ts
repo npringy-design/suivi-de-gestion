@@ -8,7 +8,6 @@ type ParsedRecapCaisseImport = {
 };
 
 const amountToken = '-?\\d+(?:[\\s.]\\d{3})*[,.]\\d{2}';
-const amountRegex = new RegExp(amountToken, 'g');
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const labelPattern = (label: string) => label.trim().split(/\s+/).map(escapeRegExp).join('\\s+');
@@ -69,13 +68,16 @@ export const parseRecapPeriodeCaisse = (
   const soir = findMetric(flatText, 'COUVERT SOIR', 440);
   const paxMidi = findMetric(flatText, 'PAX MIDI', 444);
   const paxSoir = findMetric(flatText, 'PAX SOIR', 446);
-  const vaeSource = findMetric(flatText, 'LIMO & WEB', 26);
-  const vaeFallback = findMetric(flatText, 'LIMO & WEB', 452);
-  const caLimoWeb = findMetric(flatText, 'CA LIMO & WEB', 79);
+  const repriseAcompte = findMetric(flatText, 'REPRISE ACOMPTES', 428);
+  const repriseAcompteSingular = findMetric(flatText, 'REPRISE ACOMPTE', 428);
 
-  const caVae = vaeSource.amount || vaeFallback.amount || caLimoWeb.amount;
-  const caLimonade = paxMidi.amount + paxSoir.amount;
-  const nbLimonade = paxMidi.quantity + paxSoir.quantity;
+  const caVae = repriseAcompte.amount || repriseAcompteSingular.amount;
+  const caLimonadeMidi = paxMidi.amount;
+  const caLimonadeSoir = paxSoir.amount;
+  const caLimonade = caLimonadeMidi + caLimonadeSoir;
+  const nbLimonadeMidi = paxMidi.quantity;
+  const nbLimonadeSoir = paxSoir.quantity;
+  const nbLimonade = nbLimonadeMidi + nbLimonadeSoir;
 
   if (!midi.amount && !soir.amount && !caVae && !caLimonade) {
     throw new Error("La feuille de caisse Recap periode n'a pas pu etre lue automatiquement.");
