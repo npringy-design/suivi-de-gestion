@@ -29,23 +29,22 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0);
   const selectedMonth = MONTHS[selectedMonthIndex];
   
-  // Initialisation à 1 ligne max par défaut pour chaque mois
   const emptySalarieRow = (): SalarieRow => ({ nom: '', heures: '', coutGlobal: '', provision: '', coutHoraire: '' });
-
-  const defaultCategories = createEmptyPayrollCategories();
+  const emptyCategories = (): SalariesCategories => createEmptyPayrollCategories();
 
   const getCurrentConfig = (monthIdx: number): MonthDataSalariesConfig => {
-    return data[monthIdx]?.salariesConfig || { locked: false, categories: defaultCategories };
+    return data[monthIdx]?.salariesConfig || { locked: false, categories: emptyCategories() };
   };
 
   const getSalariesForMonth = (monthIdx: number): SalariesCategories => {
-    const categories = getCurrentConfig(monthIdx).categories;
+    const categories = getCurrentConfig(monthIdx).categories || emptyCategories();
+    const defaults = emptyCategories();
     return {
-      cadre: categories.cadre || defaultCategories.cadre,
-      maitrise: categories.maitrise || defaultCategories.maitrise,
-      niv12: categories.niv12 || defaultCategories.niv12,
-      niv3: categories.niv3 || defaultCategories.niv3,
-      apprenti: categories.apprenti || defaultCategories.apprenti,
+      cadre: categories.cadre?.length ? categories.cadre : defaults.cadre,
+      maitrise: categories.maitrise?.length ? categories.maitrise : defaults.maitrise,
+      niv12: categories.niv12?.length ? categories.niv12 : defaults.niv12,
+      niv3: categories.niv3?.length ? categories.niv3 : defaults.niv3,
+      apprenti: categories.apprenti?.length ? categories.apprenti : defaults.apprenti,
     };
   };
 
@@ -57,7 +56,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     const currentConfig = getCurrentConfig(selectedMonthIndex);
     const monthData = getSalariesForMonth(selectedMonthIndex);
     const newCat = [...monthData[category]];
-    newCat[index] = { ...newCat[index], [field]: value };
+    newCat[index] = { ...(newCat[index] || emptySalarieRow()), [field]: value };
     
     updateSalariesConfig(selectedMonthIndex, {
       ...currentConfig,
@@ -78,36 +77,27 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     });
   };
 
-  const removeRow = (category: SalaryCategory) => {
+  const removeRow = (category: SalaryCategory, index: number) => {
     const currentConfig = getCurrentConfig(selectedMonthIndex);
     const monthData = getSalariesForMonth(selectedMonthIndex);
-    if (monthData[category].length <= 1) return; // Garder au moins 1 ligne
+    const nextRows = monthData[category].filter((_, rowIndex) => rowIndex !== index);
     
     updateSalariesConfig(selectedMonthIndex, {
       ...currentConfig,
       categories: {
         ...monthData,
-        [category]: monthData[category].slice(0, -1)
+        [category]: nextRows.length > 0 ? nextRows : [emptySalarieRow()]
       }
     });
   };
 
   const handleRAZ = () => {
+    if (isMonthLocked(selectedMonthIndex)) return;
     const currentConfig = getCurrentConfig(selectedMonthIndex);
-    const monthData = getSalariesForMonth(selectedMonthIndex);
-    const newMonthData: SalariesCategories = { ...monthData };
-    
-    PERSONNEL_CATEGORIES.forEach(cat => {
-      newMonthData[cat] = monthData[cat].map(row => ({
-        ...row,
-        heures: '',
-        coutGlobal: ''
-      }));
-    });
     
     updateSalariesConfig(selectedMonthIndex, {
       ...currentConfig,
-      categories: newMonthData
+      categories: emptyCategories()
     });
   };
 
@@ -311,7 +301,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     });
 
     const moyenneCoutHoraire = validRowsCount > 0 ? totalCoutHoraire / validRowsCount : 0;
-    const averageRowSpan = rowsWithCalculations.length + rowsWithCalculations.filter(row => row.importSourceLine).length;
+    const averageRowSpan = Math.max(1, rowsWithCalculations.length + rowsWithCalculations.filter(row => row.importSourceLine).length);
     const isLocked = isMonthLocked(selectedMonthIndex);
 
     return (
@@ -320,31 +310,27 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
           <h3 style={{ color: '#ef4444', margin: 0, textTransform: 'uppercase', fontSize: 13, fontWeight: 800, letterSpacing: '.04em' }}>
             {title}
           </h3>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button disabled={isLocked} onClick={() => addRow(category)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: isLocked ? '#9ca3af' : '#10b981', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 11, fontWeight: 700, cursor: isLocked ? 'not-allowed' : 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,.1)' }}>
-              <span style={{ fontSize: 14, lineHeight: 1 }}>+</span> Créer
-            </button>
-            <button disabled={isLocked} onClick={() => removeRow(category)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: isLocked ? '#9ca3af' : '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 11, fontWeight: 700, cursor: isLocked ? 'not-allowed' : 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,.1)' }}>
-              <span style={{ fontSize: 14, lineHeight: 1 }}>−</span> Supprimer
-            </button>
-          </div>
+          <button disabled={isLocked} onClick={() => addRow(category)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: isLocked ? '#9ca3af' : '#10b981', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 11, fontWeight: 700, cursor: isLocked ? 'not-allowed' : 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,.1)' }}>
+            <span style={{ fontSize: 14, lineHeight: 1 }}>+</span> Créer
+          </button>
         </div>
         <div style={{ overflowX: 'auto', padding: '20px' }}>
           <table style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%' }}>
             <thead>
               <tr>
-                <th style={{ ...thStyle, width: '22%' }}>NOM DU SALARIE</th>
-                <th style={{ ...thStyle, width: '10%' }}>Section</th>
-                <th style={{ ...thStyle, width: '15%' }}>Nombre d'heure mensuel</th>
-                <th style={{ ...thStyle, width: '15%' }}>Coût global</th>
-                <th style={{ ...thStyle, width: '15%' }}>Total avec Provision CP</th>
-                <th style={{ ...thStyle, width: '15%' }}>COUT HORAIRE</th>
-                <th style={{ ...thStyle, width: '15%' }}>{avgTitle}</th>
+                <th style={{ ...thStyle, width: '20%' }}>NOM DU SALARIE</th>
+                <th style={{ ...thStyle, width: '9%' }}>Section</th>
+                <th style={{ ...thStyle, width: '14%' }}>Nombre d'heure mensuel</th>
+                <th style={{ ...thStyle, width: '14%' }}>Coût global</th>
+                <th style={{ ...thStyle, width: '14%' }}>Total avec Provision CP</th>
+                <th style={{ ...thStyle, width: '14%' }}>COUT HORAIRE</th>
+                <th style={{ ...thStyle, width: '12%' }}>{avgTitle}</th>
+                <th style={{ ...thStyle, width: '9%' }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {rowsWithCalculations.map((row, i) => (
-                <React.Fragment key={i}>
+                <React.Fragment key={`${category}-${i}-${row.nom || 'ligne'}`}>
                 <tr>
                   <td style={{ ...tdStyle, background: isLocked ? '#f1f5f9' : '#dbeafe' }}>
                     <input disabled={isLocked} style={{ ...inputStyle, textAlign: 'left', cursor: isLocked ? 'not-allowed' : 'text' }} value={row.nom} onChange={e => handleSalarieChange(category, i, 'nom', e.target.value)} placeholder="Nom..." />
@@ -369,12 +355,31 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
                       {moyenneCoutHoraire > 0 ? formatCurrency(moyenneCoutHoraire) : '-'}
                     </td>
                   )}
+                  <td style={{ ...tdStyle, background: '#fff' }}>
+                    <button
+                      disabled={isLocked}
+                      onClick={() => removeRow(category, i)}
+                      style={{
+                        background: isLocked ? '#cbd5e1' : '#fee2e2',
+                        color: isLocked ? '#64748b' : '#b91c1c',
+                        border: '1px solid #fecaca',
+                        borderRadius: 6,
+                        padding: '5px 8px',
+                        fontSize: 10,
+                        fontWeight: 800,
+                        cursor: isLocked ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      Supprimer
+                    </button>
+                  </td>
                 </tr>
                 {row.importSourceLine && (
                   <tr>
                     <td colSpan={6} style={{ ...tdStyle, background: '#f8fafc', textAlign: 'left', color: '#64748b', fontSize: 10, fontWeight: 700 }}>
                       Ligne PDF lue : {row.importSourceLine}
                     </td>
+                    <td style={{ ...tdStyle, background: '#f8fafc' }}></td>
                   </tr>
                 )}
                 </React.Fragment>
@@ -421,10 +426,11 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
           </div>
 
           <button
+            disabled={isMonthLocked(selectedMonthIndex)}
             onClick={handleRAZ}
             style={{
-              background: '#ef4444', color: '#fff', border: 'none', borderRadius: 8,
-              padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              background: isMonthLocked(selectedMonthIndex) ? '#9ca3af' : '#ef4444', color: '#fff', border: 'none', borderRadius: 8,
+              padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: isMonthLocked(selectedMonthIndex) ? 'not-allowed' : 'pointer',
               boxShadow: '0 1px 2px rgba(0,0,0,.1)', display: 'flex', alignItems: 'center', gap: 6
             }}
           >
