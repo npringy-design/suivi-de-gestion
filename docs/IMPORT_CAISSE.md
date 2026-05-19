@@ -44,6 +44,33 @@ Si une feuille est réimportée pour une journée qui possède déjà un snapsho
 3. les saisies réelles et commentaires manuels ne sont pas touchés ;
 4. l'utilisateur doit comprendre qu'il remplace la lecture automatique du jour.
 
+## Modèles lus
+
+### Modèle historique
+
+Le modèle déjà en place reste pris en charge.
+
+### Modèle Récap période Au Bureau
+
+Détection : présence de `Récap période` et `CA / PERIODE JOURNEE`.
+
+Mapping :
+
+- `COUVERT MIDI 438` -> CA midi et couverts midi ;
+- `COUVERT SOIR 440` -> CA soir et couverts soir ;
+- `LIMO & WEB 452`, sinon `LIMO & WEB 26`, sinon `CA LIMO & WEB 79` -> VAE ;
+- `PAX MIDI 444` + `PAX SOIR 446` -> couverts limonade ;
+- la colonne CA limonade reste à 0 sur ce modèle, car `LIMO & WEB` est affecté à la VAE ;
+- les montants TTC sont convertis en HT avec le ratio `total HT / total TTC net`.
+
+Règlements :
+
+- `ESPECES` -> espèces ;
+- `ANCV` -> ANCV papier ;
+- `TR EDENRED` -> TR carte ;
+- `SUNDAY` + `TPE SUNDAY` -> Sunday ;
+- `UBEREATS WEB` -> Uber.
+
 ## Snapshot d'audit
 
 Le snapshot d'audit sert à relire ce qui a été extrait sans conserver le PDF.
