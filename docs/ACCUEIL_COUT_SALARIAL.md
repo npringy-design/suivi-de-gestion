@@ -15,13 +15,14 @@ Affichage :
 
 Calcul :
 
+- lecture directe du `dashboard` du suivi quotidien en memoire ;
+- pas de lecture d'une ancienne ligne recap ou d'une sauvegarde parallele pour les tuiles et graphiques accueil ;
+- la tuile `CA realise` additionne les jours depuis les colonnes realisees du suivi quotidien : VAE, midi, soir, limonade ;
+- le graphique CA lit aussi les colonnes realisees et budget du suivi quotidien ;
 - ratio = cout salarial realise / CA realise ;
-- CA realise lu dans le suivi quotidien : VAE, midi, soir, limonade ;
-- la tuile `CA realise` de l'accueil lit maintenant le CA total realise du mois depuis les donnees dashboard du suivi quotidien complet ;
-- cout salarial reconstruit depuis les heures realisees par statut/section et les taux horaires du snapshot salaires ;
-- les taux horaires sont recalcules avec la meme regle que la version complete : `cout global * 1,10 / heures` ;
-- fallback sur les taux par defaut si aucun snapshot salaires n'est disponible ;
-- lecture des nouvelles colonnes realisees et fallback sur les anciennes colonnes pour eviter de perdre les donnees deja saisies.
+- cout salarial = heures realisees personnel * taux horaire issu de la config salaire du mois ;
+- aucun taux par defaut ne doit creer artificiellement un cout salarial si la config salaire est vide ;
+- la vue accueil suit donc la meme logique de lecture croisee que les vues complete/analyse.
 
 Fichiers :
 
@@ -30,4 +31,4 @@ Fichiers :
 
 Limite :
 
-- le calcul depend des heures realisees saisies/importees dans le suivi quotidien. Si aucune heure ou aucun CA n'est saisi, l'indicateur affiche `-`.
+- le calcul depend des heures realisees saisies/importees dans le suivi quotidien. Si aucune heure, aucun taux config ou aucun CA n'est saisi, l'indicateur affiche `-`.
