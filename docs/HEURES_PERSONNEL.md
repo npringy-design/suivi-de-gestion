@@ -85,6 +85,19 @@ Mecanique retenue :
 - les taux sont regroupes par statut et section ;
 - si plusieurs salaries correspondent a la meme colonne, une moyenne est appliquee.
 
+## Configuration salaires
+
+La page `Configuration Salaires et Charges` sert a ajuster le snapshot salaires du mois.
+
+Regles retenues :
+
+- chaque ligne salariee peut etre supprimee individuellement ;
+- la suppression ne doit plus retirer automatiquement la derniere ligne du tableau ;
+- si la derniere ligne d'une categorie est supprimee, une ligne vide est recreee pour garder la saisie possible ;
+- le bouton `Remise a zero` vide tout le mois selectionne : nom, section, heures, cout global, provision, cout horaire et ligne PDF source ;
+- apres suppression ou remise a zero, la vue complete doit recalculer avec uniquement les lignes restantes de la config salaire ;
+- si une categorie n'a plus de ligne valide, le calcul retombe sur le fallback prevu dans la vue complete.
+
 ## Mois cible de l'import salaires
 
 Le mois du PDF est lu dans le titre ou dans les lignes du tableau.
@@ -142,6 +155,7 @@ Regles de calcul :
 - `src/personnelSalaryImport.ts` : lecture du PDF salaires, forfait jour, cout global, mois cible ;
 - `src/test/utils.test.ts` : tests de conversion des heures ;
 - `src/test/personnelSalaryImport.test.ts` : tests d'import salaires ;
+- `src/ConfigSalaires.tsx` : configuration salaires, suppression ligne et remise a zero ;
 - `src/Dashboard.tsx` : suivi quotidien et vue complete ;
 - `scripts/dashboardPayrollColumnPatch.ts` : patch temporaire applique a `Dashboard.tsx` au build ;
 - `vite.config.ts` : activation du patch.
@@ -167,4 +181,6 @@ Ligne de conduite :
 - la vue complete affiche le decimal type `7,50` ;
 - les totaux semaine/mois correspondent a la somme des valeurs visibles au centieme ;
 - l'import PDF salaires d'avril alimente bien mai ;
-- les forfaits jour sont bien a `151,67` heures.
+- les forfaits jour sont bien a `151,67` heures ;
+- supprimer une ligne salaire recalcule les taux avec les lignes restantes ;
+- `Remise a zero` vide toutes les donnees salaire du mois selectionne.
