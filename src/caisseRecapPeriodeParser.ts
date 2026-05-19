@@ -23,6 +23,8 @@ const parseAmount = (value: string) => {
   return Number(cleaned) || 0;
 };
 
+const roundMoney = (value: number) => Math.round(value * 100) / 100;
+
 const findMetric = (text: string, label: string, code: number) => {
   const pattern = new RegExp(`${labelPattern(label)}\\s+${code}\\s+(\\d+)\\s+(${amountToken})(?:\\s+${amountToken})?`, 'i');
   const match = text.match(pattern);
@@ -72,14 +74,16 @@ export const parseRecapPeriodeCaisse = (
   const repriseAcompteSingular = findMetric(flatText, 'REPRISE ACOMPTE', 428);
 
   const caVae = repriseAcompte.amount || repriseAcompteSingular.amount;
+  const caMidiRestaurant = midi.amount;
+  const caSoirRestaurant = roundMoney(Math.max(0, soir.amount - caVae));
   const caLimonadeMidi = paxMidi.amount;
   const caLimonadeSoir = paxSoir.amount;
-  const caLimonade = caLimonadeMidi + caLimonadeSoir;
+  const caLimonade = roundMoney(caLimonadeMidi + caLimonadeSoir);
   const nbLimonadeMidi = paxMidi.quantity;
   const nbLimonadeSoir = paxSoir.quantity;
   const nbLimonade = nbLimonadeMidi + nbLimonadeSoir;
 
-  if (!midi.amount && !soir.amount && !caVae && !caLimonade) {
+  if (!caMidiRestaurant && !caSoirRestaurant && !caVae && !caLimonade) {
     throw new Error("La feuille de caisse Recap periode n'a pas pu etre lue automatiquement.");
   }
 
@@ -95,8 +99,8 @@ export const parseRecapPeriodeCaisse = (
     pdfYear,
     values: {
       17: caVae,
-      18: midi.amount,
-      19: soir.amount,
+      18: caMidiRestaurant,
+      19: caSoirRestaurant,
       20: caLimonade,
       25: midi.quantity,
       27: soir.quantity,
