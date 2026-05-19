@@ -86,7 +86,47 @@ const kpisMemoReplacement = `  const kpis = useMemo(() => {
     const budgetCouvert = totalBudgetCA > 0 ? (caMois / totalBudgetCA) * 100 : 0;
 
     return { caMois, caJour, tmJour, budgetCouvert };
-  }, [data, month, year, dashboardRowIndices, moisIndex, jourIndex, rowFirstDay, rowLastDay]);`;
+  }, [data, month, year, dashboardRowIndices]);`;
+
+const chartDataCASource = `  const chartDataCA = useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return [];
+
+    const res = [];
+    for (let i = rowFirstDay; i <= rowLastDay && i < data.length; i++) {
+      const jour = data[i]?.Jour || '';
+      const caReal = n(data[i]?.CA_Realise);
+      const caBudg = n(data[i]?.CA_Budget);
+      res.push({ name: jour, CA_Realise: caReal, CA_Budget: caBudg });
+    }
+    return res;
+  }, [data, rowFirstDay, rowLastDay]);`;
+
+const chartDataCAReplacement = `  const chartDataCA = useMemo(() => {
+    const monthData = data?.[month];
+    const dashboard = monthData?.dashboard || {};
+    const parseDashboardValue = (value: unknown) => {
+      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+      return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
+    };
+    const dashboardValue = (rowIndex: number, colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const rows = [];
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const rowIndex = dashboardRowIndices[day];
+      if (typeof rowIndex !== 'number') continue;
+      const caReal = [17, 18, 19, 20].reduce((sum, col) => sum + dashboardValue(rowIndex, col), 0);
+      const savedBudget = dashboardValue(rowIndex, 3);
+      const caBudget = savedBudget > 0
+        ? savedBudget
+        : (dashboardValue(rowIndex, 0) || dashboardValue(rowIndex, 6) * dashboardValue(rowIndex, 7))
+          + (dashboardValue(rowIndex, 1) || dashboardValue(rowIndex, 8) * dashboardValue(rowIndex, 9))
+          + (dashboardValue(rowIndex, 2) || dashboardValue(rowIndex, 14) * dashboardValue(rowIndex, 15));
+      rows.push({ name: String(day), CA_Realise: caReal, CA_Budget: caBudget });
+    }
+
+    return rows;
+  }, [data, month, year, dashboardRowIndices]);`;
 
 const payrollMemoBlock = `
   const payrollCostBubble = useMemo(() => {
@@ -118,7 +158,7 @@ const payrollMemoBlock = `
       return parseFloat(raw.replace(',', '.')) || 0;
     };
 
-    const averageRate = (category: string, department: string, fallback: number) => {
+    const averageRate = (category: string, department: string) => {
       const rows = ((salaries as Record<string, Array<{ heures?: string; coutGlobal?: string; department?: string }>>)[category] || [])
         .filter(row => !row.department || row.department === department);
       const rates = rows
@@ -128,20 +168,20 @@ const payrollMemoBlock = `
           return heures > 0 && coutGlobal > 0 ? (coutGlobal * 1.1) / heures : 0;
         })
         .filter(rate => rate > 0);
-      return rates.length > 0 ? rates.reduce((sum, rate) => sum + rate, 0) / rates.length : fallback;
+      return rates.length > 0 ? rates.reduce((sum, rate) => sum + rate, 0) / rates.length : 0;
     };
 
     const payrollColumns = [
-      { col: 77, legacyCol: 91, rate: averageRate('cadre', 'cuisine', 38.54) },
-      { col: 78, legacyCol: 92, rate: averageRate('cadre', 'salle', 38.54) },
-      { col: 79, legacyCol: 93, rate: averageRate('maitrise', 'cuisine', 20.85) },
-      { col: 80, legacyCol: 94, rate: averageRate('maitrise', 'salle', 20.85) },
-      { col: 81, legacyCol: 95, rate: averageRate('niv12', 'cuisine', 16.04) },
-      { col: 82, legacyCol: 96, rate: averageRate('niv12', 'salle', 16.04) },
-      { col: 83, legacyCol: 97, rate: averageRate('niv3', 'cuisine', 18.35) },
-      { col: 84, legacyCol: 98, rate: averageRate('niv3', 'salle', 18.35) },
-      { col: 85, legacyCol: 99, rate: averageRate('apprenti', 'cuisine', 8.39) },
-      { col: 86, legacyCol: 100, rate: averageRate('apprenti', 'salle', 8.39) },
+      { col: 77, legacyCol: 91, rate: averageRate('cadre', 'cuisine') },
+      { col: 78, legacyCol: 92, rate: averageRate('cadre', 'salle') },
+      { col: 79, legacyCol: 93, rate: averageRate('maitrise', 'cuisine') },
+      { col: 80, legacyCol: 94, rate: averageRate('maitrise', 'salle') },
+      { col: 81, legacyCol: 95, rate: averageRate('niv12', 'cuisine') },
+      { col: 82, legacyCol: 96, rate: averageRate('niv12', 'salle') },
+      { col: 83, legacyCol: 97, rate: averageRate('niv3', 'cuisine') },
+      { col: 84, legacyCol: 98, rate: averageRate('niv3', 'salle') },
+      { col: 85, legacyCol: 99, rate: averageRate('apprenti', 'cuisine') },
+      { col: 86, legacyCol: 100, rate: averageRate('apprenti', 'salle') },
     ];
 
     const dayStats = (day: number) => {
@@ -150,6 +190,7 @@ const payrollMemoBlock = `
       const rowKey = String(rowIndex) + '-';
       const ca = [17, 18, 19, 20].reduce((sum, col) => sum + parseValue(dashboard[rowKey + String(col)]), 0);
       const cost = payrollColumns.reduce((sum, item) => {
+        if (item.rate <= 0) return sum;
         const value = dashboard[rowKey + String(item.col)] || dashboard[rowKey + String(item.legacyCol)] || '';
         return sum + parseHour(value) * item.rate;
       }, 0);
@@ -267,6 +308,7 @@ export const homePayrollBubblePatch = (): Plugin => ({
 
     next = replaceRequired(next, currencyFormatSource, currencyFormatReplacement, 'format euros centimes');
     next = replaceRequired(next, kpisMemoSource, kpisMemoReplacement, 'kpi accueil depuis dashboard');
+    next = replaceRequired(next, chartDataCASource, chartDataCAReplacement, 'graphique ca depuis dashboard');
 
     next = replaceRequired(
       next,
