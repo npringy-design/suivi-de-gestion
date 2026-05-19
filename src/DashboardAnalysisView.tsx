@@ -92,7 +92,11 @@ const summarize = (rows: AnalysisRow[], label: string, weekIndex = 0): AnalysisR
 
 export default function DashboardAnalysisView({ rows, calculatedData, salariesConfig, isMobile }: DashboardAnalysisViewProps) {
   const analysis = useMemo(() => {
-    const rateFor = (category: string, section: 'cuisine' | 'salle', fallback: number) => averagePayrollRate(salariesConfig?.[category] || [], section) || fallback;
+    const hasSalarySnapshot = Boolean(salariesConfig);
+    const rateFor = (category: string, section: 'cuisine' | 'salle', fallback: number) => {
+      if (!hasSalarySnapshot) return fallback;
+      return averagePayrollRate(salariesConfig?.[category] || [], section);
+    };
 
     const days = rows
       .map((row, rowIndex) => {
@@ -124,7 +128,8 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
           }
         });
 
-        const coutTotal = parseValue(calculatedData[key(87)]) || coutCuisine + coutSalle;
+        const coutTotalFromComplete = parseValue(calculatedData[key(87)]);
+        const coutTotal = coutTotalFromComplete > 0 ? coutTotalFromComplete : coutCuisine + coutSalle;
         const scTotal = parseValue(calculatedData[key(89)]) || ratio(coutTotal, caTotal) || 0;
         const label = row.dateObj
           ? row.dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' })
