@@ -7,21 +7,36 @@ type ParsedRecapCaisseImport = {
   realValues: Record<string, number>;
 };
 
-const amountRegex = /-?\d+(?:[\s.]\d{3})*[,.]\d{2}/g;
+const amountToken = '-?\\d+(?:[\\s.]\\d{3})*[,.]\\d{2}';
+const amountRegex = new RegExp(amountToken, 'g');
 
-const parseAmount = (value: string) => Number(String(value || '').replace(/\s/g, '').replace(',', '.')) || 0;
-const amountsInLine = (line: string) => (line.match(amountRegex) || []).map(parseAmount);
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const labelPattern = (label: string) => label.trim().split(/\s+/).map(escapeRegExp).join('\\s+');
 
-const parseMetricAfterCode = (line: string, code: number) => {
-  if (!line) return { quantity: 0, amount: 0 };
-  const codeMatch = line.match(new RegExp('\\b' + code + '\\b'));
-  const afterCode = codeMatch ? line.slice((codeMatch.index || 0) + codeMatch[0].length).trim() : line;
-  const quantityMatch = afterCode.match(/\b\d+\b/);
-  const amounts = amountsInLine(afterCode);
+const parseAmount = (value: string) => {
+  let cleaned = String(value || '').trim().replace(/\s/g, '');
+  if (cleaned.includes(',')) {
+    cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+  } else {
+    const parts = cleaned.split('.');
+    if (parts.length > 2) cleaned = `${parts.slice(0, -1).join('')}.${parts[parts.length - 1]}`;
+  }
+  return Number(cleaned) || 0;
+};
+
+const findMetric = (text: string, label: string, code: number) => {
+  const pattern = new RegExp(`${labelPattern(label)}\\s+${code}\\s+(\\d+)\\s+(${amountToken})(?:\\s+${amountToken})?`, 'i');
+  const match = text.match(pattern);
   return {
-    quantity: quantityMatch ? Number(quantityMatch[0]) || 0 : 0,
-    amount: amounts[0] || 0,
+    quantity: match?.[1] ? Number(match[1]) || 0 : 0,
+    amount: match?.[2] ? parseAmount(match[2]) : 0,
   };
+};
+
+const findTotalAfterLabel = (text: string, label: string) => {
+  const pattern = new RegExp(`${labelPattern(label)}\\s+(${amountToken})`, 'i');
+  const match = text.match(pattern);
+  return match?.[1] ? parseAmount(match[1]) : 0;
 };
 
 export const parseRecapPeriodeCaisse = (
@@ -32,30 +47,11 @@ export const parseRecapPeriodeCaisse = (
   const normalized = normalizeImportText(rawText);
   if (!normalized.includes('RECAP PERIODE') || !normalized.includes('CA PERIODE JOURNEE')) return null;
 
-  const lines = rawText
+  const flatText = rawText
     .split(/\r?\n/)
     .map(line => line.replace(/\s+/g, ' ').trim())
-    .filter(Boolean);
-
-  const findLine = (label: string, code: number) => {
-    const normalizedLabel = normalizeImportText(label);
-    return lines.find(candidate => {
-      const normalizedCandidate = normalizeImportText(candidate);
-      return normalizedCandidate.includes(normalizedLabel) && new RegExp('\\b' + code + '\\b').test(candidate);
-    }) || '';
-  };
-
-  const findMetric = (label: string, code: number) => parseMetricAfterCode(findLine(label, code), code);
-  const findAmountByLabel = (label: string) => {
-    const normalizedLabel = normalizeImportText(label);
-    const line = lines.find(candidate => normalizeImportText(candidate).startsWith(normalizedLabel));
-    const amounts = line ? amountsInLine(line) : [];
-    return amounts[amounts.length - 1] || 0;
-  };
-  const findPayment = (label: string, code: number) => {
-    const amounts = amountsInLine(findLine(label, code));
-    return amounts[0] || 0;
-  };
+    .filter(Boolean)
+    .join(' ');
 
   const periodMatch = rawText.match(/P[ée]riode\s+du\s+(\d{2})\/(\d{2})\/(\d{4})/i)
     || rawText.match(/periode\s+du\s+(\d{2})\/(\d{2})\/(\d{4})/i);
@@ -63,37 +59,33 @@ export const parseRecapPeriodeCaisse = (
   const pdfMonth = periodMatch ? Number(periodMatch[2]) - 1 : null;
   const pdfYear = periodMatch ? Number(periodMatch[3]) : null;
 
-  const totalTaxLine = lines.find(line => /^Total\s+/i.test(line) && amountsInLine(line).length >= 3);
-  const totalTaxAmounts = totalTaxLine ? amountsInLine(totalTaxLine) : [];
-  const totalHt = totalTaxAmounts[0] || 0;
-  const totalTtcFromTaxTable = totalTaxAmounts[2] || totalTaxAmounts[totalTaxAmounts.length - 1] || 0;
-  const totalTtcNet = findAmountByLabel('TOTAL CA TTC NET') || totalTtcFromTaxTable;
-  const htRatio = totalHt > 0 && totalTtcNet > 0 ? totalHt / totalTtcNet : 1;
-  const toHt = (value: number) => Math.round(value * htRatio * 100) / 100;
+  const taxTotalMatch = flatText.match(new RegExp(`Total\\s+(${amountToken})\\s+(${amountToken})\\s+(${amountToken})\\s+(${amountToken})`, 'i'));
+  const totalHt = taxTotalMatch?.[1] ? parseAmount(taxTotalMatch[1]) : 0;
+  const totalTtcNet = findTotalAfterLabel(flatText, 'TOTAL CA TTC NET') || (taxTotalMatch?.[3] ? parseAmount(taxTotalMatch[3]) : 0);
+  const totalReglementsMatch = flatText.match(new RegExp(`REGLEMENTS[\\s\\S]*?Total\\s+\\d+\\s+(${amountToken})`, 'i'));
+  const totalReglements = totalReglementsMatch?.[1] ? parseAmount(totalReglementsMatch[1]) : totalTtcNet;
 
-  const midi = findMetric('COUVERT MIDI', 438);
-  const soir = findMetric('COUVERT SOIR', 440);
-  const paxMidi = findMetric('PAX MIDI', 444);
-  const paxSoir = findMetric('PAX SOIR', 446);
-  const limoWeb452 = findMetric('LIMO & WEB', 452);
-  const limoWeb26 = findMetric('LIMO & WEB', 26);
-  const caLimoWeb79 = findMetric('CA LIMO & WEB', 79);
-  const paxLimoWebTtc = paxMidi.amount + paxSoir.amount;
-  const limoWebTtc = paxLimoWebTtc || limoWeb452.amount || limoWeb26.amount || caLimoWeb79.amount;
+  const midi = findMetric(flatText, 'COUVERT MIDI', 438);
+  const soir = findMetric(flatText, 'COUVERT SOIR', 440);
+  const paxMidi = findMetric(flatText, 'PAX MIDI', 444);
+  const paxSoir = findMetric(flatText, 'PAX SOIR', 446);
+  const vaeSource = findMetric(flatText, 'LIMO & WEB', 26);
+  const vaeFallback = findMetric(flatText, 'LIMO & WEB', 452);
+  const caLimoWeb = findMetric(flatText, 'CA LIMO & WEB', 79);
 
-  const caMidi = toHt(midi.amount);
-  const caSoir = toHt(soir.amount);
-  const caVae = toHt(limoWebTtc);
+  const caVae = vaeSource.amount || vaeFallback.amount || caLimoWeb.amount;
+  const caLimonade = paxMidi.amount + paxSoir.amount;
+  const nbLimonade = paxMidi.quantity + paxSoir.quantity;
 
-  if (!caMidi && !caSoir && !caVae) {
+  if (!midi.amount && !soir.amount && !caVae && !caLimonade) {
     throw new Error("La feuille de caisse Recap periode n'a pas pu etre lue automatiquement.");
   }
 
-  const sundayPayment = findPayment('SUNDAY', 21) + findPayment('TPE SUNDAY', 35);
-  const trEdenred = findPayment('TR EDENRED', 11);
-  const ancvPayment = findPayment('ANCV', 6);
-  const especesPayment = findPayment('ESPECES', 1);
-  const uberPayment = findPayment('UBEREATS WEB', 33);
+  const especesPayment = findMetric(flatText, 'ESPECES', 1).amount;
+  const ancvPayment = findMetric(flatText, 'ANCV', 6).amount;
+  const trEdenred = findMetric(flatText, 'TR EDENRED', 11).amount;
+  const sundayPayment = findMetric(flatText, 'SUNDAY', 21).amount + findMetric(flatText, 'TPE SUNDAY', 35).amount;
+  const uberPayment = findMetric(flatText, 'UBEREATS WEB', 33).amount;
 
   return {
     pdfDay,
@@ -101,15 +93,15 @@ export const parseRecapPeriodeCaisse = (
     pdfYear,
     values: {
       17: caVae,
-      18: caMidi,
-      19: caSoir,
-      20: 0,
+      18: midi.amount,
+      19: soir.amount,
+      20: caLimonade,
       25: midi.quantity,
       27: soir.quantity,
-      34: paxMidi.quantity + paxSoir.quantity,
+      34: nbLimonade,
     },
     theoriqueValues: {
-      total_ca: totalTtcNet,
+      total_ca: totalReglements || totalTtcNet || totalHt,
       cb: 0,
       amex: 0,
       tr_papier: 0,
