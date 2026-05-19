@@ -160,7 +160,7 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
 
   const tableHead = 'px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.12em] text-cyan-100/70';
   const tableCell = 'px-3 py-2 text-sm font-semibold text-cyan-50/90';
-  const panel = 'rounded-2xl border border-cyan-200/15 bg-white/8 shadow-sm shadow-slate-950/10 backdrop-blur-sm ring-1 ring-white/10';
+  const panel = 'rounded-2xl border border-cyan-200/15 bg-[#073846]/95 shadow-sm shadow-slate-950/10 backdrop-blur-sm ring-1 ring-white/10';
 
   const SummaryCard = ({ label, value, detail, colorClass }: { label: string; value: string; detail: string; colorClass: string }) => (
     <div className="rounded-2xl border border-cyan-200/15 bg-cyan-950/35 p-4 shadow-sm shadow-slate-950/10 ring-1 ring-white/10">
@@ -171,7 +171,7 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
   );
 
   return (
-    <div className="min-h-0 flex-1 rounded-3xl border border-cyan-200/15 bg-gradient-to-br from-[#061f28] via-[#073846] to-[#0b5a62] p-4 shadow-xl shadow-slate-950/15 ring-1 ring-white/10">
+    <div className="w-full min-h-full rounded-3xl border border-cyan-200/15 bg-gradient-to-br from-[#061f28] via-[#073846] to-[#0b5a62] p-4 pb-6 shadow-xl shadow-slate-950/15 ring-1 ring-white/10">
       <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-4'}`}>
         <SummaryCard label="CA réalisé mois" value={euro(analysis.monthTotal.caTotal)} detail="Total suivi quotidien complet" colorClass="text-amber-50" />
         <SummaryCard label="S/C mois" value={percent(analysis.monthTotal.scTotal)} detail="Coût salarial / CA" colorClass="text-cyan-100" />
@@ -179,7 +179,7 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
         <SummaryCard label="Salle" value={euro(analysis.monthTotal.coutSalle)} detail={`${percent(analysis.monthTotal.scSalle)} du CA`} colorClass="text-teal-100" />
       </div>
 
-      <div className={`mt-4 grid min-h-0 gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-[minmax(0,1fr)_300px]'}`}>
+      <div className={`mt-4 grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-[minmax(0,1fr)_300px]'}`}>
         <div className={panel}>
           <div className="border-b border-cyan-100/15 px-4 py-3">
             <div className="text-xs font-black uppercase tracking-[0.16em] text-cyan-50/80">Cuisine / Salle par jour</div>
@@ -188,13 +188,13 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] border-separate border-spacing-0">
               <thead>
-                <tr className="bg-cyan-950/25">
+                <tr className="bg-[#052b35]">
                   <th className={tableHead}>Jour</th><th className={tableHead}>CA</th><th className={tableHead}>S/C</th><th className={tableHead}>Cuisine €</th><th className={tableHead}>Cuisine %</th><th className={tableHead}>Salle €</th><th className={tableHead}>Salle %</th><th className={tableHead}>TM resto</th>
                 </tr>
               </thead>
               <tbody>
                 {analysis.days.map(day => (
-                  <tr key={day.key} className="odd:bg-white/5 even:bg-cyan-950/18">
+                  <tr key={day.key} className="odd:bg-[#0b4b57] even:bg-[#073846]">
                     <td className={`${tableCell} font-black capitalize`}>{day.label}</td>
                     <td className={tableCell}>{euro(day.caTotal)}</td>
                     <td className={`${tableCell} font-black text-cyan-100`}>{percent(day.scTotal)}</td>
@@ -205,7 +205,7 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
                     <td className={tableCell}>{euro(day.tmRestaurant)}</td>
                   </tr>
                 ))}
-                <tr className="bg-amber-100/15">
+                <tr className="bg-[#155e63]">
                   <td className={`${tableCell} font-black text-amber-50`}>Total fin de mois</td>
                   <td className={`${tableCell} font-black text-amber-50`}>{euro(analysis.monthTotal.caTotal)}</td>
                   <td className={`${tableCell} font-black text-amber-50`}>{percent(analysis.monthTotal.scTotal)}</td>
