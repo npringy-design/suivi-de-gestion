@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 
+import type { SalarieRow } from '@/contexts/DataContext';
 import { averagePayrollRate } from '@/personnelSalaryImport';
 import { parseHourInputToDecimal } from '@/utils';
 
 type DashboardAnalysisViewProps = {
   rows: Array<any>;
   calculatedData: Record<string, string>;
-  salariesConfig?: Record<string, Array<{ heures?: string; coutGlobal?: string; department?: 'cuisine' | 'salle' }>>;
+  salariesConfig?: Record<string, SalarieRow[]>;
   isMobile: boolean;
 };
 
