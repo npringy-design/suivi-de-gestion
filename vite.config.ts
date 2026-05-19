@@ -4,6 +4,7 @@ import path from 'path';
 import {defineConfig, loadEnv} from 'vite';
 
 import { dashboardAnalysisModePatch } from './scripts/dashboardAnalysisModePatch';
+import { dashboardCaisseRecapPeriodePatch } from './scripts/dashboardCaisseRecapPeriodePatch';
 import { dashboardPayrollColumnPatch } from './scripts/dashboardPayrollColumnPatch';
 import { dashboardRealiseTotalsPatch } from './scripts/dashboardRealiseTotalsPatch';
 import { dashboardStrictSalaryRatesPatch } from './scripts/dashboardStrictSalaryRatesPatch';
@@ -12,7 +13,7 @@ import { homePayrollBubblePatch } from './scripts/homePayrollBubblePatch';
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
-    plugins: [dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardAnalysisModePatch(), homePayrollBubblePatch(), react(), tailwindcss()],
+    plugins: [dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), dashboardAnalysisModePatch(), homePayrollBubblePatch(), react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
