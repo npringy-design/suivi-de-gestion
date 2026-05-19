@@ -101,6 +101,12 @@ export const parseRecapPeriodeCaisse = (
       25: midi.quantity,
       27: soir.quantity,
       34: nbLimonade,
+      110: caLimonadeMidi,
+      111: caLimonadeSoir,
+      112: caLimonade,
+      113: nbLimonadeMidi,
+      115: nbLimonadeSoir,
+      117: nbLimonade,
     },
     theoriqueValues: {
       total_ca: totalReglements || totalTtcNet || totalHt,
