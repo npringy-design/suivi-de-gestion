@@ -44,6 +44,48 @@ Si une feuille est réimportée pour une journée qui possède déjà un snapsho
 3. les saisies réelles et commentaires manuels ne sont pas touchés ;
 4. l'utilisateur doit comprendre qu'il remplace la lecture automatique du jour.
 
+## Modèles lus
+
+### Modèle historique
+
+Le modèle déjà en place reste pris en charge.
+
+### Modèle Récap période Au Bureau
+
+Détection : présence de `Récap période` et `CA / PERIODE JOURNEE`.
+
+Mapping réalisé :
+
+- `REPRISE ACOMPTES 428` -> VAE ;
+- `COUVERT MIDI 438` -> CA midi et couverts midi ;
+- `COUVERT SOIR 440` -> CA soir et couverts soir ;
+- `PAX MIDI 444` -> CA limonade midi et couverts limonade midi ;
+- `PAX SOIR 446` -> CA limonade soir et couverts limonade soir ;
+- `PAX MIDI 444` + `PAX SOIR 446` -> CA limonade total et couverts limonade total ;
+- les lignes `LIMO & WEB` ne sont plus utilisées pour le réalisé, car elles ne correspondent pas au mapping demandé.
+
+Colonnes détail ajoutées en vue complète :
+
+- CA HT limonade midi ;
+- CA HT limonade soir ;
+- CA HT limonade total ;
+- couverts limonade midi ;
+- moyenne limonade midi ;
+- couverts limonade soir ;
+- moyenne limonade soir ;
+- couverts limonade total.
+
+Les anciennes colonnes total limonade restent alimentées pour préserver les calculs et les vues déjà branchées.
+
+Mapping caisse / théorique :
+
+- `REGLEMENTS -> Total` -> total encaissements TTC ;
+- `ESPECES` -> espèces ;
+- `ANCV` -> ANCV papier ;
+- `TR EDENRED` -> TR carte ;
+- `SUNDAY` + `TPE SUNDAY` -> Sunday ;
+- `UBEREATS WEB` -> Uber.
+
 ## Snapshot d'audit
 
 Le snapshot d'audit sert à relire ce qui a été extrait sans conserver le PDF.
@@ -60,8 +102,14 @@ type CaisseImportSnapshot = {
     caMidiHt?: string;
     caSoirHt?: string;
     vaeHt?: string;
+    caLimonadeMidiHt?: string;
+    caLimonadeSoirHt?: string;
+    caLimonadeTotalHt?: string;
     couvertsMidi?: string;
     couvertsSoir?: string;
+    couvertsLimonadeMidi?: string;
+    couvertsLimonadeSoir?: string;
+    couvertsLimonadeTotal?: string;
     cb?: string;
     especes?: string;
     amex?: string;
