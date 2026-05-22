@@ -76,23 +76,25 @@ export const dashboardCaissePaymentsPatch = (): Plugin => ({
     const trPapierReel = findCaisseAmount(text, 'EDENRED TR PAPIER') + findCaisseAmount(text, 'BIMPLI TR PAPIER') + findCaisseAmount(text, 'PLUXEE TR PAPIER') + findCaisseAmount(text, 'UP TR PAPIER');
     const sundayTheorique = findCaisseTheoriqueAmount(text, 'SUNDAY') + findCaisseTheoriqueAmount(text, 'CHEQUE BANCAIRE') + findCaisseTheoriqueAmount(text, 'SUNDAY MANUEL') + findCaisseTheoriqueAmount(text, 'SUNDAY TPE');
     const trPapierTheorique = findCaisseTheoriqueAmount(text, 'EDENRED TR PAPIER') + findCaisseTheoriqueAmount(text, 'BIMPLI TR PAPIER') + findCaisseTheoriqueAmount(text, 'PLUXEE TR PAPIER') + findCaisseTheoriqueAmount(text, 'UP TR PAPIER');`,
-      `    const cbCaisseLabels = ['CB', 'CARTE BLEUE', 'CARTE BANCAIRE'];
-    const sundayCaisseLabels = ['SUNDAY', 'TPE SUNDAY', 'SUNDAY TPE', 'SUNDAY MANUEL', 'CHEQUE BANCAIRE'];
+      `    const cbCaisseLabels = ['CB', 'CARTE BLEUE', 'CARTE BANCAIRE', 'TPE SUNDAY', 'SUNDAY TPE'];
+    const sundayCaisseLabels = ['SUNDAY', 'SUNDAY MANUEL', 'CHEQUE BANCAIRE'];
     const trPapierLabels = [
-      'EDENRED TR PAPIER', 'BIMPLI TR PAPIER', 'PLUXEE TR PAPIER', 'UP TR PAPIER',
-      'TR PAPIER EDENRED', 'TR PAPIER BIMPLI', 'TR PAPIER PLUXEE', 'TR PAPIER UP', 'TR PAPIER',
+      'TR EDENRED', 'TR UP', 'TR BIMPLI', 'TR PLUXEE',
+      'EDENRED TR', 'UP TR', 'BIMPLI TR', 'PLUXEE TR',
+      'EDENRED TR PAPIER', 'UP TR PAPIER', 'BIMPLI TR PAPIER', 'PLUXEE TR PAPIER',
+      'TR PAPIER EDENRED', 'TR PAPIER UP', 'TR PAPIER BIMPLI', 'TR PAPIER PLUXEE', 'TR PAPIER',
     ];
     const trCarteLabels = [
-      'CARTE TR', 'TR CARTE', 'TR',
-      'TR EDENRED', 'TR BIMPLI', 'TR PLUXEE', 'TR UP',
-      'EDENRED TR', 'BIMPLI TR', 'PLUXEE TR', 'UP TR',
-      'EDENRED CARTE TR', 'BIMPLI CARTE TR', 'PLUXEE CARTE TR', 'UP CARTE TR',
-      'TR CARTE EDENRED', 'TR CARTE BIMPLI', 'TR CARTE PLUXEE', 'TR CARTE UP',
+      'CARTE TR', 'TR CARTE',
+      'CARTE EDENRED', 'CARTE UP', 'CARTE BIMPLI', 'CARTE PLUXEE',
+      'EDENRED CARTE', 'UP CARTE', 'BIMPLI CARTE', 'PLUXEE CARTE',
+      'EDENRED CARTE TR', 'UP CARTE TR', 'BIMPLI CARTE TR', 'PLUXEE CARTE TR',
+      'TR CARTE EDENRED', 'TR CARTE UP', 'TR CARTE BIMPLI', 'TR CARTE PLUXEE',
     ];
-    const cbReel = sumCaisseAmountLabels(text, [...cbCaisseLabels, ...sundayCaisseLabels]);
-    const cbTheorique = sumCaisseTheoriqueLabels(text, [...cbCaisseLabels, ...sundayCaisseLabels]);
-    const sundayReel = 0;
-    const sundayTheorique = 0;
+    const cbReel = sumCaisseAmountLabels(text, cbCaisseLabels);
+    const cbTheorique = sumCaisseTheoriqueLabels(text, cbCaisseLabels);
+    const sundayReel = sumCaisseAmountLabels(text, sundayCaisseLabels);
+    const sundayTheorique = sumCaisseTheoriqueLabels(text, sundayCaisseLabels);
     const trPapierReel = sumCaisseAmountLabels(text, trPapierLabels);
     const trPapierTheorique = sumCaisseTheoriqueLabels(text, trPapierLabels);
     const trCarteReel = sumCaisseAmountLabels(text, trCarteLabels);
