@@ -82,12 +82,13 @@ Mapping caisse / théorique :
 - `REGLEMENTS -> Total` -> total encaissements TTC ;
 - `ESPECES` -> espèces ;
 - `ANCV` -> ANCV papier ;
-- `CARTE BLEUE`, `CB`, `SUNDAY`, `TPE SUNDAY`, `SUNDAY TPE`, `SUNDAY MANUEL`, `CHEQUE BANCAIRE` -> Carte bleue / CB ;
-- toutes les lignes TR carte reconnues (`TR`, `CARTE TR`, `TR EDENRED`, `TR BIMPLI`, `TR PLUXEE`, `TR UP`, etc.) -> TR carte ;
-- toutes les lignes TR papier reconnues (`TR PAPIER`, `EDENRED TR PAPIER`, `BIMPLI TR PAPIER`, `PLUXEE TR PAPIER`, `UP TR PAPIER`, etc.) -> TR papier ;
+- `CARTE BLEUE`, `CB`, `CARTE BANCAIRE`, `TPE SUNDAY`, `SUNDAY TPE` -> Carte bleue / CB ;
+- `SUNDAY`, `SUNDAY MANUEL`, `CHEQUE BANCAIRE` -> Sunday ;
+- `TR EDENRED`, `TR UP`, `TR BIMPLI`, `TR PLUXEE` et variantes sans le mot carte -> TR papier ;
+- `CARTE TR`, `TR CARTE`, `CARTE EDENRED`, `CARTE UP`, `CARTE BIMPLI`, `CARTE PLUXEE` et variantes avec le mot carte -> TR carte ;
 - `UBEREATS WEB` -> Uber.
 
-Point important : les lignes multiples d'un même moyen de paiement doivent être additionnées. Une même occurrence lue ne doit pas être comptée deux fois si plusieurs libellés la reconnaissent.
+Point important : ne pas mélanger les TR papier avec les cartes TR. Les lignes multiples d'un même moyen de paiement doivent être additionnées. Une même occurrence lue ne doit pas être comptée deux fois si plusieurs libellés la reconnaissent.
 
 ## Snapshot d'audit
 
