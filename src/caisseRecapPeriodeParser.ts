@@ -161,6 +161,10 @@ export const parseRecapPeriodeCaisse = (
     'PLUXEE CARTE',
   ]);
   const uberPayment = findMetric(flatText, 'UBEREATS WEB', 33).amount;
+  const deliverooPayment = sumPaymentAmounts(lines, flatText, [
+    { label: 'DELIVEROO WEB', code: 32 },
+    'DELIVEROO',
+  ]);
 
   return {
     pdfDay,
@@ -189,7 +193,7 @@ export const parseRecapPeriodeCaisse = (
       especes: especesPayment,
       click_collect: 0,
       uber: uberPayment,
-      deliveroo: 0,
+      deliveroo: deliverooPayment,
       sunday: sundayPayment,
     },
     realValues: {
@@ -203,7 +207,7 @@ export const parseRecapPeriodeCaisse = (
       trPapier: trPapierPayment,
       sunday: sundayPayment,
       uber: uberPayment,
-      deliveroo: 0,
+      deliveroo: deliverooPayment,
       clickCollect: 0,
     },
   };
