@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite';
 
 const replaceRequired = (code: string, from: string, to: string, label: string) => {
-  if (!code.includes(from)) throw new Error('Patch vue realise propre non applique : ' + label);
+  if (!code.includes(from)) throw new Error('Patch vue realise/prevision propre non applique : ' + label);
   return code.replace(from, to);
 };
 
@@ -11,7 +11,7 @@ const replacePatternRequired = (
   to: string | ((substring: string, ...args: any[]) => string),
   label: string,
 ) => {
-  if (!pattern.test(code)) throw new Error('Patch vue realise propre non applique : ' + label);
+  if (!pattern.test(code)) throw new Error('Patch vue realise/prevision propre non applique : ' + label);
   return code.replace(pattern, to as any);
 };
 
@@ -25,8 +25,8 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
     next = replaceRequired(
       next,
       "  ['REALISE', 'COUVERTS\\nLIMONADE', 'SOIR\\nMOY', 'bg-white']\n];",
-      "  ['REALISE', 'COUVERTS\\nLIMONADE', 'SOIR\\nMOY', 'bg-white'],\n  ['REALISE', 'CA HT RESTAURANT', 'TOTAL', 'bg-[#b4c6e7]'],\n  ['REALISE', 'ECART BUDGET', '%', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', 'VALEUR', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', '%', 'bg-white'],\n  ['REALISE', 'COUVERTS', 'TOTAL JOUR', 'bg-[#b4c6e7]'],\n  ['REALISE', 'COUVERTS', 'CUMUL MOIS', 'bg-[#b4c6e7]'],\n  ['REALISE', 'ECART BUDGET', '%', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', 'VALEUR', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', '%', 'bg-white']\n];",
-      'colonnes complementaires realise'
+      "  ['REALISE', 'COUVERTS\\nLIMONADE', 'SOIR\\nMOY', 'bg-white'],\n  ['REALISE', 'CA HT RESTAURANT', 'TOTAL', 'bg-[#b4c6e7]'],\n  ['REALISE', 'ECART BUDGET', '%', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', 'VALEUR', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', '%', 'bg-white'],\n  ['REALISE', 'COUVERTS', 'TOTAL JOUR', 'bg-[#b4c6e7]'],\n  ['REALISE', 'COUVERTS', 'CUMUL MOIS', 'bg-[#b4c6e7]'],\n  ['REALISE', 'ECART BUDGET', '%', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', 'VALEUR', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', '%', 'bg-white'],\n  ['CA', 'CA HT RESTAURANT', 'TOTAL', 'bg-[#ffe699]'],\n  ['RESTAURANTS', 'COUVERTS', 'TOTAL JOUR', 'bg-[#fff2cc]'],\n  ['RESTAURANTS', 'COUVERTS', 'CUMUL MOIS', 'bg-[#fff2cc]'],\n  ['CA', 'ECART VS N-1', 'VALEUR', 'bg-white'],\n  ['RESTAURANTS', 'ECART VS N-1', 'VALEUR', 'bg-white']\n];",
+      'colonnes complementaires realise et prevision'
     );
 
     next = replacePatternRequired(
@@ -39,9 +39,7 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
     next = replacePatternRequired(
       next,
       /    const limonadeMoveSet[\s\S]*?\n  }, \[activeTab, tableViewMode, dynamicColumns\]\);/,
-      `    if (activeTab !== 'REALISE' || tableViewMode !== 'COMPLET') return baseVisibleColumns;
-
-    const findColumn = (colIndex: number) => baseVisibleColumns.find(col => col.originalIndex === colIndex);
+      `    const findColumn = (colIndex: number) => baseVisibleColumns.find(col => col.originalIndex === colIndex);
     const buildColumn = (colIndex: number, group: string, subGroup: string, label: string, bg?: string) => {
       const source = findColumn(colIndex);
       if (!source) return null;
@@ -52,6 +50,29 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
       if (bg) column[3] = bg;
       return column as VisibleDashboardColumn;
     };
+
+    if (activeTab === 'PREVISIONS' && tableViewMode === 'COMPLET') {
+      return [
+        buildColumn(0, 'CA HT', 'CA HT RESTAURANT', 'MIDI'),
+        buildColumn(1, 'CA HT', 'CA HT RESTAURANT', 'SOIR'),
+        buildColumn(125, 'CA HT', 'CA HT RESTAURANT', 'TOTAL'),
+        buildColumn(2, 'CA HT', 'CA HT LIMONADE', 'TOTAL'),
+        buildColumn(3, 'CA HT', '', 'TOTAL JOUR'),
+        buildColumn(4, 'CA HT', '', 'CUMUL MOIS'),
+        buildColumn(128, 'CA HT', 'ECART VS N-1', 'VALEUR', 'bg-white'),
+        buildColumn(5, 'CA HT', 'ECART VS N-1', '%', 'bg-white'),
+        buildColumn(6, 'COUVERTS', 'COUVERTS RESTAURANT', 'MIDI'),
+        buildColumn(8, 'COUVERTS', 'COUVERTS RESTAURANT', 'SOIR'),
+        buildColumn(10, 'COUVERTS', 'COUVERTS RESTAURANT', 'TOTAL'),
+        buildColumn(14, 'COUVERTS', 'COUVERTS LIMONADE', 'TOTAL'),
+        buildColumn(126, 'COUVERTS', '', 'TOTAL JOUR'),
+        buildColumn(127, 'COUVERTS', '', 'CUMUL MOIS'),
+        buildColumn(129, 'COUVERTS', 'ECART VS N-1', 'VALEUR', 'bg-white'),
+        buildColumn(13, 'COUVERTS', 'ECART VS N-1', '%', 'bg-white'),
+      ].filter(Boolean) as VisibleDashboardColumn[];
+    }
+
+    if (activeTab !== 'REALISE' || tableViewMode !== 'COMPLET') return baseVisibleColumns;
 
     return [
       buildColumn(17, 'CA HT', '', 'VAE'),
@@ -81,7 +102,28 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
       buildColumn(124, 'COUVERTS', 'ECART VS N-1', '%', 'bg-white'),
     ].filter(Boolean) as VisibleDashboardColumn[];
   }, [activeTab, tableViewMode, dynamicColumns]);`,
-      'ordre visible realise complet'
+      'ordre visible realise et prevision complet'
+    );
+
+    next = replaceRequired(
+      next,
+      "    let cumulCvtsLimo = 0;",
+      "    let cumulCvtsLimo = 0;\n    let cumulCvtsBudgetComplet = 0;",
+      'cumul couverts prevision complet'
+    );
+
+    next = replaceRequired(
+      next,
+      "        const totalJour = budgetMidi + budgetSoir + budgetLimo;",
+      "        const budgetRestaurantTotal = budgetMidi + budgetSoir;\n        if (budgetRestaurantTotal > 0 || data[`${rIdx}-0`] || data[`${rIdx}-1`]) data[`${rIdx}-125`] = budgetRestaurantTotal.toFixed(2);\n\n        const totalJour = budgetRestaurantTotal + budgetLimo;",
+      'total restaurant prevision'
+    );
+
+    next = replaceRequired(
+      next,
+      "          data[`${rIdx}-12`] = cumulCvts.toString();\n        }\n\n        // REALISE CA HT",
+      "          data[`${rIdx}-12`] = cumulCvts.toString();\n        }\n\n        const budgetCvtsComplet = jourCvts + cvtsLimo;\n        if (budgetCvtsComplet > 0 || data[`${rIdx}-10`] || data[`${rIdx}-14`]) {\n          cumulCvtsBudgetComplet += budgetCvtsComplet;\n          data[`${rIdx}-126`] = budgetCvtsComplet.toFixed(0);\n          data[`${rIdx}-127`] = cumulCvtsBudgetComplet.toFixed(0);\n        }\n\n        // REALISE CA HT",
+      'total couverts prevision complet'
     );
 
     next = replaceRequired(
@@ -139,8 +181,15 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
 
     next = replaceRequired(
       next,
+      "  const previsionsGroups = groups.filter(g => ['CA', 'RESTAURANTS', 'LIMONADE'].includes(g.name));",
+      "  const previsionsGroups = groups.filter(g => activeTab === 'PREVISIONS'\n    ? ['CA', 'RESTAURANTS', 'LIMONADE', 'CA HT', 'COUVERTS'].includes(g.name)\n    : ['CA', 'RESTAURANTS', 'LIMONADE'].includes(g.name));",
+      'groupes prevision'
+    );
+
+    next = replaceRequired(
+      next,
       "  const realiseGroups = groups.filter(g => ['REALISE', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(g.name));",
-      "  const realiseGroups = groups.filter(g => ['REALISE', 'CA HT', 'COUVERTS', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(g.name));",
+      "  const realiseGroups = groups.filter(g => activeTab === 'REALISE'\n    ? ['REALISE', 'CA HT', 'COUVERTS', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(g.name)\n    : ['REALISE', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(g.name));",
       'groupes realise'
     );
 
