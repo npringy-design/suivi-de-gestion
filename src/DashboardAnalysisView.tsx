@@ -164,7 +164,7 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
     return { days, monthTotal, bestDay, worstDay };
   }, [rows, calculatedData, salariesConfig]);
 
-  const tableHead = 'border-b border-slate-200 bg-slate-50 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.12em] text-slate-500';
+  const tableHead = 'sticky top-0 z-20 border-b border-slate-200 bg-slate-50 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 shadow-sm shadow-slate-950/5';
   const tableCell = 'border-b border-slate-100 px-3 py-2 text-sm font-semibold text-slate-700';
   const panel = 'overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5';
 
@@ -191,7 +191,7 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
             <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-600">Cuisine / Salle par jour</div>
             <div className="mt-1 text-xs font-semibold text-slate-500">Coût et poids dans le CA réalisé.</div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="max-h-[calc(100vh-260px)] overflow-auto">
             <table className="w-full min-w-[860px] border-separate border-spacing-0">
               <thead>
                 <tr>
