@@ -38,7 +38,7 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
 
     next = replacePatternRequired(
       next,
-      /    const limonadeMoveSet[\s\S]*?\n  }, \[activeTab, tableViewMode, dynamicColumns\]\);/,
+      / {4}const limonadeMoveSet[\s\S]*?\n {2}}, \[activeTab, tableViewMode, dynamicColumns\]\);/,
       `    const findColumn = (colIndex: number) => baseVisibleColumns.find(col => col.originalIndex === colIndex);
     const buildColumn = (colIndex: number, group: string, subGroup: string, label: string, bg?: string) => {
       const source = findColumn(colIndex);
@@ -142,7 +142,7 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
 
     next = replacePatternRequired(
       next,
-      /        \/\/ COUVERTS LIMONADE — detail midi\/soir \+ total historique[\s\S]*?\n        }\n\n        \/\/ COUT MATIERE calculations/,
+      / {8}\/\/ COUVERTS LIMONADE — detail midi\/soir \+ total historique[\s\S]*?\n {8}}\n\n {8}\/\/ COUT MATIERE calculations/,
       `        // COUVERTS LIMONADE — detail midi/soir + total historique
         const nbCvtsLimoMidiDetail = parseFloat(data[\`\${rIdx}-112\`] || '0');
         const nbCvtsLimoSoirDetail = parseFloat(data[\`\${rIdx}-114\`] || '0');
