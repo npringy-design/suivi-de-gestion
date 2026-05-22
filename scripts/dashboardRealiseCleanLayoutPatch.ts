@@ -5,9 +5,14 @@ const replaceRequired = (code: string, from: string, to: string, label: string) 
   return code.replace(from, to);
 };
 
-const replacePatternRequired = (code: string, pattern: RegExp, to: string, label: string) => {
+const replacePatternRequired = (
+  code: string,
+  pattern: RegExp,
+  to: string | ((substring: string, ...args: any[]) => string),
+  label: string,
+) => {
   if (!pattern.test(code)) throw new Error('Patch vue realise propre non applique : ' + label);
-  return code.replace(pattern, to);
+  return code.replace(pattern, to as any);
 };
 
 export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
@@ -82,42 +87,42 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
     next = replaceRequired(
       next,
       "        const realiseTotalJour = realiseVae + realiseMidi + realiseSoir + realiseLimo;",
-      "        const realiseRestaurantTotal = realiseMidi + realiseSoir;\n        if (realiseRestaurantTotal > 0 || data[`${rIdx}-18`] || data[`${rIdx}-19`]) data[`${rIdx}-116`] = realiseRestaurantTotal.toFixed(2);\n        const realiseTotalJour = realiseVae + realiseRestaurantTotal + realiseLimo;"
-      , 'total restaurant realise'
+      "        const realiseRestaurantTotal = realiseMidi + realiseSoir;\n        if (realiseRestaurantTotal > 0 || data[`${rIdx}-18`] || data[`${rIdx}-19`]) data[`${rIdx}-116`] = realiseRestaurantTotal.toFixed(2);\n        const realiseTotalJour = realiseVae + realiseRestaurantTotal + realiseLimo;",
+      'total restaurant realise'
     );
 
     next = replaceRequired(
       next,
       "          data[`${rIdx}-22`] = (realiseTotalJour - totalJour).toFixed(2);",
-      "          const realiseEcartBudget = realiseTotalJour - totalJour;\n          data[`${rIdx}-22`] = realiseEcartBudget.toFixed(2);\n          if (totalJour > 0) data[`${rIdx}-117`] = ((realiseEcartBudget / totalJour) * 100).toFixed(2);"
-      , 'pourcentage ecart ca'
+      "          const realiseEcartBudget = realiseTotalJour - totalJour;\n          data[`${rIdx}-22`] = realiseEcartBudget.toFixed(2);\n          if (totalJour > 0) data[`${rIdx}-117`] = ((realiseEcartBudget / totalJour) * 100).toFixed(2);",
+      'pourcentage ecart ca'
     );
 
     next = replacePatternRequired(
       next,
       /        \/\/ COUVERTS LIMONADE — detail midi\/soir \+ total historique[\s\S]*?\n        }\n\n        \/\/ COUT MATIERE calculations/,
       `        // COUVERTS LIMONADE — detail midi/soir + total historique
-        const nbCvtsLimoMidiDetail = parseFloat(data[\`${rIdx}-112\`] || '0');
-        const nbCvtsLimoSoirDetail = parseFloat(data[\`${rIdx}-114\`] || '0');
+        const nbCvtsLimoMidiDetail = parseFloat(data[\`\${rIdx}-112\`] || '0');
+        const nbCvtsLimoSoirDetail = parseFloat(data[\`\${rIdx}-114\`] || '0');
         const nbCvtsLimoDetailTotal = nbCvtsLimoMidiDetail + nbCvtsLimoSoirDetail;
-        const nbCvtsLimo = nbCvtsLimoDetailTotal > 0 ? nbCvtsLimoDetailTotal : parseFloat(data[\`${rIdx}-34\`] || '0');
-        if (nbCvtsLimoDetailTotal > 0) data[\`${rIdx}-34\`] = nbCvtsLimoDetailTotal.toFixed(0);
-        if (nbCvtsLimoMidiDetail > 0 && realiseLimoMidiDetail > 0) data[\`${rIdx}-113\`] = (realiseLimoMidiDetail / nbCvtsLimoMidiDetail).toFixed(2);
-        if (nbCvtsLimoSoirDetail > 0 && realiseLimoSoirDetail > 0) data[\`${rIdx}-115\`] = (realiseLimoSoirDetail / nbCvtsLimoSoirDetail).toFixed(2);
-        if (nbCvtsLimo > 0 && realiseLimo > 0) data[\`${rIdx}-35\`] = (realiseLimo / nbCvtsLimo).toFixed(2);
+        const nbCvtsLimo = nbCvtsLimoDetailTotal > 0 ? nbCvtsLimoDetailTotal : parseFloat(data[\`\${rIdx}-34\`] || '0');
+        if (nbCvtsLimoDetailTotal > 0) data[\`\${rIdx}-34\`] = nbCvtsLimoDetailTotal.toFixed(0);
+        if (nbCvtsLimoMidiDetail > 0 && realiseLimoMidiDetail > 0) data[\`\${rIdx}-113\`] = (realiseLimoMidiDetail / nbCvtsLimoMidiDetail).toFixed(2);
+        if (nbCvtsLimoSoirDetail > 0 && realiseLimoSoirDetail > 0) data[\`\${rIdx}-115\`] = (realiseLimoSoirDetail / nbCvtsLimoSoirDetail).toFixed(2);
+        if (nbCvtsLimo > 0 && realiseLimo > 0) data[\`\${rIdx}-35\`] = (realiseLimo / nbCvtsLimo).toFixed(2);
         if (nbCvtsLimo > 0) {
           cumulCvtsLimo = (cumulCvtsLimo || 0) + nbCvtsLimo;
-          data[\`${rIdx}-36\`] = cumulCvtsLimo.toFixed(0);
+          data[\`\${rIdx}-36\`] = cumulCvtsLimo.toFixed(0);
         }
         const totalCvtsJourComplet = totalCvtsJour + nbCvtsLimo;
         if (totalCvtsJourComplet > 0) {
-          data[\`${rIdx}-120\`] = totalCvtsJourComplet.toFixed(0);
-          data[\`${rIdx}-121\`] = (cumulCvtsRealise + cumulCvtsLimo).toFixed(0);
-          const budgetCvtsJourComplet = parseFloat(data[\`${rIdx}-10\`] || '0') + parseFloat(data[\`${rIdx}-14\`] || '0');
+          data[\`\${rIdx}-120\`] = totalCvtsJourComplet.toFixed(0);
+          data[\`\${rIdx}-121\`] = (cumulCvtsRealise + cumulCvtsLimo).toFixed(0);
+          const budgetCvtsJourComplet = parseFloat(data[\`\${rIdx}-10\`] || '0') + parseFloat(data[\`\${rIdx}-14\`] || '0');
           if (budgetCvtsJourComplet > 0) {
             const ecartCvtsComplet = totalCvtsJourComplet - budgetCvtsJourComplet;
-            data[\`${rIdx}-33\`] = ecartCvtsComplet.toFixed(0);
-            data[\`${rIdx}-122\`] = ((ecartCvtsComplet / budgetCvtsJourComplet) * 100).toFixed(2);
+            data[\`\${rIdx}-33\`] = ecartCvtsComplet.toFixed(0);
+            data[\`\${rIdx}-122\`] = ((ecartCvtsComplet / budgetCvtsJourComplet) * 100).toFixed(2);
           }
         }
 
