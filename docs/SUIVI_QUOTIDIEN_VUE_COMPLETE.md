@@ -25,8 +25,8 @@ Bloc CA HT :
 
 Bloc Couverts :
 
-- couverts restaurant : midi, soir, total ;
-- couverts limonade : midi, soir, total ;
+- couverts restaurant : midi, TM midi, soir, TM soir, total, TM total ;
+- couverts limonade : midi, TM midi, soir, TM soir, total, TM total ;
 - total jour ;
 - cumul mois ;
 - ecart budget : valeur et pourcentage ;
@@ -49,8 +49,8 @@ Bloc CA HT prevision :
 
 Bloc Couverts prevision :
 
-- couverts restaurant : midi, soir, total ;
-- couverts limonade : total ;
+- couverts restaurant : midi, TM midi, soir, TM soir, total, TM total ;
+- couverts limonade : total, TM total ;
 - total jour ;
 - cumul mois ;
 - ecart VS N-1 : valeur et pourcentage.
@@ -63,6 +63,7 @@ Point volontaire : la prevision limonade garde le format existant en total uniqu
 - CA HT limonade total = CA limonade midi + CA limonade soir quand le detail existe, sinon l'ancienne valeur totale reste exploitable.
 - CA HT total jour = VAE + CA restaurant total + CA limonade total en realise.
 - CA HT total jour prevision = CA restaurant total + CA limonade total.
+- TM = CA HT / couverts sur la meme zone quand les deux donnees existent.
 - Ecart budget CA = total jour realise - total jour budget.
 - Pourcentage d'ecart budget CA = ecart budget CA / budget CA.
 - Couverts limonade total = couverts limonade midi + couverts limonade soir quand le detail existe, sinon l'ancienne valeur totale reste exploitable.
@@ -85,5 +86,6 @@ Les colonnes `ECART VS N-1` sont presentes dans la disposition, mais elles ne so
 
 - En vue complete > Realise, seuls les blocs CA HT et Couverts doivent apparaitre selon la disposition cible.
 - En vue complete > Previsions, la disposition doit etre alignee sur la meme logique propre.
+- Les colonnes TM doivent etre visibles dans Realise et Previsions, sans casser les totaux existants.
 - La saisie limonade midi/soir realise doit alimenter les totaux limonade.
 - Les totaux jour et ecarts budget doivent se recalculer sans toucher au recap mail.
