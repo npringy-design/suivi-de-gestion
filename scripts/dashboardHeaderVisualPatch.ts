@@ -49,6 +49,13 @@ export const dashboardHeaderVisualPatch = (): Plugin => ({
 
     next = replaceRequired(
       next,
+      "{tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && (",
+      "{false && tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && (",
+      'masquer les kpi hors saisie dans la banderole'
+    );
+
+    next = replaceRequired(
+      next,
       "<div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: tableViewMode === 'SAISIE' ? '0 0 14px' : (isMobile ? '10px 0' : '10px 0 12px'), display: 'flex', gap: 8, background: 'transparent', borderBottom: tableViewMode === 'SAISIE' ? 'none' : '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>",
       "<div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: isMobile ? '0 0 12px' : '0 0 14px', display: 'flex', gap: 8, background: 'transparent', borderBottom: 'none', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>",
       'position bulles vue commune'
