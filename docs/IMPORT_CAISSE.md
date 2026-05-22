@@ -86,7 +86,8 @@ Mapping caisse / théorique :
 - `SUNDAY`, `SUNDAY MANUEL`, `CHEQUE BANCAIRE` -> Sunday ;
 - `TR EDENRED`, `TR UP`, `TR BIMPLI`, `TR PLUXEE` et variantes sans le mot carte -> TR papier ;
 - `CARTE TR`, `TR CARTE`, `CARTE EDENRED`, `CARTE UP`, `CARTE BIMPLI`, `CARTE PLUXEE` et variantes avec le mot carte -> TR carte ;
-- `UBEREATS WEB` -> Uber.
+- `UBEREATS WEB` -> Uber ;
+- `DELIVEROO WEB` et `DELIVEROO` -> Deliveroo.
 
 Point important : ne pas mélanger les TR papier avec les cartes TR. Les lignes multiples d'un même moyen de paiement doivent être additionnées. Une même occurrence lue ne doit pas être comptée deux fois si plusieurs libellés la reconnaissent.
 
