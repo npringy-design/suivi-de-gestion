@@ -34,6 +34,37 @@ const findMetric = (text: string, label: string, code: number) => {
   };
 };
 
+const findPaymentAmount = (lines: string[], flatText: string, label: string, code?: number) => {
+  const codePart = typeof code === 'number' ? `${code}` : '\\d+';
+  const linePattern = new RegExp(`^${labelPattern(label)}\\s+${codePart}(?:\\s+\\d+)?\\s+(${amountToken})(?:\\s+${amountToken})?`, 'i');
+  const lineTotal = lines.reduce((sum, line) => {
+    const match = line.match(linePattern);
+    return sum + (match?.[1] ? parseAmount(match[1]) : 0);
+  }, 0);
+  if (lineTotal > 0) return lineTotal;
+
+  const flatPattern = new RegExp(`(?:^|\\s)${labelPattern(label)}\\s+${codePart}(?:\\s+\\d+)?\\s+(${amountToken})(?:\\s+${amountToken})?`, 'gi');
+  let total = 0;
+  let match: RegExpExecArray | null;
+  const seen = new Set<number>();
+  while ((match = flatPattern.exec(flatText)) !== null) {
+    if (seen.has(match.index)) continue;
+    seen.add(match.index);
+    total += match?.[1] ? parseAmount(match[1]) : 0;
+  }
+  return total;
+};
+
+const sumPaymentAmounts = (
+  lines: string[],
+  flatText: string,
+  labels: Array<string | { label: string; code?: number }>,
+) => labels.reduce((sum, entry) => {
+  const label = typeof entry === 'string' ? entry : entry.label;
+  const code = typeof entry === 'string' ? undefined : entry.code;
+  return sum + findPaymentAmount(lines, flatText, label, code);
+}, 0);
+
 const findTotalAfterLabel = (text: string, label: string) => {
   const pattern = new RegExp(`${labelPattern(label)}\\s+(${amountToken})`, 'i');
   const match = text.match(pattern);
@@ -48,11 +79,12 @@ export const parseRecapPeriodeCaisse = (
   const normalized = normalizeImportText(rawText);
   if (!normalized.includes('RECAP PERIODE') || !normalized.includes('CA PERIODE JOURNEE')) return null;
 
-  const flatText = rawText
+  const lines = rawText
     .split(/\r?\n/)
     .map(line => line.replace(/\s+/g, ' ').trim())
-    .filter(Boolean)
-    .join(' ');
+    .filter(Boolean);
+
+  const flatText = lines.join(' ');
 
   const periodMatch = rawText.match(/P[ée]riode\s+du\s+(\d{2})\/(\d{2})\/(\d{4})/i)
     || rawText.match(/periode\s+du\s+(\d{2})\/(\d{2})\/(\d{4})/i);
@@ -89,8 +121,45 @@ export const parseRecapPeriodeCaisse = (
 
   const especesPayment = findMetric(flatText, 'ESPECES', 1).amount;
   const ancvPayment = findMetric(flatText, 'ANCV', 6).amount;
-  const trEdenred = findMetric(flatText, 'TR EDENRED', 11).amount;
-  const sundayPayment = findMetric(flatText, 'SUNDAY', 21).amount + findMetric(flatText, 'TPE SUNDAY', 35).amount;
+  const carteBleuePayment = sumPaymentAmounts(lines, flatText, [
+    'CARTE BLEUE',
+    'CARTE BANCAIRE',
+    'CB',
+    { label: 'TPE SUNDAY', code: 35 },
+    'SUNDAY TPE',
+  ]);
+  const sundayPayment = sumPaymentAmounts(lines, flatText, [
+    { label: 'SUNDAY', code: 21 },
+    'SUNDAY MANUEL',
+    'CHEQUE BANCAIRE',
+  ]);
+  const trPapierPayment = sumPaymentAmounts(lines, flatText, [
+    'TR EDENRED',
+    'TR UP',
+    'TR BIMPLI',
+    'TR PLUXEE',
+    'EDENRED TR',
+    'UP TR',
+    'BIMPLI TR',
+    'PLUXEE TR',
+    'EDENRED TR PAPIER',
+    'UP TR PAPIER',
+    'BIMPLI TR PAPIER',
+    'PLUXEE TR PAPIER',
+    'TR PAPIER',
+  ]);
+  const trCartePayment = sumPaymentAmounts(lines, flatText, [
+    'CARTE TR',
+    'TR CARTE',
+    'CARTE EDENRED',
+    'CARTE UP',
+    'CARTE BIMPLI',
+    'CARTE PLUXEE',
+    'EDENRED CARTE',
+    'UP CARTE',
+    'BIMPLI CARTE',
+    'PLUXEE CARTE',
+  ]);
   const uberPayment = findMetric(flatText, 'UBEREATS WEB', 33).amount;
 
   return {
@@ -107,15 +176,15 @@ export const parseRecapPeriodeCaisse = (
       34: nbLimonade,
       110: caLimonadeMidi,
       111: caLimonadeSoir,
-      113: nbLimonadeMidi,
-      115: nbLimonadeSoir,
+      112: nbLimonadeMidi,
+      114: nbLimonadeSoir,
     },
     theoriqueValues: {
       total_ca: totalReglements || totalTtcNet || totalHt,
-      cb: 0,
+      cb: carteBleuePayment,
       amex: 0,
-      tr_papier: 0,
-      tr_carte: trEdenred,
+      tr_papier: trPapierPayment,
+      tr_carte: trCartePayment,
       ancv: ancvPayment,
       especes: especesPayment,
       click_collect: 0,
@@ -124,14 +193,14 @@ export const parseRecapPeriodeCaisse = (
       sunday: sundayPayment,
     },
     realValues: {
-      cb: 0,
+      cb: carteBleuePayment,
       pourboires: 0,
       especes: especesPayment,
       pieces: 0,
       amexAncvCarte: 0,
-      trCarte: trEdenred,
+      trCarte: trCartePayment,
       ancvPapier: ancvPayment,
-      trPapier: 0,
+      trPapier: trPapierPayment,
       sunday: sundayPayment,
       uber: uberPayment,
       deliveroo: 0,
