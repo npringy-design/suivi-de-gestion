@@ -46,6 +46,26 @@ const defaultById = new Map(DEFAULT_ACCOUNTING_MAPPINGS.map(item => [item.id, it
 const cleanCategory = (value: unknown, fallback: AccountingCategory): AccountingCategory => ACCOUNTING_CATEGORIES.includes(value as AccountingCategory) ? value as AccountingCategory : fallback;
 const cleanKey = (value: unknown, fallback: AccountingCaisseKey): AccountingCaisseKey => typeof value === 'string' && keyValues.has(value as AccountingCaisseKey) ? value as AccountingCaisseKey : fallback;
 
+const migrateDefaultRow = (defaultRow: AccountingMappingRow, saved: Partial<AccountingMappingRow>): AccountingMappingRow => {
+  const legacyPourboireDebit = defaultRow.id === 'pourboires' && saved.debitAccount === '511280' && !saved.creditAccount;
+
+  return {
+    ...defaultRow,
+    active: typeof saved.active === 'boolean' ? saved.active : defaultRow.active,
+    category: cleanCategory(saved.category, defaultRow.category),
+    caisseKey: defaultRow.caisseKey,
+    caisseItem: saved.caisseItem || defaultRow.caisseItem,
+    company: typeof saved.company === 'string' ? saved.company : defaultRow.company,
+    debitAccount: legacyPourboireDebit ? defaultRow.debitAccount : (typeof saved.debitAccount === 'string' ? saved.debitAccount : defaultRow.debitAccount),
+    creditAccount: legacyPourboireDebit ? defaultRow.creditAccount : (typeof saved.creditAccount === 'string' ? saved.creditAccount : defaultRow.creditAccount),
+    accountingLabel: saved.accountingLabel || defaultRow.accountingLabel,
+    rule: defaultRow.rule,
+    tolerance: saved.tolerance || defaultRow.tolerance,
+    keywords: typeof saved.keywords === 'string' ? saved.keywords : defaultRow.keywords,
+    notes: defaultRow.notes,
+  };
+};
+
 export const normalizeAccountingMappings = (input: unknown): AccountingMappingRow[] => {
   if (!Array.isArray(input)) return DEFAULT_ACCOUNTING_MAPPINGS;
   const savedById = new Map<string, Partial<AccountingMappingRow>>();
@@ -57,8 +77,7 @@ export const normalizeAccountingMappings = (input: unknown): AccountingMappingRo
   });
   const normalDefaults = DEFAULT_ACCOUNTING_MAPPINGS.map(defaultRow => {
     const saved = savedById.get(defaultRow.id);
-    if (!saved) return defaultRow;
-    return { ...defaultRow, active: typeof saved.active === 'boolean' ? saved.active : defaultRow.active, category: cleanCategory(saved.category, defaultRow.category), caisseKey: defaultRow.caisseKey, caisseItem: saved.caisseItem || defaultRow.caisseItem, company: typeof saved.company === 'string' ? saved.company : defaultRow.company, debitAccount: typeof saved.debitAccount === 'string' ? saved.debitAccount : defaultRow.debitAccount, creditAccount: typeof saved.creditAccount === 'string' ? saved.creditAccount : defaultRow.creditAccount, accountingLabel: saved.accountingLabel || defaultRow.accountingLabel, rule: defaultRow.rule, tolerance: saved.tolerance || defaultRow.tolerance, keywords: typeof saved.keywords === 'string' ? saved.keywords : defaultRow.keywords, notes: defaultRow.notes };
+    return saved ? migrateDefaultRow(defaultRow, saved) : defaultRow;
   });
   const customRows = input.filter(item => item && typeof item === 'object').map(item => item as Partial<AccountingMappingRow>).filter(item => typeof item.id === 'string' && item.id && !defaultById.has(item.id)).map(item => ({ id: item.id || `custom-${Date.now()}`, active: typeof item.active === 'boolean' ? item.active : true, category: cleanCategory(item.category, 'Paiement'), caisseKey: cleanKey(item.caisseKey, ''), caisseItem: item.caisseItem || '', company: item.company || '', debitAccount: item.debitAccount || '', creditAccount: item.creditAccount || '', accountingLabel: item.accountingLabel || '', rule: item.rule || '', tolerance: item.tolerance || '0,01', keywords: item.keywords || '', notes: item.notes || '' }));
   return [...normalDefaults, ...customRows];
