@@ -38,7 +38,7 @@ export const dashboardCaisseRecapPeriodePatch = (): Plugin => ({
       next = replaceRequired(
         next,
         "  const extractCaisseNumbers = (text: string) => (text.match(/-?\\d[\\d\\s]*,\\d{2}/g) || []).map(parseCaisseNumber);",
-        "  const extractCaisseNumbers = (text: string) => (text.match(/-?\\d[\\d\\s]*,\\d{2}/g) || []).map(parseCaisseNumber);\n  const findCaisseTtcByRate = (text: string, rate: '5,5' | '10' | '20') => {\n    const ratePattern = rate === '5,5' ? '5[,\\.]5' : rate;\n    const compactRatePattern = rate === '5,5' ? '5\\s*[,\\.]?\\s*5' : rate;\n    const lines = text.split(/\\r?\\n|(?=TVA\\s)/i).map(line => line.replace(/\\s+/g, ' ').trim()).filter(Boolean);\n    const matchingLines = lines.filter(line => new RegExp('(?:TVA|Taux|Total).*' + ratePattern + '|'+ ratePattern + '\\s*%', 'i').test(line));\n    const candidates = matchingLines.flatMap(line => extractCaisseNumbers(line));\n    if (candidates.length >= 3) return candidates[candidates.length - 1];\n    const sectionMatch = text.match(new RegExp('TVA[\\s\\S]{0,900}?' + compactRatePattern + '[\\s\\S]{0,220}', 'i'));\n    const sectionNumbers = sectionMatch ? extractCaisseNumbers(sectionMatch[0]) : [];\n    return sectionNumbers.length >= 3 ? sectionNumbers[sectionNumbers.length - 1] : 0;\n  };",
+        "  const extractCaisseNumbers = (text: string) => (text.match(/-?\\d[\\d\\s]*,\\d{2}/g) || []).map(parseCaisseNumber);\n  const findCaisseTtcByRate = (source: string, rate: '5,5' | '10' | '20') => {\n    const sourceWithLines = source.replace(/\\u00a0/g, ' ').replace(/€/g, '');\n    const totalBlockMatch = sourceWithLines.match(/TVA\\s+TOTAL\\s+HT\\s+TVA\\s+TTC([\\s\\S]*?)(?:TVA\\s+MIDI|REMISES|Sessions\\s+avec\\s+[ée]cart|OBSERVATION|$)/i);\n    const totalBlock = (totalBlockMatch?.[1] || '').replace(/\\s+/g, ' ').trim();\n    if (!totalBlock) return 0;\n    const ratePattern = rate === '5,5' ? '5[,\\.]5' : rate;\n    const amount = '(-?\\\\d[\\\\d\\\\s]*,\\\\d{2})';\n    const rowMatch = totalBlock.match(new RegExp('TVA\\\\s*' + ratePattern + '\\\\s*%\\\\s+' + amount + '\\\\s+' + amount + '\\\\s+' + amount, 'i'));\n    return rowMatch?.[3] ? parseCaisseNumber(rowMatch[3]) : 0;\n  };",
         'helper ttc tva'
       );
     }
@@ -53,7 +53,7 @@ export const dashboardCaisseRecapPeriodePatch = (): Plugin => ({
     next = replaceRequired(
       next,
       "        clickCollect: findCaisseAmount(text, 'Click and Collect'),\n      },\n    };",
-      "        clickCollect: findCaisseAmount(text, 'Click and Collect'),\n      },\n      bilanValues: {\n        ttc_5_5: findCaisseTtcByRate(text, '5,5'),\n        ttc_10: findCaisseTtcByRate(text, '10'),\n        ttc_20: findCaisseTtcByRate(text, '20'),\n      },\n    } as ParsedCaisseImport;",
+      "        clickCollect: findCaisseAmount(text, 'Click and Collect'),\n      },\n      bilanValues: {\n        ttc_5_5: findCaisseTtcByRate(sourceText, '5,5'),\n        ttc_10: findCaisseTtcByRate(sourceText, '10'),\n        ttc_20: findCaisseTtcByRate(sourceText, '20'),\n      },\n    } as ParsedCaisseImport;",
       'bilan values historique'
     );
 
