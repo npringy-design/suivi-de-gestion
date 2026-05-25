@@ -5,6 +5,14 @@ const replaceRequired = (code: string, from: string, to: string, label: string) 
   return code.replace(from, to);
 };
 
+const appendBilanUpdate = `
+    const bilanValues = (parsed as ParsedCaisseImport & { bilanValues?: { ttc_5_5?: number; ttc_10?: number; ttc_20?: number } }).bilanValues;
+    if (bilanValues) {
+      updateBilanSynthese(month, targetDay, 'ttc_5_5', formatImportedNumber(bilanValues.ttc_5_5 || 0));
+      updateBilanSynthese(month, targetDay, 'ttc_10', formatImportedNumber(bilanValues.ttc_10 || 0));
+      updateBilanSynthese(month, targetDay, 'ttc_20', formatImportedNumber(bilanValues.ttc_20 || 0));
+    }`;
+
 export const dashboardCaisseRecapPeriodePatch = (): Plugin => ({
   name: 'dashboard-caisse-recap-periode-patch',
   enforce: 'pre',
@@ -21,10 +29,30 @@ export const dashboardCaisseRecapPeriodePatch = (): Plugin => ({
 
     next = replaceRequired(
       next,
+      "    updateTheorique,\n    updateNepting,",
+      "    updateTheorique,\n    updateBilanSynthese,\n    updateNepting,",
+      'updateBilanSynthese'
+    );
+
+    next = replaceRequired(
+      next,
       "  const parseCaisseRealise = (sourceText: string): ParsedCaisseImport => {\n    const text = sourceText.replace(/\\u00a0/g, ' ').replace(/€/g, '').replace(/\\s+/g, ' ');",
       "  const parseCaisseRealise = (sourceText: string): ParsedCaisseImport => {\n    const recapPeriodeParsed = parseRecapPeriodeCaisse(sourceText, normalizeImportText);\n    if (recapPeriodeParsed) return recapPeriodeParsed as ParsedCaisseImport;\n\n    const text = sourceText.replace(/\\u00a0/g, ' ').replace(/€/g, '').replace(/\\s+/g, ' ');",
       'appel parser recap periode'
     );
+
+    next = replaceRequired(
+      next,
+      "        clickCollect: findCaisseAmount(text, 'Click and Collect'),\n      },\n    };",
+      "        clickCollect: findCaisseAmount(text, 'Click and Collect'),\n      },\n      bilanValues: {\n        ttc_5_5: findCaisseTtcByRate(text, '5,5'),\n        ttc_10: findCaisseTtcByRate(text, '10'),\n        ttc_20: findCaisseTtcByRate(text, '20'),\n      },\n    } as ParsedCaisseImport;",
+      'bilan values historique'
+    );
+
+    const targetLine = "    updateTheorique(month, targetDay, 'sunday', formatImportedNumber(parsed.theoriqueValues.sunday));";
+    const replacementLine = `${targetLine}${appendBilanUpdate}`;
+    if (!next.includes('bilanValues?: { ttc_5_5?: number')) {
+      next = next.split(targetLine).join(replacementLine);
+    }
 
     return { code: next, map: null };
   },
