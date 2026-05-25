@@ -48,19 +48,19 @@ export const accountingSettingsRoutePatch = (): Plugin => ({
 
     if (normalizedId.endsWith('/src/Home.tsx')) {
       let next = code;
-      if (!next.includes('goToParametrageComptable')) {
+      if (!next.includes('goToEcrituresComptables')) {
         next = replaceRequired(
           next,
           "      goToVisuelVacances: () => navigate('/visuel-vacances'),",
-          "      goToVisuelVacances: () => navigate('/visuel-vacances'),\n      goToParametrageComptable: () => navigate('/parametrage-comptable'),\n      goToEcrituresComptables: () => navigate('/ecritures-comptables'),",
+          "      goToVisuelVacances: () => navigate('/visuel-vacances'),\n      goToEcrituresComptables: () => navigate('/ecritures-comptables'),",
           'handlers',
         );
       }
-      if (!next.includes('Parametrage comptable')) {
+      if (!next.includes('Ecritures comptables')) {
         next = replaceRequired(
           next,
           "              <NavItem label=\"Vacances\" onClick={navigationHandlers.goToVisuelVacances} />",
-          "              <NavItem label=\"Vacances\" onClick={navigationHandlers.goToVisuelVacances} />\n              <NavItem label=\"Parametrage comptable\" onClick={navigationHandlers.goToParametrageComptable} />\n              <NavItem label=\"Ecritures comptables\" onClick={navigationHandlers.goToEcrituresComptables} />",
+          "              <NavItem label=\"Vacances\" onClick={navigationHandlers.goToVisuelVacances} />\n              <NavItem label=\"Ecritures comptables\" onClick={navigationHandlers.goToEcrituresComptables} />",
           'links',
         );
       }
