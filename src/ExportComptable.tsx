@@ -17,6 +17,7 @@ const parseVal = (value: unknown) => {
   return parseFloat(String(value || '').replace(',', '.').replace(/[^0-9,.-]/g, '')) || 0;
 };
 
+const roundMoney = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
 const formatDate = (day: number, month: number, year: number) => new Date(year, month, day).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const formatMoney = (value: number) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
 const formatCsvMoney = (value: number | null) => value === null ? '' : formatMoney(value).replace(/\s/g, '');
@@ -65,9 +66,14 @@ const computeDayTotals = (day: number, monthData: MonthData): DayTotals => {
 
   const bilanTheo = parseVal(theorique.especes) + parseVal(theorique.cb) + parseVal(theorique.amex) + parseVal(theorique.tr_carte) + parseVal(theorique.deliveroo) + parseVal(theorique.uber) + parseVal(theorique.sunday) + parseVal(theorique.click_collect) + parseVal(theorique.tr_papier) + parseVal(theorique.ancv);
   const bilanReel = espReel + cbReel + amexReel + cbTrReel + delivReel + uberReel + sundayReel + ceReel + crtReel + ancvReel;
-  const bilanEcart = bilanReel - bilanTheo - pourboires;
+  const bilanEcart = roundMoney(bilanReel - bilanTheo - pourboires);
+  const ecartNegatif = bilanEcart < 0 ? Math.abs(bilanEcart) : 0;
+  const ecartPositif = bilanEcart > 0 ? bilanEcart : 0;
+  const fondCaisse = espReel;
+  const moyensPaiementReels = cbReel + amexReel + crtReel + cbTrReel + ancvReel + delivReel + uberReel + sundayReel + ceReel;
+  const especesRemise = roundMoney(moyensPaiementReels + fondCaisse + ecartNegatif - ecartPositif - pourboires);
 
-  return { ht55, ht10, ht20, tva55, tva10, tva20, totalTtc, espReel, cbReel, amexReel, crtReel, cbTrReel, ancvReel, delivReel, uberReel, sundayReel, ceReel, pourboires, bilanEcart, ecartNegatif: bilanEcart < 0 ? Math.abs(bilanEcart) : 0, ecartPositif: bilanEcart > 0 ? bilanEcart : 0, fondCaisse: 0, especesRemise: 0 };
+  return { ht55, ht10, ht20, tva55, tva10, tva20, totalTtc, espReel, cbReel, amexReel, crtReel, cbTrReel, ancvReel, delivReel, uberReel, sundayReel, ceReel, pourboires, bilanEcart, ecartNegatif, ecartPositif, fondCaisse, especesRemise };
 };
 
 const hasUsefulTotals = (totals: DayTotals) => Object.entries(totals).some(([key, value]) => key !== 'fondCaisse' && key !== 'especesRemise' && Math.abs(value) > 0.004);
@@ -82,7 +88,6 @@ export default function ExportComptable({ onBack }: ExportComptableProps) {
 
   const flatEntries = useMemo(() => blocks.flatMap(block => block.entries), [blocks]);
   const monthData = allData[year]?.[month];
-  const hasFondCaisseWarning = blocks.some(block => Math.abs(block.totals.fondCaisse) < 0.005);
 
   const generate = () => {
     const source = allData[year]?.[month];
@@ -141,7 +146,7 @@ export default function ExportComptable({ onBack }: ExportComptableProps) {
               {generated && flatEntries.length > 0 && <button type="button" onClick={downloadCsv} className="inline-flex items-center gap-2 rounded-xl bg-amber-300 px-4 py-2 text-sm font-black text-slate-950 shadow-sm transition hover:bg-amber-200"><Download className="h-4 w-4" /> Télécharger CSV</button>}
             </div>
           </div>
-          {hasFondCaisseWarning && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-950"><AlertTriangle className="mr-2 inline h-4 w-4 text-amber-700" />Le compte 580000 et la contrepartie 531100 sont à 0 dans ce brouillon. Il faut confirmer la règle exacte avec le comptable avant usage officiel.</div>}
+          {generated && blocks.length > 0 && <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm font-semibold leading-6 text-cyan-950"><AlertTriangle className="mr-2 inline h-4 w-4 text-cyan-700" />Règle brouillon appliquée : 580000 = espèces réelles, et la dernière ligne 531100 = moyens de paiement + 580000 + écart négatif - écart positif - pourboires.</div>}
           {!monthData && <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">Aucune donnée trouvée pour ce mois.</div>}
         </section>
 
