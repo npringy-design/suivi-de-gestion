@@ -57,26 +57,32 @@ function DashboardRoute() {
 }
 
 function SyntheseRoute() {
+  const { selectedMonth, setSelectedMonth } = useData();
   const navigate = useNavigate();
+  const goToMonthPage = (path: string) => (month: number) => {
+    setSelectedMonth(month);
+    navigate(path);
+  };
 
   return (
     <SyntheseCA
+      initialMonth={selectedMonth}
       onBack={() => navigate('/')}
-      onSaisieTheorique={() => navigate('/saisie-theorique')}
-      onCbNepting={() => navigate('/cb-nepting')}
-      onEspeces={() => navigate('/especes')}
-      onConecs={() => navigate('/conecs')}
-      onAncvPapiers={() => navigate('/ancv-papiers')}
-      onSaisieTR={() => navigate('/saisie-tr')}
-      onVisuTRPapiers={() => navigate('/visu-tr-papiers')}
-      onSunday={() => navigate('/sunday')}
-      onUber={() => navigate('/uber')}
-      onAmexAncv={() => navigate('/amex-ancv')}
-      onDeliveroo={() => navigate('/deliveroo')}
-      onClickCollect={() => navigate('/click-collect')}
-      onRemiseTR={() => navigate('/remise-tr')}
-      onBilanSynthese={() => navigate('/bilan-synthese')}
-      onDepensesPetiteCaisse={() => navigate('/depenses-petite-caisse')}
+      onSaisieTheorique={goToMonthPage('/saisie-theorique')}
+      onCbNepting={goToMonthPage('/cb-nepting')}
+      onEspeces={goToMonthPage('/especes')}
+      onConecs={goToMonthPage('/conecs')}
+      onAncvPapiers={goToMonthPage('/ancv-papiers')}
+      onSaisieTR={goToMonthPage('/saisie-tr')}
+      onVisuTRPapiers={goToMonthPage('/visu-tr-papiers')}
+      onSunday={goToMonthPage('/sunday')}
+      onUber={goToMonthPage('/uber')}
+      onAmexAncv={goToMonthPage('/amex-ancv')}
+      onDeliveroo={goToMonthPage('/deliveroo')}
+      onClickCollect={goToMonthPage('/click-collect')}
+      onRemiseTR={goToMonthPage('/remise-tr')}
+      onBilanSynthese={goToMonthPage('/bilan-synthese')}
+      onDepensesPetiteCaisse={goToMonthPage('/depenses-petite-caisse')}
     />
   );
 }
