@@ -91,6 +91,36 @@ Mapping caisse / théorique :
 
 Point important : ne pas mélanger les TR papier avec les cartes TR. Les lignes multiples d'un même moyen de paiement doivent être additionnées. Une même occurrence lue ne doit pas être comptée deux fois si plusieurs libellés la reconnaissent.
 
+## Bilan Synthèse - TVA verrouillée
+
+Statut : validé et à ne plus modifier sans demande explicite.
+
+Pour les feuilles de caisse Hippopotamus, l'alimentation du Bilan Synthèse se base sur le bloc `TVA TOTAL / HT / TVA / TTC`.
+
+Règle retenue après test réel :
+
+- lire les montants HT de la ligne `TVA 5,5 %`, `TVA 10 %` et `TVA 20 %` dans ce bloc ;
+- convertir ces HT en montants TTC pour alimenter les champs techniques actuels du Bilan Synthèse ;
+- ne plus essayer de récupérer directement la colonne TTC du PDF, car cela a créé des lectures parasites ;
+- ne pas lire le bloc des pourboires, le bloc `Total service`, ni d'autres zones pour ces valeurs TVA.
+
+Pourquoi l'import écrit encore dans des champs TTC : la structure actuelle du Bilan Synthèse ne stocke que `ttc_5_5`, `ttc_10` et `ttc_20`. Les colonnes HT et TVA affichées sont calculées depuis ces champs. La bonne méthode actuelle est donc :
+
+```txt
+HT 5,5 % lu dans le bloc TVA TOTAL x 1,055 -> champ TTC 5,5 %
+HT 10 % lu dans le bloc TVA TOTAL x 1,10  -> champ TTC 10 %
+HT 20 % lu dans le bloc TVA TOTAL x 1,20  -> champ TTC 20 %
+```
+
+Exemple validé sur la feuille du 01/04/2026 :
+
+```txt
+HT 10 % = 2 065,94 -> TTC 10 % = 2 272,53
+HT 20 % = 272,72   -> TTC 20 % = 327,26 / 327,27 selon arrondi
+```
+
+Point de verrouillage : ne pas revenir à une lecture directe de la colonne TTC tant que la page Bilan Synthèse ne possède pas de vrais champs sauvegardés HT par taux.
+
 ## Snapshot d'audit
 
 Le snapshot d'audit sert à relire ce qui a été extrait sans conserver le PDF.
@@ -125,6 +155,9 @@ type CaisseImportSnapshot = {
     uber?: string;
     deliveroo?: string;
     clickCollect?: string;
+    ttc55?: string;
+    ttc10?: string;
+    ttc20?: string;
   };
   appliedFields: Array<{
     target: string;
@@ -157,4 +190,5 @@ Pour le suivi quotidien, la règle retenue est :
 - transcription immédiate des montants utiles ;
 - sauvegarde des montants dans les données métier ;
 - absence de sauvegarde du fichier importé ;
-- conservation possible d'un snapshot léger pour audit et relecture.
+- conservation possible d'un snapshot léger pour audit et relecture ;
+- alimentation du Bilan Synthèse via les HT lus dans le bloc TVA TOTAL, convertis en TTC pour la structure actuelle.
