@@ -57,32 +57,26 @@ function DashboardRoute() {
 }
 
 function SyntheseRoute() {
-  const { selectedMonth, setSelectedMonth } = useData();
   const navigate = useNavigate();
-  const goToMonthPage = (path: string) => (month: number) => {
-    setSelectedMonth(month);
-    navigate(path);
-  };
 
   return (
     <SyntheseCA
-      initialMonth={selectedMonth}
       onBack={() => navigate('/')}
-      onSaisieTheorique={goToMonthPage('/saisie-theorique')}
-      onCbNepting={goToMonthPage('/cb-nepting')}
-      onEspeces={goToMonthPage('/especes')}
-      onConecs={goToMonthPage('/conecs')}
-      onAncvPapiers={goToMonthPage('/ancv-papiers')}
-      onSaisieTR={goToMonthPage('/saisie-tr')}
-      onVisuTRPapiers={goToMonthPage('/visu-tr-papiers')}
-      onSunday={goToMonthPage('/sunday')}
-      onUber={goToMonthPage('/uber')}
-      onAmexAncv={goToMonthPage('/amex-ancv')}
-      onDeliveroo={goToMonthPage('/deliveroo')}
-      onClickCollect={goToMonthPage('/click-collect')}
-      onRemiseTR={goToMonthPage('/remise-tr')}
-      onBilanSynthese={goToMonthPage('/bilan-synthese')}
-      onDepensesPetiteCaisse={goToMonthPage('/depenses-petite-caisse')}
+      onSaisieTheorique={() => navigate('/saisie-theorique')}
+      onCbNepting={() => navigate('/cb-nepting')}
+      onEspeces={() => navigate('/especes')}
+      onConecs={() => navigate('/conecs')}
+      onAncvPapiers={() => navigate('/ancv-papiers')}
+      onSaisieTR={() => navigate('/saisie-tr')}
+      onVisuTRPapiers={() => navigate('/visu-tr-papiers')}
+      onSunday={() => navigate('/sunday')}
+      onUber={() => navigate('/uber')}
+      onAmexAncv={() => navigate('/amex-ancv')}
+      onDeliveroo={() => navigate('/deliveroo')}
+      onClickCollect={() => navigate('/click-collect')}
+      onRemiseTR={() => navigate('/remise-tr')}
+      onBilanSynthese={() => navigate('/bilan-synthese')}
+      onDepensesPetiteCaisse={() => navigate('/depenses-petite-caisse')}
     />
   );
 }
@@ -120,134 +114,38 @@ function PageRoute({ Component, backPath }: { Component: any; backPath: string }
 }
 
 const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <Home />,
-  },
-  {
-    path: '/dashboard/:month',
-    element: <DashboardRoute />,
-  },
-  {
-    path: '/synthese',
-    element: <SyntheseRoute />,
-  },
-  {
-    path: '/recap-annuel',
-    element: <PageRoute Component={RecapAnnuel} backPath='/' />,
-  },
-  {
-    path: '/reporting',
-    element: <PageRoute Component={Reporting} backPath='/' />,
-  },
-  {
-    path: '/saisie-theorique',
-    element: <MonthRoute Component={SaisieTheorique} backPath='/synthese' />,
-  },
-  {
-    path: '/cb-nepting',
-    element: <MonthRoute Component={CbNepting} backPath='/synthese' />,
-  },
-  {
-    path: '/especes',
-    element: <MonthRoute Component={Especes} backPath='/synthese' />,
-  },
-  {
-    path: '/conecs',
-    element: <MonthRoute Component={Conecs} backPath='/synthese' />,
-  },
-  {
-    path: '/ancv-papiers',
-    element: <MonthRoute Component={AncvPapiers} backPath='/synthese' />,
-  },
-  {
-    path: '/saisie-tr',
-    element: <MonthRoute Component={SaisieTR} backPath='/synthese' />,
-  },
-  {
-    path: '/visu-tr-papiers',
-    element: <MonthRoute Component={VisuTRPapiers} backPath='/synthese' />,
-  },
-  {
-    path: '/sunday',
-    element: <MonthRoute Component={Sunday} backPath='/synthese' />,
-  },
-  {
-    path: '/uber',
-    element: <MonthRoute Component={Uber} backPath='/synthese' />,
-  },
-  {
-    path: '/amex-ancv',
-    element: <MonthRoute Component={AmexAncv} backPath='/synthese' />,
-  },
-  {
-    path: '/deliveroo',
-    element: <MonthRoute Component={Deliveroo} backPath='/synthese' />,
-  },
-  {
-    path: '/click-collect',
-    element: <MonthRoute Component={ClickCollect} backPath='/synthese' />,
-  },
-  {
-    path: '/remise-tr',
-    element: <MonthRoute Component={RemiseTR} backPath='/synthese' />,
-  },
-  {
-    path: '/bilan-synthese',
-    element: <MonthRoute Component={BilanSynthese} backPath='/synthese' />,
-  },
-  {
-    path: '/depenses-petite-caisse',
-    element: <MonthRoute Component={DepensesPetiteCaisse} backPath='/synthese' />,
-  },
-  {
-    path: '/edg-mensuel/:month',
-    element: <EdgMensuelRoute />,
-  },
-  {
-    path: '/budget-edg-annuel',
-    element: <PageRoute Component={BudgetEdgAnnuel} backPath='/' />,
-  },
-  {
-    path: '/vs-budget',
-    element: <PageRoute Component={VsBudget} backPath='/' />,
-  },
-  {
-    path: '/vs-n1',
-    element: <PageRoute Component={VsN1} backPath='/' />,
-  },
-  {
-    path: '/realise-edg-annee-fiscale',
-    element: <PageRoute Component={RealiseEdgAnneeFiscale} backPath='/' />,
-  },
-  {
-    path: '/mise-en-paiement/:month',
-    element: <MonthRouteWithSetMonth Component={MiseEnPaiement} backPath='/' />,
-  },
-  {
-    path: '/facture-devis',
-    element: <PageRoute Component={FactureDevis} backPath='/' />,
-  },
-  {
-    path: '/config-salaires',
-    element: <PageRoute Component={ConfigSalaires} backPath='/' />,
-  },
-  {
-    path: '/calculette-salaires',
-    element: <PageRoute Component={CalculetteSalaires} backPath='/' />,
-  },
-  {
-    path: '/configuration-chiffre-2025',
-    element: <PageRoute Component={ConfigurationChiffre2025} backPath='/' />,
-  },
-  {
-    path: '/visuel-vacances',
-    element: <PageRoute Component={VisuelVacances} backPath='/' />,
-  },
-  {
-    path: '/edg-annuel-tabs',
-    element: <PageRoute Component={EdgAnnuelTabs} backPath='/' />,
-  },
+  { path: '/', element: <Home /> },
+  { path: '/dashboard/:month', element: <DashboardRoute /> },
+  { path: '/synthese', element: <SyntheseRoute /> },
+  { path: '/recap-annuel', element: <PageRoute Component={RecapAnnuel} backPath='/' /> },
+  { path: '/reporting', element: <PageRoute Component={Reporting} backPath='/' /> },
+  { path: '/saisie-theorique', element: <MonthRoute Component={SaisieTheorique} backPath='/synthese' /> },
+  { path: '/cb-nepting', element: <MonthRoute Component={CbNepting} backPath='/synthese' /> },
+  { path: '/especes', element: <MonthRoute Component={Especes} backPath='/synthese' /> },
+  { path: '/conecs', element: <MonthRoute Component={Conecs} backPath='/synthese' /> },
+  { path: '/ancv-papiers', element: <MonthRoute Component={AncvPapiers} backPath='/synthese' /> },
+  { path: '/saisie-tr', element: <MonthRoute Component={SaisieTR} backPath='/synthese' /> },
+  { path: '/visu-tr-papiers', element: <MonthRoute Component={VisuTRPapiers} backPath='/synthese' /> },
+  { path: '/sunday', element: <MonthRoute Component={Sunday} backPath='/synthese' /> },
+  { path: '/uber', element: <MonthRoute Component={Uber} backPath='/synthese' /> },
+  { path: '/amex-ancv', element: <MonthRoute Component={AmexAncv} backPath='/synthese' /> },
+  { path: '/deliveroo', element: <MonthRoute Component={Deliveroo} backPath='/synthese' /> },
+  { path: '/click-collect', element: <MonthRoute Component={ClickCollect} backPath='/synthese' /> },
+  { path: '/remise-tr', element: <MonthRoute Component={RemiseTR} backPath='/synthese' /> },
+  { path: '/bilan-synthese', element: <MonthRoute Component={BilanSynthese} backPath='/synthese' /> },
+  { path: '/depenses-petite-caisse', element: <MonthRoute Component={DepensesPetiteCaisse} backPath='/synthese' /> },
+  { path: '/edg-mensuel/:month', element: <EdgMensuelRoute /> },
+  { path: '/budget-edg-annuel', element: <PageRoute Component={BudgetEdgAnnuel} backPath='/' /> },
+  { path: '/vs-budget', element: <PageRoute Component={VsBudget} backPath='/' /> },
+  { path: '/vs-n1', element: <PageRoute Component={VsN1} backPath='/' /> },
+  { path: '/realise-edg-annee-fiscale', element: <PageRoute Component={RealiseEdgAnneeFiscale} backPath='/' /> },
+  { path: '/mise-en-paiement/:month', element: <MonthRouteWithSetMonth Component={MiseEnPaiement} backPath='/' /> },
+  { path: '/facture-devis', element: <PageRoute Component={FactureDevis} backPath='/' /> },
+  { path: '/config-salaires', element: <PageRoute Component={ConfigSalaires} backPath='/' /> },
+  { path: '/calculette-salaires', element: <PageRoute Component={CalculetteSalaires} backPath='/' /> },
+  { path: '/configuration-chiffre-2025', element: <PageRoute Component={ConfigurationChiffre2025} backPath='/' /> },
+  { path: '/visuel-vacances', element: <PageRoute Component={VisuelVacances} backPath='/' /> },
+  { path: '/edg-annuel-tabs', element: <PageRoute Component={EdgAnnuelTabs} backPath='/' /> },
 ]);
 
 function EdgMensuelRoute() {
