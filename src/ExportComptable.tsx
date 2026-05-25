@@ -7,7 +7,8 @@ import { useData, type DayDataSaisieTR, type MonthData } from '@/contexts/DataCo
 import { buildDailyEntries, checkBalance, type AccountingEntry, type BalanceCheck, type DayTotals } from '@/utils/buildDailyEntries';
 
 type ExportComptableProps = { onBack: () => void };
-type DailyBlock = { date: string; entries: AccountingEntry[]; balance: BalanceCheck; totals: DayTotals };
+type DailyBlock = { date: string; entries: AccountingEntry[]; balance: BalanceCheck; totals: DayTotals; sourceInfo: string };
+type DayTotalsWithInfo = DayTotals & { sourceInfo: string };
 
 const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const years = [2024, 2025, 2026];
@@ -28,7 +29,7 @@ const getSaisieTRTotal = (dayData?: DayDataSaisieTR) => {
   return providers.reduce((sum, provider) => sum + (dayData[provider] || []).reduce((lineSum, entry) => lineSum + parseVal(entry.valeur) * parseVal(entry.nombre), 0), 0);
 };
 
-const computeDayTotals = (day: number, monthData: MonthData): DayTotals => {
+const computeDayTotals = (day: number, monthData: MonthData): DayTotalsWithInfo => {
   const bilan = monthData.bilanSynthese?.[day] || { ttc_5_5: '', ttc_10: '', ttc_20: '' };
   const theorique = monthData.theorique?.[day] || {};
   const nepting = monthData.nepting?.[day] || {};
@@ -42,26 +43,29 @@ const computeDayTotals = (day: number, monthData: MonthData): DayTotals => {
   const clickCollect = monthData.clickCollect?.[day] || {};
 
   const ttc55 = parseVal(bilan.ttc_5_5);
-  const ttc10 = parseVal(bilan.ttc_10);
+  const ttc10Raw = parseVal(bilan.ttc_10);
   const ttc20 = parseVal(bilan.ttc_20);
+  const importedTotalTtc = parseVal(theorique.total_ca);
+  const hasTvaDetail = Math.abs(ttc55) > 0.004 || Math.abs(ttc10Raw) > 0.004 || Math.abs(ttc20) > 0.004;
+  const ttc10 = hasTvaDetail ? ttc10Raw : importedTotalTtc;
   const ht55 = ttc55 / 1.055;
   const ht10 = ttc10 / 1.10;
   const ht20 = ttc20 / 1.20;
   const tva55 = ttc55 - ht55;
   const tva10 = ttc10 - ht10;
   const tva20 = ttc20 - ht20;
-  const totalTtc = ttc55 + ttc10 + ttc20;
+  const totalTtc = hasTvaDetail ? ttc55 + ttc10 + ttc20 : importedTotalTtc;
 
-  const espReel = parseVal(especes.mis_au_coffre) + parseVal(especes.pieces);
-  const cbReel = parseVal(nepting.saisie_reel_nepting);
-  const amexReel = parseVal(amex.reel_nepting);
-  const crtReel = getSaisieTRTotal(monthData.saisieTR?.[day]);
-  const cbTrReel = parseVal(conecs.conecs_reel_nepting);
-  const ancvReel = parseVal(ancv.montant_total);
-  const delivReel = parseVal(deliveroo.reel);
-  const uberReel = parseVal(uber.reel);
-  const sundayReel = parseVal(sunday.reel);
-  const ceReel = parseVal(clickCollect.reel);
+  const espReel = parseVal(especes.mis_au_coffre) + parseVal(especes.pieces) || parseVal(theorique.especes);
+  const cbReel = parseVal(nepting.saisie_reel_nepting) || parseVal(theorique.cb);
+  const amexReel = parseVal(amex.reel_nepting) || parseVal(theorique.amex);
+  const crtReel = getSaisieTRTotal(monthData.saisieTR?.[day]) || parseVal(theorique.tr_papier);
+  const cbTrReel = parseVal(conecs.conecs_reel_nepting) || parseVal(theorique.tr_carte);
+  const ancvReel = parseVal(ancv.montant_total) || parseVal(theorique.ancv);
+  const delivReel = parseVal(deliveroo.reel) || parseVal(theorique.deliveroo);
+  const uberReel = parseVal(uber.reel) || parseVal(theorique.uber);
+  const sundayReel = parseVal(sunday.reel) || parseVal(theorique.sunday);
+  const ceReel = parseVal(clickCollect.reel) || parseVal(theorique.click_collect);
   const pourboires = parseVal(nepting.pourboire_sunday);
 
   const bilanTheo = parseVal(theorique.especes) + parseVal(theorique.cb) + parseVal(theorique.amex) + parseVal(theorique.tr_carte) + parseVal(theorique.deliveroo) + parseVal(theorique.uber) + parseVal(theorique.sunday) + parseVal(theorique.click_collect) + parseVal(theorique.tr_papier) + parseVal(theorique.ancv);
@@ -73,7 +77,32 @@ const computeDayTotals = (day: number, monthData: MonthData): DayTotals => {
   const moyensPaiementReels = cbReel + amexReel + crtReel + cbTrReel + ancvReel + delivReel + uberReel + sundayReel + ceReel;
   const especesRemise = roundMoney(moyensPaiementReels + fondCaisse + ecartNegatif - ecartPositif - pourboires);
 
-  return { ht55, ht10, ht20, tva55, tva10, tva20, totalTtc, espReel, cbReel, amexReel, crtReel, cbTrReel, ancvReel, delivReel, uberReel, sundayReel, ceReel, pourboires, bilanEcart, ecartNegatif, ecartPositif, fondCaisse, especesRemise };
+  return {
+    ht55,
+    ht10,
+    ht20,
+    tva55,
+    tva10,
+    tva20,
+    totalTtc,
+    espReel,
+    cbReel,
+    amexReel,
+    crtReel,
+    cbTrReel,
+    ancvReel,
+    delivReel,
+    uberReel,
+    sundayReel,
+    ceReel,
+    pourboires,
+    bilanEcart,
+    ecartNegatif,
+    ecartPositif,
+    fondCaisse,
+    especesRemise,
+    sourceInfo: hasTvaDetail ? 'TVA détaillée' : 'Total importé ventilé provisoirement en TVA 10 %',
+  };
 };
 
 const hasUsefulTotals = (totals: DayTotals) => Object.entries(totals).some(([key, value]) => key !== 'fondCaisse' && key !== 'especesRemise' && Math.abs(value) > 0.004);
@@ -100,11 +129,12 @@ export default function ExportComptable({ onBack }: ExportComptableProps) {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const nextBlocks: DailyBlock[] = [];
     for (let day = 1; day <= daysInMonth; day += 1) {
-      const totals = computeDayTotals(day, source);
+      const totalsWithInfo = computeDayTotals(day, source);
+      const { sourceInfo, ...totals } = totalsWithInfo;
       if (!hasUsefulTotals(totals)) continue;
       const date = formatDate(day, month, year);
       const entries = buildDailyEntries(date, totals, mappings, month + 1, year);
-      nextBlocks.push({ date, entries, balance: checkBalance(entries), totals });
+      nextBlocks.push({ date, entries, balance: checkBalance(entries), totals, sourceInfo });
     }
     setBlocks(nextBlocks);
     setGenerated(true);
@@ -129,7 +159,7 @@ export default function ExportComptable({ onBack }: ExportComptableProps) {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">
               <button type="button" onClick={onBack} className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-cyan-50 ring-1 ring-white/15 transition hover:bg-white/20" aria-label="Retour accueil"><ArrowLeft className="h-5 w-5" /></button>
-              <div><div className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/70">Brouillon comptable</div><h1 className="mt-1 text-3xl font-black tracking-tight text-amber-50">Écritures comptables</h1><p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-cyan-50/78">Génération de contrôle à partir de la synthèse caisse et du paramétrage comptable. Ce n’est pas encore un export officiel.</p></div>
+              <div><div className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/70">Brouillon comptable</div><h1 className="mt-1 text-3xl font-black tracking-tight text-amber-50">Écritures comptables</h1><p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-cyan-50/78">Génération de contrôle à partir de la synthèse caisse et du paramétrage comptable.</p></div>
             </div>
             <button type="button" onClick={() => navigate('/parametrage-comptable')} className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-black text-cyan-50 ring-1 ring-white/15 transition hover:bg-white/20"><Settings className="h-4 w-4" /> Modifier les comptes</button>
           </div>
@@ -146,13 +176,14 @@ export default function ExportComptable({ onBack }: ExportComptableProps) {
               {generated && flatEntries.length > 0 && <button type="button" onClick={downloadCsv} className="inline-flex items-center gap-2 rounded-xl bg-amber-300 px-4 py-2 text-sm font-black text-slate-950 shadow-sm transition hover:bg-amber-200"><Download className="h-4 w-4" /> Télécharger CSV</button>}
             </div>
           </div>
-          {generated && blocks.length > 0 && <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm font-semibold leading-6 text-cyan-950"><AlertTriangle className="mr-2 inline h-4 w-4 text-cyan-700" />Règle brouillon appliquée : 580000 = espèces réelles, et la dernière ligne 531100 = moyens de paiement + 580000 + écart négatif - écart positif - pourboires.</div>}
-          {!monthData && <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">Aucune donnée trouvée pour ce mois.</div>}
+          {generated && blocks.some(block => block.sourceInfo.includes('provisoirement')) && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-950"><AlertTriangle className="mr-2 inline h-4 w-4 text-amber-700" />Les TTC par taux de TVA ne sont pas encore saisis dans Bilan Synthèse pour au moins une journée : le total importé est ventilé provisoirement en TVA 10 %. Le test des paiements reste possible.</div>}
+          {generated && blocks.length > 0 && <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm font-semibold leading-6 text-cyan-950"><AlertTriangle className="mr-2 inline h-4 w-4 text-cyan-700" />Règle brouillon : 580000 = espèces réelles, et dernière ligne 531100 = moyens de paiement + 580000 + écart négatif - écart positif - pourboires.</div>}
+          {!monthData && <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">Aucune donnée trouvée pour ce mois dans l'année sélectionnée.</div>}
         </section>
 
-        {generated && blocks.length === 0 && <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-sm font-bold text-slate-500 shadow-sm">Aucune écriture générée pour cette période.</div>}
+        {generated && blocks.length === 0 && <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-sm font-bold text-slate-500 shadow-sm">Aucune écriture générée pour cette période. Vérifie l'année puis le mois sélectionnés.</div>}
 
-        {blocks.length > 0 && <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"><div className="max-h-[70vh] overflow-auto"><table className="min-w-full border-separate border-spacing-0 text-sm"><thead><tr><th className="sticky top-0 bg-slate-50 px-3 py-3 text-left text-xs font-black uppercase text-slate-500">Date</th><th className="sticky top-0 bg-slate-50 px-3 py-3 text-left text-xs font-black uppercase text-slate-500">Journal</th><th className="sticky top-0 bg-slate-50 px-3 py-3 text-left text-xs font-black uppercase text-slate-500">Compte</th><th className="sticky top-0 bg-slate-50 px-3 py-3 text-left text-xs font-black uppercase text-slate-500">Libellé</th><th className="sticky top-0 bg-slate-50 px-3 py-3 text-right text-xs font-black uppercase text-cyan-700">Débit</th><th className="sticky top-0 bg-slate-50 px-3 py-3 text-right text-xs font-black uppercase text-amber-700">Crédit</th></tr></thead><tbody>{blocks.map(block => (<><tr key={`${block.date}-title`} className="bg-slate-50"><td colSpan={6} className="border-t border-slate-200 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">{block.date}</td></tr>{block.entries.map((entry, index) => <tr key={`${block.date}-${entry.account}-${index}`} className="hover:bg-cyan-50/30"><td className="border-t border-slate-100 px-3 py-2 font-semibold text-slate-700">{entry.date}</td><td className="border-t border-slate-100 px-3 py-2 font-bold text-slate-700">{entry.journal}</td><td className={`border-t border-slate-100 px-3 py-2 font-black ${entry.debit !== null ? 'text-cyan-800' : 'text-amber-700'}`}>{entry.account}</td><td className="border-t border-slate-100 px-3 py-2 font-semibold text-slate-700">{entry.label}</td><td className="border-t border-slate-100 px-3 py-2 text-right font-black text-cyan-800">{entry.debit === null ? '' : formatMoney(entry.debit)}</td><td className="border-t border-slate-100 px-3 py-2 text-right font-black text-amber-700">{entry.credit === null ? '' : formatMoney(entry.credit)}</td></tr>)}<tr key={`${block.date}-balance`} className={block.balance.isBalanced ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}><td colSpan={6} className="border-t border-slate-200 px-3 py-3 text-sm font-black">CONTRÔLE {block.date} — Total débit : {formatMoney(block.balance.totalDebit)} € | Total crédit : {formatMoney(block.balance.totalCredit)} € | Écart : {formatMoney(block.balance.ecart)} € | {block.balance.isBalanced ? 'Équilibré' : 'À vérifier'}</td></tr></>))}</tbody></table></div></section>}
+        {blocks.length > 0 && <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"><div className="max-h-[70vh] overflow-auto"><table className="min-w-full border-separate border-spacing-0 text-sm"><thead><tr><th className="sticky top-0 bg-slate-50 px-3 py-3 text-left text-xs font-black uppercase text-slate-500">Date</th><th className="sticky top-0 bg-slate-50 px-3 py-3 text-left text-xs font-black uppercase text-slate-500">Journal</th><th className="sticky top-0 bg-slate-50 px-3 py-3 text-left text-xs font-black uppercase text-slate-500">Compte</th><th className="sticky top-0 bg-slate-50 px-3 py-3 text-left text-xs font-black uppercase text-slate-500">Libellé</th><th className="sticky top-0 bg-slate-50 px-3 py-3 text-right text-xs font-black uppercase text-cyan-700">Débit</th><th className="sticky top-0 bg-slate-50 px-3 py-3 text-right text-xs font-black uppercase text-amber-700">Crédit</th></tr></thead><tbody>{blocks.map(block => (<><tr key={`${block.date}-title`} className="bg-slate-50"><td colSpan={6} className="border-t border-slate-200 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">{block.date} — {block.sourceInfo}</td></tr>{block.entries.map((entry, index) => <tr key={`${block.date}-${entry.account}-${index}`} className="hover:bg-cyan-50/30"><td className="border-t border-slate-100 px-3 py-2 font-semibold text-slate-700">{entry.date}</td><td className="border-t border-slate-100 px-3 py-2 font-bold text-slate-700">{entry.journal}</td><td className={`border-t border-slate-100 px-3 py-2 font-black ${entry.debit !== null ? 'text-cyan-800' : 'text-amber-700'}`}>{entry.account}</td><td className="border-t border-slate-100 px-3 py-2 font-semibold text-slate-700">{entry.label}</td><td className="border-t border-slate-100 px-3 py-2 text-right font-black text-cyan-800">{entry.debit === null ? '' : formatMoney(entry.debit)}</td><td className="border-t border-slate-100 px-3 py-2 text-right font-black text-amber-700">{entry.credit === null ? '' : formatMoney(entry.credit)}</td></tr>)}<tr key={`${block.date}-balance`} className={block.balance.isBalanced ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}><td colSpan={6} className="border-t border-slate-200 px-3 py-3 text-sm font-black">CONTRÔLE {block.date} — Total débit : {formatMoney(block.balance.totalDebit)} € | Total crédit : {formatMoney(block.balance.totalCredit)} € | Écart : {formatMoney(block.balance.ecart)} € | {block.balance.isBalanced ? 'Équilibré' : 'À vérifier'}</td></tr></>))}</tbody></table></div></section>}
       </div>
     </div>
   );
