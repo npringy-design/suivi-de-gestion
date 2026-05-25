@@ -38,7 +38,7 @@ export const dashboardCaisseRecapPeriodePatch = (): Plugin => ({
       next = replaceRequired(
         next,
         "  const extractCaisseNumbers = (text: string) => (text.match(/-?\\d[\\d\\s]*,\\d{2}/g) || []).map(parseCaisseNumber);",
-        "  const extractCaisseNumbers = (text: string) => (text.match(/-?\\d[\\d\\s]*,\\d{2}/g) || []).map(parseCaisseNumber);\n  const findCaisseTtcByRate = (source: string, rate: '5,5' | '10' | '20') => {\n    const text = source.replace(/\\u00a0/g, ' ').replace(/€/g, ' ').replace(/\\s+/g, ' ');\n    const startMatch = text.match(/TVA\\s+TOTAL\\s+HT\\s+TVA\\s+TTC/i);\n    if (!startMatch || startMatch.index === undefined) return 0;\n    const block = text.slice(startMatch.index, startMatch.index + 450);\n    const rateRegex = rate === '5,5' ? /TVA\\s*5[,\\.]5\\s*%/i : rate === '10' ? /TVA\\s*10\\s*%/i : /TVA\\s*20\\s*%/i;\n    const rateMatch = block.match(rateRegex);\n    if (!rateMatch || rateMatch.index === undefined) return 0;\n    const rowText = block.slice(rateMatch.index, rateMatch.index + 110);\n    const amounts = extractCaisseNumbers(rowText);\n    const ht = amounts[0] || 0;\n    const coeff = rate === '5,5' ? 1.055 : rate === '10' ? 1.10 : 1.20;\n    return Math.round(ht * coeff * 100) / 100;\n  };",
+        "  const extractCaisseNumbers = (text: string) => (text.match(/-?\\d[\\d\\s]*,\\d{2}/g) || []).map(parseCaisseNumber);\n  const findCaisseTtcByRate = (source: string, rate: '5,5' | '10' | '20') => {\n    const lines = source\n      .replace(/\\u00a0/g, ' ')\n      .replace(/€/g, ' ')\n      .split(/\\r?\\n/)\n      .map(line => line.replace(/\\s+/g, ' ').trim())\n      .filter(Boolean);\n    const headerIndex = lines.findIndex(line => /TVA\\s+TOTAL\\s+HT\\s+TVA\\s+TTC/i.test(line));\n    if (headerIndex < 0) return 0;\n    const rateRegex = rate === '5,5' ? /TVA\\s*5[,\\.]5\\s*%/i : rate === '10' ? /TVA\\s*10\\s*%/i : /TVA\\s*20\\s*%/i;\n    const coeff = rate === '5,5' ? 1.055 : rate === '10' ? 1.10 : 1.20;\n    for (let index = headerIndex + 1; index < Math.min(lines.length, headerIndex + 8); index += 1) {\n      const row = lines[index];\n      if (!rateRegex.test(row)) continue;\n      const amounts = extractCaisseNumbers(row);\n      if (amounts.length >= 3) return amounts[2];\n      if (amounts.length >= 1) return Math.round(amounts[0] * coeff * 100) / 100;\n    }\n    return 0;\n  };",
         'helper ttc tva'
       );
     }
@@ -55,6 +55,20 @@ export const dashboardCaisseRecapPeriodePatch = (): Plugin => ({
       "        clickCollect: findCaisseAmount(text, 'Click and Collect'),\n      },\n    };",
       "        clickCollect: findCaisseAmount(text, 'Click and Collect'),\n      },\n      bilanValues: {\n        ttc_5_5: findCaisseTtcByRate(sourceText, '5,5'),\n        ttc_10: findCaisseTtcByRate(sourceText, '10'),\n        ttc_20: findCaisseTtcByRate(sourceText, '20'),\n      },\n    } as ParsedCaisseImport;",
       'bilan values historique'
+    );
+
+    next = replaceRequired(
+      next,
+      "const text = isPdf ? await extractPdfText(currentFile) : await currentFile.text();",
+      "const text = isPdf ? await extractPdfLayoutText(currentFile, undefined, false) : await currentFile.text();",
+      'lecture layout caisse multiple'
+    );
+
+    next = replaceRequired(
+      next,
+      "? await extractPdfText(file)\n        : await file.text();",
+      "? await extractPdfLayoutText(file, undefined, false)\n        : await file.text();",
+      'lecture layout caisse simple'
     );
 
     next = replaceRequired(
