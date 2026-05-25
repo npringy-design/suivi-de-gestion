@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface SyntheseCAProps {
+  initialMonth: number;
   onBack: () => void;
   onSaisieTheorique: (month: number) => void;
   onCbNepting: (month: number) => void;
@@ -26,13 +27,20 @@ const MONTHS = [
 
 const NAV = '#1e293b';
 
+const validMonth = (month: number) => Number.isFinite(month) && month >= 0 && month <= 11 ? month : new Date().getMonth();
+
 export default function SyntheseCA({ 
+  initialMonth,
   onBack, onSaisieTheorique, onCbNepting, onEspeces, onConecs, 
   onAncvPapiers, onSaisieTR, onVisuTRPapiers, onSunday, onUber, 
   onAmexAncv, onDeliveroo, onClickCollect, onRemiseTR, 
   onBilanSynthese, onDepensesPetiteCaisse 
 }: SyntheseCAProps) {
-  const [selectedMonth, setSelectedMonth] = useState(2); // Default to MARS (index 2)
+  const [selectedMonth, setSelectedMonth] = useState(validMonth(initialMonth));
+
+  useEffect(() => {
+    setSelectedMonth(validMonth(initialMonth));
+  }, [initialMonth]);
 
   const Btn = ({ onClick, children, colorClass }: { onClick: () => void, children: React.ReactNode, colorClass: string }) => {
     return (
@@ -49,7 +57,6 @@ export default function SyntheseCA({
     <div className="h-screen bg-slate-50 font-sans flex flex-col overflow-y-auto" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none}`}</style>
 
-      {/* Header */}
       <header style={{
         background: NAV, height: 64, padding: '0 36px', display: 'flex',
         alignItems: 'center', justifyContent: 'space-between',
@@ -74,13 +81,10 @@ export default function SyntheseCA({
         <div style={{ color: '#fff', fontSize: 18, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
           Synthèse CA Comptable
         </div>
-        <div style={{ width: 140 }} /> {/* Spacer for balance */}
+        <div style={{ width: 140 }} />
       </header>
 
-      {/* Main Content */}
       <div className="max-w-4xl w-full mx-auto flex flex-col gap-5 px-6 py-6">
-        
-        {/* Title Rows */}
         <div className="bg-slate-800 text-white rounded-xl py-4 text-center font-extrabold tracking-[0.2em] text-xl uppercase shadow-md">
           HIP THILL
         </div>
@@ -102,17 +106,12 @@ export default function SyntheseCA({
           </div>
         </div>
 
-        {/* Section 1 */}
         <div className="mt-4">
-          <Btn 
-            onClick={() => onSaisieTheorique(selectedMonth)}
-            colorClass="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 hover:border-orange-300"
-          >
+          <Btn onClick={() => onSaisieTheorique(selectedMonth)} colorClass="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 hover:border-orange-300">
             SAISIE DU THEORIQUE (Feuille de caisse)
           </Btn>
         </div>
 
-        {/* Section 2 */}
         <div className="flex items-center justify-center mt-6 mb-2">
           <div className="h-px bg-slate-200 flex-1"></div>
           <div className="px-4 text-center font-bold text-slate-400 text-xs uppercase tracking-widest">
@@ -121,77 +120,33 @@ export default function SyntheseCA({
           <div className="h-px bg-slate-200 flex-1"></div>
         </div>
 
-        {/* Buttons Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-          {/* Left Column */}
           <div className="flex flex-col gap-4">
-            <Btn onClick={() => onCbNepting(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">
-              CB (NEPTING)
-            </Btn>
-            <Btn onClick={() => onEspeces(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">
-              ESPECES
-            </Btn>
-            <Btn onClick={() => onVisuTRPapiers(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">
-              VISU TICKETS RESTAURANTS PAPIERS
-            </Btn>
-            <Btn onClick={() => onSunday(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">
-              Sunday QR CODE ET CHEQUE
-            </Btn>
-            <Btn onClick={() => onUber(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">
-              UBER
-            </Btn>
-            <div className="mt-2">
-              <Btn onClick={() => onSaisieTR(selectedMonth)} colorClass="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 hover:border-amber-300">
-                SAISIE DES TICKETS RESTAURANTS
-              </Btn>
-            </div>
+            <Btn onClick={() => onCbNepting(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">CB (NEPTING)</Btn>
+            <Btn onClick={() => onEspeces(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">ESPECES</Btn>
+            <Btn onClick={() => onVisuTRPapiers(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">VISU TICKETS RESTAURANTS PAPIERS</Btn>
+            <Btn onClick={() => onSunday(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">Sunday QR CODE ET CHEQUE</Btn>
+            <Btn onClick={() => onUber(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">UBER</Btn>
+            <div className="mt-2"><Btn onClick={() => onSaisieTR(selectedMonth)} colorClass="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 hover:border-amber-300">SAISIE DES TICKETS RESTAURANTS</Btn></div>
           </div>
 
-          {/* Right Column */}
           <div className="flex flex-col gap-4">
-            <Btn onClick={() => onConecs(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">
-              CONECS (CARTE TR)
-            </Btn>
-            <Btn onClick={() => onAncvPapiers(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">
-              ANCV PAPIERS
-            </Btn>
-            <Btn onClick={() => onAmexAncv(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">
-              AMEX + ANCV CARTE
-            </Btn>
-            <Btn onClick={() => onDeliveroo(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">
-              DELIVEROO
-            </Btn>
-            <Btn onClick={() => onClickCollect(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">
-              CLIC AND COLLECT
-            </Btn>
-            <div className="mt-2">
-              <Btn onClick={() => onRemiseTR(selectedMonth)} colorClass="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 hover:border-amber-300">
-                REMISE MENSUELLE TITRES RESTAURANTS
-              </Btn>
-            </div>
+            <Btn onClick={() => onConecs(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">CONECS (CARTE TR)</Btn>
+            <Btn onClick={() => onAncvPapiers(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">ANCV PAPIERS</Btn>
+            <Btn onClick={() => onAmexAncv(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">AMEX + ANCV CARTE</Btn>
+            <Btn onClick={() => onDeliveroo(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">DELIVEROO</Btn>
+            <Btn onClick={() => onClickCollect(selectedMonth)} colorClass="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300">CLIC AND COLLECT</Btn>
+            <div className="mt-2"><Btn onClick={() => onRemiseTR(selectedMonth)} colorClass="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 hover:border-amber-300">REMISE MENSUELLE TITRES RESTAURANTS</Btn></div>
           </div>
         </div>
 
-        {/* Section 3 */}
         <div className="mt-8">
-          <Btn 
-            onClick={() => onBilanSynthese(selectedMonth)}
-            colorClass="bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 py-4"
-          >
-            BILAN SYNTHESE
-          </Btn>
+          <Btn onClick={() => onBilanSynthese(selectedMonth)} colorClass="bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 py-4">BILAN SYNTHESE</Btn>
         </div>
 
-        {/* Section 4 */}
         <div className="mt-2">
-          <Btn 
-            onClick={() => onDepensesPetiteCaisse(selectedMonth)}
-            colorClass="bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200 hover:border-slate-300 py-4"
-          >
-            DEPENSES PETITES CAISSE
-          </Btn>
+          <Btn onClick={() => onDepensesPetiteCaisse(selectedMonth)} colorClass="bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200 hover:border-slate-300 py-4">DEPENSES PETITES CAISSE</Btn>
         </div>
-
       </div>
     </div>
   );
