@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig, loadEnv} from 'vite';
 
+import { accountingSettingsRoutePatch } from './scripts/accountingSettingsRoutePatch';
 import { dashboardAnalysisModePatch } from './scripts/dashboardAnalysisModePatch';
 import { dashboardCaisseRecapPeriodePatch } from './scripts/dashboardCaisseRecapPeriodePatch';
 import { dashboardHeaderVisualPatch } from './scripts/dashboardHeaderVisualPatch';
@@ -16,7 +17,7 @@ import { homePayrollBubblePatch } from './scripts/homePayrollBubblePatch';
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
-    plugins: [dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), homePayrollBubblePatch(), react(), tailwindcss()],
+    plugins: [dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), homePayrollBubblePatch(), accountingSettingsRoutePatch(), react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
