@@ -2,19 +2,20 @@
 
 ## Objectif
 
-Centraliser les donnees de l'application pour permettre l'utilisation depuis plusieurs postes.
+Centraliser les donnees de l'application dans Supabase pour pouvoir les retrouver depuis n'importe quel PC.
 
-## Premiere version
+Le but n'est pas de faire une synchronisation active multi-PC en temps reel. Supabase sert de sauvegarde centrale et de source de chargement au demarrage de l'application.
 
-La premiere version reste volontairement prudente :
+## Comportement retenu
 
-- lecture Supabase au demarrage si la configuration est presente ;
-- sauvegarde automatique vers Supabase apres modification ;
-- actualisation des autres postes toutes les 10 secondes ;
-- conservation du localStorage comme secours si Supabase est absent ou indisponible ;
-- pas de dependance npm Supabase ajoutee : l'application utilise l'API REST Supabase directement.
+- Au demarrage, l'application lit Supabase si la configuration est presente.
+- Si des donnees existent dans Supabase, elles sont chargees dans l'application.
+- Apres modification, l'application sauvegarde automatiquement dans Supabase avec un court delai.
+- Le localStorage reste conserve comme secours si Supabase est absent ou indisponible.
+- Il n'y a pas d'actualisation automatique toutes les 10 secondes.
+- Il n'y a pas de realtime permanent pour cette premiere version.
 
-Ce n'est pas encore un realtime instantane par canal permanent. Ce choix limite les risques pendant les premiers tests.
+Ce fonctionnement est plus proche de la logique attendue : ouvrir l'application depuis un autre PC et retrouver les donnees sauvegardees.
 
 ## Donnees sauvegardees
 
@@ -43,12 +44,12 @@ Sans `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, l'application continue de 
 ## Fichiers concernes
 
 - `src/services/supabaseAppState.ts` : lecture/ecriture REST Supabase ;
-- `scripts/dataContextCloudSyncPatch.ts` : branche la synchronisation dans `DataContext` au build ;
+- `scripts/dataContextCloudSyncPatch.ts` : branche la sauvegarde Supabase dans `DataContext` au build ;
 - `vite.config.ts` : activation du patch ;
 - `supabase/APP_STATE_SETUP.sql` : table et regles Supabase.
 
 ## Limites connues
 
-- Le dernier poste qui sauvegarde gagne en cas de modification simultanee sur la meme zone.
-- La mise a jour entre postes peut prendre jusqu'a 10 secondes.
+- Si deux personnes modifient exactement en meme temps depuis deux PC differents, la derniere sauvegarde peut remplacer la precedente.
+- Un autre PC deja ouvert ne se met pas automatiquement a jour en direct ; il retrouvera les donnees au rechargement de l'application.
 - La version multi-site fine devra passer par une structure plus stricte avec `site_id` ou des cles par site bien controlees.
