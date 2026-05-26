@@ -1,240 +1,119 @@
 # Point d'avancement global
 
-Ce document sert de porte d'entree pour reprendre le projet sans perdre le fil. Chaque partie validee doit avoir une trace courte ici et une documentation detaillee dans `docs/`.
+Ce fichier est le point de reprise rapide du projet. Lire ensuite la documentation metier concernee dans `docs/`.
 
-## Regle de travail
+## Regles de travail
 
-- Quand une fonctionnalite est validee, ajouter ou mettre a jour sa documentation dans `docs/`.
-- Garder une trace de la mecanique employee : objectif, donnees lues, donnees modifiees, limites et ligne de conduite.
-- Toujours noter clairement ce qui est valide, ce qui reste provisoire et ce qui est encore en cours.
-- Pour chaque nouvelle partie fonctionnelle, creer un document associe dans `docs/`.
-- Si un document existe deja pour la partie modifiee, le mettre a jour dans le meme changement de code.
-- Ne pas modifier une partie deja validee sans demande explicite.
-- Quand une modification est terminee et verifiee, pousser directement les changements effectues sans redemander une validation supplementaire, sauf si l'utilisateur demande explicitement de ne pas pousser.
-- Avant livraison d'un changement code, verifier au minimum `npm.cmd run lint:ts` et `npm.cmd run build`.
+- Preserver l'existant.
+- Faire des modifications ciblees.
+- Ne pas modifier une partie validee sans demande explicite.
+- Documenter les changements importants dans `docs/`.
+- Pousser directement les corrections terminees sauf demande contraire.
+- Verifier le build Vercel apres une modification code.
 
-## Accueil - titre et selection de periode
+## Sauvegarde Supabase
 
-Statut : en cours de verification build.
+Statut : valide.
 
-Ce qui est en place :
+Document detaille : `docs/SUPABASE_SYNC.md`.
 
-- titre de la banderole remplace par `Hippopotamus` ;
-- localisation remplacee par `Thillois` ;
-- suppression des deux listes deroulantes mois / annee de l'accueil ;
-- la tuile date du jour ouvre maintenant une fenetre de selection ;
-- choix possibles : jour precis, periode personnalisee, mois entier, annee entiere ;
-- quand une periode est appliquee, le mois et l'annee actifs sont recalcules depuis la date de debut pour garder les liens existants vers les pages mensuelles ;
-- meteo libellee Thillois et coordonnees meteo adaptees.
+Ce qui est valide :
 
-Ou regarder :
+- Supabase est la sauvegarde centrale de l'application ;
+- la table utilisee est `suivi_gestion_app_state` ;
+- la table est separee de Gestion Commandes Doquet ;
+- les donnees sont chargees depuis Supabase au demarrage ;
+- les modifications sont sauvegardees automatiquement dans Supabase ;
+- le localStorage reste seulement un cache technique local ;
+- une alerte visible apparait si Supabase n'est pas configure ou si une sauvegarde echoue ;
+- il n'y a pas de realtime permanent ;
+- il n'y a pas d'actualisation automatique toutes les 10 secondes.
 
-- documentation : `docs/ACCUEIL.md`
-- page source : `src/Home.tsx`
-- patch temporaire : `scripts/homeHeaderPeriodPatch.ts`
-- activation du patch : `vite.config.ts`
+Tests utilisateur valides :
 
-Point important :
+- navigateur principal vers Supabase : OK ;
+- navigation privee depuis Supabase : OK ;
+- saisie depuis navigation privee vers Supabase : OK ;
+- retour navigateur principal avec donnees retrouvees : OK ;
+- refresh d'une sous-page : OK.
 
-- les KPI actuels restent bases sur le mois actif. La selection de periode est d'abord une selection de navigation/affichage ; un vrai calcul multi-jours, multi-mois ou annuel des KPI devra etre traite comme une evolution dediee.
+Fichiers importants :
 
-## Synthese CA - mois selectionne
+- `src/services/supabaseAppState.ts`
+- `scripts/dataContextCloudSyncPatch.ts`
+- `src/router.tsx`
+- `supabase/APP_STATE_SETUP.sql`
 
-Statut : en cours de verification build.
+Note routeur : le routeur est passe en mode hash pour eviter les erreurs 404 Vercel au refresh. Les URL peuvent donc avoir la forme `/#/especes/4`.
 
-Ce qui est en place :
+## Accueil
 
-- `/synthese` utilise le mois courant au lieu d'un mois fixe ;
-- l'ancien fallback fixe sur mars est supprime ;
-- quand un mois est choisi dans la liste deroulante, l'URL devient `/synthese/:month` ;
-- le retour depuis les sous-pages de Synthese CA conserve le mois selectionne ;
-- quitter totalement la zone Synthese CA puis revenir par `/synthese` remet le mois courant.
+Statut : en cours de verification visuelle.
 
-Ou regarder :
+Document detaille : `docs/ACCUEIL.md`.
 
-- documentation : `docs/SYNTHESE_CA.md`
-- routeur : `src/router.tsx`
-- page : `src/SyntheseCA.tsx`
+Ce qui est en place : titre `Hippopotamus`, localisation `Thillois`, selection de periode via la tuile date, suppression des listes mois / annee dans l'entete, meteo libellee Thillois.
 
-Point important :
+Point important : les KPI restent bases sur le mois actif. Un vrai calcul multi-periode devra etre traite comme une evolution separee.
 
-- le maintien temporaire du mois passe par l'URL et non par le localStorage, afin de ne pas garder un ancien mois de maniere permanente.
+## Synthese CA
+
+Statut : en cours de verification visuelle.
+
+Document detaille : `docs/SYNTHESE_CA.md`.
+
+Ce qui est en place : `/synthese` prend le mois courant, plus de fallback fixe sur mars, le mois choisi est maintenu tant que l'utilisateur reste dans la zone Synthese CA, le maintien passe par la route et non par le localStorage.
 
 ## Suivi quotidien - import caisse
 
 Statut : valide.
 
-Ce qui est en place :
+Document detaille : `docs/IMPORT_CAISSE.md`.
 
-- import d'une feuille de caisse PDF depuis la saisie journaliere ;
-- lecture du PDF et transcription des montants utiles au bon endroit ;
-- pas de sauvegarde du fichier importe ;
-- principe retenu d'un snapshot d'audit leger plutot qu'une conservation du PDF ;
-- separation entre les valeurs automatiques issues de l'import et les champs reels saisis manuellement.
-
-Ou regarder :
-
-- documentation : `docs/IMPORT_CAISSE.md`
-- logique principale : `src/Dashboard.tsx`
-- donnees metier : `src/contexts/DataContext.tsx`
-
-Point important :
-
-- l'import caisse peut remplacer les valeurs automatiques d'une journee, mais ne doit pas toucher aux commentaires, corrections ou saisies reelles manuelles.
+Rappel : l'import caisse lit le PDF, alimente les valeurs automatiques utiles et ne doit pas toucher aux commentaires, corrections ou saisies reelles manuelles.
 
 ## Suivi quotidien - import factures fournisseurs
 
 Statut : valide dans son principe actuel, avec IA desactivee.
 
-Ce qui est en place :
+Document detaille : `docs/IMPORT_FACTURES.md`.
 
-- import possible de plusieurs factures en une fois ;
-- lecture locale du PDF, sans sauvegarde du fichier ;
-- extraction visee de trois informations : fournisseur, date facture, montant HT ;
-- affichage en lignes dans une vue large, plus lisible qu'un petit cadrage vertical ;
-- validation facture par facture ;
-- statut vert seulement si la lecture est jugee complete et fiable ;
-- statut orange si un humain doit verifier ou completer ;
-- correction manuelle possible avant validation : fournisseur, date, montant HT et colonne cible ;
-- ecriture du montant sur la date de facture, meme si cette date est dans un autre mois ;
-- ajout du montant dans la colonne fournisseur cible, sans ecraser silencieusement une saisie existante ;
-- lecture IA Gemini desactivee, car les tests reels n'etaient pas assez fiables et pouvaient generer un cout inutile.
-
-Ou regarder :
-
-- documentation : `docs/IMPORT_FACTURES.md`
-- logique principale : `src/Dashboard.tsx`
-- endpoint IA volontairement desactive : `api/invoice-vision.js`
-
-Point important :
-
-- ne pas ajouter des exceptions fournisseur par fournisseur. La logique doit rester generique et s'appuyer sur les fournisseurs configures dans les colonnes achats.
+Rappel : logique generique fournisseur/date/montant HT, correction manuelle possible, pas d'exceptions fournisseur par fournisseur.
 
 ## Suivi quotidien - recap mail du jour
 
-Statut : valide. Ne pas toucher pour le moment.
+Statut : valide. Ne pas toucher sans demande explicite.
 
-Ce qui est en place :
+Document detaille : `docs/RECAP_MAIL_JOUR.md`.
 
-- bouton `Recap mail` dans la saisie journaliere ;
-- ouverture d'une page de verification avant mail ;
-- saisie manuelle du responsable midi, responsable soir, commentaire midi, commentaire soir et notes Google ;
-- sections separees : Midi, Soir, Journee ;
-- chiffres realises separes des ecarts vs budget ;
-- comparaison budget avec montants et pourcentages pour CA, couverts et ticket moyen ;
-- affichage vert pour les ecarts positifs, rouge pour les ecarts negatifs ;
-- masquage des elements a zero, comme VAE ou limonade si non concernes ;
-- generation d'une image PNG propre pour conserver la mise en forme dans Outlook ;
-- Outlook s'ouvre avec le sujet pre-rempli, le corps reste vide pour coller directement l'image.
-
-Ou regarder :
-
-- documentation : `docs/RECAP_MAIL_JOUR.md`
-- logique principale : `src/Dashboard.tsx`
-
-Point important :
-
-- le rendu actuel cote application et cote mail a ete valide. Ne pas modifier la mise en forme du recap mail sans nouvelle demande.
+Rappel : le rendu application et le rendu image pour Outlook sont valides.
 
 ## Suivi quotidien - RAZ locale provisoire
 
 Statut : provisoire, utile pour les tests.
 
-Ce qui est en place :
+Document detaille : `docs/RAZ_LOCALE_PROVISOIRE.md`.
 
-- bouton RAZ visible sur la page suivi quotidien ;
-- confirmation navigateur avant suppression ;
-- suppression des donnees locales de test pour repartir proprement ;
-- nettoyage des anciens formats locaux et des noms fournisseurs modifies localement.
-
-Ou regarder :
-
-- documentation : `docs/RAZ_LOCALE_PROVISOIRE.md`
-- logique principale : `src/Dashboard.tsx`
-
-Point important :
-
-- ce bouton est temporaire. Il devra etre retire ou transforme en action admin encadree avant usage normal.
+Rappel : ce bouton devra etre retire ou transforme en action admin encadree avant usage normal.
 
 ## Personnel - heures, salaires et cout horaire
 
-Statut : en cours, mecanique fortement avancee mais encore a tester en usage reel.
+Statut : en cours, mecanique avancee mais encore a tester en usage reel.
 
-Ce qui est en place :
+Document detaille : `docs/HEURES_PERSONNEL.md`.
 
-- conversion commune des heures saisies ;
-- formats acceptes : `7`, `7h30`, `7:30`, `7.30`, `7,30`, `7 30` ;
-- en saisie quotidienne, l'affichage doit rester lisible en format horaire : `7h30` ;
-- en vue complete et dans les calculs, les heures sont converties au centieme : `7h30` devient `7,50` ;
-- les calculs doivent additionner les valeurs personnel arrondies au centieme ligne par ligne, pour que les totaux correspondent aux valeurs affichees ;
-- exemple attendu : si les lignes visibles donnent `6,45 + 8,52 + 4,75 + 7,25 + 7,75 + 17,57 + 16,67`, le total doit etre `68,96`, pas `68,95` ;
-- la page `Info personnel` sert de referentiel de matching : nom, statut, section salle/cuisine et alias ;
-- l'import PDF salaires est disponible dans la fenetre `Importer` du suivi quotidien ;
-- l'import lit le PDF localement, matche les noms avec `Info personnel`, recupere `Total heures` et `Cout global`, puis calcule le taux horaire ;
-- formule taux horaire : `cout global * 1,10 / heures` ;
-- pour les salaries avec `(forfait jour)`, les heures sont forcees a `151,67`, mais le cout global est recupere normalement ;
-- le mois est lu dans le PDF salaires : PDF `Avril 2026` alimente le mois suivant, donc `Mai 2026` ;
-- exemple : PDF `Aout 2026` alimente `Septembre 2026` ;
-- le PDF et le texte brut ne sont pas conserves ;
-- seul un snapshot utile est garde : categorie, section, heures, cout global, taux moyen par statut/section ;
-- les noms des salaries ne doivent pas apparaitre dans les en-tetes de la vue complete ;
-- les taux importes alimentent les colonnes frais de personnel projection et realise dans la vue complete.
-
-Ou regarder :
-
-- documentation : `docs/HEURES_PERSONNEL.md`
-- fonction commune : `src/utils.ts`, fonction `parseHourInputToDecimal`
-- import PDF salaires : `src/personnelSalaryImport.ts`
-- configuration salaires : `src/ConfigSalaires.tsx`
-- info personnel : `src/CalculetteSalaires.tsx`
-- suivi quotidien : `src/Dashboard.tsx`
-- patch temporaire Dashboard : `scripts/dashboardPayrollColumnPatch.ts`
-- activation du patch : `vite.config.ts`
-- tests : `src/test/utils.test.ts`, `src/test/personnelSalaryImport.test.ts`
-
-Points importants :
-
-- ne pas convertir les heures pendant la frappe, car cela rend la saisie non fluide ;
-- garder une saisie libre, puis afficher proprement en `7h30` cote saisie ;
-- convertir en centieme uniquement pour la vue complete et les calculs ;
-- la logique actuelle passe par un patch Vite sur `Dashboard.tsx`, car le fichier est tres gros et une modification massive directe serait risquee ;
-- a terme, il faudra probablement remplacer ce patch par une modification propre et directe du composant Dashboard, quand cette zone sera stabilisee.
+Rappels importants : ne pas convertir les heures pendant la frappe, saisie lisible en format horaire, calculs en centiemes pour la vue complete, import PDF salaires disponible, logique encore portee par un patch Vite sur `Dashboard.tsx`.
 
 ## Dernieres verifications connues
 
-Verifications connues avant les dernieres corrections salaires :
+- build Vercel apres sauvegarde Supabase : success ;
+- sauvegarde Supabase : OK ;
+- rechargement depuis navigation privee : OK ;
+- saisie dans les deux sens : OK ;
+- refresh sous-page avec routeur hash : OK.
 
-- `npm.cmd run test -- --run src/test/utils.test.ts` : OK
-- `npm.cmd run lint` : OK, avec warnings existants du projet
-- `npm.cmd run lint:ts` : OK
-- `npm.cmd run build` : OK
-
-A recontroler apres les dernieres corrections personnel :
-
-- build Vercel ;
-- ouverture de `Suivi quotidien` ;
-- saisie personnel avec `7`, `7h30`, `7.30`, `7,30`, `7:30`, `7 30` ;
-- affichage en saisie sous forme `7h30` ;
-- affichage en complet sous forme `7,50` ;
-- totaux semaine/mois correspondant a la somme des valeurs affichees au centieme.
-
-A recontroler apres la modification accueil :
-
-- build Vercel ;
-- ouverture de l'accueil ;
-- titre `Hippopotamus` et localisation `Thillois` ;
-- absence des deux listes deroulantes mois / annee ;
-- ouverture de la selection au clic sur la tuile date ;
-- application correcte d'un jour, d'une periode, d'un mois entier et d'une annee entiere.
-
-A recontroler apres la modification Synthese CA :
-
-- build Vercel ;
-- ouverture de `/synthese` : mois courant ;
-- changement de mois dans la liste : URL `/synthese/:month` ;
-- ouverture d'une sous-page puis retour : mois conserve ;
-- retour accueil puis retour Synthese CA : mois courant.
+Verifications historiques : `npm.cmd run test -- --run src/test/utils.test.ts` OK ; `npm.cmd run lint` OK avec warnings existants ; `npm.cmd run lint:ts` OK ; `npm.cmd run build` OK.
 
 ## Phrase de reprise pour un nouveau clavardage
 
-Lire d'abord `docs/POINT_AVANCEMENT.md`, puis la doc metier concernee dans `docs/`. Le recap mail est valide et ne doit pas etre modifie. Pour l'accueil, lire `docs/ACCUEIL.md` : la zone active recente est le titre Hippopotamus Thillois et la selection de periode via la tuile date, avec patch temporaire dans `scripts/homeHeaderPeriodPatch.ts`. Pour Synthese CA, lire `docs/SYNTHESE_CA.md` : le mois par defaut est le mois courant et le mois choisi est maintenu via `/synthese/:month` tant que l'utilisateur reste dans la zone. Pour le personnel, lire `docs/HEURES_PERSONNEL.md` : la zone active historique est `Personnel - heures, salaires et cout horaire`, avec un patch temporaire dans `scripts/dashboardPayrollColumnPatch.ts` qui modifie `Dashboard.tsx` au build. Avant toute nouvelle correction, verifier que le build Vercel passe.
+Lire d'abord `docs/POINT_AVANCEMENT.md`, puis la doc metier concernee dans `docs/`. La sauvegarde Supabase est validee : lire `docs/SUPABASE_SYNC.md`, table `suivi_gestion_app_state`, chargement/sauvegarde OK dans les deux sens, routeur hash pour eviter les 404 au refresh. Le recap mail est valide et ne doit pas etre modifie. Pour l'accueil, lire `docs/ACCUEIL.md`. Pour Synthese CA, lire `docs/SYNTHESE_CA.md`. Pour le personnel, lire `docs/HEURES_PERSONNEL.md`. Avant toute nouvelle correction, verifier que le build Vercel passe.
