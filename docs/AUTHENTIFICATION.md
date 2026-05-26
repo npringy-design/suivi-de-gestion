@@ -2,119 +2,127 @@
 
 ## Statut
 
-Statut : en cours de mise en place.
+Statut : en cours de mise en place, auth globale volontairement non bloquante pour l'instant.
 
-## Objectif
+L'application reste accessible sans connexion tant que la page de gestion utilisateurs n'est pas validée en conditions réelles. La page de gestion utilisateurs, elle, demande une connexion admin Suivi.
 
-Bloquer l'acces a l'application avant chargement des donnees metier.
+## Objectif final
 
-L'utilisateur doit se connecter avec un compte Supabase Auth avant que `DataProvider` ne charge la sauvegarde centrale.
+Mettre en place le même confort que Gestion Commandes :
 
-## Point critique : Supabase partage avec Gestion Commandes
+- une page dédiée pour créer les utilisateurs ;
+- choix email / nom / rôle ;
+- création par email d'invitation si possible ;
+- fallback avec mot de passe temporaire à communiquer à la voix ;
+- activation / désactivation des accès ;
+- séparation stricte entre Gestion Commandes et Suivi de gestion.
 
-Le projet Supabase est partage avec Gestion Commandes Doquet.
+## Point critique : Supabase partagé avec Gestion Commandes
 
-Regles obligatoires :
+Le projet Supabase est partagé avec Gestion Commandes Doquet.
+
+Règles obligatoires :
 
 - ne pas modifier les tables de Gestion Commandes Doquet ;
 - ne pas modifier les policies RLS de Gestion Commandes Doquet ;
 - ne pas supprimer ou recréer les utilisateurs Supabase Auth existants ;
-- ne pas changer la configuration Auth globale sans verifier l'impact sur Gestion Commandes ;
-- ne pas supposer qu'un utilisateur connecte a Gestion Commandes a acces a Suivi de gestion ;
-- separer la protection des donnees par application via une table d'acces dediee.
+- ne pas changer la configuration Auth globale sans vérifier l'impact sur Gestion Commandes ;
+- ne pas supposer qu'un utilisateur connecté à Gestion Commandes a accès à Suivi de gestion ;
+- séparer la protection des données par application via une table d'accès dédiée.
 
-Important : Supabase Auth est commun au projet Supabase. Les comptes peuvent etre differents ou communs selon le besoin, mais l'acces a Suivi de gestion depend uniquement de la table `suivi_gestion_user_access`.
+Supabase Auth est commun au projet Supabase. Les comptes peuvent être différents ou communs selon le besoin, mais l'accès à Suivi de gestion dépend uniquement de la table `suivi_gestion_user_access`.
 
-Pour Suivi de gestion, les modifications RLS visent uniquement :
+## Ce qui est en place
 
-- `public.suivi_gestion_app_state` ;
-- `public.suivi_gestion_user_access`.
+- Page front : `src/UserManagementPage.tsx`.
+- Route : `/#/utilisateurs`.
+- API serveur : `api/suiviAccount.ts`.
+- Table d'accès dédiée : `public.suivi_gestion_user_access`.
+- SQL de mise en place dédié : `supabase/AUTH_USERS_SETUP.sql`.
 
-Elles ne doivent pas toucher :
+La page utilisateurs permet :
 
-- `public.app_state` ;
-- les tables Gestion Commandes ;
-- les tables de profils ou acces sites deja utilisees par Gestion Commandes.
+- de se connecter en admin Suivi ;
+- de lister les utilisateurs Suivi ;
+- de créer un utilisateur ;
+- de choisir le rôle `admin` ou `user` ;
+- d'envoyer une invitation email si possible ;
+- d'utiliser un mot de passe temporaire si l'email ne part pas ;
+- de désactiver ou réactiver un accès.
 
-## Regle d'acces retenue
+## Ce qui n'est pas encore activé
 
-`authenticated` seul est insuffisant, car un utilisateur connecte a Gestion Commandes serait aussi authentifie dans le meme projet Supabase.
+L'authentification obligatoire devant toute l'application n'est pas encore réactivée.
 
-La regle retenue est donc :
+Raison : il faut d'abord valider que :
 
-1. l'utilisateur doit reussir la connexion Supabase Auth ;
-2. son `user_id` doit etre present dans `public.suivi_gestion_user_access` ;
-3. la ligne doit avoir `is_active = true`.
+- ton compte admin fonctionne ;
+- la page `/utilisateurs` fonctionne ;
+- la création d'utilisateur fonctionne ;
+- Gestion Commandes n'est pas impacté ;
+- la sauvegarde Supabase Suivi reste OK.
 
-Sans ligne active dans `suivi_gestion_user_access`, l'acces a Suivi de gestion est refuse, meme si le compte existe pour Gestion Commandes.
+## Configuration Vercel requise
 
-## Comportement retenu
+La page de création utilisateur utilise une route serveur. Il faut donc ajouter dans Vercel :
 
-- `AuthGate` entoure l'application avant `DataProvider`.
-- Si aucune session valide n'existe, seule la page de connexion est visible.
-- Apres connexion, l'application verifie l'autorisation Suivi de gestion dans `suivi_gestion_user_access`.
-- Apres autorisation, l'application se charge normalement.
-- Un bouton de deconnexion discret est affiche dans l'application.
-- La session est stockee dans le localStorage uniquement pour maintenir la connexion navigateur.
-- Les lectures et sauvegardes Supabase utilisent le token utilisateur connecte.
+- `SUPABASE_SERVICE_ROLE_KEY`
 
-## Fichiers concernes
-
-- `src/AuthGate.tsx` : ecran de connexion et protection avant l'application.
-- `src/services/supabaseAuth.ts` : appels Supabase Auth REST, stockage session, refresh token, deconnexion et controle `suivi_gestion_user_access`.
-- `src/services/supabaseAppState.ts` : lecture/ecriture app_state avec token authentifie.
-- `src/App.tsx` : `AuthGate` place avant `DataProvider`.
-- `supabase/APP_STATE_SETUP.sql` : table `suivi_gestion_user_access` et policies limitees aux utilisateurs autorises.
-
-## Configuration Supabase
-
-Dans Supabase Authentication > Users :
-
-- creer les utilisateurs propres a Suivi de gestion si besoin ;
-- ou utiliser un compte deja existant seulement si cette personne doit vraiment acceder aux deux applications ;
-- definir leur email et mot de passe ;
-- confirmer l'email si necessaire.
-
-Puis autoriser explicitement l'utilisateur sur Suivi de gestion :
-
-```sql
-insert into public.suivi_gestion_user_access (user_id, email, role, is_active)
-values ('UUID_UTILISATEUR', 'email@exemple.fr', 'admin', true)
-on conflict (user_id) do update
-set email = excluded.email,
-    role = excluded.role,
-    is_active = true;
-```
-
-Pour retirer l'acces a Suivi de gestion sans supprimer le compte Supabase :
-
-```sql
-update public.suivi_gestion_user_access
-set is_active = false
-where user_id = 'UUID_UTILISATEUR';
-```
-
-Dans Supabase SQL Editor, executer `supabase/APP_STATE_SETUP.sql` pour creer la table d'acces et appliquer les policies.
-
-Important : ne pas redonner de policy `anon` sur `suivi_gestion_app_state` ou `suivi_gestion_user_access`, sinon l'ecran de connexion deviendrait seulement visuel.
-
-## Configuration Vercel
-
-Les variables existantes restent requises :
+Les variables déjà présentes restent nécessaires :
 
 - `VITE_SUPABASE_URL` ;
 - `VITE_SUPABASE_ANON_KEY`.
 
-La cle anon/publishable reste publique cote front, mais les donnees sont protegees par Supabase Auth + RLS + `suivi_gestion_user_access`.
+Important : `SUPABASE_SERVICE_ROLE_KEY` doit rester uniquement côté serveur Vercel. Ne jamais l'utiliser dans le front.
 
-## Tests a faire
+## Première mise en route admin
 
-- Ouvrir Suivi de gestion en navigation privee : l'ecran de connexion doit apparaitre.
-- Tenter un mauvais mot de passe : erreur visible.
-- Se connecter avec un compte Supabase valide mais non present dans `suivi_gestion_user_access` : acces refuse.
-- Ajouter ce compte dans `suivi_gestion_user_access` avec `is_active = true` : acces a l'accueil.
-- Verifier que les donnees Supabase se chargent apres connexion.
-- Modifier une valeur puis verifier que `updated_at` change dans `suivi_gestion_app_state`.
-- Cliquer sur Deconnexion : retour a l'ecran de connexion.
-- Verifier qu'un utilisateur non connecte ne peut plus lire/ecrire `suivi_gestion_app_state`.
-- Controler que Gestion Commandes Doquet fonctionne toujours avec son authentification existante.
+Il y a une seule action manuelle à faire au départ pour te donner les droits admin Suivi.
+
+1. Dans Supabase, aller dans **Authentication > Users**.
+2. Créer ou retrouver ton utilisateur.
+3. Copier son `User UID`.
+4. Dans Supabase SQL Editor, exécuter `supabase/AUTH_USERS_SETUP.sql`.
+5. Puis exécuter cette requête en remplaçant l'UUID et l'email :
+
+```sql
+insert into public.suivi_gestion_user_access (user_id, email, full_name, role, is_active)
+values ('UUID_UTILISATEUR', 'ton-email@exemple.fr', 'Nicolas', 'admin', true)
+on conflict (user_id) do update
+set email = excluded.email,
+    full_name = excluded.full_name,
+    role = 'admin',
+    is_active = true;
+```
+
+Après ça, tu vas sur :
+
+`/#/utilisateurs`
+
+Tu te connectes avec ton compte admin, puis tu peux créer les autres personnes depuis l'interface.
+
+## Chemin utilisateur ensuite
+
+Depuis la page utilisateurs :
+
+1. Email de la personne.
+2. Nom optionnel.
+3. Rôle : `Utilisateur` ou `Administrateur`.
+4. Option email d'invitation cochée si tu veux que Supabase lui envoie un mail.
+5. Mot de passe temporaire renseigné si tu veux pouvoir lui donner les identifiants à la voix.
+6. Bouton **Créer l'utilisateur**.
+
+## Tests à faire
+
+- Aller sur `/#/utilisateurs`.
+- Se connecter avec ton compte admin Suivi.
+- Vérifier que la liste utilisateurs charge.
+- Créer un utilisateur test avec mot de passe temporaire.
+- Vérifier qu'il apparaît dans la liste.
+- Désactiver puis réactiver cet utilisateur.
+- Vérifier dans Supabase Authentication que le compte existe.
+- Vérifier que Gestion Commandes fonctionne toujours normalement.
+
+## Étape suivante après validation
+
+Quand la page utilisateurs est validée, on remettra l'auth obligatoire devant toute l'application avec `AuthGate` autour de `DataProvider`, puis on verrouillera `suivi_gestion_app_state` pour les utilisateurs actifs Suivi uniquement.
