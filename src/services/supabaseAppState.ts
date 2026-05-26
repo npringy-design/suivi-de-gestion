@@ -13,7 +13,8 @@ export type CloudAppStateRecord = {
 const rawSupabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
 const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '');
 const siteId = String(import.meta.env.VITE_SITE_ID || 'hippo_thillois');
-const appStateKey = String(import.meta.env.VITE_APP_STATE_KEY || `gestion:${siteId}:global_state_v1`);
+const appStateTable = String(import.meta.env.VITE_APP_STATE_TABLE || 'suivi_gestion_app_state');
+const appStateKey = String(import.meta.env.VITE_APP_STATE_KEY || `suivi-gestion:${siteId}:global_state_v1`);
 
 export const isCloudSyncConfigured = Boolean(rawSupabaseUrl && supabaseAnonKey);
 
@@ -23,11 +24,11 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-const appStateUrl = () => `${rawSupabaseUrl}/rest/v1/app_state`;
+const appStateUrl = () => `${rawSupabaseUrl}/rest/v1/${appStateTable}`;
 
 const assertConfigured = () => {
   if (!isCloudSyncConfigured) {
-    throw new Error('Synchronisation Supabase non configuree : VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY manquant.');
+    throw new Error('Sauvegarde Supabase non configuree : VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY manquant.');
   }
 };
 
