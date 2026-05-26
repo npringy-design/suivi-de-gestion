@@ -32,6 +32,11 @@ const refsInsertionReplacement = `  const [personnelInfos, setPersonnelInfos] = 
   const cloudApplyingRef = useRef(false);
   const cloudSaveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
+  const cloudErrorMessage = useCallback((prefix: string, error: unknown) => {
+    const detail = error instanceof Error ? error.message : String(error || 'erreur inconnue');
+    return prefix + ' : ' + detail.slice(0, 220);
+  }, []);
+
   const showCloudWarning = useCallback((message: string) => {
     if (typeof document === 'undefined') return;
     const id = 'suivi-gestion-cloud-warning';
@@ -55,6 +60,7 @@ const refsInsertionReplacement = `  const [personnelInfos, setPersonnelInfos] = 
       banner.style.fontSize = '13px';
       banner.style.fontWeight = '700';
       banner.style.textAlign = 'center';
+      banner.style.whiteSpace = 'normal';
       document.body.appendChild(banner);
     }
     banner.textContent = message;
@@ -121,7 +127,7 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
         hideCloudWarning();
       } catch (error) {
         console.warn('Sauvegarde Supabase indisponible au chargement :', error);
-        showCloudWarning('Sauvegarde Supabase indisponible : les donnees visibles peuvent venir de ce PC uniquement.');
+        showCloudWarning(cloudErrorMessage('Sauvegarde Supabase indisponible au chargement', error));
       } finally {
         if (!cancelled) cloudLoadedRef.current = true;
       }
@@ -132,7 +138,7 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [applyCloudState, hideCloudWarning, showCloudWarning]);
+  }, [applyCloudState, cloudErrorMessage, hideCloudWarning, showCloudWarning]);
 
   useEffect(() => {
     if (!isCloudSyncConfigured || !cloudLoadedRef.current) return;
@@ -152,7 +158,7 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
         hideCloudWarning();
       } catch (error) {
         console.warn('Sauvegarde Supabase indisponible :', error);
-        showCloudWarning('Sauvegarde Supabase echouee : cette modification n est peut-etre pas sauvegardee dans le cloud.');
+        showCloudWarning(cloudErrorMessage('Sauvegarde Supabase echouee', error));
       }
     }, 900);
 
@@ -161,7 +167,7 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
         window.clearTimeout(cloudSaveTimerRef.current);
       }
     };
-  }, [allData, config2025, customEvents, personnelInfos, hideCloudWarning, showCloudWarning]);`;
+  }, [allData, config2025, customEvents, personnelInfos, cloudErrorMessage, hideCloudWarning, showCloudWarning]);`;
 
 export const dataContextCloudSyncPatch = (): Plugin => ({
   name: 'data-context-cloud-save-patch',
