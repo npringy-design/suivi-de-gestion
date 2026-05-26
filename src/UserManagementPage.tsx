@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, RefreshCw, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, Lock, RefreshCw, UserPlus, Users } from 'lucide-react';
 
 import {
   signInWithPassword,
@@ -7,8 +7,15 @@ import {
   SupabaseAuthSession,
   validateAuthSession,
 } from '@/services/supabaseAuth';
+import {
+  canManageUserTarget,
+  getCreatableSuiviRoles,
+  getSuiviRoleLabel,
+  normalizeSuiviRole,
+  type SuiviRole,
+} from '@/lib/suiviPermissions';
 
-type Role = 'admin' | 'user';
+type Role = SuiviRole;
 
 type UserRow = {
   user_id: string;
@@ -34,16 +41,22 @@ type UserManagementPageProps = {
   onBack: () => void;
 };
 
-const roleLabels: Record<Role, string> = {
-  admin: 'Administrateur',
-  user: 'Utilisateur',
-};
-
 const formatDate = (value?: string | null) => {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleDateString('fr-FR');
+};
+
+const normalizeUserRow = (user: UserRow): UserRow => ({
+  ...user,
+  role: normalizeSuiviRole(user.role),
+});
+
+const toApiRole = (role: Role) => {
+  if (role === 'global_admin') return 'global_admin';
+  if (role === 'super_admin') return 'super_admin';
+  return 'user';
 };
 
 export default function UserManagementPage({ onBack }: UserManagementPageProps) {
@@ -70,6 +83,14 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
 
   const bearer = session?.access_token || '';
 
+  const currentUserRow = useMemo(() => {
+    const currentUserId = session?.user?.id;
+    if (!currentUserId) return null;
+    return users.find((user) => user.user_id === currentUserId) || null;
+  }, [session?.user?.id, users]);
+
+  const creatableRoles = useMemo(() => getCreatableSuiviRoles(currentUserRow), [currentUserRow]);
+
   const request = useCallback(async (init?: RequestInit) => {
     const response = await fetch('/api/suiviAccount', {
       ...init,
@@ -93,7 +114,7 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
     setLoadError(null);
     try {
       const data = await request({ method: 'GET' });
-      setUsers(data.users || []);
+      setUsers((data.users || []).map(normalizeUserRow));
     } catch (error) {
       setUsers([]);
       setLoadError(error instanceof Error ? error.message : 'Chargement impossible.');
@@ -122,6 +143,12 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
   useEffect(() => {
     if (session) void loadUsers();
   }, [session, loadUsers]);
+
+  useEffect(() => {
+    if (creatableRoles.length > 0 && !creatableRoles.includes(formRole)) {
+      setFormRole(creatableRoles[0]);
+    }
+  }, [creatableRoles, formRole]);
 
   const activeCount = useMemo(() => users.filter((user) => user.is_active).length, [users]);
 
@@ -154,6 +181,10 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
       setCreateError('Email requis.');
       return;
     }
+    if (!creatableRoles.includes(formRole)) {
+      setCreateError('Ton rôle ne permet pas de créer ce niveau d’accès.');
+      return;
+    }
     if (!formSendInvite && formTempPassword.length < 8) {
       setCreateError('Mot de passe temporaire minimum 8 caractères.');
       return;
@@ -167,7 +198,7 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
           email: formEmail.trim(),
           fullName: formFullName.trim() || null,
           tempPassword: formTempPassword,
-          role: formRole,
+          role: toApiRole(formRole),
           sendInvite: formSendInvite,
         }),
       });
@@ -180,7 +211,7 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
       setFormEmail('');
       setFormFullName('');
       setFormTempPassword('');
-      setFormRole('user');
+      setFormRole(creatableRoles[0] || 'user');
       setFormSendInvite(true);
       await loadUsers();
     } catch (error) {
@@ -191,13 +222,18 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
   };
 
   const updateRole = async (user: UserRow, role: Role) => {
+    if (!canManageUserTarget(currentUserRow, user)) {
+      setLoadError('Action refusée : droits insuffisants pour modifier cet utilisateur.');
+      return;
+    }
+
     setActionId(user.user_id);
     try {
       const data = await request({
         method: 'PATCH',
-        body: JSON.stringify({ userId: user.user_id, role, fullName: user.full_name || '' }),
+        body: JSON.stringify({ userId: user.user_id, role: toApiRole(role), fullName: user.full_name || '' }),
       });
-      if (data.user) setUsers((prev) => prev.map((row) => (row.user_id === user.user_id ? data.user! : row)));
+      if (data.user) setUsers((prev) => prev.map((row) => (row.user_id === user.user_id ? normalizeUserRow(data.user!) : row)));
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Modification impossible.');
     } finally {
@@ -206,13 +242,18 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
   };
 
   const toggleActive = async (user: UserRow) => {
+    if (!canManageUserTarget(currentUserRow, user)) {
+      setLoadError('Action refusée : droits insuffisants pour modifier cet utilisateur.');
+      return;
+    }
+
     setActionId(user.user_id);
     try {
       const data = await request({
         method: 'PATCH',
         body: JSON.stringify({ userId: user.user_id, action: 'toggle-active' }),
       });
-      if (data.user) setUsers((prev) => prev.map((row) => (row.user_id === user.user_id ? data.user! : row)));
+      if (data.user) setUsers((prev) => prev.map((row) => (row.user_id === user.user_id ? normalizeUserRow(data.user!) : row)));
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Changement statut impossible.');
     } finally {
@@ -240,7 +281,7 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
               <div className="text-xs font-black uppercase tracking-[0.28em] text-cyan-100">Suivi de gestion</div>
               <h1 className="mt-6 text-3xl font-black">Gestion des utilisateurs</h1>
               <p className="mt-4 text-sm font-semibold text-cyan-50/80">
-                Connecte-toi avec un compte admin Suivi pour créer ou gérer les accès.
+                Connecte-toi avec un compte super admin ou global admin Suivi pour créer ou gérer les accès.
               </p>
             </div>
             <form onSubmit={handleLogin} className="p-8">
@@ -272,7 +313,10 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
               <h1 className="flex items-center gap-3 text-2xl font-black uppercase text-slate-900">
                 <Users className="h-7 w-7 text-cyan-700" /> Utilisateurs Suivi
               </h1>
-              <p className="mt-1 text-sm font-semibold text-slate-500">{users.length} compte(s), dont {activeCount} actif(s)</p>
+              <p className="mt-1 text-sm font-semibold text-slate-500">
+                {users.length} compte(s), dont {activeCount} actif(s)
+                {currentUserRow ? ` · Connecté : ${getSuiviRoleLabel(currentUserRow.role)}` : ''}
+              </p>
             </div>
             <div className="flex gap-2">
               <button onClick={() => void loadUsers()} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-black uppercase text-white">
@@ -298,9 +342,13 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
 
             <label className="mt-4 block text-xs font-black uppercase text-slate-500">Rôle</label>
             <select className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-bold" value={formRole} onChange={(event) => setFormRole(event.target.value as Role)}>
-              <option value="user">Utilisateur</option>
-              <option value="admin">Administrateur</option>
+              {creatableRoles.map((role) => (
+                <option key={role} value={role}>{getSuiviRoleLabel(role)}</option>
+              ))}
             </select>
+            {creatableRoles.length === 0 && (
+              <p className="mt-2 text-xs font-bold text-red-600">Ton rôle ne permet pas de créer de nouvel accès.</p>
+            )}
 
             <label className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-700">
               <input type="checkbox" checked={formSendInvite} onChange={(event) => setFormSendInvite(event.target.checked)} />
@@ -316,7 +364,7 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
             {createMessage && <div className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{createMessage}</div>}
             {createError && <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700">{createError}</div>}
 
-            <button disabled={isCreating} className="mt-5 w-full rounded-xl bg-[#0f766e] px-4 py-3 font-black text-white disabled:bg-slate-300">
+            <button disabled={isCreating || creatableRoles.length === 0} className="mt-5 w-full rounded-xl bg-[#0f766e] px-4 py-3 font-black text-white disabled:bg-slate-300">
               {isCreating ? 'Création...' : 'Créer l’utilisateur'}
             </button>
           </form>
@@ -344,15 +392,25 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
                   )}
                   {!isLoadingUsers && users.map((user) => {
                     const busy = actionId === user.user_id;
+                    const canManage = canManageUserTarget(currentUserRow, user);
+                    const role = normalizeSuiviRole(user.role);
                     return (
                       <tr key={user.user_id} className="border-t border-slate-100">
                         <td className="p-3 text-sm font-bold text-slate-700">{user.email || '—'}</td>
                         <td className="p-3 text-sm font-semibold text-slate-600">{user.full_name || '—'}</td>
                         <td className="p-3">
-                          <select disabled={busy} value={user.role} onChange={(event) => void updateRole(user, event.target.value as Role)} className="rounded-lg border border-slate-300 px-2 py-1 text-sm font-bold">
-                            <option value="user">{roleLabels.user}</option>
-                            <option value="admin">{roleLabels.admin}</option>
-                          </select>
+                          {role === 'super_admin' ? (
+                            <span className="inline-flex items-center gap-1 rounded-lg bg-amber-100 px-2 py-1 text-xs font-black uppercase text-amber-800">
+                              <Lock className="h-3 w-3" /> {getSuiviRoleLabel(role)}
+                            </span>
+                          ) : (
+                            <select disabled={busy || !canManage} value={role} onChange={(event) => void updateRole(user, event.target.value as Role)} className="rounded-lg border border-slate-300 px-2 py-1 text-sm font-bold disabled:bg-slate-100 disabled:text-slate-400">
+                              {creatableRoles.map((option) => (
+                                <option key={option} value={option}>{getSuiviRoleLabel(option)}</option>
+                              ))}
+                              {!creatableRoles.includes(role) && <option value={role}>{getSuiviRoleLabel(role)}</option>}
+                            </select>
+                          )}
                         </td>
                         <td className="p-3">
                           <span className={`rounded-full px-2.5 py-1 text-xs font-black uppercase ${user.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
@@ -361,8 +419,8 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
                         </td>
                         <td className="p-3 text-sm font-semibold text-slate-500">{formatDate(user.created_at)}</td>
                         <td className="p-3">
-                          <button disabled={busy} onClick={() => void toggleActive(user)} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black uppercase text-white disabled:bg-slate-300">
-                            {busy ? '...' : user.is_active ? 'Désactiver' : 'Réactiver'}
+                          <button disabled={busy || !canManage} onClick={() => void toggleActive(user)} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black uppercase text-white disabled:bg-slate-300">
+                            {role === 'super_admin' ? 'Intouchable' : busy ? '...' : user.is_active ? 'Désactiver' : 'Réactiver'}
                           </button>
                         </td>
                       </tr>
