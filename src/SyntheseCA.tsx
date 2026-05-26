@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface SyntheseCAProps {
+  initialMonth: number;
+  onMonthChange: (month: number) => void;
   onBack: () => void;
   onSaisieTheorique: (month: number) => void;
   onCbNepting: (month: number) => void;
@@ -27,12 +29,22 @@ const MONTHS = [
 const NAV = '#1e293b';
 
 export default function SyntheseCA({ 
+  initialMonth, onMonthChange,
   onBack, onSaisieTheorique, onCbNepting, onEspeces, onConecs, 
   onAncvPapiers, onSaisieTR, onVisuTRPapiers, onSunday, onUber, 
   onAmexAncv, onDeliveroo, onClickCollect, onRemiseTR, 
   onBilanSynthese, onDepensesPetiteCaisse 
 }: SyntheseCAProps) {
-  const [selectedMonth, setSelectedMonth] = useState(2); // Default to MARS (index 2)
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth);
+
+  useEffect(() => {
+    setSelectedMonth(initialMonth);
+  }, [initialMonth]);
+
+  const handleMonthChange = (month: number) => {
+    setSelectedMonth(month);
+    onMonthChange(month);
+  };
 
   const Btn = ({ onClick, children, colorClass }: { onClick: () => void, children: React.ReactNode, colorClass: string }) => {
     return (
@@ -88,7 +100,7 @@ export default function SyntheseCA({
         <div className="bg-white border-2 border-slate-200 rounded-xl relative shadow-sm hover:border-slate-300 transition-colors">
           <select 
             value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            onChange={(e) => handleMonthChange(Number(e.target.value))}
             className="w-full py-4 text-center bg-transparent appearance-none cursor-pointer outline-none font-extrabold text-lg uppercase tracking-widest text-slate-700"
           >
             {MONTHS.map((month, index) => (
