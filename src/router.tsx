@@ -35,6 +35,7 @@ const CalculetteSalaires = lazy(() => import('@/CalculetteSalaires'));
 const ConfigurationChiffre2025 = lazy(() => import('@/ConfigurationChiffre2025'));
 const VisuelVacances = lazy(() => import('@/VisuelVacances'));
 const EdgAnnuelTabs = lazy(() => import('@/EdgAnnuelTabs'));
+// Page admin Suivi : garde l'application principale ouverte tant que l'auth globale n'est pas validee.
 const UserManagementPage = lazy(() => import('@/UserManagementPage'));
 
 const parseMonthParam = (value: string | undefined, fallback: number) => {
