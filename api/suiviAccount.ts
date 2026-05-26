@@ -17,6 +17,11 @@ const headers = (token?: string) => ({
   'Content-Type': 'application/json',
 });
 
+const normalizeSupabaseUrl = (value: string) => value
+  .trim()
+  .replace(/\/+$/, '')
+  .replace(/\/rest\/v1$/i, '');
+
 const normalizeRole = (role?: string | null): SuiviRole => {
   if (role === 'super_admin') return 'super_admin';
   if (role === 'global_admin' || role === 'admin') return 'global_admin';
@@ -68,8 +73,9 @@ const assertEnv = () => {
   if (!supabaseUrl || !serviceKey) throw new Error('Variables serveur Supabase manquantes.');
 };
 
-const restUrl = () => `${supabaseUrl.replace(/\/+$/, '')}/rest/v1`;
-const authUrl = () => `${supabaseUrl.replace(/\/+$/, '')}/auth/v1`;
+const baseSupabaseUrl = () => normalizeSupabaseUrl(supabaseUrl);
+const restUrl = () => `${baseSupabaseUrl()}/rest/v1`;
+const authUrl = () => `${baseSupabaseUrl()}/auth/v1`;
 
 const requireAdmin = async (req: any) => {
   const token = readBearer(req);
