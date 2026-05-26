@@ -77,3 +77,7 @@ Sans `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, l'application continue de 
 - Si deux personnes modifient exactement en meme temps depuis deux PC differents, la derniere sauvegarde peut remplacer la precedente.
 - Un autre PC deja ouvert ne se met pas automatiquement a jour en direct ; il retrouvera les donnees au rechargement de l'application.
 - La version multi-site fine devra passer par une structure plus stricte avec `site_id` ou des cles par site bien controlees.
+
+## Controle de deploiement
+
+Dernier controle : relance d'un build pour publier le correctif d'alerte Supabase en production.
