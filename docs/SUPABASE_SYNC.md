@@ -23,11 +23,22 @@ Elle ne doit pas utiliser la table `app_state` de Gestion Commandes Doquet.
 - Au demarrage, l'application lit Supabase si la configuration est presente.
 - Si des donnees existent dans Supabase, elles sont chargees dans l'application.
 - Apres modification, l'application sauvegarde automatiquement dans Supabase avec un court delai.
-- Le localStorage reste conserve comme secours si Supabase est absent ou indisponible.
+- Le localStorage reste conserve comme cache technique local, mais il ne doit pas masquer un probleme Supabase.
+- Si Supabase n'est pas configure ou si la sauvegarde echoue, une alerte visible apparait dans l'application.
 - Il n'y a pas d'actualisation automatique toutes les 10 secondes.
 - Il n'y a pas de realtime permanent pour cette premiere version.
 
-Ce fonctionnement permet d'ouvrir l'application depuis un autre PC et de retrouver les donnees sauvegardees.
+Ce fonctionnement permet d'ouvrir l'application depuis un autre PC et de retrouver les donnees sauvegardees, tout en evitant de croire qu'une donnee est dans le cloud quand Supabase est indisponible.
+
+## Alertes visibles
+
+Une banderole d'alerte apparait si :
+
+- Supabase n'est pas configure dans Vercel ;
+- la lecture Supabase au demarrage echoue ;
+- une sauvegarde Supabase echoue apres modification.
+
+Quand une sauvegarde Supabase reussit, l'alerte est masquee.
 
 ## Donnees sauvegardees
 
@@ -52,12 +63,12 @@ Dans Vercel, ajouter les variables :
 - optionnel : `VITE_APP_STATE_TABLE`, defaut `suivi_gestion_app_state` ;
 - optionnel : `VITE_APP_STATE_KEY`, defaut `suivi-gestion:<site>:global_state_v1`.
 
-Sans `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, l'application continue de fonctionner en localStorage uniquement.
+Sans `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, l'application continue de fonctionner en localStorage uniquement, mais une alerte doit rester visible.
 
 ## Fichiers concernes
 
 - `src/services/supabaseAppState.ts` : lecture/ecriture REST Supabase ;
-- `scripts/dataContextCloudSyncPatch.ts` : branche la sauvegarde Supabase dans `DataContext` au build ;
+- `scripts/dataContextCloudSyncPatch.ts` : branche la sauvegarde Supabase dans `DataContext` au build et affiche les alertes ;
 - `vite.config.ts` : activation du patch ;
 - `supabase/APP_STATE_SETUP.sql` : table isolee et regles Supabase.
 
