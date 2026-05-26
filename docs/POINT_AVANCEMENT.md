@@ -13,6 +13,31 @@ Ce document sert de porte d'entree pour reprendre le projet sans perdre le fil. 
 - Quand une modification est terminee et verifiee, pousser directement les changements effectues sans redemander une validation supplementaire, sauf si l'utilisateur demande explicitement de ne pas pousser.
 - Avant livraison d'un changement code, verifier au minimum `npm.cmd run lint:ts` et `npm.cmd run build`.
 
+## Accueil - titre et selection de periode
+
+Statut : en cours de verification build.
+
+Ce qui est en place :
+
+- titre de la banderole remplace par `Hippopotamus` ;
+- localisation remplacee par `Thillois` ;
+- suppression des deux listes deroulantes mois / annee de l'accueil ;
+- la tuile date du jour ouvre maintenant une fenetre de selection ;
+- choix possibles : jour precis, periode personnalisee, mois entier, annee entiere ;
+- quand une periode est appliquee, le mois et l'annee actifs sont recalcules depuis la date de debut pour garder les liens existants vers les pages mensuelles ;
+- meteo libellee Thillois et coordonnees meteo adaptees.
+
+Ou regarder :
+
+- documentation : `docs/ACCUEIL.md`
+- page source : `src/Home.tsx`
+- patch temporaire : `scripts/homeHeaderPeriodPatch.ts`
+- activation du patch : `vite.config.ts`
+
+Point important :
+
+- les KPI actuels restent bases sur le mois actif. La selection de periode est d'abord une selection de navigation/affichage ; un vrai calcul multi-jours, multi-mois ou annuel des KPI devra etre traite comme une evolution dediee.
+
 ## Suivi quotidien - import caisse
 
 Statut : valide.
@@ -171,6 +196,15 @@ A recontroler apres les dernieres corrections personnel :
 - affichage en complet sous forme `7,50` ;
 - totaux semaine/mois correspondant a la somme des valeurs affichees au centieme.
 
+A recontroler apres la modification accueil :
+
+- build Vercel ;
+- ouverture de l'accueil ;
+- titre `Hippopotamus` et localisation `Thillois` ;
+- absence des deux listes deroulantes mois / annee ;
+- ouverture de la selection au clic sur la tuile date ;
+- application correcte d'un jour, d'une periode, d'un mois entier et d'une annee entiere.
+
 ## Phrase de reprise pour un nouveau clavardage
 
-Lire d'abord `docs/POINT_AVANCEMENT.md`, puis `docs/HEURES_PERSONNEL.md`. Le recap mail est valide et ne doit pas etre modifie. La zone active est `Personnel - heures, salaires et cout horaire`, avec un patch temporaire dans `scripts/dashboardPayrollColumnPatch.ts` qui modifie `Dashboard.tsx` au build. Avant toute nouvelle correction, verifier que le build Vercel passe et que la saisie des heures personnel reste fluide.
+Lire d'abord `docs/POINT_AVANCEMENT.md`, puis la doc metier concernee dans `docs/`. Le recap mail est valide et ne doit pas etre modifie. Pour l'accueil, lire `docs/ACCUEIL.md` : la zone active recente est le titre Hippopotamus Thillois et la selection de periode via la tuile date, avec patch temporaire dans `scripts/homeHeaderPeriodPatch.ts`. Pour le personnel, lire `docs/HEURES_PERSONNEL.md` : la zone active historique est `Personnel - heures, salaires et cout horaire`, avec un patch temporaire dans `scripts/dashboardPayrollColumnPatch.ts` qui modifie `Dashboard.tsx` au build. Avant toute nouvelle correction, verifier que le build Vercel passe.
