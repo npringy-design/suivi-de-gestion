@@ -1,4 +1,4 @@
-import { createBrowserRouter, useNavigate, useParams } from 'react-router-dom';
+import { createHashRouter, useNavigate, useParams } from 'react-router-dom';
 import { lazy , useEffect } from 'react';
 
 import { useData } from '@/contexts/DataContext';
@@ -135,7 +135,7 @@ function PageRoute({ Component, backPath }: { Component: any; backPath: string }
   return <Component onBack={() => navigate(backPath)} />;
 }
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   { path: '/', element: <Home /> },
   { path: '/dashboard/:month', element: <DashboardRoute /> },
   { path: '/synthese', element: <SyntheseRoute /> },
