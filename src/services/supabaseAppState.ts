@@ -73,7 +73,7 @@ export const saveCloudAppState = async (value: CloudAppState): Promise<CloudAppS
   const response = await fetch(`${appStateUrl()}?on_conflict=key&select=value,updated_at`, {
     method: 'POST',
     headers: {
-      ...await buildHeaders(),
+      ...(await buildHeaders()),
       Prefer: 'resolution=merge-duplicates,return=representation',
     },
     body: JSON.stringify({
