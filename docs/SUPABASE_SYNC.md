@@ -1,5 +1,17 @@
 # Sauvegarde Supabase
 
+## Statut
+
+Statut : valide.
+
+Validation effectuee :
+
+- sauvegarde depuis le navigateur principal vers Supabase : OK ;
+- chargement depuis une navigation privee : OK ;
+- saisie depuis la navigation privee vers Supabase : OK ;
+- retour navigateur principal avec donnees retrouvees : OK ;
+- rafraichissement d'une sous-page corrige : OK.
+
 ## Objectif
 
 Centraliser les donnees de l'application dans Supabase pour pouvoir les retrouver depuis n'importe quel PC.
@@ -67,12 +79,22 @@ La variable `VITE_SUPABASE_ANON_KEY` peut recevoir la nouvelle cle `publishable`
 
 Sans `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, l'application continue de fonctionner en localStorage uniquement, mais une alerte doit rester visible.
 
+## Routage
+
+Le routeur utilise maintenant un mode avec `#` dans l'URL pour eviter les erreurs 404 au rafraichissement d'une sous-page.
+
+Exemples :
+
+- `/#/synthese/4` ;
+- `/#/especes/4`.
+
 ## Fichiers concernes
 
 - `src/services/supabaseAppState.ts` : lecture/ecriture REST Supabase ;
 - `scripts/dataContextCloudSyncPatch.ts` : branche la sauvegarde Supabase dans `DataContext` au build et affiche les alertes ;
 - `vite.config.ts` : activation du patch ;
-- `supabase/APP_STATE_SETUP.sql` : table isolee et regles Supabase.
+- `supabase/APP_STATE_SETUP.sql` : table isolee et regles Supabase ;
+- `src/router.tsx` : routeur hash pour eviter les 404 au refresh.
 
 ## Limites connues
 
@@ -82,4 +104,4 @@ Sans `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, l'application continue de 
 
 ## Controle de deploiement
 
-Dernier controle : correction de l'envoi des en-tetes Supabase pour supporter les nouvelles cles publishable.
+Dernier controle : sauvegarde et rechargement Supabase valides dans les deux sens.
