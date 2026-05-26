@@ -63,6 +63,8 @@ Dans Vercel, ajouter les variables :
 - optionnel : `VITE_APP_STATE_TABLE`, defaut `suivi_gestion_app_state` ;
 - optionnel : `VITE_APP_STATE_KEY`, defaut `suivi-gestion:<site>:global_state_v1`.
 
+La variable `VITE_SUPABASE_ANON_KEY` peut recevoir la nouvelle cle `publishable` Supabase ou l'ancienne cle `anon` JWT.
+
 Sans `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, l'application continue de fonctionner en localStorage uniquement, mais une alerte doit rester visible.
 
 ## Fichiers concernes
@@ -80,4 +82,4 @@ Sans `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, l'application continue de 
 
 ## Controle de deploiement
 
-Dernier controle : relance d'un build pour publier le correctif d'alerte Supabase en production.
+Dernier controle : correction de l'envoi des en-tetes Supabase pour supporter les nouvelles cles publishable.
