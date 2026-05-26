@@ -59,12 +59,15 @@ function DashboardRoute() {
 function SyntheseRoute() {
   const { month: monthParam } = useParams();
   const navigate = useNavigate();
-  const initialMonth = parseMonthParam(monthParam, 2);
+  const todayMonth = new Date().getMonth();
+  const initialMonth = parseMonthParam(monthParam, todayMonth);
   const goToMonthPage = (path: string) => (month: number) => navigate(path + '/' + month);
+  const handleMonthChange = (month: number) => navigate('/synthese/' + month, { replace: true });
 
   return (
     <SyntheseCA
       initialMonth={initialMonth}
+      onMonthChange={handleMonthChange}
       onBack={() => navigate('/')}
       onSaisieTheorique={goToMonthPage('/saisie-theorique')}
       onCbNepting={goToMonthPage('/cb-nepting')}
