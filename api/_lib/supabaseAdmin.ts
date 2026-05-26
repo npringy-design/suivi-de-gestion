@@ -1,21 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+// Placeholder conserve pour eviter les imports casses pendant la mise en place progressive
+// de l'administration utilisateurs Suivi de gestion.
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !serviceRoleKey) {
-  console.warn('[api] Variables manquantes: SUPABASE_URL/VITE_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY');
-}
-
-export const supabaseAdmin = createClient(supabaseUrl ?? '', serviceRoleKey ?? '', {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
-
-export const assertServerEnv = () => {
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Configuration serveur Supabase incomplète. Vérifier SUPABASE_URL/VITE_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY.');
-  }
-};
+export const assertServerEnv = () => undefined;
