@@ -32,6 +32,39 @@ const refsInsertionReplacement = `  const [personnelInfos, setPersonnelInfos] = 
   const cloudApplyingRef = useRef(false);
   const cloudSaveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
+  const showCloudWarning = useCallback((message: string) => {
+    if (typeof document === 'undefined') return;
+    const id = 'suivi-gestion-cloud-warning';
+    let banner = document.getElementById(id);
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = id;
+      banner.setAttribute('role', 'alert');
+      banner.style.position = 'fixed';
+      banner.style.left = '50%';
+      banner.style.bottom = '18px';
+      banner.style.transform = 'translateX(-50%)';
+      banner.style.zIndex = '99999';
+      banner.style.maxWidth = 'calc(100vw - 32px)';
+      banner.style.padding = '12px 16px';
+      banner.style.borderRadius = '14px';
+      banner.style.background = '#7f1d1d';
+      banner.style.color = '#fff';
+      banner.style.boxShadow = '0 18px 45px rgba(15, 23, 42, 0.35)';
+      banner.style.fontFamily = 'system-ui, sans-serif';
+      banner.style.fontSize = '13px';
+      banner.style.fontWeight = '700';
+      banner.style.textAlign = 'center';
+      document.body.appendChild(banner);
+    }
+    banner.textContent = message;
+  }, []);
+
+  const hideCloudWarning = useCallback(() => {
+    if (typeof document === 'undefined') return;
+    document.getElementById('suivi-gestion-cloud-warning')?.remove();
+  }, []);
+
   const applyCloudState = useCallback((cloudState: CloudAppState) => {
     cloudApplyingRef.current = true;
 
@@ -66,6 +99,12 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
   }, [personnelInfos]);
 
   useEffect(() => {
+    if (!isCloudSyncConfigured) {
+      showCloudWarning('Sauvegarde Supabase non configuree : les donnees restent uniquement sur ce PC.');
+    }
+  }, [showCloudWarning]);
+
+  useEffect(() => {
     if (!isCloudSyncConfigured) return;
     let cancelled = false;
 
@@ -79,8 +118,10 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
         } else {
           await saveCloudAppState({ allData, config2025, customEvents, personnelInfos });
         }
+        hideCloudWarning();
       } catch (error) {
         console.warn('Sauvegarde Supabase indisponible au chargement :', error);
+        showCloudWarning('Sauvegarde Supabase indisponible : les donnees visibles peuvent venir de ce PC uniquement.');
       } finally {
         if (!cancelled) cloudLoadedRef.current = true;
       }
@@ -91,7 +132,7 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [applyCloudState]);
+  }, [applyCloudState, hideCloudWarning, showCloudWarning]);
 
   useEffect(() => {
     if (!isCloudSyncConfigured || !cloudLoadedRef.current) return;
@@ -108,8 +149,10 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
     cloudSaveTimerRef.current = window.setTimeout(async () => {
       try {
         await saveCloudAppState(snapshot);
+        hideCloudWarning();
       } catch (error) {
         console.warn('Sauvegarde Supabase indisponible :', error);
+        showCloudWarning('Sauvegarde Supabase echouee : cette modification n est peut-etre pas sauvegardee dans le cloud.');
       }
     }, 900);
 
@@ -118,7 +161,7 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
         window.clearTimeout(cloudSaveTimerRef.current);
       }
     };
-  }, [allData, config2025, customEvents, personnelInfos]);`;
+  }, [allData, config2025, customEvents, personnelInfos, hideCloudWarning, showCloudWarning]);`;
 
 export const dataContextCloudSyncPatch = (): Plugin => ({
   name: 'data-context-cloud-save-patch',
