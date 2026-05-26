@@ -6,6 +6,18 @@ Centraliser les donnees de l'application dans Supabase pour pouvoir les retrouve
 
 Le but n'est pas de faire une synchronisation active multi-PC en temps reel. Supabase sert de sauvegarde centrale et de source de chargement au demarrage de l'application.
 
+## Projet Supabase partage avec Gestion Commandes
+
+Il est possible d'utiliser le meme projet Supabase que Gestion Commandes Doquet pour rester dans les limites du plan gratuit.
+
+Regle obligatoire : Suivi de gestion doit rester isole.
+
+Pour cela, l'application utilise par defaut une table separee :
+
+- `suivi_gestion_app_state`
+
+Elle ne doit pas utiliser la table `app_state` de Gestion Commandes Doquet.
+
 ## Comportement retenu
 
 - Au demarrage, l'application lit Supabase si la configuration est presente.
@@ -15,7 +27,7 @@ Le but n'est pas de faire une synchronisation active multi-PC en temps reel. Sup
 - Il n'y a pas d'actualisation automatique toutes les 10 secondes.
 - Il n'y a pas de realtime permanent pour cette premiere version.
 
-Ce fonctionnement est plus proche de la logique attendue : ouvrir l'application depuis un autre PC et retrouver les donnees sauvegardees.
+Ce fonctionnement permet d'ouvrir l'application depuis un autre PC et de retrouver les donnees sauvegardees.
 
 ## Donnees sauvegardees
 
@@ -37,7 +49,8 @@ Dans Vercel, ajouter les variables :
 - `VITE_SUPABASE_URL` ;
 - `VITE_SUPABASE_ANON_KEY` ;
 - optionnel : `VITE_SITE_ID`, defaut `hippo_thillois` ;
-- optionnel : `VITE_APP_STATE_KEY`, defaut `gestion:<site>:global_state_v1`.
+- optionnel : `VITE_APP_STATE_TABLE`, defaut `suivi_gestion_app_state` ;
+- optionnel : `VITE_APP_STATE_KEY`, defaut `suivi-gestion:<site>:global_state_v1`.
 
 Sans `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, l'application continue de fonctionner en localStorage uniquement.
 
@@ -46,7 +59,7 @@ Sans `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, l'application continue de 
 - `src/services/supabaseAppState.ts` : lecture/ecriture REST Supabase ;
 - `scripts/dataContextCloudSyncPatch.ts` : branche la sauvegarde Supabase dans `DataContext` au build ;
 - `vite.config.ts` : activation du patch ;
-- `supabase/APP_STATE_SETUP.sql` : table et regles Supabase.
+- `supabase/APP_STATE_SETUP.sql` : table isolee et regles Supabase.
 
 ## Limites connues
 
