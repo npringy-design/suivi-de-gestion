@@ -10,11 +10,17 @@ export type CloudAppStateRecord = {
   updated_at: string | null;
 };
 
-const rawSupabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
-const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '');
-const siteId = String(import.meta.env.VITE_SITE_ID || 'hippo_thillois');
-const appStateTable = String(import.meta.env.VITE_APP_STATE_TABLE || 'suivi_gestion_app_state');
-const appStateKey = String(import.meta.env.VITE_APP_STATE_KEY || `suivi-gestion:${siteId}:global_state_v1`);
+const normalizeSupabaseUrl = (value: string) => value
+  .trim()
+  .replace(/\/+$/, '')
+  .replace(/\/rest\/v1$/i, '')
+  .replace(/\/rest\/v1\/+$/i, '');
+
+const rawSupabaseUrl = normalizeSupabaseUrl(String(import.meta.env.VITE_SUPABASE_URL || ''));
+const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+const siteId = String(import.meta.env.VITE_SITE_ID || 'hippo_thillois').trim();
+const appStateTable = String(import.meta.env.VITE_APP_STATE_TABLE || 'suivi_gestion_app_state').trim().replace(/^\/+|\/+$/g, '');
+const appStateKey = String(import.meta.env.VITE_APP_STATE_KEY || `suivi-gestion:${siteId}:global_state_v1`).trim();
 const isLegacyJwtKey = supabaseAnonKey.startsWith('eyJ');
 
 export const isCloudSyncConfigured = Boolean(rawSupabaseUrl && supabaseAnonKey);
