@@ -1,13 +1,14 @@
 -- Setup minimal pour la sauvegarde centralisee de Suivi de gestion.
 -- A executer une seule fois dans Supabase SQL Editor.
+-- Cette table est volontairement separee de Gestion Commandes Doquet.
 
-create table if not exists public.app_state (
+create table if not exists public.suivi_gestion_app_state (
   key text primary key,
   value jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
 
-create or replace function public.set_app_state_updated_at()
+create or replace function public.set_suivi_gestion_app_state_updated_at()
 returns trigger
 language plpgsql
 as $$
@@ -17,35 +18,35 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_app_state_updated_at on public.app_state;
-create trigger trg_app_state_updated_at
-before update on public.app_state
+drop trigger if exists trg_suivi_gestion_app_state_updated_at on public.suivi_gestion_app_state;
+create trigger trg_suivi_gestion_app_state_updated_at
+before update on public.suivi_gestion_app_state
 for each row
-execute function public.set_app_state_updated_at();
+execute function public.set_suivi_gestion_app_state_updated_at();
 
-alter table public.app_state enable row level security;
+alter table public.suivi_gestion_app_state enable row level security;
 
-drop policy if exists "app_state_public_read" on public.app_state;
-create policy "app_state_public_read"
-on public.app_state
+drop policy if exists "suivi_gestion_app_state_read" on public.suivi_gestion_app_state;
+create policy "suivi_gestion_app_state_read"
+on public.suivi_gestion_app_state
 for select
 to anon, authenticated
 using (true);
 
-drop policy if exists "app_state_public_insert" on public.app_state;
-create policy "app_state_public_insert"
-on public.app_state
+drop policy if exists "suivi_gestion_app_state_insert" on public.suivi_gestion_app_state;
+create policy "suivi_gestion_app_state_insert"
+on public.suivi_gestion_app_state
 for insert
 to anon, authenticated
 with check (true);
 
-drop policy if exists "app_state_public_update" on public.app_state;
-create policy "app_state_public_update"
-on public.app_state
+drop policy if exists "suivi_gestion_app_state_update" on public.suivi_gestion_app_state;
+create policy "suivi_gestion_app_state_update"
+on public.suivi_gestion_app_state
 for update
 to anon, authenticated
 using (true)
 with check (true);
 
 -- Pour une version multi-etablissements plus avancee, il faudra ensuite ajouter site_id
--- et remplacer la cle unique simple par une cle composee ou une convention stricte de key.
+-- ou garder une convention stricte de cle par site.
