@@ -15,13 +15,21 @@ const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '');
 const siteId = String(import.meta.env.VITE_SITE_ID || 'hippo_thillois');
 const appStateTable = String(import.meta.env.VITE_APP_STATE_TABLE || 'suivi_gestion_app_state');
 const appStateKey = String(import.meta.env.VITE_APP_STATE_KEY || `suivi-gestion:${siteId}:global_state_v1`);
+const isLegacyJwtKey = supabaseAnonKey.startsWith('eyJ');
 
 export const isCloudSyncConfigured = Boolean(rawSupabaseUrl && supabaseAnonKey);
 
-const headers = {
-  apikey: supabaseAnonKey,
-  Authorization: `Bearer ${supabaseAnonKey}`,
-  'Content-Type': 'application/json',
+const buildHeaders = () => {
+  const requestHeaders: Record<string, string> = {
+    apikey: supabaseAnonKey,
+    'Content-Type': 'application/json',
+  };
+
+  if (isLegacyJwtKey) {
+    requestHeaders.Authorization = `Bearer ${supabaseAnonKey}`;
+  }
+
+  return requestHeaders;
 };
 
 const appStateUrl = () => `${rawSupabaseUrl}/rest/v1/${appStateTable}`;
@@ -32,14 +40,19 @@ const assertConfigured = () => {
   }
 };
 
+const readError = async (response: Response) => {
+  const details = await response.text().catch(() => '');
+  return details ? ` - ${details}` : '';
+};
+
 export const fetchCloudAppState = async (): Promise<CloudAppStateRecord | null> => {
   assertConfigured();
 
   const url = `${appStateUrl()}?key=eq.${encodeURIComponent(appStateKey)}&select=value,updated_at&limit=1`;
-  const response = await fetch(url, { headers });
+  const response = await fetch(url, { headers: buildHeaders() });
 
   if (!response.ok) {
-    throw new Error(`Lecture Supabase impossible (${response.status})`);
+    throw new Error(`Lecture Supabase impossible (${response.status})${await readError(response)}`);
   }
 
   const rows = await response.json() as Array<CloudAppStateRecord>;
@@ -52,7 +65,7 @@ export const saveCloudAppState = async (value: CloudAppState): Promise<CloudAppS
   const response = await fetch(`${appStateUrl()}?on_conflict=key&select=value,updated_at`, {
     method: 'POST',
     headers: {
-      ...headers,
+      ...buildHeaders(),
       Prefer: 'resolution=merge-duplicates,return=representation',
     },
     body: JSON.stringify({
@@ -62,7 +75,7 @@ export const saveCloudAppState = async (value: CloudAppState): Promise<CloudAppS
   });
 
   if (!response.ok) {
-    throw new Error(`Sauvegarde Supabase impossible (${response.status})`);
+    throw new Error(`Sauvegarde Supabase impossible (${response.status})${await readError(response)}`);
   }
 
   const rows = await response.json() as Array<CloudAppStateRecord>;
