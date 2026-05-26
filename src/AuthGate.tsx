@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useState } from 'react';
 
 import {
   isSupabaseAuthConfigured,
@@ -9,10 +9,10 @@ import {
 } from '@/services/supabaseAuth';
 
 type AuthGateProps = {
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
-function AuthShell({ children }: { children: React.ReactNode }) {
+function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-[#4b1f14] text-white">
       <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-8">
