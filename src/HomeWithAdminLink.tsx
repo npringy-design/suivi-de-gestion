@@ -41,15 +41,22 @@ export default function HomeWithAdminLink() {
     <>
       <Home />
       {canManageUsers && (
-        <button
-          type="button"
-          onClick={() => navigate('/utilisateurs')}
-          className="fixed bottom-16 right-4 z-50 inline-flex items-center gap-2 rounded-full border border-cyan-100/30 bg-[#0f766e] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white shadow-xl shadow-slate-950/20 transition hover:bg-[#115e59]"
-          title="Gestion des utilisateurs"
-        >
-          <Users className="h-4 w-4" />
-          Utilisateurs
-        </button>
+        <div className="fixed bottom-5 left-2 z-50 hidden w-[calc(clamp(238px,17vw,280px)-1rem)] px-2 lg:block">
+          <button
+            type="button"
+            onClick={() => navigate('/utilisateurs')}
+            className="group relative w-full overflow-hidden rounded-xl border border-cyan-200/15 bg-cyan-100/10 px-3 py-2.5 text-left text-[12.5px] font-black uppercase tracking-[0.12em] text-cyan-50 shadow-inner shadow-black/10 transition-all duration-300 hover:bg-cyan-300/15 hover:text-white"
+            title="Gestion des utilisateurs"
+          >
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-cyan-300/10 text-cyan-100 ring-1 ring-cyan-100/20">
+                <Users className="h-3.5 w-3.5" />
+              </span>
+              <span>Utilisateurs</span>
+            </div>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-300/0 to-teal-300/0 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
+          </button>
+        </div>
       )}
     </>
   );
