@@ -1,5 +1,3 @@
-import { getValidAccessToken } from '@/services/supabaseAuth';
-
 export type CloudAppState = {
   allData?: unknown;
   config2025?: unknown;
@@ -23,21 +21,21 @@ const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '').tri
 const siteId = String(import.meta.env.VITE_SITE_ID || 'hippo_thillois').trim();
 const appStateTable = String(import.meta.env.VITE_APP_STATE_TABLE || 'suivi_gestion_app_state').trim().replace(/^\/+|\/+$/g, '');
 const appStateKey = String(import.meta.env.VITE_APP_STATE_KEY || `suivi-gestion:${siteId}:global_state_v1`).trim();
+const isLegacyJwtKey = supabaseAnonKey.startsWith('eyJ');
 
 export const isCloudSyncConfigured = Boolean(rawSupabaseUrl && supabaseAnonKey);
 
-const buildHeaders = async () => {
-  const accessToken = await getValidAccessToken();
-
-  if (!accessToken) {
-    throw new Error('Session Supabase absente ou expiree. Reconnexion necessaire.');
-  }
-
-  return {
+const buildHeaders = () => {
+  const requestHeaders: Record<string, string> = {
     apikey: supabaseAnonKey,
-    Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json',
   };
+
+  if (isLegacyJwtKey) {
+    requestHeaders.Authorization = `Bearer ${supabaseAnonKey}`;
+  }
+
+  return requestHeaders;
 };
 
 const appStateUrl = () => `${rawSupabaseUrl}/rest/v1/${appStateTable}`;
@@ -57,7 +55,7 @@ export const fetchCloudAppState = async (): Promise<CloudAppStateRecord | null> 
   assertConfigured();
 
   const url = `${appStateUrl()}?key=eq.${encodeURIComponent(appStateKey)}&select=value,updated_at&limit=1`;
-  const response = await fetch(url, { headers: await buildHeaders() });
+  const response = await fetch(url, { headers: buildHeaders() });
 
   if (!response.ok) {
     throw new Error(`Lecture Supabase impossible (${response.status})${await readError(response)}`);
@@ -73,7 +71,7 @@ export const saveCloudAppState = async (value: CloudAppState): Promise<CloudAppS
   const response = await fetch(`${appStateUrl()}?on_conflict=key&select=value,updated_at`, {
     method: 'POST',
     headers: {
-      ...(await buildHeaders()),
+      ...buildHeaders(),
       Prefer: 'resolution=merge-duplicates,return=representation',
     },
     body: JSON.stringify({
