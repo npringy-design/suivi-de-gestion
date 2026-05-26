@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite';
 
 const replaceRequired = (code: string, from: string, to: string, label: string) => {
-  if (!code.includes(from)) throw new Error('Patch sync Supabase DataContext non applique : ' + label);
+  if (!code.includes(from)) throw new Error('Patch sauvegarde Supabase DataContext non applique : ' + label);
   return code.replace(from, to);
 };
 
@@ -31,11 +31,9 @@ const refsInsertionReplacement = `  const [personnelInfos, setPersonnelInfos] = 
   const cloudLoadedRef = useRef(!isCloudSyncConfigured);
   const cloudApplyingRef = useRef(false);
   const cloudSaveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
-  const lastCloudUpdatedAtRef = useRef<string | null>(null);
 
-  const applyCloudState = useCallback((cloudState: CloudAppState, updatedAt: string | null) => {
+  const applyCloudState = useCallback((cloudState: CloudAppState) => {
     cloudApplyingRef.current = true;
-    lastCloudUpdatedAtRef.current = updatedAt;
 
     if (cloudState.allData && typeof cloudState.allData === 'object') {
       setAllData(cloudState.allData as Record<number, Record<number, MonthData>>);
@@ -77,13 +75,12 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
         if (cancelled) return;
 
         if (remote?.value) {
-          applyCloudState(remote.value, remote.updated_at);
+          applyCloudState(remote.value);
         } else {
-          const saved = await saveCloudAppState({ allData, config2025, customEvents, personnelInfos });
-          if (!cancelled) lastCloudUpdatedAtRef.current = saved?.updated_at || null;
+          await saveCloudAppState({ allData, config2025, customEvents, personnelInfos });
         }
       } catch (error) {
-        console.warn('Synchronisation Supabase indisponible au chargement :', error);
+        console.warn('Sauvegarde Supabase indisponible au chargement :', error);
       } finally {
         if (!cancelled) cloudLoadedRef.current = true;
       }
@@ -110,8 +107,7 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
     const snapshot = { allData, config2025, customEvents, personnelInfos };
     cloudSaveTimerRef.current = window.setTimeout(async () => {
       try {
-        const saved = await saveCloudAppState(snapshot);
-        lastCloudUpdatedAtRef.current = saved?.updated_at || lastCloudUpdatedAtRef.current;
+        await saveCloudAppState(snapshot);
       } catch (error) {
         console.warn('Sauvegarde Supabase indisponible :', error);
       }
@@ -122,30 +118,10 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
         window.clearTimeout(cloudSaveTimerRef.current);
       }
     };
-  }, [allData, config2025, customEvents, personnelInfos]);
-
-  useEffect(() => {
-    if (!isCloudSyncConfigured) return;
-
-    const intervalId = window.setInterval(async () => {
-      if (!cloudLoadedRef.current) return;
-
-      try {
-        const remote = await fetchCloudAppState();
-        if (!remote?.value || !remote.updated_at) return;
-        if (remote.updated_at === lastCloudUpdatedAtRef.current) return;
-
-        applyCloudState(remote.value, remote.updated_at);
-      } catch (error) {
-        console.warn('Actualisation Supabase indisponible :', error);
-      }
-    }, 10000);
-
-    return () => window.clearInterval(intervalId);
-  }, [applyCloudState]);`;
+  }, [allData, config2025, customEvents, personnelInfos]);`;
 
 export const dataContextCloudSyncPatch = (): Plugin => ({
-  name: 'data-context-cloud-sync-patch',
+  name: 'data-context-cloud-save-patch',
   enforce: 'pre',
   transform(code, id) {
     if (!id.replace(/\\/g, '/').endsWith('/src/contexts/DataContext.tsx')) return null;
