@@ -30,23 +30,28 @@ drop policy if exists "suivi_gestion_app_state_read" on public.suivi_gestion_app
 create policy "suivi_gestion_app_state_read"
 on public.suivi_gestion_app_state
 for select
-to anon, authenticated
+to authenticated
 using (true);
 
 drop policy if exists "suivi_gestion_app_state_insert" on public.suivi_gestion_app_state;
 create policy "suivi_gestion_app_state_insert"
 on public.suivi_gestion_app_state
 for insert
-to anon, authenticated
+to authenticated
 with check (true);
 
 drop policy if exists "suivi_gestion_app_state_update" on public.suivi_gestion_app_state;
 create policy "suivi_gestion_app_state_update"
 on public.suivi_gestion_app_state
 for update
-to anon, authenticated
+to authenticated
 using (true)
 with check (true);
+
+-- Authentification obligatoire :
+-- - creer les utilisateurs dans Supabase Authentication > Users ;
+-- - confirmer leur email ou leur definir un mot de passe ;
+-- - ne pas redonner de droits anon sur cette table, sinon l'ecran de connexion ne protege plus vraiment les donnees.
 
 -- Pour une version multi-etablissements plus avancee, il faudra ensuite ajouter site_id
 -- ou garder une convention stricte de cle par site.
