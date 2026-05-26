@@ -11,9 +11,26 @@ Ce fichier est le point de reprise rapide du projet. Lire ensuite la documentati
 - Pousser directement les corrections terminees sauf demande contraire.
 - Verifier le build Vercel apres une modification code.
 
+## Authentification
+
+Statut : en cours de mise en place.
+
+Document detaille : `docs/AUTHENTIFICATION.md`.
+
+Ce qui est en place :
+
+- ecran de connexion obligatoire avant chargement de l'application ;
+- `AuthGate` place avant `DataProvider` ;
+- connexion via Supabase Auth email / mot de passe ;
+- lectures et sauvegardes Supabase faites avec le token utilisateur connecte ;
+- bouton deconnexion discret ;
+- SQL mis a jour pour limiter `suivi_gestion_app_state` au role `authenticated`.
+
+A faire cote Supabase : creer les utilisateurs dans Authentication > Users, puis executer `supabase/APP_STATE_SETUP.sql` pour retirer les droits `anon` sur la table.
+
 ## Sauvegarde Supabase
 
-Statut : valide.
+Statut : valide, avec authentification ajoutee en amont.
 
 Document detaille : `docs/SUPABASE_SYNC.md`.
 
@@ -22,7 +39,7 @@ Ce qui est valide :
 - Supabase est la sauvegarde centrale de l'application ;
 - la table utilisee est `suivi_gestion_app_state` ;
 - la table est separee de Gestion Commandes Doquet ;
-- les donnees sont chargees depuis Supabase au demarrage ;
+- les donnees sont chargees depuis Supabase au demarrage apres authentification ;
 - les modifications sont sauvegardees automatiquement dans Supabase ;
 - le localStorage reste seulement un cache technique local ;
 - une alerte visible apparait si Supabase n'est pas configure ou si une sauvegarde echoue ;
@@ -40,6 +57,8 @@ Tests utilisateur valides :
 Fichiers importants :
 
 - `src/services/supabaseAppState.ts`
+- `src/services/supabaseAuth.ts`
+- `src/AuthGate.tsx`
 - `scripts/dataContextCloudSyncPatch.ts`
 - `src/router.tsx`
 - `supabase/APP_STATE_SETUP.sql`
@@ -116,4 +135,4 @@ Verifications historiques : `npm.cmd run test -- --run src/test/utils.test.ts` O
 
 ## Phrase de reprise pour un nouveau clavardage
 
-Lire d'abord `docs/POINT_AVANCEMENT.md`, puis la doc metier concernee dans `docs/`. La sauvegarde Supabase est validee : lire `docs/SUPABASE_SYNC.md`, table `suivi_gestion_app_state`, chargement/sauvegarde OK dans les deux sens, routeur hash pour eviter les 404 au refresh. Le recap mail est valide et ne doit pas etre modifie. Pour l'accueil, lire `docs/ACCUEIL.md`. Pour Synthese CA, lire `docs/SYNTHESE_CA.md`. Pour le personnel, lire `docs/HEURES_PERSONNEL.md`. Avant toute nouvelle correction, verifier que le build Vercel passe.
+Lire d'abord `docs/POINT_AVANCEMENT.md`, puis la doc metier concernee dans `docs/`. L'authentification est en cours de mise en place : lire `docs/AUTHENTIFICATION.md`. La sauvegarde Supabase est validee et charge maintenant apres authentification : lire `docs/SUPABASE_SYNC.md`, table `suivi_gestion_app_state`, routeur hash pour eviter les 404 au refresh. Le recap mail est valide et ne doit pas etre modifie. Pour l'accueil, lire `docs/ACCUEIL.md`. Pour Synthese CA, lire `docs/SYNTHESE_CA.md`. Pour le personnel, lire `docs/HEURES_PERSONNEL.md`. Avant toute nouvelle correction, verifier que le build Vercel passe.
