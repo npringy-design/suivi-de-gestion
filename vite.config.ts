@@ -13,12 +13,13 @@ import { dashboardPayrollColumnPatch } from './scripts/dashboardPayrollColumnPat
 import { dashboardRealiseCleanLayoutPatch } from './scripts/dashboardRealiseCleanLayoutPatch';
 import { dashboardRealiseTotalsPatch } from './scripts/dashboardRealiseTotalsPatch';
 import { dashboardStrictSalaryRatesPatch } from './scripts/dashboardStrictSalaryRatesPatch';
+import { homeHeaderPeriodPatch } from './scripts/homeHeaderPeriodPatch';
 import { homePayrollBubblePatch } from './scripts/homePayrollBubblePatch';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
-    plugins: [dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(), dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), homePayrollBubblePatch(), accountingSettingsRoutePatch(), react(), tailwindcss()],
+    plugins: [dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(), dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), homeHeaderPeriodPatch(), homePayrollBubblePatch(), accountingSettingsRoutePatch(), react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
