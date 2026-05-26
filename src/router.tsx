@@ -35,6 +35,7 @@ const CalculetteSalaires = lazy(() => import('@/CalculetteSalaires'));
 const ConfigurationChiffre2025 = lazy(() => import('@/ConfigurationChiffre2025'));
 const VisuelVacances = lazy(() => import('@/VisuelVacances'));
 const EdgAnnuelTabs = lazy(() => import('@/EdgAnnuelTabs'));
+const UserManagementPage = lazy(() => import('@/UserManagementPage'));
 
 const parseMonthParam = (value: string | undefined, fallback: number) => {
   const month = value ? parseInt(value, 10) : NaN;
@@ -184,6 +185,7 @@ const router = createHashRouter([
   { path: '/configuration-chiffre-2025', element: <PageRoute Component={ConfigurationChiffre2025} backPath='/' /> },
   { path: '/visuel-vacances', element: <PageRoute Component={VisuelVacances} backPath='/' /> },
   { path: '/edg-annuel-tabs', element: <PageRoute Component={EdgAnnuelTabs} backPath='/' /> },
+  { path: '/utilisateurs', element: <PageRoute Component={UserManagementPage} backPath='/' /> },
 ]);
 
 function EdgMensuelRoute() {
