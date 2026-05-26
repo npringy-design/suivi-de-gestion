@@ -38,6 +38,28 @@ Point important :
 
 - les KPI actuels restent bases sur le mois actif. La selection de periode est d'abord une selection de navigation/affichage ; un vrai calcul multi-jours, multi-mois ou annuel des KPI devra etre traite comme une evolution dediee.
 
+## Synthese CA - mois selectionne
+
+Statut : en cours de verification build.
+
+Ce qui est en place :
+
+- `/synthese` utilise le mois courant au lieu d'un mois fixe ;
+- l'ancien fallback fixe sur mars est supprime ;
+- quand un mois est choisi dans la liste deroulante, l'URL devient `/synthese/:month` ;
+- le retour depuis les sous-pages de Synthese CA conserve le mois selectionne ;
+- quitter totalement la zone Synthese CA puis revenir par `/synthese` remet le mois courant.
+
+Ou regarder :
+
+- documentation : `docs/SYNTHESE_CA.md`
+- routeur : `src/router.tsx`
+- page : `src/SyntheseCA.tsx`
+
+Point important :
+
+- le maintien temporaire du mois passe par l'URL et non par le localStorage, afin de ne pas garder un ancien mois de maniere permanente.
+
 ## Suivi quotidien - import caisse
 
 Statut : valide.
@@ -205,6 +227,14 @@ A recontroler apres la modification accueil :
 - ouverture de la selection au clic sur la tuile date ;
 - application correcte d'un jour, d'une periode, d'un mois entier et d'une annee entiere.
 
+A recontroler apres la modification Synthese CA :
+
+- build Vercel ;
+- ouverture de `/synthese` : mois courant ;
+- changement de mois dans la liste : URL `/synthese/:month` ;
+- ouverture d'une sous-page puis retour : mois conserve ;
+- retour accueil puis retour Synthese CA : mois courant.
+
 ## Phrase de reprise pour un nouveau clavardage
 
-Lire d'abord `docs/POINT_AVANCEMENT.md`, puis la doc metier concernee dans `docs/`. Le recap mail est valide et ne doit pas etre modifie. Pour l'accueil, lire `docs/ACCUEIL.md` : la zone active recente est le titre Hippopotamus Thillois et la selection de periode via la tuile date, avec patch temporaire dans `scripts/homeHeaderPeriodPatch.ts`. Pour le personnel, lire `docs/HEURES_PERSONNEL.md` : la zone active historique est `Personnel - heures, salaires et cout horaire`, avec un patch temporaire dans `scripts/dashboardPayrollColumnPatch.ts` qui modifie `Dashboard.tsx` au build. Avant toute nouvelle correction, verifier que le build Vercel passe.
+Lire d'abord `docs/POINT_AVANCEMENT.md`, puis la doc metier concernee dans `docs/`. Le recap mail est valide et ne doit pas etre modifie. Pour l'accueil, lire `docs/ACCUEIL.md` : la zone active recente est le titre Hippopotamus Thillois et la selection de periode via la tuile date, avec patch temporaire dans `scripts/homeHeaderPeriodPatch.ts`. Pour Synthese CA, lire `docs/SYNTHESE_CA.md` : le mois par defaut est le mois courant et le mois choisi est maintenu via `/synthese/:month` tant que l'utilisateur reste dans la zone. Pour le personnel, lire `docs/HEURES_PERSONNEL.md` : la zone active historique est `Personnel - heures, salaires et cout horaire`, avec un patch temporaire dans `scripts/dashboardPayrollColumnPatch.ts` qui modifie `Dashboard.tsx` au build. Avant toute nouvelle correction, verifier que le build Vercel passe.
