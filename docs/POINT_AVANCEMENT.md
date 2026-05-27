@@ -48,7 +48,7 @@ Fichiers importants auth :
 
 ## Sauvegarde Supabase
 
-Statut : valide avant optimisation, optimisation segmentee ajoutee le 27/05/2026 et a revalider apres deploiement.
+Statut : optimisation segmentee et chargement mensuel a la demande ajoutes le 27/05/2026, a revalider apres deploiement.
 
 Document detaille : `docs/SUPABASE_SYNC.md`.
 
@@ -57,7 +57,7 @@ Ce qui est valide :
 - Supabase est la sauvegarde centrale de l'application ;
 - la table utilisee est `suivi_gestion_app_state` ;
 - la table est separee de Gestion Commandes Doquet ;
-- les donnees sont chargees depuis Supabase au demarrage apres validation de la session ;
+- les donnees sont chargees depuis Supabase apres validation de la session ;
 - les modifications sont sauvegardees automatiquement dans Supabase ;
 - le localStorage reste seulement un cache technique local ;
 - une alerte visible apparait si Supabase n'est pas configure ou si une sauvegarde echoue ;
@@ -69,6 +69,8 @@ Optimisation ajoutee :
 - la sauvegarde n'ecrit plus un seul gros snapshot global en priorite ;
 - `src/services/supabaseAppState.ts` utilise maintenant des segments v2 par mois : `...:segments_v2:allData:<annee>:<mois>` ;
 - les segments separent aussi `config2025`, `customEvents` et `personnelInfos` ;
+- le chargement initial lit le socle global et le mois de demarrage seulement ;
+- quand l'utilisateur change de mois, `fetchCloudMonth` charge uniquement le mois demande si besoin ;
 - l'ancien snapshot global reste relisible pour compatibilite ;
 - les fichiers importes et textes PDF complets ne doivent toujours pas etre sauvegardes ; seules les valeurs metier validees sont conservees.
 
@@ -84,6 +86,7 @@ Tests a refaire apres deploiement de l'optimisation :
 
 - import caisse puis refresh ;
 - import facture puis refresh ;
+- changement de mois et retour sur le mois precedent ;
 - verification dans Supabase de plusieurs cles `segments_v2` ;
 - verification qu'une modification d'un mois n'entraine pas la reecriture d'un gros snapshot global.
 
