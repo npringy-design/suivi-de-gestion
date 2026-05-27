@@ -76,7 +76,6 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
   const [formFullName, setFormFullName] = useState('');
   const [formTempPassword, setFormTempPassword] = useState('');
   const [formRole, setFormRole] = useState<Role>('user');
-  const [formSendInvite, setFormSendInvite] = useState(true);
   const [createMessage, setCreateMessage] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -185,34 +184,29 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
       setCreateError('Ton rôle ne permet pas de créer ce niveau d’accès.');
       return;
     }
-    if (!formSendInvite && formTempPassword.length < 8) {
+    if (formTempPassword.length < 8) {
       setCreateError('Mot de passe temporaire minimum 8 caractères.');
       return;
     }
 
     setIsCreating(true);
     try {
-      const data = await request({
+      await request({
         method: 'POST',
         body: JSON.stringify({
           email: formEmail.trim(),
           fullName: formFullName.trim() || null,
           tempPassword: formTempPassword,
           role: toApiRole(formRole),
-          sendInvite: formSendInvite,
+          sendInvite: false,
         }),
       });
 
-      setCreateMessage(
-        data.email_sent
-          ? 'Utilisateur créé. Email d’invitation envoyé.'
-          : data.email_warning || 'Utilisateur créé avec mot de passe temporaire.',
-      );
+      setCreateMessage('Utilisateur créé avec mot de passe temporaire. Donne-lui cet identifiant à la voix.');
       setFormEmail('');
       setFormFullName('');
       setFormTempPassword('');
       setFormRole(creatableRoles[0] || 'user');
-      setFormSendInvite(true);
       await loadUsers();
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : 'Création impossible.');
@@ -350,15 +344,10 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
               <p className="mt-2 text-xs font-bold text-red-600">Ton rôle ne permet pas de créer de nouvel accès.</p>
             )}
 
-            <label className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-700">
-              <input type="checkbox" checked={formSendInvite} onChange={(event) => setFormSendInvite(event.target.checked)} />
-              Envoyer un email d’invitation si possible
-            </label>
-
             <label className="mt-4 block text-xs font-black uppercase text-slate-500">Mot de passe temporaire</label>
-            <input className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-semibold" value={formTempPassword} onChange={(event) => setFormTempPassword(event.target.value)} placeholder="Minimum 8 caractères si pas d’email" />
+            <input className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-semibold" value={formTempPassword} onChange={(event) => setFormTempPassword(event.target.value)} placeholder="Minimum 8 caractères" required />
             <p className="mt-2 text-xs font-semibold text-slate-500">
-              Si l’email Supabase ne part pas, ce mot de passe servira à donner les identifiants à la voix.
+              L’envoi email est désactivé pour l’instant. Donne ce mot de passe temporaire directement à l’utilisateur.
             </p>
 
             {createMessage && <div className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{createMessage}</div>}
