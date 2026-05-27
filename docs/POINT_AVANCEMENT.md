@@ -48,7 +48,7 @@ Fichiers importants auth :
 
 ## Sauvegarde Supabase
 
-Statut : valide.
+Statut : valide avant optimisation, optimisation segmentee ajoutee le 27/05/2026 et a revalider apres deploiement.
 
 Document detaille : `docs/SUPABASE_SYNC.md`.
 
@@ -64,13 +64,28 @@ Ce qui est valide :
 - il n'y a pas de realtime permanent ;
 - il n'y a pas d'actualisation automatique toutes les 10 secondes.
 
-Tests utilisateur valides :
+Optimisation ajoutee :
+
+- la sauvegarde n'ecrit plus un seul gros snapshot global en priorite ;
+- `src/services/supabaseAppState.ts` utilise maintenant des segments v2 par mois : `...:segments_v2:allData:<annee>:<mois>` ;
+- les segments separent aussi `config2025`, `customEvents` et `personnelInfos` ;
+- l'ancien snapshot global reste relisible pour compatibilite ;
+- les fichiers importes et textes PDF complets ne doivent toujours pas etre sauvegardes ; seules les valeurs metier validees sont conservees.
+
+Tests utilisateur valides avant optimisation :
 
 - navigateur principal vers Supabase : OK ;
 - navigation privee depuis Supabase : OK ;
 - saisie depuis navigation privee vers Supabase : OK ;
 - retour navigateur principal avec donnees retrouvees : OK ;
 - refresh d'une sous-page : OK.
+
+Tests a refaire apres deploiement de l'optimisation :
+
+- import caisse puis refresh ;
+- import facture puis refresh ;
+- verification dans Supabase de plusieurs cles `segments_v2` ;
+- verification qu'une modification d'un mois n'entraine pas la reecriture d'un gros snapshot global.
 
 Fichiers importants :
 
