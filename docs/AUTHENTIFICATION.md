@@ -2,22 +2,11 @@
 
 ## Statut
 
-Statut : en cours de mise en place, auth globale volontairement non bloquante pour l'instant.
+Statut : auth globale active et page utilisateurs fonctionnelle.
 
-L'application reste accessible sans connexion tant que la page de gestion utilisateurs n'est pas validée en conditions réelles. La page de gestion utilisateurs, elle, demande une connexion admin Suivi.
+L'application est maintenant protégée à l'entrée par `src/AuthGate.tsx`, branché dans `src/App.tsx` autour de `DataProvider`. Les données de l'application ne sont chargées qu'après connexion Supabase Auth et validation de l'accès dans `public.suivi_gestion_user_access`.
 
-## Objectif final
-
-Mettre en place le même confort que Gestion Commandes :
-
-- une page dédiée pour créer les utilisateurs ;
-- choix email / nom / rôle ;
-- création par email d'invitation si possible ;
-- fallback avec mot de passe temporaire à communiquer à la voix ;
-- activation / désactivation des accès ;
-- séparation stricte entre Gestion Commandes et Suivi de gestion.
-
-## Point critique : Supabase partagé avec Gestion Commandes
+## Règles importantes
 
 Le projet Supabase est partagé avec Gestion Commandes Doquet.
 
@@ -26,103 +15,103 @@ Règles obligatoires :
 - ne pas modifier les tables de Gestion Commandes Doquet ;
 - ne pas modifier les policies RLS de Gestion Commandes Doquet ;
 - ne pas supprimer ou recréer les utilisateurs Supabase Auth existants ;
-- ne pas changer la configuration Auth globale sans vérifier l'impact sur Gestion Commandes ;
+- ne pas modifier à la légère les paramètres globaux Supabase Auth, notamment `Site URL`, car cela peut impacter les emails de Gestion Commandes ;
 - ne pas supposer qu'un utilisateur connecté à Gestion Commandes a accès à Suivi de gestion ;
-- séparer la protection des données par application via une table d'accès dédiée.
+- l'accès à Suivi dépend uniquement de `public.suivi_gestion_user_access`.
 
-Supabase Auth est commun au projet Supabase. Les comptes peuvent être différents ou communs selon le besoin, mais l'accès à Suivi de gestion dépend uniquement de la table `suivi_gestion_user_access`.
+## Rôles Suivi
+
+Rôles retenus :
+
+- `super_admin` : Nicolas, intouchable dans l'interface, tous les droits ;
+- `global_admin` : accès complet à l'application et à la création utilisateurs, mais aucune action sur le `super_admin` ;
+- `user` : accès standard à l'application, sans accès à la création utilisateurs.
+
+Compatibilité : l'ancien rôle `admin` est normalisé en `global_admin` dans le front et dans l'API.
 
 ## Ce qui est en place
 
-- Page front : `src/UserManagementPage.tsx`.
-- Route : `/#/utilisateurs`.
-- API serveur : `api/suiviAccount.ts`.
+- Auth globale : `src/AuthGate.tsx`.
+- Auth Supabase : `src/services/supabaseAuth.ts`.
+- Page utilisateurs : `src/UserManagementPage.tsx`.
+- Route utilisateurs : `/#/utilisateurs`.
+- Accès utilisateurs depuis l'accueil : `src/HomeWithAdminLink.tsx`, utilisé par `src/router.tsx`.
+- API serveur utilisateurs : `api/suiviAccount.ts`.
 - Table d'accès dédiée : `public.suivi_gestion_user_access`.
-- SQL de mise en place dédié : `supabase/AUTH_USERS_SETUP.sql`.
+- SQL de mise en place : `supabase/AUTH_USERS_SETUP.sql`.
+- SQL de préparation rôles : `supabase/SUIVI_ROLES_SETUP.sql`.
+- Permissions front : `src/lib/suiviPermissions.ts`.
 
-La page utilisateurs permet :
+## Fonctionnement connexion
 
-- de se connecter en admin Suivi ;
-- de lister les utilisateurs Suivi ;
-- de créer un utilisateur ;
-- de choisir le rôle `admin` ou `user` ;
-- d'envoyer une invitation email si possible ;
-- d'utiliser un mot de passe temporaire si l'email ne part pas ;
-- de désactiver ou réactiver un accès.
+1. L'utilisateur arrive sur l'application.
+2. `AuthGate` affiche la page de connexion.
+3. L'utilisateur se connecte avec son email Supabase Auth et son mot de passe.
+4. `src/services/supabaseAuth.ts` vérifie que l'utilisateur possède une ligne active dans `suivi_gestion_user_access`.
+5. Si l'accès est actif, l'application charge les données.
+6. Sinon, l'accès est refusé.
 
-## Ce qui n'est pas encore activé
+## Création utilisateur
 
-L'authentification obligatoire devant toute l'application n'est pas encore réactivée.
+L'envoi d'email d'invitation est désactivé temporairement.
 
-Raison : il faut d'abord valider que :
+Raison : le projet Supabase est partagé avec Gestion Commandes et le template/lien d'invitation pointe actuellement vers `localhost`. Modifier les paramètres globaux Supabase Auth à chaud pourrait impacter l'autre application.
 
-- ton compte admin fonctionne ;
-- la page `/utilisateurs` fonctionne ;
-- la création d'utilisateur fonctionne ;
-- Gestion Commandes n'est pas impacté ;
-- la sauvegarde Supabase Suivi reste OK.
+Méthode actuelle validée :
+
+1. Aller sur la page utilisateurs depuis l'accueil ou `/#/utilisateurs`.
+2. Renseigner l'email.
+3. Renseigner le nom si besoin.
+4. Choisir le rôle : `Global admin` ou `Utilisateur` selon ton propre rôle.
+5. Renseigner un mot de passe temporaire d'au moins 8 caractères.
+6. Créer l'utilisateur.
+7. Donner à la personne l'URL de l'application, son email et son mot de passe temporaire.
+
+Important : pour le moment, le changement obligatoire du mot de passe temporaire n'est pas encore forcé dans l'application.
+
+## Super admin initial
+
+Ton compte a été passé en `super_admin` dans `public.suivi_gestion_user_access`.
+
+Requête type si besoin de refaire l'opération :
+
+```sql
+update public.suivi_gestion_user_access
+set role = 'super_admin',
+    is_active = true,
+    full_name = 'Nicolas'
+where lower(email) = 'npringy@gmail.com';
+```
 
 ## Configuration Vercel requise
 
-La page de création utilisateur utilise une route serveur. Il faut donc ajouter dans Vercel :
-
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-Les variables déjà présentes restent nécessaires :
+Variables nécessaires :
 
 - `VITE_SUPABASE_URL` ;
-- `VITE_SUPABASE_ANON_KEY`.
+- `VITE_SUPABASE_ANON_KEY` ;
+- `SUPABASE_SERVICE_ROLE_KEY`.
 
-Important : `SUPABASE_SERVICE_ROLE_KEY` doit rester uniquement côté serveur Vercel. Ne jamais l'utiliser dans le front.
+`SUPABASE_SERVICE_ROLE_KEY` doit rester uniquement côté serveur Vercel. Ne jamais l'utiliser dans le front.
 
-## Première mise en route admin
+## Tests validés / à vérifier
 
-Il y a une seule action manuelle à faire au départ pour te donner les droits admin Suivi.
+Validé :
 
-1. Dans Supabase, aller dans **Authentication > Users**.
-2. Créer ou retrouver ton utilisateur.
-3. Copier son `User UID`.
-4. Dans Supabase SQL Editor, exécuter `supabase/AUTH_USERS_SETUP.sql`.
-5. Puis exécuter cette requête en remplaçant l'UUID et l'email :
+- build Vercel OK après activation AuthGate ;
+- connexion Nicolas `super_admin` OK ;
+- page utilisateurs affiche Nicolas en `Super admin` intouchable ;
+- création utilisateur avec mot de passe temporaire fonctionne ;
+- email d'invitation identifié comme non fiable à cause du lien `localhost`, donc option retirée de l'interface.
 
-```sql
-insert into public.suivi_gestion_user_access (user_id, email, full_name, role, is_active)
-values ('UUID_UTILISATEUR', 'ton-email@exemple.fr', 'Nicolas', 'admin', true)
-on conflict (user_id) do update
-set email = excluded.email,
-    full_name = excluded.full_name,
-    role = 'admin',
-    is_active = true;
-```
+À vérifier régulièrement :
 
-Après ça, tu vas sur :
+- un utilisateur `user` peut se connecter et accéder à l'application ;
+- un utilisateur `user` ne voit pas / ne peut pas gérer la page utilisateurs ;
+- un `global_admin` peut créer un `user` mais ne peut pas modifier le `super_admin` ;
+- Gestion Commandes fonctionne toujours normalement.
 
-`/#/utilisateurs`
+## À faire plus tard
 
-Tu te connectes avec ton compte admin, puis tu peux créer les autres personnes depuis l'interface.
-
-## Chemin utilisateur ensuite
-
-Depuis la page utilisateurs :
-
-1. Email de la personne.
-2. Nom optionnel.
-3. Rôle : `Utilisateur` ou `Administrateur`.
-4. Option email d'invitation cochée si tu veux que Supabase lui envoie un mail.
-5. Mot de passe temporaire renseigné si tu veux pouvoir lui donner les identifiants à la voix.
-6. Bouton **Créer l'utilisateur**.
-
-## Tests à faire
-
-- Aller sur `/#/utilisateurs`.
-- Se connecter avec ton compte admin Suivi.
-- Vérifier que la liste utilisateurs charge.
-- Créer un utilisateur test avec mot de passe temporaire.
-- Vérifier qu'il apparaît dans la liste.
-- Désactiver puis réactiver cet utilisateur.
-- Vérifier dans Supabase Authentication que le compte existe.
-- Vérifier que Gestion Commandes fonctionne toujours normalement.
-
-## Étape suivante après validation
-
-Quand la page utilisateurs est validée, on remettra l'auth obligatoire devant toute l'application avec `AuthGate` autour de `DataProvider`, puis on verrouillera `suivi_gestion_app_state` pour les utilisateurs actifs Suivi uniquement.
+- Remettre proprement les invitations email avec une redirection spécifique à Suivi, sans casser Gestion Commandes.
+- Ajouter une page de changement de mot de passe si besoin.
+- Améliorer le placement visuel de l'accès `Utilisateurs` dans l'accueil si nécessaire.
