@@ -8,7 +8,7 @@ const replaceRequired = (code: string, from: string, to: string, label: string) 
 const reactImportSource = `import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';`;
 const reactImportReplacement = `import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 
-import { fetchCloudAppState, isCloudSyncConfigured, saveCloudAppState, type CloudAppState } from '@/services/supabaseAppState';`;
+import { fetchCloudAppBootstrap, fetchCloudMonth, isCloudSyncConfigured, saveCloudAppState, type CloudAppState } from '@/services/supabaseAppState';`;
 
 const refsInsertionSource = `  const [personnelInfos, setPersonnelInfos] = useState<PersonnelInfo[]>(() => {
     try {
@@ -31,6 +31,18 @@ const refsInsertionReplacement = `  const [personnelInfos, setPersonnelInfos] = 
   const cloudLoadedRef = useRef(!isCloudSyncConfigured);
   const cloudApplyingRef = useRef(false);
   const cloudSaveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const loadedCloudMonthKeysRef = useRef<Set<string>>(new Set());
+
+  const cloudMonthKey = useCallback((year: number, month: number) => year + ':' + month, []);
+
+  const rememberLoadedCloudMonths = useCallback((cloudState: CloudAppState) => {
+    if (!cloudState.allData || typeof cloudState.allData !== 'object') return;
+
+    Object.entries(cloudState.allData as Record<string, Record<string, unknown>>).forEach(([year, months]) => {
+      if (!months || typeof months !== 'object') return;
+      Object.keys(months).forEach(month => loadedCloudMonthKeysRef.current.add(year + ':' + month));
+    });
+  }, []);
 
   const cloudErrorMessage = useCallback((prefix: string, error: unknown) => {
     const detail = error instanceof Error ? error.message : String(error || 'erreur inconnue');
@@ -73,6 +85,7 @@ const refsInsertionReplacement = `  const [personnelInfos, setPersonnelInfos] = 
 
   const applyCloudState = useCallback((cloudState: CloudAppState) => {
     cloudApplyingRef.current = true;
+    rememberLoadedCloudMonths(cloudState);
 
     if (cloudState.allData && typeof cloudState.allData === 'object') {
       setAllData(cloudState.allData as Record<number, Record<number, MonthData>>);
@@ -86,7 +99,21 @@ const refsInsertionReplacement = `  const [personnelInfos, setPersonnelInfos] = 
     if (Array.isArray(cloudState.personnelInfos)) {
       setPersonnelInfos(cloudState.personnelInfos as PersonnelInfo[]);
     }
-  }, []);`;
+  }, [rememberLoadedCloudMonths]);
+
+  const applyCloudMonth = useCallback((year: number, month: number, monthData: unknown) => {
+    if (!monthData || typeof monthData !== 'object') return;
+
+    cloudApplyingRef.current = true;
+    loadedCloudMonthKeysRef.current.add(cloudMonthKey(year, month));
+    setAllData(prev => ({
+      ...prev,
+      [year]: {
+        ...(prev[year] || {}),
+        [month]: monthData as MonthData
+      }
+    }));
+  }, [cloudMonthKey]);`;
 
 const personnelStorageEffectSource = `  useEffect(() => {
     try {
@@ -116,12 +143,14 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
 
     const loadCloudState = async () => {
       try {
-        const remote = await fetchCloudAppState();
+        const remote = await fetchCloudAppBootstrap(selectedYear, selectedMonth);
         if (cancelled) return;
 
         if (remote?.value) {
           applyCloudState(remote.value);
+          loadedCloudMonthKeysRef.current.add(cloudMonthKey(selectedYear, selectedMonth));
         } else {
+          loadedCloudMonthKeysRef.current.add(cloudMonthKey(selectedYear, selectedMonth));
           await saveCloudAppState({ allData, config2025, customEvents, personnelInfos });
         }
         hideCloudWarning();
@@ -138,7 +167,38 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [applyCloudState, cloudErrorMessage, hideCloudWarning, showCloudWarning]);
+  }, [applyCloudState, cloudErrorMessage, cloudMonthKey, hideCloudWarning, selectedMonth, selectedYear, showCloudWarning]);
+
+  useEffect(() => {
+    if (!isCloudSyncConfigured || !cloudLoadedRef.current) return;
+
+    const key = cloudMonthKey(selectedYear, selectedMonth);
+    if (loadedCloudMonthKeysRef.current.has(key)) return;
+
+    let cancelled = false;
+
+    const loadSelectedMonth = async () => {
+      try {
+        const row = await fetchCloudMonth(selectedYear, selectedMonth);
+        if (cancelled) return;
+
+        loadedCloudMonthKeysRef.current.add(key);
+        if (row?.value) {
+          applyCloudMonth(selectedYear, selectedMonth, row.value);
+        }
+        hideCloudWarning();
+      } catch (error) {
+        console.warn('Chargement du mois Supabase indisponible :', error);
+        showCloudWarning(cloudErrorMessage('Chargement du mois Supabase indisponible', error));
+      }
+    };
+
+    loadSelectedMonth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyCloudMonth, cloudErrorMessage, cloudMonthKey, hideCloudWarning, selectedMonth, selectedYear, showCloudWarning]);
 
   useEffect(() => {
     if (!isCloudSyncConfigured || !cloudLoadedRef.current) return;
