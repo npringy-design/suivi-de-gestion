@@ -2,15 +2,24 @@
 
 ## Statut
 
-Statut : valide.
+Statut : valide, avec optimisation segmentee ajoutee.
 
-Validation effectuee :
+Validation effectuee avant optimisation :
 
 - sauvegarde depuis le navigateur principal vers Supabase : OK ;
 - chargement depuis une navigation privee : OK ;
 - saisie depuis la navigation privee vers Supabase : OK ;
 - retour navigateur principal avec donnees retrouvees : OK ;
 - rafraichissement d'une sous-page corrige : OK.
+
+A revalider apres optimisation segmentee :
+
+- ouverture depuis un navigateur deja connu ;
+- ouverture depuis navigation privee ;
+- modification d'une valeur journaliere ;
+- import caisse puis refresh ;
+- import facture puis refresh ;
+- verification que plusieurs lignes `segments_v2` apparaissent dans `suivi_gestion_app_state`.
 
 ## Objectif
 
@@ -42,6 +51,30 @@ Elle ne doit pas utiliser la table `app_state` de Gestion Commandes Doquet.
 
 Ce fonctionnement permet d'ouvrir l'application depuis un autre PC et de retrouver les donnees sauvegardees, tout en evitant de croire qu'une donnee est dans le cloud quand Supabase est indisponible.
 
+## Optimisation segmentee v2
+
+Probleme identifie : une feuille de caisse par jour, 80 a 100 factures par mois et plusieurs annees d'historique peuvent rendre un snapshot global unique trop lourd.
+
+Decision : la sauvegarde Supabase ne doit plus reecrire tout l'historique a chaque petite modification.
+
+Depuis le changement du 27/05/2026, `src/services/supabaseAppState.ts` sauvegarde l'etat en segments :
+
+- un manifeste : `...:segments_v2:manifest` ;
+- un segment par mois : `...:segments_v2:allData:<annee>:<mois>` ;
+- un segment `config2025` ;
+- un segment `customEvents` ;
+- un segment `personnelInfos`.
+
+Avantage : modifier ou importer une donnee sur un mois ne force plus la reecriture complete de plusieurs annees de donnees.
+
+Compatibilite :
+
+- l'application tente d'abord de lire le format segmente v2 ;
+- si aucun manifeste v2 n'existe, elle relit encore l'ancien snapshot global `global_state_v1` ;
+- les prochaines sauvegardes recreent automatiquement les segments v2.
+
+Important : les fichiers importes et les textes complets extraits ne doivent toujours pas etre sauvegardes dans ces segments. Seules les donnees metier validees sont conservees.
+
 ## Alertes visibles
 
 Une banderole d'alerte apparait si :
@@ -54,12 +87,21 @@ Quand une sauvegarde Supabase reussit, l'alerte est masquee.
 
 ## Donnees sauvegardees
 
-Snapshot global actuel :
+Format actuel : segments v2.
+
+Segments sauvegardes :
+
+- `allData` par annee et par mois ;
+- `config2025` ;
+- `customEvents` ;
+- `personnelInfos`.
+
+Ancien format encore relisible :
 
 - `allData` ;
 - `config2025` ;
 - `customEvents` ;
-- `personnelInfos`.
+- `personnelInfos` dans un snapshot global unique.
 
 ## Configuration requise
 
@@ -90,7 +132,7 @@ Exemples :
 
 ## Fichiers concernes
 
-- `src/services/supabaseAppState.ts` : lecture/ecriture REST Supabase ;
+- `src/services/supabaseAppState.ts` : lecture/ecriture REST Supabase, avec format segmente v2 ;
 - `scripts/dataContextCloudSyncPatch.ts` : branche la sauvegarde Supabase dans `DataContext` au build et affiche les alertes ;
 - `vite.config.ts` : activation du patch ;
 - `supabase/APP_STATE_SETUP.sql` : table isolee et regles Supabase ;
@@ -100,8 +142,11 @@ Exemples :
 
 - Si deux personnes modifient exactement en meme temps depuis deux PC differents, la derniere sauvegarde peut remplacer la precedente.
 - Un autre PC deja ouvert ne se met pas automatiquement a jour en direct ; il retrouvera les donnees au rechargement de l'application.
+- Le format segmente reduit la taille des ecritures, mais le chargement initial reconstruit encore l'etat complet connu. Une evolution future pourra charger uniquement l'annee ou le mois ouvert si le volume devient encore plus important.
 - La version multi-site fine devra passer par une structure plus stricte avec `site_id` ou des cles par site bien controlees.
 
 ## Controle de deploiement
 
-Dernier controle : sauvegarde et rechargement Supabase valides dans les deux sens.
+Dernier controle avant optimisation : sauvegarde et rechargement Supabase valides dans les deux sens.
+
+Controle a faire apres deploiement du format segmente : import caisse, import facture, refresh, puis verification Supabase des cles `segments_v2`.
