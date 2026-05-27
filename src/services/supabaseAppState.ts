@@ -43,6 +43,7 @@ const manifestKey = `${segmentedPrefix}:manifest`;
 const isLegacyJwtKey = supabaseAnonKey.startsWith('eyJ');
 
 const savedSegmentCache = new Map<string, string>();
+let manifestCache: CloudSegmentManifest | null | undefined;
 
 export const isCloudSyncConfigured = Boolean(rawSupabaseUrl && supabaseAnonKey);
 
@@ -76,6 +77,46 @@ const cacheSegment = (key: string, value: unknown) => {
   savedSegmentCache.set(key, JSON.stringify(value ?? null));
 };
 
+const isSegmentManifest = (value: unknown): value is CloudSegmentManifest => {
+  return Boolean(
+    value &&
+    typeof value === 'object' &&
+    (value as CloudSegmentManifest).version === 2 &&
+    (value as CloudSegmentManifest).mode === 'monthly_segments' &&
+    Array.isArray((value as CloudSegmentManifest).months)
+  );
+};
+
+const normalizeMonthRef = (year: string | number, month: string | number) => ({
+  year: String(year),
+  month: String(month),
+});
+
+const monthRefKey = (item: { year: string; month: string }) => `${item.year}:${item.month}`;
+
+const mergeMonthRefs = (
+  existing: Array<{ year: string; month: string }>,
+  current: Array<{ year: string; month: string }>,
+) => {
+  const monthMap = new Map<string, { year: string; month: string }>();
+
+  existing.forEach(item => {
+    const normalized = normalizeMonthRef(item.year, item.month);
+    monthMap.set(monthRefKey(normalized), normalized);
+  });
+
+  current.forEach(item => {
+    const normalized = normalizeMonthRef(item.year, item.month);
+    monthMap.set(monthRefKey(normalized), normalized);
+  });
+
+  return Array.from(monthMap.values()).sort((a, b) => {
+    const yearDiff = Number(a.year) - Number(b.year);
+    if (yearDiff !== 0) return yearDiff;
+    return Number(a.month) - Number(b.month);
+  });
+};
+
 const fetchStateRecord = async <T = unknown>(key: string): Promise<CloudSegmentRecord<T> | null> => {
   const url = `${appStateUrl()}?key=eq.${encodeURIComponent(key)}&select=value,updated_at&limit=1`;
   const response = await fetch(url, { headers: buildHeaders() });
@@ -90,23 +131,47 @@ const fetchStateRecord = async <T = unknown>(key: string): Promise<CloudSegmentR
   return row;
 };
 
-const monthSegmentKey = (year: string, month: string) => `${segmentedPrefix}:allData:${year}:${month}`;
+const monthSegmentKey = (year: string | number, month: string | number) => {
+  const normalized = normalizeMonthRef(year, month);
+  return `${segmentedPrefix}:allData:${normalized.year}:${normalized.month}`;
+};
 const configSegmentKey = `${segmentedPrefix}:config2025`;
 const customEventsSegmentKey = `${segmentedPrefix}:customEvents`;
 const personnelInfosSegmentKey = `${segmentedPrefix}:personnelInfos`;
 
-const fetchSegmentedCloudAppState = async (): Promise<CloudAppStateRecord | null> => {
+const fetchSegmentManifest = async (): Promise<CloudSegmentManifest | null> => {
+  if (manifestCache !== undefined) return manifestCache;
+
   const manifestRow = await fetchStateRecord<CloudSegmentManifest>(manifestKey);
   const manifest = manifestRow?.value;
 
-  if (!manifest || manifest.version !== 2 || manifest.mode !== 'monthly_segments') {
-    return null;
-  }
+  manifestCache = isSegmentManifest(manifest) ? manifest : null;
+  return manifestCache;
+};
 
-  const [configRow, customEventsRow, personnelInfosRow, monthRows] = await Promise.all([
+const fetchCommonSegments = async (manifest: CloudSegmentManifest) => {
+  const [configRow, customEventsRow, personnelInfosRow] = await Promise.all([
     manifest.segments?.config2025 ? fetchStateRecord(configSegmentKey) : Promise.resolve(null),
     manifest.segments?.customEvents ? fetchStateRecord(customEventsSegmentKey) : Promise.resolve(null),
     manifest.segments?.personnelInfos ? fetchStateRecord(personnelInfosSegmentKey) : Promise.resolve(null),
+  ]);
+
+  return {
+    config2025: configRow?.value,
+    customEvents: customEventsRow?.value,
+    personnelInfos: personnelInfosRow?.value,
+  };
+};
+
+const fetchSegmentedCloudAppState = async (): Promise<CloudAppStateRecord | null> => {
+  const manifest = await fetchSegmentManifest();
+
+  if (!manifest) {
+    return null;
+  }
+
+  const [commonSegments, monthRows] = await Promise.all([
+    fetchCommonSegments(manifest),
     Promise.all((manifest.months || []).map(async item => {
       const year = String(item.year);
       const month = String(item.month);
@@ -125,12 +190,59 @@ const fetchSegmentedCloudAppState = async (): Promise<CloudAppStateRecord | null
   return {
     value: {
       allData,
-      config2025: configRow?.value,
-      customEvents: customEventsRow?.value,
-      personnelInfos: personnelInfosRow?.value,
+      ...commonSegments,
     },
-    updated_at: manifestRow.updated_at,
+    updated_at: null,
   };
+};
+
+export const fetchCloudAppBootstrap = async (
+  year: string | number,
+  month: string | number,
+): Promise<CloudAppStateRecord | null> => {
+  assertConfigured();
+
+  const manifest = await fetchSegmentManifest();
+
+  if (!manifest) {
+    const legacy = await fetchStateRecord<CloudAppState>(appStateKey);
+    return legacy ? { value: legacy.value, updated_at: legacy.updated_at } : null;
+  }
+
+  const requestedMonth = normalizeMonthRef(year, month);
+  const [commonSegments, monthRow] = await Promise.all([
+    fetchCommonSegments(manifest),
+    fetchStateRecord(monthSegmentKey(requestedMonth.year, requestedMonth.month)),
+  ]);
+
+  const allData: Record<string, Record<string, unknown>> = {};
+  if (monthRow?.value && typeof monthRow.value === 'object') {
+    allData[requestedMonth.year] = {
+      [requestedMonth.month]: monthRow.value,
+    };
+  }
+
+  return {
+    value: {
+      allData,
+      ...commonSegments,
+    },
+    updated_at: null,
+  };
+};
+
+export const fetchCloudMonth = async (
+  year: string | number,
+  month: string | number,
+): Promise<CloudSegmentRecord | null> => {
+  assertConfigured();
+  const manifest = await fetchSegmentManifest();
+
+  if (!manifest) {
+    return null;
+  }
+
+  return fetchStateRecord(monthSegmentKey(year, month));
 };
 
 export const fetchCloudAppState = async (): Promise<CloudAppStateRecord | null> => {
@@ -161,6 +273,9 @@ const saveStateRecord = async (key: string, value: unknown): Promise<CloudSegmen
   }
 
   savedSegmentCache.set(key, serialized);
+  if (key === manifestKey && isSegmentManifest(value)) {
+    manifestCache = value;
+  }
   const rows = await response.json() as Array<CloudSegmentRecord>;
   return rows[0] || null;
 };
@@ -183,6 +298,12 @@ export const saveCloudAppState = async (value: CloudAppState): Promise<CloudAppS
   const customEvents = Array.isArray(value.customEvents) ? value.customEvents : [];
   const personnelInfos = Array.isArray(value.personnelInfos) ? value.personnelInfos : [];
 
+  const existingManifest = await fetchSegmentManifest().catch(() => null);
+  const manifestMonths = mergeMonthRefs(
+    existingManifest?.months || [],
+    monthEntries.map(({ year, month }) => ({ year, month })),
+  );
+
   await Promise.all(monthEntries.map(item => saveStateRecord(monthSegmentKey(item.year, item.month), item.value)));
   await Promise.all([
     saveStateRecord(configSegmentKey, config2025),
@@ -193,13 +314,13 @@ export const saveCloudAppState = async (value: CloudAppState): Promise<CloudAppS
   const manifest: CloudSegmentManifest = {
     version: 2,
     mode: 'monthly_segments',
-    months: monthEntries.map(({ year, month }) => ({ year, month })),
+    months: manifestMonths,
     segments: {
       config2025: true,
       customEvents: true,
       personnelInfos: true,
     },
-    savedAt: new Date().toISOString(),
+    savedAt: existingManifest?.savedAt || new Date().toISOString(),
   };
 
   const manifestRow = await saveStateRecord(manifestKey, manifest);
