@@ -32,6 +32,8 @@ const refsInsertionReplacement = `  const [personnelInfos, setPersonnelInfos] = 
   const cloudApplyingRef = useRef(false);
   const cloudSaveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const loadedCloudMonthKeysRef = useRef<Set<string>>(new Set());
+  const initialCloudYearRef = useRef(selectedYear);
+  const initialCloudMonthRef = useRef(selectedMonth);
 
   const cloudMonthKey = useCallback((year: number, month: number) => year + ':' + month, []);
 
@@ -140,17 +142,19 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
   useEffect(() => {
     if (!isCloudSyncConfigured) return;
     let cancelled = false;
+    const bootYear = initialCloudYearRef.current;
+    const bootMonth = initialCloudMonthRef.current;
 
     const loadCloudState = async () => {
       try {
-        const remote = await fetchCloudAppBootstrap(selectedYear, selectedMonth);
+        const remote = await fetchCloudAppBootstrap(bootYear, bootMonth);
         if (cancelled) return;
 
         if (remote?.value) {
           applyCloudState(remote.value);
-          loadedCloudMonthKeysRef.current.add(cloudMonthKey(selectedYear, selectedMonth));
+          loadedCloudMonthKeysRef.current.add(cloudMonthKey(bootYear, bootMonth));
         } else {
-          loadedCloudMonthKeysRef.current.add(cloudMonthKey(selectedYear, selectedMonth));
+          loadedCloudMonthKeysRef.current.add(cloudMonthKey(bootYear, bootMonth));
           await saveCloudAppState({ allData, config2025, customEvents, personnelInfos });
         }
         hideCloudWarning();
@@ -167,7 +171,7 @@ const personnelStorageEffectReplacement = `  useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [applyCloudState, cloudErrorMessage, cloudMonthKey, hideCloudWarning, selectedMonth, selectedYear, showCloudWarning]);
+  }, [applyCloudState, cloudErrorMessage, cloudMonthKey, hideCloudWarning, showCloudWarning]);
 
   useEffect(() => {
     if (!isCloudSyncConfigured || !cloudLoadedRef.current) return;
