@@ -2,7 +2,7 @@
 
 ## Statut
 
-Statut : valide, avec optimisation segmentee ajoutee.
+Statut : optimisation segmentee et chargement mensuel a la demande ajoutes.
 
 Validation effectuee avant optimisation :
 
@@ -12,11 +12,12 @@ Validation effectuee avant optimisation :
 - retour navigateur principal avec donnees retrouvees : OK ;
 - rafraichissement d'une sous-page corrige : OK.
 
-A revalider apres optimisation segmentee :
+A revalider apres optimisation segmentee et chargement a la demande :
 
 - ouverture depuis un navigateur deja connu ;
 - ouverture depuis navigation privee ;
 - modification d'une valeur journaliere ;
+- changement de mois et verification du chargement de ce mois ;
 - import caisse puis refresh ;
 - import facture puis refresh ;
 - verification que plusieurs lignes `segments_v2` apparaissent dans `suivi_gestion_app_state`.
@@ -42,7 +43,8 @@ Elle ne doit pas utiliser la table `app_state` de Gestion Commandes Doquet.
 ## Comportement retenu
 
 - Au demarrage, l'application lit Supabase si la configuration est presente.
-- Si des donnees existent dans Supabase, elles sont chargees dans l'application.
+- En format segmente v2, elle charge le socle global puis uniquement le mois de demarrage.
+- Quand l'utilisateur change de mois, le mois demande est charge depuis Supabase seulement si necessaire.
 - Apres modification, l'application sauvegarde automatiquement dans Supabase avec un court delai.
 - Le localStorage reste conserve comme cache technique local, mais il ne doit pas masquer un probleme Supabase.
 - Si Supabase n'est pas configure ou si la sauvegarde echoue, une alerte visible apparait dans l'application.
@@ -74,6 +76,19 @@ Compatibilite :
 - les prochaines sauvegardes recreent automatiquement les segments v2.
 
 Important : les fichiers importes et les textes complets extraits ne doivent toujours pas etre sauvegardes dans ces segments. Seules les donnees metier validees sont conservees.
+
+## Chargement mensuel a la demande
+
+Depuis le changement suivant, l'application ne reconstruit plus tout l'historique au demarrage quand le format segmente v2 est disponible.
+
+Fonctionnement :
+
+- `fetchCloudAppBootstrap(year, month)` charge le manifeste, les segments communs et le mois courant seulement ;
+- `fetchCloudMonth(year, month)` charge un mois specifique quand l'utilisateur y accede ;
+- `scripts/dataContextCloudSyncPatch.ts` garde en memoire les mois deja charges pour eviter des lectures repetitives ;
+- la sauvegarde conserve la liste des mois deja connus dans le manifeste, afin de ne pas perdre les mois non charges en memoire.
+
+Effet attendu : l'ouverture de l'application reste legere meme apres plusieurs annees d'import, et Supabase n'est sollicite que pour les mois utiles.
 
 ## Alertes visibles
 
@@ -132,8 +147,8 @@ Exemples :
 
 ## Fichiers concernes
 
-- `src/services/supabaseAppState.ts` : lecture/ecriture REST Supabase, avec format segmente v2 ;
-- `scripts/dataContextCloudSyncPatch.ts` : branche la sauvegarde Supabase dans `DataContext` au build et affiche les alertes ;
+- `src/services/supabaseAppState.ts` : lecture/ecriture REST Supabase, format segmente v2 et chargement ciblé ;
+- `scripts/dataContextCloudSyncPatch.ts` : branche la sauvegarde Supabase dans `DataContext`, charge les mois a la demande et affiche les alertes ;
 - `vite.config.ts` : activation du patch ;
 - `supabase/APP_STATE_SETUP.sql` : table isolee et regles Supabase ;
 - `src/router.tsx` : routeur hash pour eviter les 404 au refresh.
@@ -142,11 +157,11 @@ Exemples :
 
 - Si deux personnes modifient exactement en meme temps depuis deux PC differents, la derniere sauvegarde peut remplacer la precedente.
 - Un autre PC deja ouvert ne se met pas automatiquement a jour en direct ; il retrouvera les donnees au rechargement de l'application.
-- Le format segmente reduit la taille des ecritures, mais le chargement initial reconstruit encore l'etat complet connu. Une evolution future pourra charger uniquement l'annee ou le mois ouvert si le volume devient encore plus important.
+- Le chargement mensuel a la demande reduit fortement le poids d'ouverture, mais certaines pages annuelles peuvent demander plusieurs mois si elles doivent calculer une annee complete.
 - La version multi-site fine devra passer par une structure plus stricte avec `site_id` ou des cles par site bien controlees.
 
 ## Controle de deploiement
 
 Dernier controle avant optimisation : sauvegarde et rechargement Supabase valides dans les deux sens.
 
-Controle a faire apres deploiement du format segmente : import caisse, import facture, refresh, puis verification Supabase des cles `segments_v2`.
+Controle a faire apres deploiement du format segmente et du chargement a la demande : import caisse, import facture, refresh, changement de mois, puis verification Supabase des cles `segments_v2`.
