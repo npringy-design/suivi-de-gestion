@@ -80,7 +80,9 @@ Mecanique retenue :
 - les noms sont compares au referentiel `Info personnel` ;
 - pour chaque salarie retrouve, l'import lit la colonne `Total heures` ;
 - le cout utilise est la colonne `Cout global` ;
-- le taux horaire est calcule avec : `cout global * 1,10 / heures` ;
+- le taux horaire est calcule avec provision CP : `cout global * coefficient CP / heures` ;
+- coefficient CP cadre : `1,18` ;
+- coefficient CP autres statuts : `1,10` ;
 - les salaries avec `(forfait jour)` utilisent `151,67` heures, tout en recuperant le cout global normalement ;
 - les taux sont regroupes par statut et section ;
 - si plusieurs salaries correspondent a la meme colonne, une moyenne est appliquee.
@@ -98,6 +100,13 @@ Regles retenues :
 - apres suppression ou remise a zero, la vue complete doit recalculer avec uniquement les lignes restantes de la config salaire ;
 - si une categorie n'a plus de ligne valide, le taux horaire de cette categorie/section vaut `0` ;
 - aucun taux par defaut ne doit creer artificiellement un montant quand une config salaire existe mais est vide.
+
+Provision CP :
+
+- dans la configuration salaire, la colonne `Total avec Provision CP` applique le coefficient par categorie ;
+- cadre : `cout global * 1,18` ;
+- agents de maitrise, niveaux I/II, niveau III et apprentis : `cout global * 1,10` ;
+- la meme regle est utilisee pour les taux horaires affiches, l'import PDF, la vue complete et la vue analyse.
 
 ## Mois cible de l'import salaires
 
@@ -163,6 +172,7 @@ Regles de calcul :
 - `src/DashboardAnalysisView.tsx` : vue Analyse, lecture/synthese de la vue complete ;
 - `scripts/dashboardPayrollColumnPatch.ts` : patch temporaire applique a `Dashboard.tsx` au build ;
 - `scripts/dashboardStrictSalaryRatesPatch.ts` : suppression des taux salaires de secours dans les calculs de la vue complete ;
+- `scripts/payrollCpProvisionPatch.ts` : coefficient provision CP par categorie, cadre a `1,18`, autres statuts a `1,10` ;
 - `vite.config.ts` : activation des patchs.
 
 ## Point technique important
@@ -189,4 +199,6 @@ Ligne de conduite :
 - les forfaits jour sont bien a `151,67` heures ;
 - supprimer une ligne salaire recalcule les taux avec les lignes restantes ;
 - `Remise a zero` vide toutes les donnees salaire du mois selectionne ;
+- cadre : verifier que `Total avec Provision CP` et le taux horaire utilisent bien `cout global * 1,18` ;
+- autres statuts : verifier que la provision reste bien en `cout global * 1,10` ;
 - sans taux valide en config salaire, les montants frais de personnel doivent rester a `0` malgre les heures saisies.
