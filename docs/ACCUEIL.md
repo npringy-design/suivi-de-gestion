@@ -28,6 +28,8 @@ La selection passe maintenant par la tuile date du jour. Un clic sur cette tuile
 
 Quand une periode est appliquee, le mois et l'annee actifs de l'application sont recalcules depuis la date de debut de la periode. Cela permet de garder les liens existants vers le suivi quotidien, l'EdG mensuel et les autres pages mensuelles sans modifier leur mecanique.
 
+Le badge de periode sous la date n'apparait pas en affichage courant. Il apparait uniquement quand l'utilisateur applique une selection differente de la date du jour.
+
 ## Tuiles et graphiques lies a la periode
 
 Correction du 30/05/2026 : les tuiles principales de l'accueil suivent la periode selectionnee dans le calendrier et adaptent aussi leurs libelles.
@@ -46,7 +48,7 @@ Sans selection particuliere, l'accueil reste en mode pilotage courant :
 
 Quand une selection calendrier est appliquee, les tuiles basculent en mode selection :
 
-- jour seul : `CA selection`, `CA resto jour`, `TM selection`, `Budget jour` ;
+- jour seul : `CA total jour` = CA total du jour avec VAE ; `CA resto hors VAE` = CA restaurant midi + soir uniquement ; `TM resto jour` = ticket moyen restaurant ; `Budget jour` ;
 - periode personnalisee : `CA periode`, `CA moy. / jour`, `TM periode`, `Budget periode` ;
 - mois entier : `CA mois`, `CA moy. / jour`, `TM mois`, `Budget mois` ;
 - annee entiere : `CA annee`, `CA moy. / mois`, `TM annee`, `Budget annee`.
