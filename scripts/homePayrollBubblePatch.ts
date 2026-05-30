@@ -167,7 +167,6 @@ const payrollMemoBlock = `
   const payrollCostBubble = useMemo(() => {
     const monthData = data?.[month];
     const dashboard = monthData?.dashboard || {};
-    const salaries = monthData?.salariesConfig?.categories || {};
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const now = new Date();
     const isSelectedCurrentMonth = now.getFullYear() === year && now.getMonth() === month;
@@ -178,58 +177,14 @@ const payrollMemoBlock = `
       return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
     };
 
-    const parseHour = (value: unknown) => {
-      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-      const raw = String(value || '').trim().toLowerCase().replace(/\\s+/g, '');
-      if (!raw) return 0;
-      const hourMatch = raw.match(/^(\\d+)(?:h|:)(\\d{0,2})?$/);
-      if (hourMatch) return Math.round((Number(hourMatch[1]) + Number(hourMatch[2] || 0) / 60) * 100) / 100;
-      const separatorMatch = raw.match(/^(\\d+)([,.])(\\d{1,2})$/);
-      if (separatorMatch) {
-        const rightPart = separatorMatch[3];
-        const minutes = Number(rightPart);
-        if (rightPart.length === 2 && minutes <= 59) return Math.round((Number(separatorMatch[1]) + minutes / 60) * 100) / 100;
-      }
-      return parseFloat(raw.replace(',', '.')) || 0;
-    };
-
-    const averageRate = (category: string, department: string) => {
-      const rows = ((salaries as Record<string, Array<{ heures?: string; coutGlobal?: string; department?: string }>>)[category] || [])
-        .filter(row => !row.department || row.department === department);
-      const rates = rows
-        .map(row => {
-          const heures = parseHour(row.heures);
-          const coutGlobal = parseValue(row.coutGlobal);
-          const multiplier = category === 'cadre' ? 1.18 : 1.10;
-          return heures > 0 && coutGlobal > 0 ? (coutGlobal * multiplier) / heures : 0;
-        })
-        .filter(rate => rate > 0);
-      return rates.length > 0 ? rates.reduce((sum, rate) => sum + rate, 0) / rates.length : 0;
-    };
-
-    const payrollColumns = [
-      { col: 77, legacyCol: 91, rate: averageRate('cadre', 'cuisine') },
-      { col: 78, legacyCol: 92, rate: averageRate('cadre', 'salle') },
-      { col: 79, legacyCol: 93, rate: averageRate('maitrise', 'cuisine') },
-      { col: 80, legacyCol: 94, rate: averageRate('maitrise', 'salle') },
-      { col: 81, legacyCol: 95, rate: averageRate('niv12', 'cuisine') },
-      { col: 82, legacyCol: 96, rate: averageRate('niv12', 'salle') },
-      { col: 83, legacyCol: 97, rate: averageRate('niv3', 'cuisine') },
-      { col: 84, legacyCol: 98, rate: averageRate('niv3', 'salle') },
-      { col: 85, legacyCol: 99, rate: averageRate('apprenti', 'cuisine') },
-      { col: 86, legacyCol: 100, rate: averageRate('apprenti', 'salle') },
-    ];
-
     const dayStats = (day: number) => {
       const rowIndex = dashboardRowIndices[day];
       if (typeof rowIndex !== 'number') return { ca: 0, cost: 0 };
       const rowKey = String(rowIndex) + '-';
       const ca = [17, 18, 19, 20].reduce((sum, col) => sum + parseValue(dashboard[rowKey + String(col)]), 0);
-      const cost = payrollColumns.reduce((sum, item) => {
-        if (item.rate <= 0) return sum;
-        const value = dashboard[rowKey + String(item.col)] || dashboard[rowKey + String(item.legacyCol)] || '';
-        return sum + parseHour(value) * item.rate;
-      }, 0);
+      const costFromComplete = parseValue(dashboard[rowKey + '87']);
+      const ratioFromComplete = parseValue(dashboard[rowKey + '89']);
+      const cost = costFromComplete > 0 ? costFromComplete : (ca > 0 && ratioFromComplete > 0 ? (ca * ratioFromComplete) / 100 : 0);
       return { ca, cost };
     };
 
