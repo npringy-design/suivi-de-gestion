@@ -44,49 +44,70 @@ const kpisMemoSource = `  const kpis = useMemo(() => {
   }, [data, moisIndex, jourIndex, rowFirstDay, rowLastDay]);`;
 
 const kpisMemoReplacement = `  const kpis = useMemo(() => {
-    const monthData = data?.[month];
-    const dashboard = monthData?.dashboard || {};
     const parseDashboardValue = (value: unknown) => {
       if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
       return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
     };
-    const dashboardValue = (rowIndex: number, colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const now = new Date();
     const selectedDay = now.getFullYear() === year && now.getMonth() === month ? Math.min(now.getDate(), daysInMonth) : 1;
-    const rowIndexForDay = (day: number) => dashboardRowIndices[day];
-    const realisedDayCA = (day: number) => {
-      const rowIndex = rowIndexForDay(day);
-      if (typeof rowIndex !== 'number') return 0;
-      return [17, 18, 19, 20].reduce((sum, col) => sum + dashboardValue(rowIndex, col), 0);
-    };
-    const budgetDayCA = (day: number) => {
-      const rowIndex = rowIndexForDay(day);
-      if (typeof rowIndex !== 'number') return 0;
-      const savedTotal = dashboardValue(rowIndex, 3);
-      if (savedTotal > 0) return savedTotal;
-      const caMidi = dashboardValue(rowIndex, 0) || dashboardValue(rowIndex, 6) * dashboardValue(rowIndex, 7);
-      const caSoir = dashboardValue(rowIndex, 1) || dashboardValue(rowIndex, 8) * dashboardValue(rowIndex, 9);
-      const caLimo = dashboardValue(rowIndex, 2) || dashboardValue(rowIndex, 14) * dashboardValue(rowIndex, 15);
-      return caMidi + caSoir + caLimo;
-    };
 
-    let caMois = 0;
-    let totalBudgetCA = 0;
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      caMois += realisedDayCA(day);
-      totalBudgetCA += budgetDayCA(day);
+    const startRaw = makeLocalDate(homePeriod.start);
+    const endRaw = makeLocalDate(homePeriod.end);
+    const startDate = startRaw.getTime() <= endRaw.getTime() ? startRaw : endRaw;
+    const endDate = startRaw.getTime() <= endRaw.getTime() ? endRaw : startRaw;
+    const periodDates: Date[] = [];
+    const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    let guard = 0;
+
+    while (cursor.getTime() <= endDate.getTime() && guard < 400) {
+      if (cursor.getFullYear() === year) {
+        periodDates.push(new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate()));
+      }
+      cursor.setDate(cursor.getDate() + 1);
+      guard += 1;
     }
 
-    const caJour = realisedDayCA(selectedDay);
-    const selectedRowIndex = rowIndexForDay(selectedDay);
-    const nbCouverts = typeof selectedRowIndex === 'number' ? dashboardValue(selectedRowIndex, 25) + dashboardValue(selectedRowIndex, 27) : 0;
-    const caRestaurant = typeof selectedRowIndex === 'number' ? dashboardValue(selectedRowIndex, 18) + dashboardValue(selectedRowIndex, 19) : 0;
-    const tmJour = nbCouverts > 0 ? caRestaurant / nbCouverts : 0;
-    const budgetCouvert = totalBudgetCA > 0 ? (caMois / totalBudgetCA) * 100 : 0;
+    const selectedDates = periodDates.length > 0 ? periodDates : [new Date(year, month, selectedDay)];
+
+    const statsForDate = (date: Date) => {
+      const statMonth = date.getMonth();
+      const monthData = data?.[statMonth];
+      const dashboard = monthData?.dashboard || {};
+      const rowIndex = getDashboardRowIndices(statMonth, year)[date.getDate()];
+      if (typeof rowIndex !== 'number') return { ca: 0, budget: 0, restaurant: 0, couverts: 0 };
+
+      const value = (colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
+      const ca = [17, 18, 19, 20].reduce((sum, col) => sum + value(col), 0);
+      const savedBudget = value(3);
+      const budget = savedBudget > 0
+        ? savedBudget
+        : (value(0) || value(6) * value(7)) + (value(1) || value(8) * value(9)) + (value(2) || value(14) * value(15));
+      return {
+        ca,
+        budget,
+        restaurant: value(18) + value(19),
+        couverts: value(25) + value(27),
+      };
+    };
+
+    const totals = selectedDates.reduce((acc, date) => {
+      const stats = statsForDate(date);
+      return {
+        ca: acc.ca + stats.ca,
+        budget: acc.budget + stats.budget,
+        restaurant: acc.restaurant + stats.restaurant,
+        couverts: acc.couverts + stats.couverts,
+      };
+    }, { ca: 0, budget: 0, restaurant: 0, couverts: 0 });
+
+    const caMois = totals.ca;
+    const caJour = selectedDates.length === 1 ? totals.ca : totals.ca / selectedDates.length;
+    const tmJour = totals.couverts > 0 ? totals.restaurant / totals.couverts : 0;
+    const budgetCouvert = totals.budget > 0 ? (totals.ca / totals.budget) * 100 : 0;
 
     return { caMois, caJour, tmJour, budgetCouvert };
-  }, [data, month, year, dashboardRowIndices]);`;
+  }, [data, month, year, homePeriod]);`;
 
 const chartDataCASource = `  const chartDataCA = useMemo(() => {
     if (!Array.isArray(data) || data.length === 0) return [];
@@ -102,31 +123,45 @@ const chartDataCASource = `  const chartDataCA = useMemo(() => {
   }, [data, rowFirstDay, rowLastDay]);`;
 
 const chartDataCAReplacement = `  const chartDataCA = useMemo(() => {
-    const monthData = data?.[month];
-    const dashboard = monthData?.dashboard || {};
     const parseDashboardValue = (value: unknown) => {
       if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
       return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
     };
-    const dashboardValue = (rowIndex: number, colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const rows = [];
+    const startRaw = makeLocalDate(homePeriod.start);
+    const endRaw = makeLocalDate(homePeriod.end);
+    const startDate = startRaw.getTime() <= endRaw.getTime() ? startRaw : endRaw;
+    const endDate = startRaw.getTime() <= endRaw.getTime() ? endRaw : startRaw;
+    const rows: Array<{ name: string; CA_Realise: number; CA_Budget: number }> = [];
+    const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    let guard = 0;
 
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      const rowIndex = dashboardRowIndices[day];
-      if (typeof rowIndex !== 'number') continue;
-      const caReal = [17, 18, 19, 20].reduce((sum, col) => sum + dashboardValue(rowIndex, col), 0);
-      const savedBudget = dashboardValue(rowIndex, 3);
-      const caBudget = savedBudget > 0
-        ? savedBudget
-        : (dashboardValue(rowIndex, 0) || dashboardValue(rowIndex, 6) * dashboardValue(rowIndex, 7))
-          + (dashboardValue(rowIndex, 1) || dashboardValue(rowIndex, 8) * dashboardValue(rowIndex, 9))
-          + (dashboardValue(rowIndex, 2) || dashboardValue(rowIndex, 14) * dashboardValue(rowIndex, 15));
-      rows.push({ name: String(day), CA_Realise: caReal, CA_Budget: caBudget });
+    while (cursor.getTime() <= endDate.getTime() && guard < 400) {
+      if (cursor.getFullYear() === year) {
+        const statMonth = cursor.getMonth();
+        const monthData = data?.[statMonth];
+        const dashboard = monthData?.dashboard || {};
+        const rowIndex = getDashboardRowIndices(statMonth, year)[cursor.getDate()];
+
+        if (typeof rowIndex === 'number') {
+          const value = (colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
+          const caReal = [17, 18, 19, 20].reduce((sum, col) => sum + value(col), 0);
+          const savedBudget = value(3);
+          const caBudget = savedBudget > 0
+            ? savedBudget
+            : (value(0) || value(6) * value(7)) + (value(1) || value(8) * value(9)) + (value(2) || value(14) * value(15));
+          rows.push({
+            name: cursor.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }),
+            CA_Realise: caReal,
+            CA_Budget: caBudget,
+          });
+        }
+      }
+      cursor.setDate(cursor.getDate() + 1);
+      guard += 1;
     }
 
     return rows;
-  }, [data, month, year, dashboardRowIndices]);`;
+  }, [data, year, homePeriod]);`;
 
 const payrollMemoBlock = `
   const payrollCostBubble = useMemo(() => {
@@ -165,7 +200,8 @@ const payrollMemoBlock = `
         .map(row => {
           const heures = parseHour(row.heures);
           const coutGlobal = parseValue(row.coutGlobal);
-          return heures > 0 && coutGlobal > 0 ? (coutGlobal * 1.1) / heures : 0;
+          const multiplier = category === 'cadre' ? 1.18 : 1.10;
+          return heures > 0 && coutGlobal > 0 ? (coutGlobal * multiplier) / heures : 0;
         })
         .filter(rate => rate > 0);
       return rates.length > 0 ? rates.reduce((sum, rate) => sum + rate, 0) / rates.length : 0;
