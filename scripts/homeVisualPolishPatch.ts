@@ -51,6 +51,8 @@ const weatherLabelReplacement = `      case 1:
       case 2:
         return 'Éclaircies';`;
 
+const defaultPeriodExpr = "homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today)";
+
 export const homeVisualPolishPatch = (): Plugin => ({
   name: 'home-visual-polish-patch',
   enforce: 'pre',
@@ -61,11 +63,14 @@ export const homeVisualPolishPatch = (): Plugin => ({
     next = replaceRequired(next, titleBlockSource, titleBlockReplacement, 'centrage titre restaurant');
     next = replaceRequired(next, summaryFooterSource, '', 'suppression textes sous kpi');
     next = replaceRequired(next, selectedDaySource, selectedDayReplacement, 'kpi veille');
-    next = replaceRequired(next, 'label="CA du Jour"', 'label="CA veille"', 'libelle ca veille');
-    next = replaceRequired(next, 'label="Ticket Moyen"', 'label="TM veille"', 'libelle ticket moyen veille');
+    next = replaceRequired(next, 'label="CA Réalisé"', `label={${defaultPeriodExpr} ? 'CA réalisé' : homePeriod.mode === 'month' ? 'CA mois' : homePeriod.mode === 'year' ? 'CA année' : homePeriod.mode === 'day' ? 'CA sélection' : 'CA période'}`, 'libelle ca principal periode');
+    next = replaceRequired(next, 'label="CA du Jour"', `label={${defaultPeriodExpr} ? 'CA veille' : homePeriod.mode === 'year' ? 'CA moy. / mois' : homePeriod.mode === 'day' ? 'CA resto jour' : 'CA moy. / jour'}`, 'libelle ca secondaire periode');
+    next = replaceRequired(next, 'label="Ticket Moyen"', `label={${defaultPeriodExpr} ? 'TM veille' : homePeriod.mode === 'month' ? 'TM mois' : homePeriod.mode === 'year' ? 'TM année' : homePeriod.mode === 'day' ? 'TM sélection' : 'TM période'}`, 'libelle ticket moyen periode');
+    next = replaceRequired(next, 'label="Réalisation Budget"', `label={${defaultPeriodExpr} ? 'Réalisation Budget' : homePeriod.mode === 'month' ? 'Budget mois' : homePeriod.mode === 'year' ? 'Budget année' : homePeriod.mode === 'day' ? 'Budget jour' : 'Budget période'}`, 'libelle budget periode');
     next = replaceRequired(next, 'Résultat journalier mesuré aujourd\'hui', 'Résultat de la veille', 'description ca veille');
     next = replaceRequired(next, 'Valeur moyenne par couvert du jour', 'Valeur moyenne par couvert de la veille', 'description tm veille');
     next = replaceRequired(next, '{selectedPeriodDescription} · {selectedPeriodLabel}', "{homePeriod.mode === 'day' ? 'Jour sélectionné' : selectedPeriodDescription + ' · ' + selectedPeriodLabel}", 'badge periode sans double date');
+    next = replaceRequired(next, '<p className="home-chart-subtitle text-xs text-slate-500">Réalisé vs Budget mensuel</p>', `<p className="home-chart-subtitle text-xs text-slate-500">{${defaultPeriodExpr} ? 'Réalisé vs Budget mensuel' : homePeriod.mode === 'month' ? 'Réalisé vs Budget du mois sélectionné' : homePeriod.mode === 'year' ? 'Réalisé vs Budget annuel' : homePeriod.mode === 'day' ? 'Réalisé vs Budget du jour sélectionné' : 'Réalisé vs Budget de la période sélectionnée'}</p>`, 'sous titre graphique ca periode');
     next = replaceRequired(next, weatherIconSource, weatherIconReplacement, 'icones meteo ciel clair');
     next = replaceRequired(next, weatherLabelSource, weatherLabelReplacement, 'libelles meteo ciel clair');
 
