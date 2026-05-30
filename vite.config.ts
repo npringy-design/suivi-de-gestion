@@ -16,6 +16,7 @@ import { dashboardStrictSalaryRatesPatch } from './scripts/dashboardStrictSalary
 import { dataContextCloudSyncPatch } from './scripts/dataContextCloudSyncPatch';
 import { homeHeaderPeriodPatch } from './scripts/homeHeaderPeriodPatch';
 import { homePayrollBubblePatch } from './scripts/homePayrollBubblePatch';
+import { homePeriodKpiPatch } from './scripts/homePeriodKpiPatch';
 import { homeVisualPolishPatch } from './scripts/homeVisualPolishPatch';
 import { payrollCpProvisionPatch } from './scripts/payrollCpProvisionPatch';
 
@@ -23,7 +24,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   const defineValues = { ['process.env.GEMINI_API_KEY']: JSON.stringify(env.GEMINI_API_KEY) };
   return {
-    plugins: [payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(), dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(), homePayrollBubblePatch(), homeVisualPolishPatch(), accountingSettingsRoutePatch(), react(), tailwindcss()],
+    plugins: [payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(), dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(), homePayrollBubblePatch(), homeVisualPolishPatch(), homePeriodKpiPatch(), accountingSettingsRoutePatch(), react(), tailwindcss()],
     define: defineValues,
     resolve: {
       alias: {
