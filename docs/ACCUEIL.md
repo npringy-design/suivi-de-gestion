@@ -30,16 +30,30 @@ Quand une periode est appliquee, le mois et l'annee actifs de l'application sont
 
 ## Tuiles et graphiques lies a la periode
 
-Correction du 30/05/2026 : les tuiles principales de l'accueil doivent maintenant suivre la periode selectionnee dans le calendrier.
+Correction du 30/05/2026 : les tuiles principales de l'accueil suivent la periode selectionnee dans le calendrier et adaptent aussi leurs libelles.
 
-Regles :
+### Affichage par defaut
 
-- `CA realise` = cumul du CA realise sur la periode selectionnee ;
-- `CA selection` = CA du jour selectionne, ou moyenne journaliere si la periode contient plusieurs jours ;
-- `TM selection` = ticket moyen du jour selectionne, ou ticket moyen cumule sur la periode ;
-- `Realisation Budget` = CA realise de la periode / budget de la periode ;
-- le graphique `Evolution du CA` affiche les jours de la periode selectionnee ;
-- la tuile `S/C` suit aussi la periode selectionnee : pour une periode multi-jours, elle affiche le ratio S/C de la periode et un detail debut/fin ; pour un jour seul, elle conserve le recap veille/semaine/mois autour du jour selectionne.
+Sans selection particuliere, l'accueil reste en mode pilotage courant :
+
+- `CA realise` = cumul du mois en cours ;
+- `CA veille` = CA total du jour precedent ;
+- `TM veille` = ticket moyen restaurant du jour precedent ;
+- `Realisation Budget` = CA realise du mois / budget du mois ;
+- le graphique `Evolution du CA` reste mensuel.
+
+### Affichage avec selection
+
+Quand une selection calendrier est appliquee, les tuiles basculent en mode selection :
+
+- jour seul : `CA selection`, `CA resto jour`, `TM selection`, `Budget jour` ;
+- periode personnalisee : `CA periode`, `CA moy. / jour`, `TM periode`, `Budget periode` ;
+- mois entier : `CA mois`, `CA moy. / jour`, `TM mois`, `Budget mois` ;
+- annee entiere : `CA annee`, `CA moy. / mois`, `TM annee`, `Budget annee`.
+
+Le graphique `Evolution du CA` affiche les jours de la selection quand une periode est appliquee.
+
+La tuile `S/C` ne recalcule pas les salaires. Elle lit les valeurs consolidees de la vue complete du suivi quotidien : cout global realise et pourcentage frais personnel. Pour une selection, elle agrege les couts et CA de la selection puis affiche le ratio correspondant.
 
 Point important : l'accueil lit les donnees du suivi quotidien deja chargees en memoire. Le mois de debut de periode est charge via la selection active. Si une periode traverse plusieurs mois, les autres mois doivent avoir deja ete charges au moins une fois pour etre totalement pris en compte.
 
@@ -50,8 +64,10 @@ La meteo de l'accueil est libellee `Meteo Thillois` et utilise les coordonnees d
 ## Ligne de conduite technique
 
 - La selection de periode est appliquee via `scripts/homeHeaderPeriodPatch.ts`, active dans `vite.config.ts`.
-- Les KPI, le graphique CA et la tuile S/C lies a la periode sont appliques via `scripts/homePeriodKpiPatch.ts`.
-- Ce choix est volontairement cible : la page `src/Home.tsx` possede deja plusieurs ajustements au build et une reecriture directe complete serait plus risquee.
+- Les KPI et le graphique CA sont bases sur les donnees du dashboard du suivi quotidien via `scripts/homePayrollBubblePatch.ts`, complete par `scripts/homeSmartPeriodSourcesPatch.ts` pour les sources liees a la selection.
+- Les libelles dynamiques et les ajustements visuels sont appliques via `scripts/homeVisualPolishPatch.ts`.
+- La tuile `S/C` est appliquee via `scripts/homePayrollBubblePatch.ts` et doit rester branchee sur les valeurs consolidees de la vue complete, pas sur un recalcul local des taux salariaux.
+- Ce choix reste volontairement cible : la page `src/Home.tsx` possede deja plusieurs ajustements au build et une reecriture directe complete serait plus risquee.
 - Ne pas recreer de listes deroulantes mois / annee dans l'entete d'accueil sans besoin metier clair.
 - Si les KPI doivent calculer des periodes multi-mois avec chargement automatique de chaque mois Supabase, le faire comme une evolution dediee du DataContext.
 
@@ -59,6 +75,7 @@ La meteo de l'accueil est libellee `Meteo Thillois` et utilise les coordonnees d
 
 - `src/Home.tsx` : page source modifiee au build ;
 - `scripts/homeHeaderPeriodPatch.ts` : patch de l'entete et de la selection de periode ;
-- `scripts/homePayrollBubblePatch.ts` : tuile cout salarial de base ;
-- `scripts/homePeriodKpiPatch.ts` : recalcul des tuiles et graphiques selon la periode ;
+- `scripts/homePayrollBubblePatch.ts` : KPI dashboard, graphique CA et tuile S/C ;
+- `scripts/homeSmartPeriodSourcesPatch.ts` : adaptation des sources KPI selon la selection ;
+- `scripts/homeVisualPolishPatch.ts` : libelles dynamiques et finitions visuelles ;
 - `vite.config.ts` : activation des patchs.
