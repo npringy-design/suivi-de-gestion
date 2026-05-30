@@ -115,7 +115,9 @@ Document detaille : `docs/ACCUEIL.md`.
 
 Ce qui est en place : titre `Hippopotamus`, localisation `Thillois`, selection de periode via la tuile date, suppression des listes mois / annee dans l'entete, meteo libellee Thillois.
 
-Point important : les KPI restent bases sur le mois actif. Un vrai calcul multi-periode devra etre traite comme une evolution separee.
+Correction du 30/05/2026 : les tuiles d'accueil adaptent maintenant leurs libelles et leurs sources selon la selection calendrier. Par defaut, elles restent sur mois en cours + veille. En selection jour / periode / mois / annee, elles basculent sur les donnees de la selection.
+
+Point important : la tuile `S/C` doit lire les valeurs consolidees de la vue complete du suivi quotidien et ne doit pas recalculer localement les taux salariaux.
 
 A verifier : l'acces `Utilisateurs` est actuellement ajoute via `HomeWithAdminLink.tsx`. Son placement visuel doit rester propre et ne pas donner un effet bouton flottant bricole.
 
