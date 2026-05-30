@@ -48,33 +48,27 @@ const kpisMemoReplacement = `  const kpis = useMemo(() => {
       if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
       return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
     };
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const now = new Date();
-    const selectedDay = now.getFullYear() === year && now.getMonth() === month ? Math.min(now.getDate(), daysInMonth) : 1;
 
-    const startRaw = makeLocalDate(homePeriod.start);
-    const endRaw = makeLocalDate(homePeriod.end);
-    const startDate = startRaw.getTime() <= endRaw.getTime() ? startRaw : endRaw;
-    const endDate = startRaw.getTime() <= endRaw.getTime() ? endRaw : startRaw;
-    const periodDates: Date[] = [];
-    const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-    let guard = 0;
-
-    while (cursor.getTime() <= endDate.getTime() && guard < 400) {
-      if (cursor.getFullYear() === year) {
-        periodDates.push(new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate()));
+    const buildDates = (start: Date, end: Date) => {
+      const dates: Date[] = [];
+      const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      let guard = 0;
+      while (cursor.getTime() <= end.getTime() && guard < 400) {
+        if (cursor.getFullYear() === year) {
+          dates.push(new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate()));
+        }
+        cursor.setDate(cursor.getDate() + 1);
+        guard += 1;
       }
-      cursor.setDate(cursor.getDate() + 1);
-      guard += 1;
-    }
-
-    const selectedDates = periodDates.length > 0 ? periodDates : [new Date(year, month, selectedDay)];
+      return dates;
+    };
 
     const statsForDate = (date: Date) => {
+      const statYear = date.getFullYear();
       const statMonth = date.getMonth();
-      const monthData = data?.[statMonth];
+      const monthData = statYear === year ? data?.[statMonth] : undefined;
       const dashboard = monthData?.dashboard || {};
-      const rowIndex = getDashboardRowIndices(statMonth, year)[date.getDate()];
+      const rowIndex = getDashboardRowIndices(statMonth, statYear)[date.getDate()];
       if (typeof rowIndex !== 'number') return { ca: 0, budget: 0, restaurant: 0, couverts: 0 };
 
       const value = (colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
@@ -91,7 +85,7 @@ const kpisMemoReplacement = `  const kpis = useMemo(() => {
       };
     };
 
-    const totals = selectedDates.reduce((acc, date) => {
+    const summarizeDates = (dates: Date[]) => dates.reduce((acc, date) => {
       const stats = statsForDate(date);
       return {
         ca: acc.ca + stats.ca,
@@ -101,13 +95,97 @@ const kpisMemoReplacement = `  const kpis = useMemo(() => {
       };
     }, { ca: 0, budget: 0, restaurant: 0, couverts: 0 });
 
-    const caMois = totals.ca;
-    const caJour = selectedDates.length === 1 ? totals.ca : totals.ca / selectedDates.length;
-    const tmJour = totals.couverts > 0 ? totals.restaurant / totals.couverts : 0;
-    const budgetCouvert = totals.budget > 0 ? (totals.ca / totals.budget) * 100 : 0;
+    const ratioBudget = (ca: number, budget: number) => budget > 0 ? (ca / budget) * 100 : 0;
+    const tm = (restaurant: number, couverts: number) => couverts > 0 ? restaurant / couverts : 0;
+    const todayKey = toDateInputValue(today);
+    const isDefaultView = homePeriod.mode === 'day' && homePeriod.start === todayKey && homePeriod.end === todayKey;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthDates = buildDates(new Date(year, month, 1), new Date(year, month, daysInMonth));
 
-    return { caMois, caJour, tmJour, budgetCouvert };
-  }, [data, month, year, homePeriod]);`;
+    if (isDefaultView) {
+      const monthTotals = summarizeDates(monthDates);
+      const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+      const yesterdayTotals = summarizeDates([yesterday]);
+      return {
+        caMois: monthTotals.ca,
+        caJour: yesterdayTotals.ca,
+        tmJour: tm(yesterdayTotals.restaurant, yesterdayTotals.couverts),
+        budgetCouvert: ratioBudget(monthTotals.ca, monthTotals.budget),
+        primaryLabel: 'CA réalisé',
+        primaryDescription: 'Cumul du mois en cours',
+        secondaryLabel: 'CA veille',
+        secondaryDescription: 'Résultat du jour précédent',
+        ticketLabel: 'TM veille',
+        ticketDescription: 'Ticket moyen restaurant de la veille',
+        budgetLabel: 'Réalisation budget',
+        budgetDescription: 'Taux d’atteinte du budget mensuel',
+        chartSubtitle: 'Réalisé vs Budget mensuel',
+      };
+    }
+
+    const startRaw = makeLocalDate(homePeriod.start);
+    const endRaw = makeLocalDate(homePeriod.end);
+    const startDate = startRaw.getTime() <= endRaw.getTime() ? startRaw : endRaw;
+    const endDate = startRaw.getTime() <= endRaw.getTime() ? endRaw : startRaw;
+    const selectedDates = buildDates(startDate, endDate);
+    const safeDates = selectedDates.length > 0 ? selectedDates : [startDate];
+    const totals = summarizeDates(safeDates);
+    const selectedTm = tm(totals.restaurant, totals.couverts);
+    const selectedBudget = ratioBudget(totals.ca, totals.budget);
+
+    if (homePeriod.mode === 'day') {
+      return {
+        caMois: totals.ca,
+        caJour: totals.restaurant,
+        tmJour: selectedTm,
+        budgetCouvert: selectedBudget,
+        primaryLabel: 'CA sélection',
+        primaryDescription: selectedPeriodLabel,
+        secondaryLabel: 'CA resto jour',
+        secondaryDescription: 'Midi + soir de la date sélectionnée',
+        ticketLabel: 'TM sélection',
+        ticketDescription: 'Ticket moyen de la date sélectionnée',
+        budgetLabel: 'Budget jour',
+        budgetDescription: 'Taux d’atteinte du budget de la date',
+        chartSubtitle: 'Réalisé vs Budget de la date sélectionnée',
+      };
+    }
+
+    if (homePeriod.mode === 'year') {
+      return {
+        caMois: totals.ca,
+        caJour: totals.ca / 12,
+        tmJour: selectedTm,
+        budgetCouvert: selectedBudget,
+        primaryLabel: 'CA année',
+        primaryDescription: selectedPeriodLabel,
+        secondaryLabel: 'CA moy. / mois',
+        secondaryDescription: 'Moyenne mensuelle de l’année sélectionnée',
+        ticketLabel: 'TM année',
+        ticketDescription: 'Ticket moyen sur l’année sélectionnée',
+        budgetLabel: 'Budget année',
+        budgetDescription: 'Taux d’atteinte du budget annuel',
+        chartSubtitle: 'Réalisé vs Budget de l’année sélectionnée',
+      };
+    }
+
+    const isMonthMode = homePeriod.mode === 'month';
+    return {
+      caMois: totals.ca,
+      caJour: totals.ca / Math.max(1, safeDates.length),
+      tmJour: selectedTm,
+      budgetCouvert: selectedBudget,
+      primaryLabel: isMonthMode ? 'CA mois' : 'CA période',
+      primaryDescription: selectedPeriodLabel,
+      secondaryLabel: 'CA moy. / jour',
+      secondaryDescription: isMonthMode ? 'Moyenne journalière du mois sélectionné' : 'Moyenne journalière de la période',
+      ticketLabel: isMonthMode ? 'TM mois' : 'TM période',
+      ticketDescription: isMonthMode ? 'Ticket moyen du mois sélectionné' : 'Ticket moyen de la période',
+      budgetLabel: isMonthMode ? 'Budget mois' : 'Budget période',
+      budgetDescription: isMonthMode ? 'Taux d’atteinte du budget du mois' : 'Taux d’atteinte du budget de la période',
+      chartSubtitle: isMonthMode ? 'Réalisé vs Budget du mois sélectionné' : 'Réalisé vs Budget de la période sélectionnée',
+    };
+  }, [data, month, year, homePeriod, selectedPeriodLabel, today]);`;
 
 const chartDataCASource = `  const chartDataCA = useMemo(() => {
     if (!Array.isArray(data) || data.length === 0) return [];
@@ -127,8 +205,10 @@ const chartDataCAReplacement = `  const chartDataCA = useMemo(() => {
       if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
       return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
     };
-    const startRaw = makeLocalDate(homePeriod.start);
-    const endRaw = makeLocalDate(homePeriod.end);
+    const todayKey = toDateInputValue(today);
+    const isDefaultView = homePeriod.mode === 'day' && homePeriod.start === todayKey && homePeriod.end === todayKey;
+    const startRaw = isDefaultView ? new Date(year, month, 1) : makeLocalDate(homePeriod.start);
+    const endRaw = isDefaultView ? new Date(year, month + 1, 0) : makeLocalDate(homePeriod.end);
     const startDate = startRaw.getTime() <= endRaw.getTime() ? startRaw : endRaw;
     const endDate = startRaw.getTime() <= endRaw.getTime() ? endRaw : startRaw;
     const rows: Array<{ name: string; CA_Realise: number; CA_Budget: number }> = [];
@@ -137,10 +217,11 @@ const chartDataCAReplacement = `  const chartDataCA = useMemo(() => {
 
     while (cursor.getTime() <= endDate.getTime() && guard < 400) {
       if (cursor.getFullYear() === year) {
+        const statYear = cursor.getFullYear();
         const statMonth = cursor.getMonth();
         const monthData = data?.[statMonth];
         const dashboard = monthData?.dashboard || {};
-        const rowIndex = getDashboardRowIndices(statMonth, year)[cursor.getDate()];
+        const rowIndex = getDashboardRowIndices(statMonth, statYear)[cursor.getDate()];
 
         if (typeof rowIndex === 'number') {
           const value = (colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
@@ -161,12 +242,10 @@ const chartDataCAReplacement = `  const chartDataCA = useMemo(() => {
     }
 
     return rows;
-  }, [data, year, homePeriod]);`;
+  }, [data, month, year, homePeriod, today]);`;
 
 const payrollMemoBlock = `
   const payrollCostBubble = useMemo(() => {
-    const monthData = data?.[month];
-    const dashboard = monthData?.dashboard || {};
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const now = new Date();
     const isSelectedCurrentMonth = now.getFullYear() === year && now.getMonth() === month;
@@ -177,8 +256,26 @@ const payrollMemoBlock = `
       return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
     };
 
-    const dayStats = (day: number) => {
-      const rowIndex = dashboardRowIndices[day];
+    const buildDates = (start: Date, end: Date) => {
+      const dates: Date[] = [];
+      const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      let guard = 0;
+      while (cursor.getTime() <= end.getTime() && guard < 400) {
+        if (cursor.getFullYear() === year) {
+          dates.push(new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate()));
+        }
+        cursor.setDate(cursor.getDate() + 1);
+        guard += 1;
+      }
+      return dates;
+    };
+
+    const dayStats = (date: Date) => {
+      const statYear = date.getFullYear();
+      const statMonth = date.getMonth();
+      const monthData = statYear === year ? data?.[statMonth] : undefined;
+      const dashboard = monthData?.dashboard || {};
+      const rowIndex = getDashboardRowIndices(statMonth, statYear)[date.getDate()];
       if (typeof rowIndex !== 'number') return { ca: 0, cost: 0 };
       const rowKey = String(rowIndex) + '-';
       const ca = [17, 18, 19, 20].reduce((sum, col) => sum + parseValue(dashboard[rowKey + String(col)]), 0);
@@ -188,14 +285,50 @@ const payrollMemoBlock = `
       return { ca, cost };
     };
 
-    const ratioForDays = (days: number[]) => {
-      const totals = days.reduce((acc, day) => {
-        const stats = dayStats(day);
-        return { ca: acc.ca + stats.ca, cost: acc.cost + stats.cost };
-      }, { ca: 0, cost: 0 });
+    const totalsForDates = (dates: Date[]) => dates.reduce((acc, date) => {
+      const stats = dayStats(date);
+      return { ca: acc.ca + stats.ca, cost: acc.cost + stats.cost };
+    }, { ca: 0, cost: 0 });
+
+    const ratioForDates = (dates: Date[]) => {
+      const totals = totalsForDates(dates);
       if (totals.ca <= 0 || totals.cost <= 0) return null;
       return (totals.cost / totals.ca) * 100;
     };
+
+    const formatPercent = (value: number | null) => value === null ? '-' : value.toFixed(2).replace('.', ',') + ' %';
+    const todayKey = toDateInputValue(today);
+    const isDefaultView = homePeriod.mode === 'day' && homePeriod.start === todayKey && homePeriod.end === todayKey;
+
+    if (!isDefaultView) {
+      const startRaw = makeLocalDate(homePeriod.start);
+      const endRaw = makeLocalDate(homePeriod.end);
+      const startDate = startRaw.getTime() <= endRaw.getTime() ? startRaw : endRaw;
+      const endDate = startRaw.getTime() <= endRaw.getTime() ? endRaw : startRaw;
+      const selectedDates = buildDates(startDate, endDate);
+      const safeDates = selectedDates.length > 0 ? selectedDates : [startDate];
+      const totals = totalsForDates(safeDates);
+      const selectedRatio = totals.ca > 0 && totals.cost > 0 ? (totals.cost / totals.ca) * 100 : null;
+      const isSingleDay = homePeriod.mode === 'day';
+      const isYear = homePeriod.mode === 'year';
+
+      return {
+        headline: formatPercent(selectedRatio),
+        yesterdayLabel: isSingleDay ? 'S/C jour' : isYear ? 'S/C année' : 'S/C période',
+        yesterday: formatPercent(selectedRatio),
+        monthLabel: isSingleDay ? 'Coût jour' : isYear ? 'Mois' : 'Jours',
+        month: isSingleDay ? fe(totals.cost) : isYear ? '12 mois' : String(safeDates.length) + ' j',
+        currentWeek: formatPercent(selectedRatio),
+        currentWeekLabel: selectedPeriodLabel,
+        weekSectionLabel: 'Détail sélection',
+        previousWeeks: [],
+        weekRows: [
+          { label: 'CA', value: fe(totals.ca) },
+          { label: 'Coût', value: fe(totals.cost) },
+          { label: 'S/C', value: formatPercent(selectedRatio) },
+        ],
+      };
+    }
 
     const weekNumberForDay = (targetDay: number) => {
       let weekNumber = 1;
@@ -206,7 +339,7 @@ const payrollMemoBlock = `
       return weekNumber;
     };
 
-    const weeks: Array<{ week: number; days: number[] }> = [];
+    const weeks: Array<{ week: number; days: Date[] }> = [];
     for (let day = 1; day <= daysInMonth; day += 1) {
       const week = weekNumberForDay(day);
       let item = weeks.find(entry => entry.week === week);
@@ -214,23 +347,20 @@ const payrollMemoBlock = `
         item = { week, days: [] };
         weeks.push(item);
       }
-      item.days.push(day);
+      item.days.push(new Date(year, month, day));
     }
 
     const currentWeekNumber = weekNumberForDay(referenceDay);
-    const yesterdayDate = new Date(now);
-    yesterdayDate.setDate(now.getDate() - 1);
-    const yesterdayDay = yesterdayDate.getFullYear() === year && yesterdayDate.getMonth() === month ? yesterdayDate.getDate() : null;
-    const formatPercent = (value: number | null) => value === null ? '-' : value.toFixed(2).replace('.', ',') + ' %';
-
-    const currentWeekDays = weeks.find(entry => entry.week === currentWeekNumber)?.days.filter(day => day <= referenceDay) || [];
-    const monthDays = Array.from({ length: referenceDay }, (_, index) => index + 1);
+    const yesterdayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+    const yesterdayDates = yesterdayDate.getFullYear() === year ? [yesterdayDate] : [];
+    const currentWeekDays = weeks.find(entry => entry.week === currentWeekNumber)?.days.filter(date => date.getDate() <= referenceDay) || [];
+    const monthDays = buildDates(new Date(year, month, 1), new Date(year, month, referenceDay));
     const previousWeeks = weeks
       .filter(entry => entry.week < currentWeekNumber)
-      .map(entry => ({ label: 'Semaine ' + entry.week, value: formatPercent(ratioForDays(entry.days)) }));
-    const currentWeekRatio = ratioForDays(currentWeekDays);
-    const monthRatio = ratioForDays(monthDays);
-    const yesterdayRatio = yesterdayDay ? ratioForDays([yesterdayDay]) : null;
+      .map(entry => ({ label: 'Semaine ' + entry.week, value: formatPercent(ratioForDates(entry.days)) }));
+    const currentWeekRatio = ratioForDates(currentWeekDays);
+    const monthRatio = ratioForDates(monthDays);
+    const yesterdayRatio = ratioForDates(yesterdayDates);
     const weekRows = [
       ...previousWeeks,
       { label: 'Semaine ' + currentWeekNumber + ' en cours', value: formatPercent(currentWeekRatio) },
@@ -238,14 +368,17 @@ const payrollMemoBlock = `
 
     return {
       headline: formatPercent(currentWeekRatio ?? monthRatio ?? yesterdayRatio),
+      yesterdayLabel: 'S/C veille',
       yesterday: formatPercent(yesterdayRatio),
       currentWeek: formatPercent(currentWeekRatio),
       currentWeekLabel: 'Semaine ' + currentWeekNumber,
+      monthLabel: 'S/C mois',
       month: formatPercent(monthRatio),
+      weekSectionLabel: 'Semaine',
       previousWeeks,
       weekRows,
     };
-  }, [data, month, year, dashboardRowIndices]);
+  }, [data, month, year, dashboardRowIndices, homePeriod, selectedPeriodLabel, today]);
 `;
 
 const payrollTileMarkup = `
@@ -255,13 +388,13 @@ const payrollTileMarkup = `
                 <div className="relative grid gap-3 lg:grid-cols-[minmax(250px,0.9fr)_minmax(300px,1.1fr)] lg:items-stretch">
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                     <div className="rounded-xl border border-cyan-100/20 bg-cyan-950/25 px-3 py-2 ring-1 ring-white/5">
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70">S/C Veille</div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70">{payrollCostBubble.yesterdayLabel}</div>
                       <div className="mt-1 text-[clamp(1.7rem,2.1vw,2.25rem)] font-black leading-none text-amber-50 drop-shadow-sm">
                         {payrollCostBubble.yesterday}
                       </div>
                     </div>
                     <div className="rounded-xl border border-cyan-100/20 bg-cyan-950/25 px-3 py-2 ring-1 ring-white/5">
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70">S/C Mois</div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70">{payrollCostBubble.monthLabel}</div>
                       <div className="mt-1 text-[clamp(1.7rem,2.1vw,2.25rem)] font-black leading-none text-amber-50 drop-shadow-sm">
                         {payrollCostBubble.month}
                       </div>
@@ -272,7 +405,7 @@ const payrollTileMarkup = `
                     <div className="mb-2 flex items-center justify-between gap-3 border-b border-cyan-100/20 pb-2">
                       <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/75">
                         <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-cyan-300/10 text-[10px] text-cyan-50 ring-1 ring-cyan-100/20">S/C</span>
-                        Semaine
+                        {payrollCostBubble.weekSectionLabel}
                       </div>
                       <div className="text-sm font-black text-amber-50">{payrollCostBubble.headline}</div>
                     </div>
@@ -300,6 +433,15 @@ export const homePayrollBubblePatch = (): Plugin => ({
     next = replaceRequired(next, currencyFormatSource, currencyFormatReplacement, 'format euros centimes');
     next = replaceRequired(next, kpisMemoSource, kpisMemoReplacement, 'kpi accueil depuis dashboard');
     next = replaceRequired(next, chartDataCASource, chartDataCAReplacement, 'graphique ca depuis dashboard');
+    next = replaceRequired(next, 'label="CA Réalisé"', 'label={kpis.primaryLabel}', 'libelle ca principal');
+    next = replaceRequired(next, 'description="Performance du mois en cours versus budget"', 'description={kpis.primaryDescription}', 'description ca principal');
+    next = replaceRequired(next, 'label="CA du Jour"', 'label={kpis.secondaryLabel}', 'libelle ca secondaire');
+    next = replaceRequired(next, 'description="Résultat journalier mesuré aujourd\'hui"', 'description={kpis.secondaryDescription}', 'description ca secondaire');
+    next = replaceRequired(next, 'label="Ticket Moyen"', 'label={kpis.ticketLabel}', 'libelle tm');
+    next = replaceRequired(next, 'description="Valeur moyenne par couvert du jour"', 'description={kpis.ticketDescription}', 'description tm');
+    next = replaceRequired(next, 'label="Réalisation Budget"', 'label={kpis.budgetLabel}', 'libelle budget');
+    next = replaceRequired(next, 'description="Taux d\'atteinte du budget mensuel"', 'description={kpis.budgetDescription}', 'description budget');
+    next = replaceRequired(next, 'Réalisé vs Budget mensuel', '{kpis.chartSubtitle}', 'sous titre graphique ca');
 
     next = replaceRequired(
       next,
