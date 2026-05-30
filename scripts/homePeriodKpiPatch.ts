@@ -40,8 +40,8 @@ const metricsBlock = `  const kpis = useMemo(() => {
     const dayStats = (date: Date) => {
       const statYear = date.getFullYear();
       const statMonth = date.getMonth();
-      const yearData = allData?.[statYear] || (statYear === year ? data : {});
-      const dashboard = yearData?.[statMonth]?.dashboard || {};
+      const yearData: Record<number, any> = allData?.[statYear] || (statYear === year ? data : {});
+      const dashboard: Record<string, unknown> = yearData?.[statMonth]?.dashboard || {};
       const rowIndex = getDashboardRowIndices(statMonth, statYear)[date.getDate()];
       if (typeof rowIndex !== 'number') return { realised: 0, budget: 0, restaurant: 0, couverts: 0 };
 
@@ -123,7 +123,7 @@ const metricsBlock = `  const kpis = useMemo(() => {
       return parseFloat(raw.replace(',', '.')) || 0;
     };
 
-    const getYearData = (targetYear: number) => allData?.[targetYear] || (targetYear === year ? data : {});
+    const getYearData = (targetYear: number): Record<number, any> => allData?.[targetYear] || (targetYear === year ? data : {});
     const provisionMultiplier = (category: string) => category === 'cadre' ? 1.18 : 1.10;
 
     const averageRate = (monthData: any, category: string, department: string) => {
@@ -144,7 +144,7 @@ const metricsBlock = `  const kpis = useMemo(() => {
       const statYear = date.getFullYear();
       const statMonth = date.getMonth();
       const monthData = getYearData(statYear)?.[statMonth];
-      const dashboard = monthData?.dashboard || {};
+      const dashboard: Record<string, unknown> = monthData?.dashboard || {};
       const rowIndex = getDashboardRowIndices(statMonth, statYear)[date.getDate()];
       if (typeof rowIndex !== 'number') return { ca: 0, cost: 0 };
 
@@ -264,7 +264,7 @@ const metricsBlock = `  const kpis = useMemo(() => {
     const endRaw = makeLocalDate(homePeriod.end);
     const startDate = startRaw.getTime() <= endRaw.getTime() ? startRaw : endRaw;
     const endDate = startRaw.getTime() <= endRaw.getTime() ? endRaw : startRaw;
-    const rows = [];
+    const rows: Array<{ name: string; CA_Realise: number; CA_Budget: number }> = [];
     const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
     let guard = 0;
 
@@ -276,8 +276,8 @@ const metricsBlock = `  const kpis = useMemo(() => {
     while (cursor.getTime() <= endDate.getTime() && guard < 800) {
       const statYear = cursor.getFullYear();
       const statMonth = cursor.getMonth();
-      const yearData = allData?.[statYear] || (statYear === year ? data : {});
-      const dashboard = yearData?.[statMonth]?.dashboard || {};
+      const yearData: Record<number, any> = allData?.[statYear] || (statYear === year ? data : {});
+      const dashboard: Record<string, unknown> = yearData?.[statMonth]?.dashboard || {};
       const rowIndex = getDashboardRowIndices(statMonth, statYear)[cursor.getDate()];
 
       if (typeof rowIndex === 'number') {
@@ -320,7 +320,7 @@ export const homePeriodKpiPatch = (): Plugin => ({
     next = replaceRequired(next, 'description="Taux d\'atteinte du budget mensuel"', 'description={kpis.budgetDescription}', 'description budget selection');
     next = replaceRequired(next, 'S/C Veille', '{payrollCostBubble.yesterdayLabel}', 'libelle sc gauche');
     next = replaceRequired(next, 'S/C Mois', '{payrollCostBubble.monthLabel}', 'libelle sc mois');
-    next = replaceRequired(next, 'Semaine\n', '{payrollCostBubble.weekSectionLabel}\n', 'libelle section sc');
+    next = replaceRequired(next, '                         Semaine', '                         {payrollCostBubble.weekSectionLabel}', 'libelle section sc');
     next = replaceRequired(next, 'Réalisé vs Budget mensuel', 'Réalisé vs Budget sélection', 'sous titre graphique ca');
 
     return { code: next, map: null };
