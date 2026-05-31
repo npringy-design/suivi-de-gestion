@@ -127,10 +127,15 @@ type HistoricalBudgetPreview = {
       const normalized = normalizeExcelSheetName(sheetName);
       if (/BILAN|SAISIE|REPORTING|ANNUEL|REALISE/.test(normalized)) return false;
       const hasMonth = tokens.some(token => normalized.includes(normalizeExcelSheetName(token)));
-      const hasYear = normalized.includes(yearFull) || normalized.split(/\s+/).includes(yearShort);
+      const parts = normalized.split(/\s+/);
+      const hasYear = normalized.includes(yearFull) || parts.includes(yearShort) || normalized.endsWith(yearShort);
       return hasMonth && hasYear;
     }) || '';
   };
+
+  const getHistoricalBudgetCell = (sheet: XLSX.WorkSheet, rowIndex: number, colIndex: number) => (
+    sheet[XLSX.utils.encode_cell({ r: rowIndex, c: colIndex })] as XLSX.CellObject | undefined
+  );
 
   const parseHistoricalBudgetNumber = (value: unknown) => {
     if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
@@ -143,6 +148,13 @@ type HistoricalBudgetPreview = {
     return Number(cleaned) || 0;
   };
 
+  const parseHistoricalBudgetCellNumber = (cell: XLSX.CellObject | undefined) => {
+    if (!cell) return 0;
+    const raw = parseHistoricalBudgetNumber(cell.v);
+    if (raw !== 0) return raw;
+    return parseHistoricalBudgetNumber(cell.w);
+  };
+
   const parseHistoricalBudgetDate = (value: unknown) => {
     if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
     if (typeof value === 'number') {
@@ -150,12 +162,19 @@ type HistoricalBudgetPreview = {
       if (parsed) return new Date(parsed.y, parsed.m - 1, parsed.d);
     }
     const text = String(value ?? '').trim();
-    const frMatch = text.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+    const isoTime = Date.parse(text);
+    if (/^\d{4}-\d{2}-\d{2}/.test(text) && !Number.isNaN(isoTime)) return new Date(isoTime);
+    const frMatch = text.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
     if (frMatch) {
       const fullYear = frMatch[3].length === 2 ? Number('20' + frMatch[3]) : Number(frMatch[3]);
       return new Date(fullYear, Number(frMatch[2]) - 1, Number(frMatch[1]));
     }
     return null;
+  };
+
+  const parseHistoricalBudgetCellDate = (cell: XLSX.CellObject | undefined) => {
+    if (!cell) return null;
+    return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
   };
 
   const handleHistoricalBudgetExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,28 +185,33 @@ type HistoricalBudgetPreview = {
     try {
       const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
       const previews: HistoricalBudgetPreview[] = [];
+      const matchedSheets: string[] = [];
+      let scannedDateRows = 0;
 
       for (let monthIndex = 0; monthIndex < 12; monthIndex += 1) {
         const sheetName = findBudgetSheetName(workbook, monthIndex, year);
         if (!sheetName) continue;
+        matchedSheets.push(sheetName);
         const sheet = workbook.Sheets[sheetName];
-        const rowsArray = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true }) as unknown[][];
+        const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:A1');
 
-        rowsArray.forEach((row, rowNumber) => {
-          const parsedDate = parseHistoricalBudgetDate(row?.[0]);
-          if (!parsedDate || parsedDate.getFullYear() !== year || parsedDate.getMonth() !== monthIndex) return;
+        for (let rowNumber = range.s.r; rowNumber <= range.e.r; rowNumber += 1) {
+          const parsedDate = parseHistoricalBudgetCellDate(getHistoricalBudgetCell(sheet, rowNumber, 0));
+          if (!parsedDate) continue;
+          scannedDateRows += 1;
+          if (parsedDate.getFullYear() !== year || parsedDate.getMonth() !== monthIndex) continue;
           const day = parsedDate.getDate();
           const rowIndex = getDashboardRowIndexForDay(year, monthIndex, day);
-          if (rowIndex < 0) return;
+          if (rowIndex < 0) continue;
 
-          const caMidi = parseHistoricalBudgetNumber(row?.[1]);
-          const caSoir = parseHistoricalBudgetNumber(row?.[3]);
+          const caMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 1));
+          const caSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 3));
           const caTotal = caMidi + caSoir;
-          const couvertsMidi = parseHistoricalBudgetNumber(row?.[11]);
-          const couvertsSoir = parseHistoricalBudgetNumber(row?.[15]);
+          const couvertsMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 11));
+          const couvertsSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 15));
           const couvertsTotal = couvertsMidi + couvertsSoir;
 
-          if (caTotal <= 0 && couvertsTotal <= 0) return;
+          if (caTotal <= 0 && couvertsTotal <= 0) continue;
 
           previews.push({
             id: sheetName + '-' + rowNumber + '-' + day,
@@ -203,7 +227,7 @@ type HistoricalBudgetPreview = {
             couvertsTotal,
             status: caTotal > 0 && couvertsTotal > 0 ? 'Budget détecté' : 'Budget partiel détecté',
           });
-        });
+        }
       }
 
       setHistoricalBudgetPreviews(previews);
@@ -212,7 +236,7 @@ type HistoricalBudgetPreview = {
       setInvoiceImportPreviews([]);
       setHistoricalBudgetStatus(previews.length > 0
         ? previews.length + ' jour(s) budget trouvés sur ' + new Set(previews.map(item => item.month)).size + ' mois. Vérifie puis valide.'
-        : 'Aucun budget journalier trouvé pour ' + year + '. Vérifie que les feuilles sont nommées JANV ' + String(year).slice(-2) + ', FEV ' + String(year).slice(-2) + ', etc.');
+        : 'Aucun budget journalier trouvé pour ' + year + '. Feuilles budget détectées : ' + (matchedSheets.join(', ') || 'aucune') + '. Lignes dates lues : ' + scannedDateRows + '.');
     } catch (error) {
       setHistoricalBudgetStatus('Erreur import budget Excel : ' + (error instanceof Error ? error.message : 'lecture impossible'));
     } finally {
