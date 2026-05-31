@@ -15,40 +15,61 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
     next = replaceRequired(
       next,
       `  couvertsMidi: number;
-  couvertsSoir: number;
-  couvertsTotal: number;
-  status: string;`,
+   couvertsSoir: number;
+   couvertsTotal: number;
+   status: string;`,
       `  couvertsMidi: number;
-  tmMidi: number;
-  couvertsSoir: number;
-  tmSoir: number;
-  couvertsTotal: number;
-  status: string;`,
+   tmMidi: number;
+   couvertsSoir: number;
+   tmSoir: number;
+   couvertsTotal: number;
+   status: string;`,
       'type tm preview'
     );
 
     next = replaceRequired(
       next,
       `  const parseHistoricalBudgetCellDate = (cell: XLSX.CellObject | undefined) => {
-    if (!cell) return null;
-    return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
-  };`,
+     if (!cell) return null;
+     return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
+   };`,
       `  const parseHistoricalBudgetCellDate = (cell: XLSX.CellObject | undefined) => {
-    if (!cell) return null;
-    return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
-  };
+     if (!cell) return null;
+     return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
+   };
 
-  const getHistoricalBudgetRowValues = (sheet: XLSX.WorkSheet, rowNumber: number) => {
-    const couvertsMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 11));
-    const tmMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 12));
-    const couvertsSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 15));
-    const tmSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 16));
-    return { couvertsMidi, tmMidi, couvertsSoir, tmSoir };
-  };
+   const getHistoricalBudgetCellText = (sheet: XLSX.WorkSheet, rowNumber: number, colIndex: number) => {
+     const cell = getHistoricalBudgetCell(sheet, rowNumber, colIndex);
+     return String(cell?.w ?? cell?.v ?? '')
+       .normalize('NFD')
+       .replace(/[\\u0300-\\u036f]/g, '')
+       .trim()
+       .toUpperCase();
+   };
 
-  const rowHasHistoricalBudgetValues = (values: ReturnType<typeof getHistoricalBudgetRowValues>) => (
-    values.couvertsMidi > 0 || values.tmMidi > 0 || values.couvertsSoir > 0 || values.tmSoir > 0
-  );`,
+   const isHistoricalBudgetTotalRow = (sheet: XLSX.WorkSheet, rowNumber: number) => {
+     if (rowNumber < 0) return false;
+     const label = [0, 1, 2, 3, 4, 5]
+       .map(colIndex => getHistoricalBudgetCellText(sheet, rowNumber, colIndex))
+       .filter(Boolean)
+       .join(' ');
+     return /TOTAL|SEMAINE|CUMUL|BUDGET MOIS|TOTAL MOIS/.test(label);
+   };
+
+   const getHistoricalBudgetRowValues = (sheet: XLSX.WorkSheet, rowNumber: number) => {
+     if (rowNumber < 0 || isHistoricalBudgetTotalRow(sheet, rowNumber)) {
+       return { couvertsMidi: 0, tmMidi: 0, couvertsSoir: 0, tmSoir: 0 };
+     }
+     const couvertsMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 11));
+     const tmMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 12));
+     const couvertsSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 15));
+     const tmSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 16));
+     return { couvertsMidi, tmMidi, couvertsSoir, tmSoir };
+   };
+
+   const rowHasHistoricalBudgetValues = (values: ReturnType<typeof getHistoricalBudgetRowValues>) => (
+     values.couvertsMidi > 0 || values.tmMidi > 0 || values.couvertsSoir > 0 || values.tmSoir > 0
+   );`,
       'helpers row values'
     );
 
@@ -76,7 +97,9 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
           const couvertsTotal = couvertsMidi + couvertsSoir;
 
           if (caTotal <= 0 && couvertsTotal <= 0) continue;`,
-      `          const previousValues = getHistoricalBudgetRowValues(sheet, rowNumber - 1);
+      `          if (isHistoricalBudgetTotalRow(sheet, rowNumber)) continue;
+
+          const previousValues = getHistoricalBudgetRowValues(sheet, rowNumber - 1);
           const currentValues = getHistoricalBudgetRowValues(sheet, rowNumber);
           const values = rowHasHistoricalBudgetValues(previousValues) ? previousValues : currentValues;
 
