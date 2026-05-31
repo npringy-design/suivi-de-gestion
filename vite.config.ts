@@ -17,6 +17,7 @@ import { dashboardRealiseCleanLayoutPatch } from './scripts/dashboardRealiseClea
 import { dashboardRealiseTotalsPatch } from './scripts/dashboardRealiseTotalsPatch';
 import { dashboardStrictSalaryRatesPatch } from './scripts/dashboardStrictSalaryRatesPatch';
 import { dashboardThilloisNoLimonadePatch } from './scripts/dashboardThilloisNoLimonadePatch';
+import { dashboardVarianceSoftColorsPatch } from './scripts/dashboardVarianceSoftColorsPatch';
 import { dataContextCloudSyncPatch } from './scripts/dataContextCloudSyncPatch';
 import { homeHeaderPeriodPatch } from './scripts/homeHeaderPeriodPatch';
 import { homePayrollBubblePatch } from './scripts/homePayrollBubblePatch';
@@ -28,7 +29,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   const defineValues = { ['process.env.' + 'GEMINI_API_KEY']: JSON.stringify(env.GEMINI_API_KEY) };
   return {
-    plugins: [payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(), dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardThilloisNoLimonadePatch(), dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(), dashboardHistoricalRealiseImportPatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(), homePayrollBubblePatch(), homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(), accountingSettingsRoutePatch(), react(), tailwindcss()],
+    plugins: [payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(), dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardThilloisNoLimonadePatch(), dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(), dashboardHistoricalRealiseImportPatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), dashboardVarianceSoftColorsPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(), homePayrollBubblePatch(), homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(), accountingSettingsRoutePatch(), react(), tailwindcss()],
     define: defineValues,
     resolve: {
       alias: {
