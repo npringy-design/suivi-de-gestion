@@ -28,14 +28,14 @@ export const dashboardRealiseTotalsPatch = (): Plugin => ({
     next = replaceOneRequired(
       next,
       "        if (nbMidiW > 0 && caMidiWr > 0) data[`${rIdx}-26`] = (caMidiWr / nbMidiW).toFixed(2);\n        if (nbSoirW > 0 && caSoirWr > 0) data[`${rIdx}-28`] = (caSoirWr / nbSoirW).toFixed(2);\n        // Cout matiere semaine",
-      "        if (nbMidiW > 0 && caMidiWr > 0) data[`${rIdx}-26`] = (caMidiWr / nbMidiW).toFixed(2);\n        if (nbSoirW > 0 && caSoirWr > 0) data[`${rIdx}-28`] = (caSoirWr / nbSoirW).toFixed(2);\n        const totalCvtsRealiseW = nbMidiW + nbSoirW;\n        if (totalCvtsRealiseW > 0) {\n          const moyJourRealiseW = (caMidiWr + caSoirWr) / totalCvtsRealiseW;\n          data[`${rIdx}-29`] = totalCvtsRealiseW.toFixed(0);\n          data[`${rIdx}-30`] = moyJourRealiseW.toFixed(2);\n          const budgetMoyJourW = parseFloat(data[`${rIdx}-11`] || '0');\n          if (budgetMoyJourW > 0) data[`${rIdx}-31`] = (moyJourRealiseW - budgetMoyJourW).toFixed(2);\n        }\n        // Cout matiere semaine",
+      "        if (nbMidiW > 0 && caMidiWr > 0) data[`${rIdx}-26`] = (caMidiWr / nbMidiW).toFixed(2);\n        if (nbSoirW > 0 && caSoirWr > 0) data[`${rIdx}-28`] = (caSoirWr / nbSoirW).toFixed(2);\n        const totalCvtsRealiseW = nbMidiW + nbSoirW;\n        if (totalCvtsRealiseW > 0) {\n          const moyJourRealiseW = (caMidiWr + caSoirWr) / totalCvtsRealiseW;\n          data[`${rIdx}-29`] = totalCvtsRealiseW.toFixed(0);\n          data[`${rIdx}-30`] = moyJourRealiseW.toFixed(2);\n          const budgetMoyJourW = parseFloat(data[`${rIdx}-11`] || '0');\n          if (budgetMoyJourW > 0) data[`${rIdx}-31`] = (moyJourRealiseW - budgetMoyJourW).toFixed(2);\n          const lastWeekDay = weekDays[weekDays.length - 1];\n          if (lastWeekDay) data[`${rIdx}-32`] = data[`${lastWeekDay.originalIdx}-32`] || totalCvtsRealiseW.toFixed(0);\n        }\n        // Cout matiere semaine",
       'moyenne semaine'
     );
 
     next = replaceOneRequired(
       next,
       "      const totalCvtsM = nbMidiM + nbSoirM;\n      if (totalCvtsM > 0) data[`${monthTotalIdx}-29`] = totalCvtsM.toFixed(0);",
-      "      const totalCvtsM = nbMidiM + nbSoirM;\n      if (totalCvtsM > 0) {\n        const moyJourRealiseM = (caMidiMr + caSoirMr) / totalCvtsM;\n        data[`${monthTotalIdx}-29`] = totalCvtsM.toFixed(0);\n        data[`${monthTotalIdx}-30`] = moyJourRealiseM.toFixed(2);\n        const budgetMoyJourM = parseFloat(data[`${monthTotalIdx}-11`] || '0');\n        if (budgetMoyJourM > 0) data[`${monthTotalIdx}-31`] = (moyJourRealiseM - budgetMoyJourM).toFixed(2);\n      }",
+      "      const totalCvtsM = nbMidiM + nbSoirM;\n      if (totalCvtsM > 0) {\n        const moyJourRealiseM = (caMidiMr + caSoirMr) / totalCvtsM;\n        data[`${monthTotalIdx}-29`] = totalCvtsM.toFixed(0);\n        data[`${monthTotalIdx}-30`] = moyJourRealiseM.toFixed(2);\n        data[`${monthTotalIdx}-32`] = totalCvtsM.toFixed(0);\n        const budgetMoyJourM = parseFloat(data[`${monthTotalIdx}-11`] || '0');\n        if (budgetMoyJourM > 0) data[`${monthTotalIdx}-31`] = (moyJourRealiseM - budgetMoyJourM).toFixed(2);\n      }",
       'moyenne mois'
     );
 
