@@ -6,7 +6,7 @@ Permettre de remplir rapidement le suivi quotidien a partir des anciens fichiers
 
 ## Version actuelle
 
-Premiere version ciblee : import des previsions budgetaires journalieres depuis les feuilles mensuelles du fichier Excel historique.
+Version ciblee : import des donnees journalieres depuis les feuilles mensuelles du fichier Excel historique.
 
 L'import est accessible depuis le bouton `Importer` du suivi quotidien, carte `Budget historique Excel`.
 
@@ -16,8 +16,8 @@ L'import ne doit pas recopier tout le tableau Excel.
 
 La logique retenue est la meme que dans le fichier Excel :
 
-- on importe uniquement les donnees de base de prevision ;
-- l'application recalcule ensuite les CA, totaux, cumuls et tickets moyens globaux ;
+- on importe uniquement les donnees de base fiables ;
+- l'application recalcule ensuite les CA, totaux, cumuls, tickets moyens et ratios ;
 - on ne force pas les colonnes calculees.
 
 ## Perimetre d'import actuel
@@ -37,11 +37,11 @@ L'application cherche la feuille mensuelle correspondant au mois affiche et a l'
 - mars 2026 -> `MARS 26` ;
 - etc.
 
-Les feuilles de type `BILAN`, `SAISIE`, `REPORTING`, `ANNUEL`, `REALISE` sont ignorees pour cet import budget.
+Les feuilles de type `BILAN`, `SAISIE`, `REPORTING`, `ANNUEL`, `REALISE` sont ignorees pour cet import.
 
-## Colonnes utilisees
+## Donnees budget lues
 
-Pour chaque vraie date du mois, l'import lit uniquement :
+Pour chaque vraie date du mois, l'import lit :
 
 - couverts midi ;
 - TM midi ;
@@ -51,6 +51,38 @@ Pour chaque vraie date du mois, l'import lit uniquement :
 Dans la structure Excel actuelle, cela correspond a la zone `COUVERT RESTAURANTS` / `Prevision Saisie`.
 
 Pour Hippo Thillois, les colonnes limonade du fichier Excel sont ignorees.
+
+## Donnees realisees lues
+
+L'import lit aussi le realise journalier :
+
+- CA HT VAE -> colonne dashboard `17` ;
+- CA HT midi -> colonne dashboard `18` ;
+- CA HT soir -> colonne dashboard `19` ;
+- CA HT limonade -> colonne dashboard `20` ;
+- couverts midi -> colonne dashboard `25` ;
+- couverts soir -> colonne dashboard `27` ;
+- couverts limonade -> colonne dashboard `34`.
+
+Les totaux, cumuls, TM et ecarts sont recalcules par l'application.
+
+## Donnees cout matiere lues
+
+Correction ajoutee le 31/05/2026 : l'import lit la zone `COUT MATIERE` en detectant les fournisseurs depuis les en-tetes Excel.
+
+Principe :
+
+- l'application parcourt les en-tetes de la zone cout matiere ;
+- elle normalise le nom fournisseur ;
+- elle cherche la colonne correspondante dans les fournisseurs de l'application ;
+- si une valeur existe sur une vraie ligne de date, elle est importee dans la bonne colonne fournisseur ;
+- les lignes `Total Semaine`, cumuls et ratios sont ignorees comme sources d'import.
+
+Colonnes dashboard visees : fournisseurs achats HT `45` a `57`.
+
+Des alias sont prevus pour les variations courantes : Doquet/C10, Terre Azur/Pomona F&L, Plaine Maison/Socopa, Episaveur, Metro/Depannage, Martel, etc.
+
+Les totaux achat HT, cumuls HT et ratios sans stock restent recalcules par l'application.
 
 ## Garde-fou lignes total semaine
 
@@ -62,7 +94,7 @@ L'import peut toujours regarder la ligne precedente si la date Excel et les vale
 
 ## Destination dans l'application
 
-Les valeurs sont ecrites dans le dashboard du suivi quotidien :
+Les valeurs budget sont ecrites dans le dashboard du suivi quotidien :
 
 - couverts budget midi -> colonne dashboard `6` ;
 - TM budget midi -> colonne dashboard `7` ;
@@ -78,7 +110,7 @@ L'import fonctionne avec une previsualisation avant validation :
 
 1. lecture locale du fichier Excel ;
 2. detection des jours trouves sur le mois affiche ;
-3. affichage des couverts et TM detectes ;
+3. affichage des valeurs detectees ;
 4. validation manuelle avant ecriture dans le suivi quotidien.
 
 Les fichiers ne sont pas conserves dans l'application.
@@ -91,16 +123,17 @@ Point important : la gestion de la limonade doit rester configurable par site. T
 
 ## Fichiers concernes
 
-- `scripts/dashboardHistoricalBudgetExcelPatch.ts` : premiere couche de lecture/previsualisation/application de l'import budget Excel ;
+- `scripts/dashboardHistoricalBudgetExcelPatch.ts` : premiere couche de lecture/previsualisation/application de l'import historique Excel ;
 - `scripts/dashboardHistoricalBudgetFocusedPatch.ts` : correction ciblee pour limiter l'import au mois affiche, aux couverts/TM et ignorer les lignes total semaine ;
+- `scripts/dashboardHistoricalRealiseImportPatch.ts` : ajout du realise CA/couverts ;
+- `scripts/dashboardHistoricalCostMatterImportPatch.ts` : ajout des achats cout matiere par detection d'en-tetes fournisseurs ;
 - `scripts/dashboardThilloisNoLimonadePatch.ts` : neutralisation limonade pour Thillois ;
 - `vite.config.ts` : activation des patchs ;
 - `src/Dashboard.tsx` : composant cible modifie au build.
 
 ## Prochaines evolutions possibles
 
-- Consolider `dashboardHistoricalBudgetExcelPatch.ts` et `dashboardHistoricalBudgetFocusedPatch.ts` en un seul patch propre quand la logique sera validee terrain.
-- Importer aussi le realise journalier depuis les feuilles `BILAN` ou `SAISIE` apres validation de la source fiable.
+- Consolider les patchs d'import historique en un seul module propre quand la logique sera validee terrain.
 - Ajouter un choix explicite de site avec option `limonade activee / desactivee`.
 - Ajouter une detection des annees disponibles dans le fichier.
-- Ajouter un rapport d'erreurs plus detaille pour les dates manquantes ou incoherentes.
+- Ajouter un rapport d'erreurs plus detaille pour les dates manquantes, fournisseurs non reconnus ou valeurs incoherentes.
