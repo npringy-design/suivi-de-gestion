@@ -38,17 +38,7 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
      return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
    };
 
-   const isHistoricalBudgetTotalRow = (sheet: XLSX.WorkSheet, rowNumber: number) => {
-     if (rowNumber < 0) return false;
-     const cell = getHistoricalBudgetCell(sheet, rowNumber, 0);
-     const label = String(cell?.w ?? cell?.v ?? '').toUpperCase();
-     return label.includes('TOTAL') || label.includes('SEMAINE') || label.includes('CUMUL');
-   };
-
    const getHistoricalBudgetRowValues = (sheet: XLSX.WorkSheet, rowNumber: number) => {
-     if (rowNumber < 0 || isHistoricalBudgetTotalRow(sheet, rowNumber)) {
-       return { couvertsMidi: 0, tmMidi: 0, couvertsSoir: 0, tmSoir: 0 };
-     }
      const couvertsMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 11));
      const tmMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 12));
      const couvertsSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 15));
@@ -86,9 +76,7 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
           const couvertsTotal = couvertsMidi + couvertsSoir;
 
           if (caTotal <= 0 && couvertsTotal <= 0) continue;`,
-      `          if (isHistoricalBudgetTotalRow(sheet, rowNumber)) continue;
-
-          const previousValues = getHistoricalBudgetRowValues(sheet, rowNumber - 1);
+      `          const previousValues = getHistoricalBudgetRowValues(sheet, rowNumber - 1);
           const currentValues = getHistoricalBudgetRowValues(sheet, rowNumber);
           const values = rowHasHistoricalBudgetValues(previousValues) ? previousValues : currentValues;
 
@@ -103,6 +91,23 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
 
           if (couvertsTotal <= 0 && tmMidi <= 0 && tmSoir <= 0) continue;`,
       'lecture couverts tm'
+    );
+
+    next = next.replace(
+      `          const previousValues = getHistoricalBudgetRowValues(sheet, rowNumber - 1);`,
+      `          const currentRowLabel = [0, 1, 2, 3, 4, 5].map(col => {
+            const labelCell = getHistoricalBudgetCell(sheet, rowNumber, col);
+            return String(labelCell?.w ?? labelCell?.v ?? '');
+          }).join(' ').toUpperCase();
+          if (currentRowLabel.includes('TOTAL') || currentRowLabel.includes('SEMAINE') || currentRowLabel.includes('CUMUL')) continue;
+
+          const previousRowLabel = [0, 1, 2, 3, 4, 5].map(col => {
+            const labelCell = getHistoricalBudgetCell(sheet, rowNumber - 1, col);
+            return String(labelCell?.w ?? labelCell?.v ?? '');
+          }).join(' ').toUpperCase();
+          const previousValues = previousRowLabel.includes('TOTAL') || previousRowLabel.includes('SEMAINE') || previousRowLabel.includes('CUMUL')
+            ? { couvertsMidi: 0, tmMidi: 0, couvertsSoir: 0, tmSoir: 0 }
+            : getHistoricalBudgetRowValues(sheet, rowNumber - 1);`
     );
 
     next = replaceRequired(
