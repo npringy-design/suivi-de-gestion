@@ -15,40 +15,40 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
     next = replaceRequired(
       next,
       `  couvertsMidi: number;
-   couvertsSoir: number;
-   couvertsTotal: number;
-   status: string;`,
+  couvertsSoir: number;
+  couvertsTotal: number;
+  status: string;`,
       `  couvertsMidi: number;
-   tmMidi: number;
-   couvertsSoir: number;
-   tmSoir: number;
-   couvertsTotal: number;
-   status: string;`,
+  tmMidi: number;
+  couvertsSoir: number;
+  tmSoir: number;
+  couvertsTotal: number;
+  status: string;`,
       'type tm preview'
     );
 
     next = replaceRequired(
       next,
       `  const parseHistoricalBudgetCellDate = (cell: XLSX.CellObject | undefined) => {
-     if (!cell) return null;
-     return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
-   };`,
+    if (!cell) return null;
+    return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
+  };`,
       `  const parseHistoricalBudgetCellDate = (cell: XLSX.CellObject | undefined) => {
-     if (!cell) return null;
-     return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
-   };
+    if (!cell) return null;
+    return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
+  };
 
-   const getHistoricalBudgetRowValues = (sheet: XLSX.WorkSheet, rowNumber: number) => {
-     const couvertsMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 11));
-     const tmMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 12));
-     const couvertsSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 15));
-     const tmSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 16));
-     return { couvertsMidi, tmMidi, couvertsSoir, tmSoir };
-   };
+  const getHistoricalBudgetRowValues = (sheet: XLSX.WorkSheet, rowNumber: number) => {
+    const couvertsMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 11));
+    const tmMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 12));
+    const couvertsSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 15));
+    const tmSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 16));
+    return { couvertsMidi, tmMidi, couvertsSoir, tmSoir };
+  };
 
-   const rowHasHistoricalBudgetValues = (values: ReturnType<typeof getHistoricalBudgetRowValues>) => (
-     values.couvertsMidi > 0 || values.tmMidi > 0 || values.couvertsSoir > 0 || values.tmSoir > 0
-   );`,
+  const rowHasHistoricalBudgetValues = (values: ReturnType<typeof getHistoricalBudgetRowValues>) => (
+    values.couvertsMidi > 0 || values.tmMidi > 0 || values.couvertsSoir > 0 || values.tmSoir > 0
+  );`,
       'helpers row values'
     );
 
