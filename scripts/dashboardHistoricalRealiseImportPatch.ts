@@ -45,7 +45,10 @@ export const dashboardHistoricalRealiseImportPatch = (): Plugin => ({
 
     next = swap(next, `          const couvertsTotal = couvertsMidi + couvertsSoir;
           const caMidi = couvertsMidi * tmMidi;`, `          const couvertsTotal = couvertsMidi + couvertsSoir;
-          const realiseValues = getHistoricalRealiseRowValues(sheet, rowNumber);
+          let realiseSourceRow = rowNumber;
+          if (rowHasHistoricalBudgetValues(previousValues)) realiseSourceRow = rowNumber - 1;
+          else if (rowHasHistoricalBudgetValues(upperValues)) realiseSourceRow = rowNumber - 2;
+          const realiseValues = getHistoricalRealiseRowValues(sheet, realiseSourceRow);
           const caMidi = couvertsMidi * tmMidi;`);
 
     next = swap(next, `          if (couvertsTotal <= 0 && tmMidi <= 0 && tmSoir <= 0) continue;`, `          if (couvertsTotal <= 0 && tmMidi <= 0 && tmSoir <= 0 && !rowHasHistoricalRealiseValues(realiseValues)) continue;`);
