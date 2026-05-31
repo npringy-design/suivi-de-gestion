@@ -8,6 +8,7 @@ import { caisseImportRecoveryPatch } from './scripts/caisseImportRecoveryPatch';
 import { dashboardAnalysisModePatch } from './scripts/dashboardAnalysisModePatch';
 import { dashboardCaisseRecapPeriodePatch } from './scripts/dashboardCaisseRecapPeriodePatch';
 import { dashboardHeaderVisualPatch } from './scripts/dashboardHeaderVisualPatch';
+import { dashboardHistoricalBudgetExcelPatch } from './scripts/dashboardHistoricalBudgetExcelPatch';
 import { dashboardLimonadeSplitPatch } from './scripts/dashboardLimonadeSplitPatch';
 import { dashboardPayrollColumnPatch } from './scripts/dashboardPayrollColumnPatch';
 import { dashboardRealiseCleanLayoutPatch } from './scripts/dashboardRealiseCleanLayoutPatch';
@@ -25,7 +26,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   const defineValues = { ['process.env.GEMINI_API_KEY']: JSON.stringify(env.GEMINI_API_KEY) };
   return {
-    plugins: [payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(), dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardThilloisNoLimonadePatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(), homePayrollBubblePatch(), homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(), accountingSettingsRoutePatch(), react(), tailwindcss()],
+    plugins: [payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(), dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(), dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardThilloisNoLimonadePatch(), dashboardHistoricalBudgetExcelPatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(), homePayrollBubblePatch(), homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(), accountingSettingsRoutePatch(), react(), tailwindcss()],
     define: defineValues,
     resolve: {
       alias: {
