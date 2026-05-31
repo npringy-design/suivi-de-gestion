@@ -52,6 +52,14 @@ Dans la structure Excel actuelle, cela correspond a la zone `COUVERT RESTAURANTS
 
 Pour Hippo Thillois, les colonnes limonade du fichier Excel sont ignorees.
 
+## Garde-fou lignes total semaine
+
+Correction ajoutee le 31/05/2026 : les lignes de total, semaine, cumul ou total mois sont ignorees pendant la lecture.
+
+Objectif : eviter que le dimanche recupere les valeurs d'une ligne `Total Semaine`, par exemple `380 + 365 = 745` au lieu des vrais couverts du dimanche.
+
+L'import peut toujours regarder la ligne precedente si la date Excel et les valeurs sont decalees, mais cette ligne precedente est rejetee si elle ressemble a un total.
+
 ## Destination dans l'application
 
 Les valeurs sont ecrites dans le dashboard du suivi quotidien :
@@ -84,7 +92,7 @@ Point important : la gestion de la limonade doit rester configurable par site. T
 ## Fichiers concernes
 
 - `scripts/dashboardHistoricalBudgetExcelPatch.ts` : premiere couche de lecture/previsualisation/application de l'import budget Excel ;
-- `scripts/dashboardHistoricalBudgetFocusedPatch.ts` : correction ciblee pour limiter l'import au mois affiche et aux couverts/TM ;
+- `scripts/dashboardHistoricalBudgetFocusedPatch.ts` : correction ciblee pour limiter l'import au mois affiche, aux couverts/TM et ignorer les lignes total semaine ;
 - `scripts/dashboardThilloisNoLimonadePatch.ts` : neutralisation limonade pour Thillois ;
 - `vite.config.ts` : activation des patchs ;
 - `src/Dashboard.tsx` : composant cible modifie au build.
