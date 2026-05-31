@@ -38,22 +38,11 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
      return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
    };
 
-   const getHistoricalBudgetCellText = (sheet: XLSX.WorkSheet, rowNumber: number, colIndex: number) => {
-     const cell = getHistoricalBudgetCell(sheet, rowNumber, colIndex);
-     return String(cell?.w ?? cell?.v ?? '')
-       .normalize('NFD')
-       .replace(/[\\u0300-\\u036f]/g, '')
-       .trim()
-       .toUpperCase();
-   };
-
    const isHistoricalBudgetTotalRow = (sheet: XLSX.WorkSheet, rowNumber: number) => {
      if (rowNumber < 0) return false;
-     const label = [0, 1, 2, 3, 4, 5]
-       .map(colIndex => getHistoricalBudgetCellText(sheet, rowNumber, colIndex))
-       .filter(Boolean)
-       .join(' ');
-     return /TOTAL|SEMAINE|CUMUL|BUDGET MOIS|TOTAL MOIS/.test(label);
+     const cell = getHistoricalBudgetCell(sheet, rowNumber, 0);
+     const label = String(cell?.w ?? cell?.v ?? '').toUpperCase();
+     return label.includes('TOTAL') || label.includes('SEMAINE') || label.includes('CUMUL');
    };
 
    const getHistoricalBudgetRowValues = (sheet: XLSX.WorkSheet, rowNumber: number) => {
