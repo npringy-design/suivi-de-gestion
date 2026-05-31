@@ -38,7 +38,26 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
     return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
   };
 
+  const getHistoricalBudgetRowLabel = (sheet: XLSX.WorkSheet, rowNumber: number) => (
+    [0, 1, 2, 3, 4, 5]
+      .map(colIndex => {
+        const cell = getHistoricalBudgetCell(sheet, rowNumber, colIndex);
+        return String(cell?.w ?? cell?.v ?? '');
+      })
+      .join(' ')
+      .toUpperCase()
+  );
+
+  const isHistoricalBudgetTotalRow = (sheet: XLSX.WorkSheet, rowNumber: number) => {
+    if (rowNumber < 0) return false;
+    const label = getHistoricalBudgetRowLabel(sheet, rowNumber);
+    return label.includes('TOTAL') || label.includes('SEMAINE') || label.includes('CUMUL');
+  };
+
   const getHistoricalBudgetRowValues = (sheet: XLSX.WorkSheet, rowNumber: number) => {
+    if (rowNumber < 0 || isHistoricalBudgetTotalRow(sheet, rowNumber)) {
+      return { couvertsMidi: 0, tmMidi: 0, couvertsSoir: 0, tmSoir: 0 };
+    }
     const couvertsMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 11));
     const tmMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 12));
     const couvertsSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 15));
@@ -76,7 +95,9 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
           const couvertsTotal = couvertsMidi + couvertsSoir;
 
           if (caTotal <= 0 && couvertsTotal <= 0) continue;`,
-      `          const previousValues = getHistoricalBudgetRowValues(sheet, rowNumber - 1);
+      `          if (isHistoricalBudgetTotalRow(sheet, rowNumber)) continue;
+
+          const previousValues = getHistoricalBudgetRowValues(sheet, rowNumber - 1);
           const currentValues = getHistoricalBudgetRowValues(sheet, rowNumber);
           const values = rowHasHistoricalBudgetValues(previousValues) ? previousValues : currentValues;
 
