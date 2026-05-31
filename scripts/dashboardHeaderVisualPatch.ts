@@ -14,6 +14,47 @@ export const dashboardHeaderVisualPatch = (): Plugin => ({
 
     next = replaceRequired(
       next,
+      "  const recapPreviewRef = useRef<HTMLDivElement>(null);",
+      "  const recapPreviewRef = useRef<HTMLDivElement>(null);\n  const datePickerRef = useRef<HTMLDivElement>(null);",
+      'reference date picker'
+    );
+
+    next = replaceRequired(
+      next,
+      `  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);`,
+      `  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!isDatePickerOpen) return;
+    const handleOutsidePointer = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (target && datePickerRef.current?.contains(target)) return;
+      setIsDatePickerOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutsidePointer);
+    document.addEventListener('touchstart', handleOutsidePointer);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsidePointer);
+      document.removeEventListener('touchstart', handleOutsidePointer);
+    };
+  }, [isDatePickerOpen]);`,
+      'fermeture clic exterieur date picker'
+    );
+
+    next = replaceRequired(
+      next,
       "<header style={{ background: tableViewMode === 'SAISIE' ? sidebarThemeWide : '#fff', borderBottom: tableViewMode === 'SAISIE' ? '1px solid rgba(125, 211, 252, .24)' : '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90, position: 'relative', boxShadow: tableViewMode === 'SAISIE' ? '0 14px 32px rgba(15, 23, 42, .20), inset 0 -1px 0 rgba(255,255,255,.06)' : 'none' }}>",
       "<header style={{ background: sidebarThemeWide, borderBottom: '1px solid rgba(125, 211, 252, .24)', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90, position: 'relative', boxShadow: '0 14px 32px rgba(15, 23, 42, .20), inset 0 -1px 0 rgba(255,255,255,.06)' }}>",
       'fond de banderole commun'
@@ -42,9 +83,16 @@ export const dashboardHeaderVisualPatch = (): Plugin => ({
 
     next = replaceRequired(
       next,
+      "<div style={{ position: 'relative' }}>",
+      "<div ref={datePickerRef} style={{ position: 'relative' }}>",
+      'reference bulle saisie'
+    );
+
+    next = replaceRequired(
+      next,
       "<h2 style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, color: '#0f172a', margin: 0, textTransform: 'capitalize', letterSpacing: '-0.02em' }}>\n                  {monthNames[month]} {year}\n                </h2>",
-      "<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(207,250,254,.14)', borderRadius: 14, color: '#fff', padding: isMobile ? '9px 11px' : '10px 14px', textAlign: 'left', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08)' }}>\n                  <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>{tableViewMode === 'ANALYSE' ? 'Vue analyse' : 'Vue complète'}</span>\n                  <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1, color: '#fef3c7' }}>{monthNames[month]} {year}</span>\n                </div>",
-      'bulle titre mois commun'
+      "<div ref={datePickerRef} style={{ position: 'relative' }}>\n                  <button\n                    type=\"button\"\n                    onClick={() => setIsDatePickerOpen(prev => !prev)}\n                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(207,250,254,.14)', borderRadius: 14, cursor: 'pointer', color: '#fff', padding: isMobile ? '9px 11px' : '10px 14px', textAlign: 'left', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08)' }}\n                  >\n                    <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>{tableViewMode === 'ANALYSE' ? 'Vue analyse' : 'Vue complète'}</span>\n                    <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1, color: '#fef3c7' }}>{monthNames[month]} {year}</span>\n                  </button>\n                  {isDatePickerOpen && renderDatePicker()}\n                </div>",
+      'bulle titre mois cliquable'
     );
 
     next = replaceRequired(
