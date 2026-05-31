@@ -93,23 +93,6 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
       'lecture couverts tm'
     );
 
-    next = next.replace(
-      `          const previousValues = getHistoricalBudgetRowValues(sheet, rowNumber - 1);`,
-      `          const currentRowLabel = [0, 1, 2, 3, 4, 5].map(col => {
-            const labelCell = getHistoricalBudgetCell(sheet, rowNumber, col);
-            return String(labelCell?.w ?? labelCell?.v ?? '');
-          }).join(' ').toUpperCase();
-          if (currentRowLabel.includes('TOTAL') || currentRowLabel.includes('SEMAINE') || currentRowLabel.includes('CUMUL')) continue;
-
-          const previousRowLabel = [0, 1, 2, 3, 4, 5].map(col => {
-            const labelCell = getHistoricalBudgetCell(sheet, rowNumber - 1, col);
-            return String(labelCell?.w ?? labelCell?.v ?? '');
-          }).join(' ').toUpperCase();
-          const previousValues = previousRowLabel.includes('TOTAL') || previousRowLabel.includes('SEMAINE') || previousRowLabel.includes('CUMUL')
-            ? { couvertsMidi: 0, tmMidi: 0, couvertsSoir: 0, tmSoir: 0 }
-            : getHistoricalBudgetRowValues(sheet, rowNumber - 1);`
-    );
-
     next = replaceRequired(
       next,
       `            couvertsMidi,
