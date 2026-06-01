@@ -82,6 +82,8 @@ Colonnes dashboard visees : fournisseurs achats HT `45` a `57`.
 
 Des alias sont prevus pour les variations courantes : Doquet/C10, Terre Azur/Pomona F&L, Plaine Maison/Socopa, Episaveur, Metro/Depannage, Martel, etc.
 
+Correction du 01/06/2026 : les avoirs cout matiere doivent etre importes en negatif. Le formatage d'import accepte maintenant les valeurs negatives au lieu de les vider. Les colonnes fournisseur cout matiere restent affichees en montants, meme si leur nom contient `%` comme `EPISAVEUR20%` ou `EPISAVEUR5%`.
+
 Les totaux achat HT, cumuls HT et ratios sans stock restent recalcules par l'application.
 
 ## Garde-fou lignes total semaine
@@ -127,6 +129,8 @@ Point important : la gestion de la limonade doit rester configurable par site. T
 - `scripts/dashboardHistoricalBudgetFocusedPatch.ts` : correction ciblee pour limiter l'import au mois affiche, aux couverts/TM et ignorer les lignes total semaine ;
 - `scripts/dashboardHistoricalRealiseImportPatch.ts` : ajout du realise CA/couverts ;
 - `scripts/dashboardHistoricalCostMatterImportPatch.ts` : ajout des achats cout matiere par detection d'en-tetes fournisseurs ;
+- `scripts/dashboardHistoricalCostMatterSafePatch.ts` : securisation de la correspondance fournisseurs cout matiere ;
+- `scripts/dashboardCostMatterAmountFormatPatch.ts` : conservation des imports negatifs et affichage montant des fournisseurs cout matiere ;
 - `scripts/dashboardThilloisNoLimonadePatch.ts` : neutralisation limonade pour Thillois ;
 - `vite.config.ts` : activation des patchs ;
 - `src/Dashboard.tsx` : composant cible modifie au build.
