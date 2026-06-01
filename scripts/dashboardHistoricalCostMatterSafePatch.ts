@@ -29,12 +29,14 @@ export const dashboardHistoricalCostMatterSafePatch = (): Plugin => ({
   const getHistoricalCostMatterColumnMap = (sheet: XLSX.WorkSheet, range: XLSX.Range) => {
     const map: Record<number, number> = {};
     let titleRow = -1;
+    let titleCol = range.s.c;
     const searchEndRow = Math.min(range.e.r, range.s.r + 80);
     for (let rowNumber = range.s.r; rowNumber <= searchEndRow; rowNumber += 1) {
       for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
         const cell = getHistoricalBudgetCell(sheet, rowNumber, colIndex);
         if (normalizeHistoricalSupplierName(cell?.w ?? cell?.v).includes('COUTMATIERE')) {
           titleRow = rowNumber;
+          titleCol = colIndex;
           break;
         }
       }
@@ -46,7 +48,7 @@ export const dashboardHistoricalCostMatterSafePatch = (): Plugin => ({
     const headerEndRow = Math.min(range.e.r, titleRow + 10);
     let maxSupplierCol = range.e.c;
     for (let rowNumber = headerStartRow; rowNumber <= headerEndRow; rowNumber += 1) {
-      for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
+      for (let colIndex = titleCol; colIndex <= range.e.c; colIndex += 1) {
         const cell = getHistoricalBudgetCell(sheet, rowNumber, colIndex);
         const header = normalizeHistoricalSupplierName(cell?.w ?? cell?.v);
         if (/TOTALHT|CUMULHT|SANSLESTOCK|RATIO/.test(header)) maxSupplierCol = Math.min(maxSupplierCol, colIndex - 1);
@@ -54,7 +56,7 @@ export const dashboardHistoricalCostMatterSafePatch = (): Plugin => ({
     }
 
     for (let rowNumber = headerStartRow; rowNumber <= headerEndRow; rowNumber += 1) {
-      for (let colIndex = Math.max(range.s.c, 1); colIndex <= maxSupplierCol; colIndex += 1) {
+      for (let colIndex = Math.max(titleCol, 1); colIndex <= maxSupplierCol; colIndex += 1) {
         if (map[colIndex]) continue;
         const cell = getHistoricalBudgetCell(sheet, rowNumber, colIndex);
         const targetCol = findHistoricalCostMatterTargetColumn(cell?.w ?? cell?.v);
@@ -68,8 +70,8 @@ export const dashboardHistoricalCostMatterSafePatch = (): Plugin => ({
     );
 
     next = next.replace(
-      'const costMatterValues = getHistoricalCostMatterValues(sheet, rowNumber, costMatterColumnMap);',
-      'const costMatterValues = getHistoricalCostMatterValues(sheet, realiseSourceRow, costMatterColumnMap);'
+      'const costMatterValues = getHistoricalCostMatterValues(sheet, realiseSourceRow, costMatterColumnMap);',
+      'const costMatterValues = getHistoricalCostMatterValues(sheet, rowNumber, costMatterColumnMap);'
     );
 
     next = next.replace(
