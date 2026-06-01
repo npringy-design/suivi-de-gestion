@@ -46,7 +46,30 @@ export const dashboardHistoricalCostMatterSafePatch = (): Plugin => ({
     return map;
   };
 
+  const parseHistoricalCostMatterCellNumber = (cell: XLSX.CellObject | undefined) => {
+    if (!cell) return 0;
+    const rawNumber = typeof cell.v === 'number' && Number.isFinite(cell.v)
+      ? cell.v
+      : parseHistoricalBudgetNumber(cell.v);
+    if (rawNumber !== 0) return rawNumber;
+
+    const displayText = String(cell.w ?? cell.v ?? '')
+      .replace(/−|–|—/g, '-')
+      .replace(/\u00a0/g, ' ')
+      .trim();
+    const compact = displayText.replace(/\s/g, '').replace(',', '.');
+    const isNegative = /^-/.test(compact) || /-$/.test(compact) || /^\(.*\)$/.test(compact);
+    const numericText = compact.replace(/[()\-]/g, '').replace(/[^0-9.]/g, '');
+    const displayNumber = Number(numericText) || 0;
+    return isNegative ? -Math.abs(displayNumber) : displayNumber;
+  };
+
   const getHistoricalCostMatterValues`
+    );
+
+    next = next.replace(
+      'const amount = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, Number(sourceColText)));',
+      'const amount = parseHistoricalCostMatterCellNumber(getHistoricalBudgetCell(sheet, rowNumber, Number(sourceColText)));'
     );
 
     next = next.replace(
