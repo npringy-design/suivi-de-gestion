@@ -13,6 +13,7 @@ import { dashboardHistoricalBudgetExcelPatch } from './scripts/dashboardHistoric
 import { dashboardHistoricalBudgetFocusedPatch } from './scripts/dashboardHistoricalBudgetFocusedPatch';
 import { dashboardHistoricalCostMatterImportPatch } from './scripts/dashboardHistoricalCostMatterImportPatch';
 import { dashboardHistoricalCostMatterSafePatch } from './scripts/dashboardHistoricalCostMatterSafePatch';
+import { dashboardHistoricalPayrollImportPatch } from './scripts/dashboardHistoricalPayrollImportPatch';
 import { dashboardHistoricalRealiseImportPatch } from './scripts/dashboardHistoricalRealiseImportPatch';
 import { dashboardLimonadeSplitPatch } from './scripts/dashboardLimonadeSplitPatch';
 import { dashboardPayrollColumnPatch } from './scripts/dashboardPayrollColumnPatch';
@@ -37,9 +38,9 @@ export default defineConfig(({mode}) => {
     dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardThilloisNoLimonadePatch(),
     dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(), dashboardHistoricalRealiseImportPatch(),
     dashboardHistoricalCostMatterImportPatch(), dashboardHistoricalCostMatterSafePatch(), dashboardCostMatterAmountFormatPatch(),
-    dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), dashboardVarianceSoftColorsPatch(), dataContextCloudSyncPatch(),
-    homeHeaderPeriodPatch(), homePayrollBubblePatch(), homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(),
-    accountingSettingsRoutePatch(), react(), tailwindcss()
+    dashboardHistoricalPayrollImportPatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(),
+    dashboardVarianceSoftColorsPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(), homePayrollBubblePatch(),
+    homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(), accountingSettingsRoutePatch(), react(), tailwindcss()
   ];
   return {
     plugins,
