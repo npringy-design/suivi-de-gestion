@@ -87,6 +87,29 @@ Mecanique retenue :
 - les taux sont regroupes par statut et section ;
 - si plusieurs salaries correspondent a la meme colonne, une moyenne est appliquee.
 
+## Import historique Excel - personnel
+
+Correction ajoutee le 01/06/2026 : l'import historique Excel lit aussi les heures de personnel dans les zones :
+
+- `PROJECTION S/C AVEC PLANIFICATION SKELLO` ;
+- `FRAIS PERSONNEL REALISE`.
+
+Principe :
+
+- detection de la zone par le titre ;
+- lecture des en-tetes statut + cuisine/salle ;
+- import des heures sur les vraies lignes de date uniquement ;
+- les lignes `Total Semaine`, cumul et total mois ne servent pas de source ;
+- les heures sont ecrites dans les colonnes de saisie du suivi quotidien ;
+- les couts globaux, productivites, ratios et ecarts restent recalcules par l'application.
+
+Colonnes visees :
+
+- projection : `62` a `71` ;
+- realise : `77` a `86`.
+
+Les taux horaires ne sont pas repris depuis l'ancien Excel. Ils viennent de la configuration salaire du mois via les imports PDF salaires / page `Configuration Salaires et Charges`. Cela evite de figer d'anciens taux dans l'historique et respecte la regle : config salaire = source des taux, suivi quotidien = source des heures.
+
 ## Configuration salaires
 
 La page `Configuration Salaires et Charges` sert a ajuster le snapshot salaires du mois.
@@ -173,6 +196,7 @@ Regles de calcul :
 - `scripts/dashboardPayrollColumnPatch.ts` : patch temporaire applique a `Dashboard.tsx` au build ;
 - `scripts/dashboardStrictSalaryRatesPatch.ts` : suppression des taux salaires de secours dans les calculs de la vue complete ;
 - `scripts/payrollCpProvisionPatch.ts` : coefficient provision CP par categorie, cadre a `1,18`, autres statuts a `1,10` ;
+- `scripts/dashboardHistoricalPayrollImportPatch.ts` : ajout de l'import historique Excel des heures projection/realise ;
 - `vite.config.ts` : activation des patchs.
 
 ## Point technique important
