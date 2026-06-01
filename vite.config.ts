@@ -7,6 +7,7 @@ import { accountingSettingsRoutePatch } from './scripts/accountingSettingsRouteP
 import { caisseImportRecoveryPatch } from './scripts/caisseImportRecoveryPatch';
 import { dashboardAnalysisModePatch } from './scripts/dashboardAnalysisModePatch';
 import { dashboardCaisseRecapPeriodePatch } from './scripts/dashboardCaisseRecapPeriodePatch';
+import { dashboardCostMatterAmountFormatPatch } from './scripts/dashboardCostMatterAmountFormatPatch';
 import { dashboardHeaderVisualPatch } from './scripts/dashboardHeaderVisualPatch';
 import { dashboardHistoricalBudgetExcelPatch } from './scripts/dashboardHistoricalBudgetExcelPatch';
 import { dashboardHistoricalBudgetFocusedPatch } from './scripts/dashboardHistoricalBudgetFocusedPatch';
@@ -35,10 +36,10 @@ export default defineConfig(({mode}) => {
     dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(),
     dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardThilloisNoLimonadePatch(),
     dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(), dashboardHistoricalRealiseImportPatch(),
-    dashboardHistoricalCostMatterImportPatch(), dashboardHistoricalCostMatterSafePatch(), dashboardAnalysisModePatch(),
-    dashboardHeaderVisualPatch(), dashboardVarianceSoftColorsPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(),
-    homePayrollBubblePatch(), homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(), accountingSettingsRoutePatch(),
-    react(), tailwindcss()
+    dashboardHistoricalCostMatterImportPatch(), dashboardHistoricalCostMatterSafePatch(), dashboardCostMatterAmountFormatPatch(),
+    dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(), dashboardVarianceSoftColorsPatch(), dataContextCloudSyncPatch(),
+    homeHeaderPeriodPatch(), homePayrollBubblePatch(), homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(),
+    accountingSettingsRoutePatch(), react(), tailwindcss()
   ];
   return {
     plugins,
