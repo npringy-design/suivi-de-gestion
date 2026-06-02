@@ -136,3 +136,34 @@ Statut : valide.
 Document detaille : `docs/IMPORT_CAISSE.md`.
 
 Rappel : l'import caisse lit le PDF, alimente les valeurs automatiques utiles et ne doit pas toucher aux commentaires, corrections ou saisies reelles manuelles.
+
+## Suivi quotidien - import historique Excel
+
+Statut au 02/06/2026 : partiellement valide.
+
+Document detaille : `docs/IMPORT_HISTORIQUE_EXCEL.md` et `docs/HEURES_PERSONNEL.md` pour la partie personnel.
+
+Valide terrain :
+
+- Budget/previsions : lecture de janvier et fevrier jugee coherente apres correction du decalage de ligne et des lignes total semaine.
+- Realise CA/couverts : lecture jugee coherente ; les ecarts budget valeur/% semaine et total mois ont ete ajoutes et corriges.
+- Cout matiere : lecture des montants fournisseurs jugee bonne ; les avoirs negatifs sont importes ; les colonnes `EPISAVEUR20%` et `EPISAVEUR5%` restent affichees en montant et non en pourcentage.
+
+En cours / non verrouille :
+
+- Frais de personnel historique Excel : la lecture commence a fonctionner sur projection et realise, et la ligne est maintenant bien alignee pour les semaines visibles.
+- Probleme restant : la derniere semaine du mois n'est toujours pas reprise dans la partie personnel alors qu'elle est bien reprise pour budget, realise et cout matiere.
+- A ne pas refaire : ne pas repartir sur une logique complexe de detection d'en-tetes fusionnes. La piste demandee par Nicolas est une lecture croisee simple : date du jour + colonne statut, comme pour budget/realise/cout matiere.
+- A verifier avant nouvelle correction : comparer le parcours personnel avec le parcours deja fiable budget/realise/cout matiere, car le souci n'est pas le format de date global.
+
+Derniers fichiers de patch concernes :
+
+- `scripts/dashboardHistoricalBudgetExcelPatch.ts`
+- `scripts/dashboardHistoricalBudgetFocusedPatch.ts`
+- `scripts/dashboardHistoricalRealiseImportPatch.ts`
+- `scripts/dashboardHistoricalCostMatterImportPatch.ts`
+- `scripts/dashboardHistoricalCostMatterSafePatch.ts`
+- `scripts/dashboardCostMatterAmountFormatPatch.ts`
+- `scripts/dashboardHistoricalPayrollImportPatch.ts`
+- `scripts/dashboardHistoricalTextDatePatch.ts`
+- `vite.config.ts`
