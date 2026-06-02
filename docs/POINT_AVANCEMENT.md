@@ -11,6 +11,38 @@ Ce fichier est le point de reprise rapide du projet. Lire ensuite la documentati
 - Pousser directement les corrections terminees sauf demande contraire.
 - Verifier le build Vercel apres une modification code.
 
+## Priorite technique actuelle - consolidation patches Vite
+
+Statut au 02/06/2026 : priorite basculee sur l'audit et la consolidation progressive des patches Vite.
+
+Document detaille : `docs/AUDIT_PATCHES_VITE.md`.
+
+Constat :
+
+- l'application fonctionne sur beaucoup de perimetres metier valides, mais le code a accumule trop de patches Vite ;
+- le vrai comportement execute au build ne correspond plus toujours directement au code visible dans `src/` ;
+- `Dashboard.tsx` concentre trop de logique metier, de rendu, de calculs et d'import ;
+- le bug de l'import personnel historique, notamment la derniere semaine non lue, montre que continuer a empiler des patches devient risque.
+
+Decision :
+
+- ne pas refaire l'application ;
+- ne pas supprimer tous les patches d'un coup ;
+- commencer par un audit complet des patches actifs dans `vite.config.ts` ;
+- classer chaque patch : valide a integrer, utile mais fragile, temporaire a supprimer, ou a reecrire ;
+- integrer ensuite les patches simples un par un dans le vrai code source ;
+- ne plus ajouter de nouveau patch Vite sauf urgence absolue.
+
+Ordre recommande :
+
+1. Audit complet des patches actifs.
+2. Integration des patches visuels/faible risque.
+3. Integration des imports historiques valides : budget, realise, cout matiere.
+4. Isolement du personnel historique avec diagnostic d'import.
+5. Decoupage progressif de `Dashboard.tsx`.
+
+Garde-fou : le build Vercel ne suffit pas comme validation metier. Chaque consolidation doit etre testee dans l'application.
+
 ## Authentification
 
 Statut : auth globale active et page utilisateurs fonctionnelle.
@@ -139,15 +171,22 @@ Rappel : l'import caisse lit le PDF, alimente les valeurs automatiques utiles et
 
 ## Suivi quotidien - import historique Excel
 
-Statut au 02/06/2026 : import historique global partiellement valide ; chantier personnel a reprendre proprement avant de continuer.
+Statut au 02/06/2026 : import historique global partiellement valide ; chantier personnel mis de cote temporairement au profit de l'audit/consolidation technique.
 
-Document detaille : `docs/IMPORT_HISTORIQUE_EXCEL.md` et `docs/HEURES_PERSONNEL.md` pour la partie personnel.
+Document detaille : `docs/IMPORT_HISTORIQUE_EXCEL.md`, `docs/HEURES_PERSONNEL.md` et `docs/AUDIT_PATCHES_VITE.md`.
 
 Valide terrain :
 
 - Budget/previsions : lecture de janvier et fevrier jugee coherente apres correction du decalage de ligne et des lignes total semaine.
 - Realise CA/couverts : lecture jugee coherente ; les ecarts budget valeur/% semaine et total mois ont ete ajoutes et corriges.
 - Cout matiere : lecture des montants fournisseurs jugee bonne ; les avoirs negatifs sont importes ; les colonnes `EPISAVEUR20%` et `EPISAVEUR5%` restent affichees en montant et non en pourcentage.
+
+Non valide / mis de cote :
+
+- Personnel historique : la projection et le realise ont ete partiellement lus selon les versions, mais la derniere semaine ne remonte toujours pas.
+- Plusieurs tentatives de patch ont montre que la logique actuelle est trop fragile.
+- Ne pas continuer a empiler des corrections aveugles.
+- Reprise future uniquement avec diagnostic d'import visible : ligne source trouvee, bloc personnel detecte, colonnes detectees, heures lues.
 
 Constat metier important sur le personnel :
 
@@ -156,7 +195,7 @@ Constat metier important sur le personnel :
 - Pour 2025 et 2024, il faut s'attendre a beaucoup de feuilles au format ancien global.
 - L'application finale sera multi-site, environ 6 sites, donc toute logique par exception de mois/site est a eviter.
 
-Objectif de reprise du chantier personnel :
+Objectif de reprise future du chantier personnel :
 
 - Supprimer/remplacer la logique actuelle d'import personnel historique qui a ete patchee plusieurs fois et reste fragile.
 - Creer une detection automatique par feuille mensuelle et par site :
@@ -170,21 +209,6 @@ Objectif de reprise du chantier personnel :
   - mois/periode 100 % global : analyse par echelon global uniquement ;
   - periode mixte : total personnel fiable, detail salle/cuisine seulement sur la partie detaillee, partie ancienne affichee comme non ventilee.
 
-Problemes techniques constates sur l'import personnel actuel :
-
-- Janvier commence a importer des valeurs mais la derniere semaine ne remonte toujours pas.
-- Fevrier a ete teste sans valeurs importees en personnel, ce qui montre que la logique actuelle cherche encore trop le format janvier et ne sait pas s'adapter correctement au format detaille.
-- Le probleme de derniere semaine ne vient pas du format de date global : budget, realise et cout matiere recuperent cette meme semaine.
-- Les dernieres tentatives ont ajoute un fallback de lignes et un parseur de dates texte, mais ce n'est pas une solution metier suffisante.
-
-Consigne de reprise concrete :
-
-1. Lire `docs/POINT_AVANCEMENT.md`, puis `docs/IMPORT_HISTORIQUE_EXCEL.md` et `docs/HEURES_PERSONNEL.md`.
-2. Repartir du fichier actuellement en place et supprimer/remplacer seulement la partie import personnel historique, sans toucher aux imports valides budget/realise/cout matiere.
-3. Analyser le fichier Excel source avec une vraie lecture des en-tetes personnel, pas seulement par position relative a `TOTAL HEURES`.
-4. Construire un moteur adaptatif par feuille : detection format global/detaille, mapping colonnes, lecture par date deja detectee.
-5. Ne pas modifier la vue Analyse tant que l'import personnel adaptatif n'est pas stabilise ; documenter ensuite le besoin d'affichage global/detaille/mixte.
-
 Derniers fichiers de patch concernes :
 
 - `scripts/dashboardHistoricalBudgetExcelPatch.ts`
@@ -193,6 +217,6 @@ Derniers fichiers de patch concernes :
 - `scripts/dashboardHistoricalCostMatterImportPatch.ts`
 - `scripts/dashboardHistoricalCostMatterSafePatch.ts`
 - `scripts/dashboardCostMatterAmountFormatPatch.ts`
-- `scripts/dashboardHistoricalPayrollImportPatch.ts` : a reprendre proprement
-- `scripts/dashboardHistoricalTextDatePatch.ts` : ajoute pendant investigation, a conserver ou retirer selon la future implementation
+- `scripts/dashboardHistoricalPayrollImportPatch.ts` : fragile, ne pas integrer tel quel
+- `scripts/dashboardHistoricalTextDatePatch.ts` : ajoute pendant investigation, a conserver ou retirer selon audit
 - `vite.config.ts`
