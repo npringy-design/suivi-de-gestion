@@ -1,6 +1,6 @@
 # Audit patches Vite et plan de consolidation
 
-Statut : demarrage etape 1 - audit technique.
+Statut : etape 1 demarree - premiere lecture des patches actifs effectuee.
 
 Date de reference : 02/06/2026.
 
@@ -62,38 +62,152 @@ Patches actifs au 02/06/2026 :
 25. `homeSmartPeriodSourcesPatch`
 26. `accountingSettingsRoutePatch`
 
-## Classement initial
+## Synthese de l'audit initial
 
-Ce classement est volontairement prudent. Il doit etre affine en lisant chaque patch avant integration.
+Le risque principal n'est pas seulement le nombre de patches. Le vrai probleme est l'enchainement : certains patches modifient le resultat attendu par d'autres patches.
 
-| Patch | Zone | Statut terrain | Risque | Action recommandee |
-|---|---|---|---:|---|
-| `payrollCpProvisionPatch` | salaires / provision CP | regle metier validee | moyen | integrer apres verification formule |
-| `dashboardPayrollColumnPatch` | colonnes personnel | sensible | eleve | garder temporairement, auditer avant integration |
-| `dashboardRealiseTotalsPatch` | totaux realise | probablement valide | moyen | auditer puis integrer |
-| `dashboardStrictSalaryRatesPatch` | taux horaires | sensible | eleve | garder, integrer seulement apres tests salaires |
-| `dashboardCaisseRecapPeriodePatch` | recap caisse/periode | valide a verifier | moyen | auditer puis integrer |
-| `caisseImportRecoveryPatch` | import feuille de caisse | valide terrain recent | eleve | ne pas toucher en premier |
-| `dashboardLimonadeSplitPatch` | limonade | Thillois sans limonade | moyen | verifier utilite actuelle, possiblement simplifier |
-| `dashboardRealiseCleanLayoutPatch` | vue realise/complet | visuel valide en partie | faible/moyen | bon candidat integration simple |
-| `dashboardThilloisNoLimonadePatch` | masquage limonade Thillois | attendu | moyen | auditer puis integrer |
-| `dashboardHistoricalBudgetExcelPatch` | import historique base | valide partiel | eleve | integrer apres les patches visuels |
-| `dashboardHistoricalTextDatePatch` | import historique dates texte | rustine investigation | eleve | conserver temporairement, reevaluer |
-| `dashboardHistoricalBudgetFocusedPatch` | import budget/prevision | valide janvier/fevrier | eleve | integrer mais pas en premier |
-| `dashboardHistoricalRealiseImportPatch` | import realise CA/couverts | valide | eleve | integrer apres budget |
-| `dashboardHistoricalCostMatterImportPatch` | import cout matiere | valide | eleve | integrer apres realise |
-| `dashboardHistoricalCostMatterSafePatch` | securisation cout matiere | valide/utile | eleve | integrer avec cout matiere |
-| `dashboardCostMatterAmountFormatPatch` | format montants cout matiere | valide | moyen | integrer avec cout matiere |
-| `dashboardHistoricalPayrollImportPatch` | import personnel historique | non valide | tres eleve | isoler, ne pas integrer tel quel |
-| `dashboardAnalysisModePatch` | vue analyse | sensible | eleve | garder jusqu'a stabilisation imports |
-| `dashboardHeaderVisualPatch` | visuel entetes | visuel | faible | bon candidat integration simple |
-| `dashboardVarianceSoftColorsPatch` | couleurs ecarts | visuel | faible | bon candidat integration simple |
-| `dataContextCloudSyncPatch` | sauvegarde Supabase segments | sensible | eleve | ne pas toucher au debut |
-| `homeHeaderPeriodPatch` | accueil periode | visuel/fonctionnel | moyen | auditer puis integrer |
-| `homePayrollBubblePatch` | accueil cout salarial | fonctionnel | moyen | auditer apres salaires |
-| `homeVisualPolishPatch` | accueil visuel | faible | faible | bon candidat integration simple |
-| `homeSmartPeriodSourcesPatch` | sources dynamiques accueil | fonctionnel | moyen | auditer puis integrer |
-| `accountingSettingsRoutePatch` | route parametres compta | fonctionnel | moyen | auditer puis integrer |
+Zones les plus sensibles :
+
+1. `Dashboard.tsx` : beaucoup de patches s'empilent sur ce fichier.
+2. Import historique Excel : les patches sont dependants les uns des autres.
+3. Personnel / salaires : plusieurs patches touchent les memes colonnes, calculs et taux.
+4. Accueil : plusieurs patches modifient la meme logique de periode et de KPI.
+5. Supabase : un patch modifie `DataContext.tsx`, donc il touche la sauvegarde centrale.
+
+Premiere conclusion pratique : on ne commence pas par les gros patches metier. On commence par les patches petits, isoles, faciles a verifier visuellement.
+
+## Audit detaille des patches actifs
+
+| Patch | Fichier(s) transforme(s) | Role reel constate | Fragilite technique | Decision |
+|---|---|---|---|---|
+| `payrollCpProvisionPatch` | `src/personnelSalaryImport.ts`, `src/ConfigSalaires.tsx`, `src/Dashboard.tsx`, `src/DashboardAnalysisView.tsx` | Applique le coefficient CP : cadre x1,18, autres x1,10. Passe aussi la categorie aux calculs de taux moyens. | Moyenne : depend de chaines exactes mais la regle metier est claire. | A integrer, mais pas avant verification rapide salaires/config/analyse. |
+| `dashboardPayrollColumnPatch` | `src/Dashboard.tsx` | Reorganise massivement les colonnes personnel, les colonnes editables, les calculs d'heures, couts, ratios, affichages et import PDF salaire. | Tres elevee : patch long, touche beaucoup de calculs et colonnes. | Ne pas integrer en premier. A decouper avant integration. |
+| `dashboardRealiseTotalsPatch` | `src/Dashboard.tsx` | Ajoute/complete les ecarts realise vs budget, moyennes, couverts et colonnes de pourcentage. | Moyenne/elevee : touche les totaux semaine/mois. | A integrer apres stabilisation des colonnes realise. |
+| `dashboardStrictSalaryRatesPatch` | `src/Dashboard.tsx` | Supprime les taux horaires fallback fixes pour obliger la lecture des taux depuis la config salaire. | Moyenne : patch simple, mais zone salaire sensible. | Bon candidat technique, mais validation salaire obligatoire. |
+| `dashboardCaisseRecapPeriodePatch` | `src/Dashboard.tsx` | Branche le parser recap periode caisse, applique la date PDF, alimente bilan synthese, gere les TTC TVA. | Elevee : touche import caisse valide terrain. | Ne pas toucher en premier. A integrer seulement avec test import caisse. |
+| `caisseImportRecoveryPatch` | `src/Dashboard.tsx` | Revient a `extractPdfText` et remplace la detection TTC TVA par une version plus fiable. | Elevee : rustine sur import caisse valide. | Garder temporairement. A fusionner avec le patch caisse plus tard. |
+| `dashboardLimonadeSplitPatch` | `src/Dashboard.tsx` | Ajoute detail limonade midi/soir, deplace colonnes, modifie calculs et ordre Personnel/Achats. | Elevee : utile historiquement mais Thillois n'utilise pas la limonade. | A reevaluer. Possiblement simplifier avant integration. |
+| `dashboardRealiseCleanLayoutPatch` | `src/Dashboard.tsx` | Reorganise les vues complet/prevision/realise, ajoute colonnes total restaurant, ecarts, couverts, groupes et calculs. | Tres elevee : patch visuel mais aussi calculatoire. | Ne pas classer comme simple. A integrer par morceaux. |
+| `dashboardThilloisNoLimonadePatch` | `src/Dashboard.tsx` | Neutralise et masque les colonnes limonade pour Thillois. | Moyenne/elevee : depend du patch limonade et du layout complet. | A integrer apres clarification limonade. |
+| `dashboardHistoricalBudgetExcelPatch` | `src/Dashboard.tsx` | Ajoute import Excel historique de base : XLSX, detection feuille mois/annee, preview, application. | Elevee : base de tous les imports historiques suivants. | A integrer avant les autres imports historiques, mais pas en premier chantier. |
+| `dashboardHistoricalTextDatePatch` | `src/Dashboard.tsx` | Ajoute parsing de dates texte francaises. | Moyenne : petit patch mais ne corrige pas la cause personnel. | Garder temporairement, a reevaluer lors de l'extraction historique. |
+| `dashboardHistoricalBudgetFocusedPatch` | `src/Dashboard.tsx` | Limite l'import historique au mois affiche, lit uniquement couverts + TM, evite CA ancien Excel. | Elevee : metier valide mais depend du patch budget de base. | A integrer avec `dashboardHistoricalBudgetExcelPatch`. |
+| `dashboardHistoricalRealiseImportPatch` | `src/Dashboard.tsx` | Ajoute lecture du realise CA/couverts depuis le fichier historique. | Elevee : depend du parcours budget et des lignes source. | A integrer apres budget historique. |
+| `dashboardHistoricalCostMatterImportPatch` | `src/Dashboard.tsx` | Ajoute mapping fournisseurs cout matiere et lecture montants. | Elevee : depend du realise/budget. | A integrer apres realise historique. |
+| `dashboardHistoricalCostMatterSafePatch` | `src/Dashboard.tsx` | Remplace la detection fournisseur, gere EPISAVEUR 5%, montants negatifs, vide les anciennes valeurs avant import. | Elevee mais metier valide. | A fusionner avec `dashboardHistoricalCostMatterImportPatch`. |
+| `dashboardCostMatterAmountFormatPatch` | `src/Dashboard.tsx` | Conserve les montants negatifs et evite d'afficher EPISAVEUR comme pourcentage. | Faible/moyenne : patch court, metier valide. | Bon candidat technique, mais mieux de l'integrer avec cout matiere. |
+| `dashboardHistoricalPayrollImportPatch` | `src/Dashboard.tsx` | Ajoute import heures personnel historique projection/realise. | Tres elevee : non valide terrain, derniere semaine non lue. | Ne pas integrer tel quel. A isoler et reecrire avec diagnostic. |
+| `dashboardAnalysisModePatch` | `src/Dashboard.tsx` | Branche `DashboardAnalysisView` dans le mode Analyse et masque KPI/onglets inutiles. | Moyenne : petit patch mais touche rendu principal. | A integrer apres validation visuelle Analyse. |
+| `dashboardHeaderVisualPatch` | `src/Dashboard.tsx` | Harmonise la banderole, ajoute fermeture clic exterieur du date picker, mois cliquable, couleurs communes. | Moyenne : visuel mais assez large. | Candidat integration, mais pas le plus petit. |
+| `dashboardVarianceSoftColorsPatch` | `src/Dashboard.tsx` | Change la couleur des ecarts positifs/negatifs. | Faible : patch court, visuel, localise. | Premier candidat d'integration. |
+| `dataContextCloudSyncPatch` | `src/contexts/DataContext.tsx` | Ajoute chargement/sauvegarde Supabase segmentee, cache mois et alerte en cas d'erreur. | Tres elevee : sauvegarde centrale. | Ne pas toucher au debut. Integration dediee avec tests Supabase. |
+| `homeHeaderPeriodPatch` | `src/Home.tsx` | Remplace mois/annee par selection de periode, change titre/localisation/meteo, ajoute modal calendrier. | Moyenne/elevee : gros patch accueil. | A integrer avant les autres patches accueil qui en dependent. |
+| `homePayrollBubblePatch` | `src/Home.tsx` | Lit les KPI accueil depuis dashboard, ajoute tuile S/C semaine/mois/veille. | Moyenne/elevee : logique calculatoire accueil. | A integrer apres `homeHeaderPeriodPatch`. |
+| `homeVisualPolishPatch` | `src/Home.tsx` | Finitions visuelles accueil, libelles dynamiques, meteo, affichage periode. | Moyenne : depend de `homeHeaderPeriodPatch` et `homePayrollBubblePatch`. | Bon candidat seulement apres integration des patches accueil de base. |
+| `homeSmartPeriodSourcesPatch` | `src/Home.tsx` | Adapte les sources KPI selon jour/periode/mois/annee. | Moyenne/elevee : depend du systeme de periode accueil. | A integrer avec les patches accueil, pas seul. |
+| `accountingSettingsRoutePatch` | `src/router.tsx`, `src/Home.tsx` | Ajoute routes parametrage comptable/ecritures comptables et lien accueil. | Moyenne : simple, mais touche navigation. | Candidat integration simple apres verification des composants cibles. |
+
+## Dependances importantes detectees
+
+### Chaine import historique
+
+Ordre obligatoire :
+
+1. `dashboardHistoricalBudgetExcelPatch`
+2. `dashboardHistoricalBudgetFocusedPatch`
+3. `dashboardHistoricalRealiseImportPatch`
+4. `dashboardHistoricalCostMatterImportPatch`
+5. `dashboardHistoricalCostMatterSafePatch`
+6. `dashboardCostMatterAmountFormatPatch`
+7. `dashboardHistoricalPayrollImportPatch`
+
+Le personnel est le dernier de la chaine et n'est pas valide. Il ne doit pas bloquer l'integration future des imports valides, mais il ne faut pas l'integrer tel quel.
+
+### Chaine accueil
+
+Ordre logique :
+
+1. `homeHeaderPeriodPatch`
+2. `homePayrollBubblePatch`
+3. `homeSmartPeriodSourcesPatch`
+4. `homeVisualPolishPatch`
+
+`homeVisualPolishPatch` parait simple, mais il depend deja des variables/expressions introduites par les autres patches accueil. Il ne doit pas etre integre seul avant eux.
+
+### Chaine limonade / vue complete
+
+Patches lies :
+
+- `dashboardLimonadeSplitPatch`
+- `dashboardRealiseCleanLayoutPatch`
+- `dashboardThilloisNoLimonadePatch`
+
+Cette zone est piegeuse : Thillois n'utilise pas la limonade, mais certains calculs et colonnes existent encore pour compatibilite. Il faut clarifier ce qu'on garde avant integration.
+
+### Chaine salaires/personnel
+
+Patches lies :
+
+- `payrollCpProvisionPatch`
+- `dashboardPayrollColumnPatch`
+- `dashboardStrictSalaryRatesPatch`
+- `homePayrollBubblePatch`
+- `dashboardHistoricalPayrollImportPatch`
+
+Le coefficient CP cadre est clair. En revanche, colonnes personnel + import historique + analyse doivent rester separes.
+
+## Premiers candidats d'integration
+
+### Candidat 1 - `dashboardVarianceSoftColorsPatch`
+
+Pourquoi :
+
+- patch court ;
+- localise dans `Dashboard.tsx` ;
+- uniquement visuel ;
+- faible impact metier ;
+- facile a tester dans Vue complete avec des ecarts positifs/negatifs.
+
+Risque : faible.
+
+### Candidat 2 - `accountingSettingsRoutePatch`
+
+Pourquoi :
+
+- route et lien de navigation ;
+- patch court ;
+- ne touche pas aux calculs ;
+- integration directe possible dans `src/router.tsx` et `src/Home.tsx`.
+
+Risque : moyen, car il faut verifier que `ParametrageComptable` et `ExportComptable` existent et que le lien accueil reste propre.
+
+### Candidat 3 - `dashboardStrictSalaryRatesPatch`
+
+Pourquoi :
+
+- patch court ;
+- intention claire : ne plus utiliser les anciens taux fallback fixes ;
+- regle logique avec les taux salaires importes/configures.
+
+Risque : moyen, car il faut verifier que l'absence de taux ne donne pas des cellules incoherentes. A tester avec config salaires existante.
+
+### Candidat 4 - `payrollCpProvisionPatch`
+
+Pourquoi :
+
+- regle metier validee : cadre x1,18, autres x1,10 ;
+- mieux vaut l'avoir en vrai code qu'en patch.
+
+Risque : moyen, car il touche quatre fichiers. A integrer apres les candidats plus petits.
+
+## Patches a ne pas prendre en premier
+
+- `dashboardPayrollColumnPatch` : trop large.
+- `dashboardRealiseCleanLayoutPatch` : faux patch visuel, en realite il modifie aussi des calculs.
+- `dashboardCaisseRecapPeriodePatch` + `caisseImportRecoveryPatch` : import caisse valide, ne pas prendre le risque au debut.
+- `dataContextCloudSyncPatch` : sauvegarde centrale Supabase, trop sensible.
+- `dashboardHistoricalPayrollImportPatch` : non valide, a reecrire plus tard.
+- Tous les patches historiques sauf `dashboardCostMatterAmountFormatPatch` : dependances fortes.
 
 ## Priorites de consolidation
 
@@ -101,33 +215,28 @@ Ce classement est volontairement prudent. Il doit etre affine en lisant chaque p
 
 Objectif : savoir exactement ce qui transforme l'application au build.
 
-Actions :
+Etat : premiere lecture effectuee pour les 26 patches actifs.
 
-1. Lire chaque patch actif.
-2. Identifier le ou les fichiers modifies par le patch.
-3. Identifier la zone metier concernee.
-4. Classer le patch : valide, fragile, temporaire, a supprimer.
-5. Completer ce document au fur et a mesure.
+Actions restantes :
 
-Aucun comportement applicatif ne doit etre modifie pendant cette phase, sauf suppression d'un patch mort prouve comme inactif.
+1. Verifier les composants cibles du patch comptable.
+2. Lire les fichiers source touches par les 2 ou 3 premiers candidats.
+3. Integrer un seul candidat a la fois.
+4. Retirer son import/appel dans `vite.config.ts`.
+5. Build Vercel puis test application.
 
 ### Priorite 2 - integration des patches simples
 
 Objectif : reduire le nombre de patches sans prendre de risque metier.
 
-Candidats probables :
+Ordre conseille maintenant :
 
-- `dashboardHeaderVisualPatch`
-- `dashboardVarianceSoftColorsPatch`
-- `homeVisualPolishPatch`
-- une partie de `dashboardRealiseCleanLayoutPatch` si le rendu est confirme
+1. `dashboardVarianceSoftColorsPatch`
+2. `accountingSettingsRoutePatch`
+3. `dashboardStrictSalaryRatesPatch`
+4. `payrollCpProvisionPatch`
 
-Methode :
-
-1. Integrer le changement dans le vrai fichier source.
-2. Retirer le patch de `vite.config.ts`.
-3. Supprimer le fichier patch seulement apres build et verification.
-4. Tester les pages concernees.
+Attention : cet ordre peut changer si la lecture des fichiers source montre que le patch est deja partiellement integre ou que les composants cibles manquent.
 
 ### Priorite 3 - integration des imports historiques valides
 
@@ -206,19 +315,20 @@ src/features/dashboard/components/DashboardHeader.tsx
 - Import historique fevrier OK si zone historique touchee.
 - Aucune perte de donnees Supabase.
 
-## Etape 1 concrete a faire maintenant
+## Etape suivante concrete
 
-1. Lire tous les patches actifs un par un.
-2. Completer pour chaque patch :
-   - fichier source transforme ;
-   - fonction exacte ;
-   - dependance a une chaine fragile ;
-   - statut : a integrer / a garder / a supprimer / a reecrire.
-3. Choisir les 2 ou 3 premiers patches simples a integrer.
-4. Ne faire aucune consolidation code tant que ce tableau n'est pas suffisamment fiable.
+Commencer l'integration du premier patch simple : `dashboardVarianceSoftColorsPatch`.
+
+Avant modification :
+
+1. Lire `src/Dashboard.tsx` autour du bloc de couleurs d'ecarts.
+2. Integrer la logique dans le vrai fichier.
+3. Retirer `dashboardVarianceSoftColorsPatch` de `vite.config.ts`.
+4. Supprimer le fichier patch seulement si le build passe.
+5. Tester visuellement les ecarts positifs/negatifs dans Vue complete.
 
 ## Decision actuelle
 
-Priorite immediate : audit des patches Vite.
+Priorite immediate : poursuivre la consolidation par petits patches.
 
-Le bug personnel derniere semaine est mis de cote. Il sera repris plus tard avec un diagnostic d'import, pas avec un nouveau patch aveugle.
+Le bug personnel derniere semaine reste mis de cote. Il sera repris plus tard avec un diagnostic d'import, pas avec un nouveau patch aveugle.
