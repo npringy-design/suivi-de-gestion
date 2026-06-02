@@ -63,56 +63,54 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
     return Math.round(((Number(match[1]) || 0) + (Number(match[2]) || 0) / 60) * 100) / 100;
   };
 
-  const getHistoricalPayrollHeaderText = (sheet: XLSX.WorkSheet, colIndex: number, rowNumber: number, range: XLSX.Range) => {
-    const parts: string[] = [];
-    const start = Math.max(range.s.r, rowNumber - 2);
-    const end = Math.min(range.e.r, rowNumber + 8);
-    for (let currentRow = start; currentRow <= end; currentRow += 1) {
-      const cell = getHistoricalBudgetCell(sheet, currentRow, colIndex);
-      const text = String(cell?.w ?? cell?.v ?? '').trim();
-      if (text) parts.push(text);
+  const findHistoricalPayrollTitle = (sheet: XLSX.WorkSheet, range: XLSX.Range, needles: string[]) => {
+    for (let rowNumber = range.s.r; rowNumber <= range.e.r; rowNumber += 1) {
+      for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
+        const text = normalizeHistoricalSupplierName(getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.w ?? getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.v);
+        if (needles.some(needle => text.includes(needle))) return { rowNumber, colIndex };
+      }
     }
-    return normalizeHistoricalSupplierName(parts.join(' '));
+    return null;
   };
 
-  const getHistoricalPayrollOffset = (header: string) => {
-    if (!header || /TOTAL|COUTGLOBAL|PRODUCTIVITE|BUDGET|PERSONNEL%|RATIO|ECART|VAR/.test(header)) return -1;
-    const hasCuisine = header.includes('CUISINE');
-    const hasSalle = header.includes('SALLE');
-    if (!hasCuisine && !hasSalle) return -1;
-    const sideOffset = hasSalle ? 1 : 0;
+  const findHistoricalPayrollTotalHoursCol = (sheet: XLSX.WorkSheet, range: XLSX.Range, title: { rowNumber: number; colIndex: number } | null) => {
+    if (!title) return null;
+    const rowStart = title.rowNumber;
+    const rowEnd = Math.min(range.e.r, title.rowNumber + 12);
+    const colStart = Math.max(range.s.c, title.colIndex - 8);
+    const colEnd = Math.min(range.e.c, title.colIndex + 30);
+    for (let rowNumber = rowStart; rowNumber <= rowEnd; rowNumber += 1) {
+      for (let colIndex = colStart; colIndex <= colEnd; colIndex += 1) {
+        const text = normalizeHistoricalSupplierName(getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.w ?? getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.v);
+        if (text.includes('TOTALHEURES')) return colIndex;
+      }
+    }
+    return null;
+  };
 
-    if (header.includes('CADRE')) return sideOffset;
-    if (header.includes('MAITRISE')) return 2 + sideOffset;
-    if (header.includes('NIVIETII') || header.includes('NIVEAUIETII')) return 4 + sideOffset;
-    if (header.includes('NIVIII') || header.includes('NIVEAUIII')) return 6 + sideOffset;
-    if (header.includes('APPRENT')) return 8 + sideOffset;
-    return -1;
+  const mapHistoricalPayrollStatusColumns = (totalHoursCol: number | null, baseTargetCol: number) => {
+    const map: Record<number, number> = {};
+    if (totalHoursCol === null || totalHoursCol === undefined) return map;
+    // L'ancien Excel regroupe les heures par statut uniquement : Cadre, Maitrise, NIV I/II, NIV III, Apprenti.
+    // L'application garde des colonnes Cuisine/Salle ; on place les heures sur la colonne Cuisine de chaque statut,
+    // les taux et totaux restent recalcules par l'application.
+    map[totalHoursCol + 1] = baseTargetCol;
+    map[totalHoursCol + 2] = baseTargetCol + 2;
+    map[totalHoursCol + 3] = baseTargetCol + 4;
+    map[totalHoursCol + 4] = baseTargetCol + 6;
+    map[totalHoursCol + 5] = baseTargetCol + 8;
+    return map;
   };
 
   const getHistoricalPayrollColumnMap = (sheet: XLSX.WorkSheet, range: XLSX.Range) => {
-    const occurrences: Record<number, Set<number>> = {};
-    const searchEndRow = Math.min(range.e.r, range.s.r + 180);
-
-    for (let rowNumber = range.s.r; rowNumber <= searchEndRow; rowNumber += 1) {
-      for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
-        const header = getHistoricalPayrollHeaderText(sheet, colIndex, rowNumber, range);
-        const offset = getHistoricalPayrollOffset(header);
-        if (offset >= 0) {
-          if (!occurrences[offset]) occurrences[offset] = new Set<number>();
-          occurrences[offset].add(colIndex);
-        }
-      }
-    }
-
-    const map: Record<number, number> = {};
-    Object.entries(occurrences).forEach(([offsetText, colSet]) => {
-      const offset = Number(offsetText);
-      const cols = Array.from(colSet).sort((a, b) => a - b);
-      if (cols[0] !== undefined) map[cols[0]] = 62 + offset;
-      if (cols[1] !== undefined) map[cols[1]] = 77 + offset;
-    });
-    return map;
+    const projectionTitle = findHistoricalPayrollTitle(sheet, range, ['PROJECTIONSCAVECPLANIFICATIONSKELLO', 'PROJECTIONSC', 'PLANIFICATIONSKELLO']);
+    const realiseTitle = findHistoricalPayrollTitle(sheet, range, ['FRAISPERSONNELREALISE']);
+    const projectionTotalCol = findHistoricalPayrollTotalHoursCol(sheet, range, projectionTitle);
+    const realiseTotalCol = findHistoricalPayrollTotalHoursCol(sheet, range, realiseTitle);
+    return {
+      ...mapHistoricalPayrollStatusColumns(projectionTotalCol, 62),
+      ...mapHistoricalPayrollStatusColumns(realiseTotalCol, 77),
+    };
   };
 
   const getHistoricalPayrollValues = (sheet: XLSX.WorkSheet, rowNumber: number, columnMap: Record<number, number>) => {
