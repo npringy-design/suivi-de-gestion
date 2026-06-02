@@ -139,7 +139,7 @@ Rappel : l'import caisse lit le PDF, alimente les valeurs automatiques utiles et
 
 ## Suivi quotidien - import historique Excel
 
-Statut au 02/06/2026 : partiellement valide.
+Statut au 02/06/2026 : import historique global partiellement valide ; chantier personnel a reprendre proprement avant de continuer.
 
 Document detaille : `docs/IMPORT_HISTORIQUE_EXCEL.md` et `docs/HEURES_PERSONNEL.md` pour la partie personnel.
 
@@ -149,13 +149,41 @@ Valide terrain :
 - Realise CA/couverts : lecture jugee coherente ; les ecarts budget valeur/% semaine et total mois ont ete ajoutes et corriges.
 - Cout matiere : lecture des montants fournisseurs jugee bonne ; les avoirs negatifs sont importes ; les colonnes `EPISAVEUR20%` et `EPISAVEUR5%` restent affichees en montant et non en pourcentage.
 
-En cours / non verrouille :
+Constat metier important sur le personnel :
 
-- Frais de personnel historique Excel : la lecture commence a fonctionner sur projection et realise, et la ligne est maintenant bien alignee pour les semaines visibles.
-- Correction tentee le 02/06/2026 apres lecture du fichier source : la lecture personnel mappe maintenant les colonnes par libelle d'en-tete. Janvier a 5 colonnes statut regroupees, fevrier a 10 colonnes cuisine/salle ; le decalage fixe apres `TOTAL HEURES` etait donc faux.
-- A revalider terrain : verifier que la derniere semaine du mois remonte bien dans la partie personnel, comme budget, realise et cout matiere, et que fevrier respecte les colonnes cuisine/salle.
-- A ne pas refaire : ne pas repartir sur une logique complexe de detection d'en-tetes fusionnes. La piste demandee par Nicolas est une lecture croisee simple : date du jour + colonne statut, comme pour budget/realise/cout matiere.
-- A verifier avant nouvelle correction : comparer le parcours personnel avec le parcours deja fiable budget/realise/cout matiere, car le souci n'est pas le format de date global.
+- Il ne faut pas coder une regle fixe par date, du type `avant fevrier 2026 = ancien format` / `apres fevrier 2026 = nouveau format`.
+- Le passage au detail salle/cuisine depend du site : Thillois est passe sur le nouveau format en janvier/fevrier 2026 selon les feuilles testees, mais d'autres sites ont pu basculer un ou deux mois avant.
+- Pour 2025 et 2024, il faut s'attendre a beaucoup de feuilles au format ancien global.
+- L'application finale sera multi-site, environ 6 sites, donc toute logique par exception de mois/site est a eviter.
+
+Objectif de reprise du chantier personnel :
+
+- Supprimer/remplacer la logique actuelle d'import personnel historique qui a ete patchee plusieurs fois et reste fragile.
+- Creer une detection automatique par feuille mensuelle et par site :
+  - format global : `Cadre`, `Maitrise`, `NIV I-II`, `NIV III`, `Apprenti` ;
+  - format detaille : `Cadre cuisine`, `Cadre salle`, `Maitrise cuisine`, `Maitrise salle`, etc.
+- Ne pas inventer une repartition salle/cuisine quand la feuille source ne la contient pas.
+- Si format detaille : importer vers les colonnes detaillees actuelles de l'application.
+- Si format global : stocker/importer comme personnel non ventile par echelon, ou au minimum prevoir une structure de donnees permettant a l'analyse de l'afficher comme global/non ventile.
+- Adapter ensuite la vue Analyse :
+  - mois/periode 100 % detaille : analyse salle/cuisine complete ;
+  - mois/periode 100 % global : analyse par echelon global uniquement ;
+  - periode mixte : total personnel fiable, detail salle/cuisine seulement sur la partie detaillee, partie ancienne affichee comme non ventilee.
+
+Problemes techniques constates sur l'import personnel actuel :
+
+- Janvier commence a importer des valeurs mais la derniere semaine ne remonte toujours pas.
+- Fevrier a ete teste sans valeurs importees en personnel, ce qui montre que la logique actuelle cherche encore trop le format janvier et ne sait pas s'adapter correctement au format detaille.
+- Le probleme de derniere semaine ne vient pas du format de date global : budget, realise et cout matiere recuperent cette meme semaine.
+- Les dernieres tentatives ont ajoute un fallback de lignes et un parseur de dates texte, mais ce n'est pas une solution metier suffisante.
+
+Consigne de reprise concrete :
+
+1. Lire `docs/POINT_AVANCEMENT.md`, puis `docs/IMPORT_HISTORIQUE_EXCEL.md` et `docs/HEURES_PERSONNEL.md`.
+2. Repartir du fichier actuellement en place et supprimer/remplacer seulement la partie import personnel historique, sans toucher aux imports valides budget/realise/cout matiere.
+3. Analyser le fichier Excel source avec une vraie lecture des en-tetes personnel, pas seulement par position relative a `TOTAL HEURES`.
+4. Construire un moteur adaptatif par feuille : detection format global/detaille, mapping colonnes, lecture par date deja detectee.
+5. Ne pas modifier la vue Analyse tant que l'import personnel adaptatif n'est pas stabilise ; documenter ensuite le besoin d'affichage global/detaille/mixte.
 
 Derniers fichiers de patch concernes :
 
@@ -165,6 +193,6 @@ Derniers fichiers de patch concernes :
 - `scripts/dashboardHistoricalCostMatterImportPatch.ts`
 - `scripts/dashboardHistoricalCostMatterSafePatch.ts`
 - `scripts/dashboardCostMatterAmountFormatPatch.ts`
-- `scripts/dashboardHistoricalPayrollImportPatch.ts`
-- `scripts/dashboardHistoricalTextDatePatch.ts`
+- `scripts/dashboardHistoricalPayrollImportPatch.ts` : a reprendre proprement
+- `scripts/dashboardHistoricalTextDatePatch.ts` : ajoute pendant investigation, a conserver ou retirer selon la future implementation
 - `vite.config.ts`
