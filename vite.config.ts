@@ -15,6 +15,7 @@ import { dashboardHistoricalCostMatterImportPatch } from './scripts/dashboardHis
 import { dashboardHistoricalCostMatterSafePatch } from './scripts/dashboardHistoricalCostMatterSafePatch';
 import { dashboardHistoricalPayrollImportPatch } from './scripts/dashboardHistoricalPayrollImportPatch';
 import { dashboardHistoricalRealiseImportPatch } from './scripts/dashboardHistoricalRealiseImportPatch';
+import { dashboardHistoricalTextDatePatch } from './scripts/dashboardHistoricalTextDatePatch';
 import { dashboardLimonadeSplitPatch } from './scripts/dashboardLimonadeSplitPatch';
 import { dashboardPayrollColumnPatch } from './scripts/dashboardPayrollColumnPatch';
 import { dashboardRealiseCleanLayoutPatch } from './scripts/dashboardRealiseCleanLayoutPatch';
@@ -36,11 +37,12 @@ export default defineConfig(({mode}) => {
     payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(),
     dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(),
     dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardThilloisNoLimonadePatch(),
-    dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(), dashboardHistoricalRealiseImportPatch(),
-    dashboardHistoricalCostMatterImportPatch(), dashboardHistoricalCostMatterSafePatch(), dashboardCostMatterAmountFormatPatch(),
-    dashboardHistoricalPayrollImportPatch(), dashboardAnalysisModePatch(), dashboardHeaderVisualPatch(),
-    dashboardVarianceSoftColorsPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(), homePayrollBubblePatch(),
-    homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(), accountingSettingsRoutePatch(), react(), tailwindcss()
+    dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalTextDatePatch(), dashboardHistoricalBudgetFocusedPatch(),
+    dashboardHistoricalRealiseImportPatch(), dashboardHistoricalCostMatterImportPatch(), dashboardHistoricalCostMatterSafePatch(),
+    dashboardCostMatterAmountFormatPatch(), dashboardHistoricalPayrollImportPatch(), dashboardAnalysisModePatch(),
+    dashboardHeaderVisualPatch(), dashboardVarianceSoftColorsPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(),
+    homePayrollBubblePatch(), homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(), accountingSettingsRoutePatch(),
+    react(), tailwindcss()
   ];
   return {
     plugins,
