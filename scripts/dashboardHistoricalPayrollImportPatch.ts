@@ -123,6 +123,17 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
     return values;
   };
 
+  const rowHasHistoricalPayrollValues = (values: Record<number, string>) => Object.keys(values).length > 0;
+
+  const getBestHistoricalPayrollValues = (sheet: XLSX.WorkSheet, primaryRow: number, dateRow: number, columnMap: Record<number, number>) => {
+    const candidateRows = Array.from(new Set([primaryRow, dateRow, dateRow - 1, dateRow - 2, dateRow + 1, dateRow + 2]));
+    for (const candidateRow of candidateRows) {
+      const values = getHistoricalPayrollValues(sheet, candidateRow, columnMap);
+      if (rowHasHistoricalPayrollValues(values)) return values;
+    }
+    return {};
+  };
+
   const sumHistoricalPayrollValues = (values: Record<number, string>) => (
     Object.values(values).reduce((sum, value) => sum + historicalPayrollHourToDecimal(value), 0)
   );`);
@@ -134,7 +145,7 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
           const costMatterTotal = sumHistoricalCostMatterValues(costMatterValues);
           const caMidi = couvertsMidi * tmMidi;`, `          const costMatterValues = getHistoricalCostMatterValues(sheet, rowNumber, costMatterColumnMap);
           const costMatterTotal = sumHistoricalCostMatterValues(costMatterValues);
-          const payrollValues = getHistoricalPayrollValues(sheet, realiseSourceRow, payrollColumnMap);
+          const payrollValues = getBestHistoricalPayrollValues(sheet, realiseSourceRow, rowNumber, payrollColumnMap);
           const payrollTotalHours = sumHistoricalPayrollValues(payrollValues);
           const caMidi = couvertsMidi * tmMidi;`);
 
