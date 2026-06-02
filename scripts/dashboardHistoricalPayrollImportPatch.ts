@@ -95,12 +95,34 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
     return matches;
   };
 
-  const mapHistoricalPayrollStatusColumns = (totalHoursCol: number | null, baseTargetCol: number) => {
+  const findHistoricalPayrollTargetColumn = (headerText: unknown, baseTargetCol: number) => {
+    const header = normalizeHistoricalSupplierName(headerText);
+    if (!header || /TOTAL|COUT|GLOBAL|PRODUCTIVITE|BUDGET|FRAIS|PERSONNEL|RATIO|ECART/.test(header)) return 0;
+    const sectionOffset = header.includes('SALLE') ? 1 : 0;
+    if (header.includes('CADRE')) return baseTargetCol + sectionOffset;
+    if (header.includes('MAITRISE')) return baseTargetCol + 2 + sectionOffset;
+    if (header.includes('NIVIETII') || header.includes('NIVEAU1ET2') || header.includes('NIVEAUIETII')) return baseTargetCol + 4 + sectionOffset;
+    if (header.includes('NIVIII') || header.includes('NIVEAU3') || header.includes('NIVEAUIII')) return baseTargetCol + 6 + sectionOffset;
+    if (header.includes('APPRENTI')) return baseTargetCol + 8 + sectionOffset;
+    return 0;
+  };
+
+  const mapHistoricalPayrollStatusColumns = (sheet: XLSX.WorkSheet, headerRow: number, totalHoursCol: number | null, baseTargetCol: number) => {
     const map: Record<number, number> = {};
     if (totalHoursCol === null || totalHoursCol === undefined) return map;
-    // L'ancien Excel regroupe les heures par statut uniquement : Cadre, Maitrise, NIV I/II, NIV III, Apprenti.
-    // L'application garde des colonnes Cuisine/Salle ; on place les heures sur la colonne Cuisine de chaque statut,
-    // les taux et totaux restent recalcules par l'application.
+    let foundStatusColumn = false;
+    for (let colIndex = totalHoursCol + 1; colIndex <= totalHoursCol + 14; colIndex += 1) {
+      const targetCol = findHistoricalPayrollTargetColumn(getHistoricalBudgetCell(sheet, headerRow, colIndex)?.w ?? getHistoricalBudgetCell(sheet, headerRow, colIndex)?.v, baseTargetCol);
+      if (targetCol) {
+        map[colIndex] = targetCol;
+        foundStatusColumn = true;
+      } else if (foundStatusColumn) {
+        break;
+      }
+    }
+    if (Object.keys(map).length > 0) return map;
+    // Fallback pour les anciens onglets qui n'auraient pas d'en-tetes lisibles :
+    // Cadre, Maitrise, NIV I/II, NIV III, Apprenti, poses cote Cuisine.
     map[totalHoursCol + 1] = baseTargetCol;
     map[totalHoursCol + 2] = baseTargetCol + 2;
     map[totalHoursCol + 3] = baseTargetCol + 4;
@@ -115,12 +137,12 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
     const projectionMaps = findHistoricalPayrollTotalHoursCols(sheet, range, projectionTitle).map(match => ({
       group: 'projection' as const,
       headerRow: match.rowNumber,
-      columns: mapHistoricalPayrollStatusColumns(match.colIndex, 62),
+      columns: mapHistoricalPayrollStatusColumns(sheet, match.rowNumber - 3, match.colIndex, 62),
     }));
     const realiseMaps = findHistoricalPayrollTotalHoursCols(sheet, range, realiseTitle).map(match => ({
       group: 'realise' as const,
       headerRow: match.rowNumber,
-      columns: mapHistoricalPayrollStatusColumns(match.colIndex, 77),
+      columns: mapHistoricalPayrollStatusColumns(sheet, match.rowNumber - 3, match.colIndex, 77),
     }));
     return [...projectionMaps, ...realiseMaps];
   };

@@ -120,11 +120,11 @@ Regle validee :
 
 Etat technique actuel :
 
-- l'ancien Excel regroupe les heures personnel par statut, sans repartition cuisine/salle fiable ;
-- l'import place donc les heures sur les colonnes cuisine de chaque statut pour ne pas inventer une repartition salle/cuisine ;
+- l'ancien Excel peut regrouper les heures personnel par statut ou les separer cuisine/salle selon la feuille ;
+- si la feuille donne cuisine/salle, l'import reprend les deux colonnes ; si elle ne donne que le statut, l'import place les heures sur cuisine pour ne pas inventer une repartition ;
 - colonnes visees projection : `62`, `64`, `66`, `68`, `70` ;
 - colonnes visees realise : `77`, `79`, `81`, `83`, `85` ;
-- correction du 02/06/2026 : le personnel ne depend plus d'une seule colonne `TOTAL HEURES` trouvee en debut de zone. L'import conserve le parcours par date deja fiable et choisit les colonnes personnel les plus proches de la ligne importee, pour couvrir les en-tetes repetes ou decales en fin de mois.
+- correction du 02/06/2026 apres lecture du fichier source `HIP THILL GESTION LDM V26.xlsx` : la structure personnel varie selon les feuilles. Janvier utilise 5 colonnes statut regroupees, fevrier utilise 10 colonnes cuisine/salle. L'import lit donc maintenant les en-tetes de colonnes personnel au lieu de supposer un decalage fixe apres `TOTAL HEURES`.
 
 Consigne de reprise : ne pas accuser le format date sans preuve. La derniere semaine est bien lue par budget, realise et cout matiere. Le prochain correctif doit reutiliser autant que possible le meme parcours de jours que ces imports valides, puis appliquer une lecture croisee simple date + colonne statut.
 

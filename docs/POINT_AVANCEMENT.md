@@ -152,8 +152,8 @@ Valide terrain :
 En cours / non verrouille :
 
 - Frais de personnel historique Excel : la lecture commence a fonctionner sur projection et realise, et la ligne est maintenant bien alignee pour les semaines visibles.
-- Correction tentee le 02/06/2026 : la lecture personnel choisit maintenant les colonnes `TOTAL HEURES` les plus proches de chaque ligne de date, au lieu de rester sur une seule detection en debut de zone.
-- A revalider terrain : verifier que la derniere semaine du mois remonte bien dans la partie personnel, comme budget, realise et cout matiere.
+- Correction tentee le 02/06/2026 apres lecture du fichier source : la lecture personnel mappe maintenant les colonnes par libelle d'en-tete. Janvier a 5 colonnes statut regroupees, fevrier a 10 colonnes cuisine/salle ; le decalage fixe apres `TOTAL HEURES` etait donc faux.
+- A revalider terrain : verifier que la derniere semaine du mois remonte bien dans la partie personnel, comme budget, realise et cout matiere, et que fevrier respecte les colonnes cuisine/salle.
 - A ne pas refaire : ne pas repartir sur une logique complexe de detection d'en-tetes fusionnes. La piste demandee par Nicolas est une lecture croisee simple : date du jour + colonne statut, comme pour budget/realise/cout matiere.
 - A verifier avant nouvelle correction : comparer le parcours personnel avec le parcours deja fiable budget/realise/cout matiere, car le souci n'est pas le format de date global.
 
