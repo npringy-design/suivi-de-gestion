@@ -107,6 +107,8 @@ Principe :
 
 Correction du 02/06/2026 : les heures personnel utilisent la meme ligne source corrigee que le budget/realise quand le fichier Excel presente un decalage de ligne. Cela evite que le 1er janvier prenne les heures du 2 janvier et que la derniere semaine reste vide.
 
+Correction du 02/06/2026 : le parseur de dates historique accepte maintenant aussi les dates texte francaises avec jour de semaine, par exemple `lundi 26 janvier 2026`. Objectif : eviter que la derniere semaine soit ignoree si Excel stocke ces dates en texte au lieu d'une vraie date.
+
 Colonnes visees :
 
 - projection : colonnes cuisine `62`, `64`, `66`, `68`, `70` ;
@@ -201,6 +203,7 @@ Regles de calcul :
 - `scripts/dashboardStrictSalaryRatesPatch.ts` : suppression des taux salaires de secours dans les calculs de la vue complete ;
 - `scripts/payrollCpProvisionPatch.ts` : coefficient provision CP par categorie, cadre a `1,18`, autres statuts a `1,10` ;
 - `scripts/dashboardHistoricalPayrollImportPatch.ts` : ajout de l'import historique Excel des heures projection/realise ;
+- `scripts/dashboardHistoricalTextDatePatch.ts` : support des dates texte francaises dans les imports historiques ;
 - `vite.config.ts` : activation des patchs.
 
 ## Point technique important
