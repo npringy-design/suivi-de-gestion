@@ -79,80 +79,138 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
     columns: Record<number, number>;
   };
 
-  const findHistoricalPayrollTotalHoursCols = (sheet: XLSX.WorkSheet, range: XLSX.Range, title: { rowNumber: number; colIndex: number } | null) => {
+  const findHistoricalPayrollTotalHoursCols = (
+    sheet: XLSX.WorkSheet,
+    range: XLSX.Range,
+    title: { rowNumber: number; colIndex: number } | null,
+    stopBeforeRow?: number,
+  ) => {
     const matches: Array<{ rowNumber: number; colIndex: number }> = [];
+    const seen = new Set<string>();
     if (!title) return matches;
     const rowStart = title.rowNumber;
-    const rowEnd = Math.min(range.e.r, title.rowNumber + 90);
-    const colStart = Math.max(range.s.c, title.colIndex - 8);
-    const colEnd = Math.min(range.e.c, title.colIndex + 30);
+    const rowEnd = Math.min(range.e.r, Math.max(rowStart, (stopBeforeRow ?? range.e.r + 1) - 1));
+    const colStart = Math.max(range.s.c, title.colIndex - 10);
+    const colEnd = Math.min(range.e.c, title.colIndex + 80);
     for (let rowNumber = rowStart; rowNumber <= rowEnd; rowNumber += 1) {
       for (let colIndex = colStart; colIndex <= colEnd; colIndex += 1) {
         const text = normalizeHistoricalSupplierName(getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.w ?? getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.v);
-        if (text.includes('TOTALHEURES')) matches.push({ rowNumber, colIndex });
+        if (!text.includes('TOTALHEURES')) continue;
+        const key = rowNumber + '-' + colIndex;
+        if (!seen.has(key)) {
+          seen.add(key);
+          matches.push({ rowNumber, colIndex });
+        }
       }
     }
     return matches;
   };
 
+  const getHistoricalPayrollHeaderText = (sheet: XLSX.WorkSheet, rowNumber: number, colIndex: number, leftDepth = 0) => {
+    const parts: string[] = [];
+    for (let rowOffset = -2; rowOffset <= 2; rowOffset += 1) {
+      for (let colOffset = -leftDepth; colOffset <= 0; colOffset += 1) {
+        const cell = getHistoricalBudgetCell(sheet, rowNumber + rowOffset, colIndex + colOffset);
+        const text = String(cell?.w ?? cell?.v ?? '').trim();
+        if (text) parts.push(text);
+      }
+    }
+    return parts.join(' ');
+  };
+
   const findHistoricalPayrollTargetColumn = (headerText: unknown, baseTargetCol: number) => {
-    const header = normalizeHistoricalSupplierName(headerText);
+    const rawHeader = String(headerText ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase();
+    const header = normalizeHistoricalSupplierName(rawHeader);
     if (!header || /TOTAL|COUT|GLOBAL|PRODUCTIVITE|BUDGET|FRAIS|PERSONNEL|RATIO|ECART/.test(header)) return 0;
+
     const sectionOffset = header.includes('SALLE') ? 1 : 0;
+    const isLevelOneTwo = /NIV(?:EAU)?\s*(?:I|1)\s*(?:-|\/|ET|&|\s)+\s*(?:II|2)/.test(rawHeader)
+      || header.includes('NIVIETII')
+      || header.includes('NIVEAU1ET2')
+      || header.includes('NIVEAUIETII');
+    const isLevelThree = !isLevelOneTwo && (/NIV(?:EAU)?\s*(?:III|3)/.test(rawHeader) || header.includes('NIVIII') || header.includes('NIVEAUIII') || header.includes('NIVEAU3'));
+
     if (header.includes('CADRE')) return baseTargetCol + sectionOffset;
     if (header.includes('MAITRISE')) return baseTargetCol + 2 + sectionOffset;
-    if (header.includes('NIVIETII') || header.includes('NIVEAU1ET2') || header.includes('NIVEAUIETII')) return baseTargetCol + 4 + sectionOffset;
-    if (header.includes('NIVIII') || header.includes('NIVEAU3') || header.includes('NIVEAUIII')) return baseTargetCol + 6 + sectionOffset;
+    if (isLevelOneTwo) return baseTargetCol + 4 + sectionOffset;
+    if (isLevelThree) return baseTargetCol + 6 + sectionOffset;
     if (header.includes('APPRENTI')) return baseTargetCol + 8 + sectionOffset;
     return 0;
   };
 
-  const mapHistoricalPayrollStatusColumns = (sheet: XLSX.WorkSheet, headerRow: number, totalHoursCol: number | null, baseTargetCol: number) => {
+  const findHistoricalPayrollTargetColumnNear = (sheet: XLSX.WorkSheet, headerRow: number, colIndex: number, baseTargetCol: number) => {
+    const direct = findHistoricalPayrollTargetColumn(getHistoricalPayrollHeaderText(sheet, headerRow, colIndex, 0), baseTargetCol);
+    if (direct) return direct;
+    return findHistoricalPayrollTargetColumn(getHistoricalPayrollHeaderText(sheet, headerRow, colIndex, 2), baseTargetCol);
+  };
+
+  const buildHistoricalPayrollStatusMapFromHeaderRow = (sheet: XLSX.WorkSheet, headerRow: number, totalHoursCol: number, baseTargetCol: number) => {
     const map: Record<number, number> = {};
-    if (totalHoursCol === null || totalHoursCol === undefined) return map;
-    let foundStatusColumn = false;
+    const usedTargets = new Set<number>();
     for (let colIndex = totalHoursCol + 1; colIndex <= totalHoursCol + 14; colIndex += 1) {
-      const targetCol = findHistoricalPayrollTargetColumn(getHistoricalBudgetCell(sheet, headerRow, colIndex)?.w ?? getHistoricalBudgetCell(sheet, headerRow, colIndex)?.v, baseTargetCol);
-      if (targetCol) {
+      const targetCol = findHistoricalPayrollTargetColumnNear(sheet, headerRow, colIndex, baseTargetCol);
+      if (targetCol && !usedTargets.has(targetCol)) {
         map[colIndex] = targetCol;
-        foundStatusColumn = true;
-      } else if (foundStatusColumn) {
-        break;
+        usedTargets.add(targetCol);
       }
     }
-    if (Object.keys(map).length > 0) return map;
-    // Fallback pour les anciens onglets qui n'auraient pas d'en-tetes lisibles :
-    // Cadre, Maitrise, NIV I/II, NIV III, Apprenti, poses cote Cuisine.
-    map[totalHoursCol + 1] = baseTargetCol;
-    map[totalHoursCol + 2] = baseTargetCol + 2;
-    map[totalHoursCol + 3] = baseTargetCol + 4;
-    map[totalHoursCol + 4] = baseTargetCol + 6;
-    map[totalHoursCol + 5] = baseTargetCol + 8;
     return map;
   };
+
+  const mapHistoricalPayrollStatusColumns = (sheet: XLSX.WorkSheet, totalHoursRow: number, totalHoursCol: number | null, baseTargetCol: number) => {
+    if (totalHoursCol === null || totalHoursCol === undefined) return {};
+
+    let bestMap: Record<number, number> = {};
+    for (let headerRow = totalHoursRow - 8; headerRow <= totalHoursRow + 2; headerRow += 1) {
+      const map = buildHistoricalPayrollStatusMapFromHeaderRow(sheet, headerRow, totalHoursCol, baseTargetCol);
+      if (Object.keys(map).length > Object.keys(bestMap).length) bestMap = map;
+    }
+    if (Object.keys(bestMap).length > 0) return bestMap;
+
+    // Fallback pour les anciens onglets qui n'auraient pas d'en-tetes lisibles :
+    // Cadre, Maitrise, NIV I/II, NIV III, Apprenti, poses cote Cuisine.
+    return {
+      [totalHoursCol + 1]: baseTargetCol,
+      [totalHoursCol + 2]: baseTargetCol + 2,
+      [totalHoursCol + 3]: baseTargetCol + 4,
+      [totalHoursCol + 4]: baseTargetCol + 6,
+      [totalHoursCol + 5]: baseTargetCol + 8,
+    };
+  };
+
+  const completeHistoricalPayrollMaps = (maps: HistoricalPayrollColumnMap[]) => maps
+    .filter(map => Object.keys(map.columns).length > 0)
+    .sort((a, b) => a.headerRow - b.headerRow);
 
   const getHistoricalPayrollColumnMaps = (sheet: XLSX.WorkSheet, range: XLSX.Range) => {
     const projectionTitle = findHistoricalPayrollTitle(sheet, range, ['PROJECTIONSCAVECPLANIFICATIONSKELLO', 'PROJECTIONSC', 'PLANIFICATIONSKELLO']);
     const realiseTitle = findHistoricalPayrollTitle(sheet, range, ['FRAISPERSONNELREALISE']);
-    const projectionMaps = findHistoricalPayrollTotalHoursCols(sheet, range, projectionTitle).map(match => ({
+    const projectionStopRow = projectionTitle && realiseTitle && realiseTitle.rowNumber > projectionTitle.rowNumber ? realiseTitle.rowNumber : undefined;
+    const projectionMaps = findHistoricalPayrollTotalHoursCols(sheet, range, projectionTitle, projectionStopRow).map(match => ({
       group: 'projection' as const,
       headerRow: match.rowNumber,
-      columns: mapHistoricalPayrollStatusColumns(sheet, match.rowNumber - 3, match.colIndex, 62),
+      columns: mapHistoricalPayrollStatusColumns(sheet, match.rowNumber, match.colIndex, 62),
     }));
     const realiseMaps = findHistoricalPayrollTotalHoursCols(sheet, range, realiseTitle).map(match => ({
       group: 'realise' as const,
       headerRow: match.rowNumber,
-      columns: mapHistoricalPayrollStatusColumns(sheet, match.rowNumber - 3, match.colIndex, 77),
+      columns: mapHistoricalPayrollStatusColumns(sheet, match.rowNumber, match.colIndex, 77),
     }));
-    return [...projectionMaps, ...realiseMaps];
+    return [...completeHistoricalPayrollMaps(projectionMaps), ...completeHistoricalPayrollMaps(realiseMaps)];
   };
 
   const selectHistoricalPayrollColumnMap = (rowNumber: number, columnMaps: HistoricalPayrollColumnMap[]) => {
     const selected: Record<number, number> = {};
     (['projection', 'realise'] as const).forEach(group => {
-      const nearest = columnMaps
-        .filter(map => map.group === group)
-        .sort((a, b) => Math.abs(a.headerRow - rowNumber) - Math.abs(b.headerRow - rowNumber))[0];
+      const maps = columnMaps.filter(map => map.group === group).sort((a, b) => a.headerRow - b.headerRow);
+      const bounded = maps.find((map, index) => {
+        const nextMap = maps[index + 1];
+        return rowNumber >= map.headerRow - 2 && (!nextMap || rowNumber < nextMap.headerRow - 2);
+      });
+      const nearest = bounded || maps.sort((a, b) => Math.abs(a.headerRow - rowNumber) - Math.abs(b.headerRow - rowNumber))[0];
       if (nearest) Object.assign(selected, nearest.columns);
     });
     return selected;
@@ -171,7 +229,7 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
   const rowHasHistoricalPayrollValues = (values: Record<number, string>) => Object.keys(values).length > 0;
 
   const getBestHistoricalPayrollValues = (sheet: XLSX.WorkSheet, primaryRow: number, dateRow: number, columnMaps: HistoricalPayrollColumnMap[]) => {
-    const candidateRows = Array.from(new Set([primaryRow, dateRow, dateRow - 1, dateRow - 2, dateRow + 1, dateRow + 2]));
+    const candidateRows = Array.from(new Set([primaryRow, dateRow, dateRow - 1, dateRow - 2, dateRow + 1, dateRow + 2, dateRow + 3, dateRow + 4]));
     for (const candidateRow of candidateRows) {
       const columnMap = selectHistoricalPayrollColumnMap(candidateRow, columnMaps);
       const values = getHistoricalPayrollValues(sheet, candidateRow, columnMap);
