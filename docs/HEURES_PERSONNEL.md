@@ -89,32 +89,50 @@ Mecanique retenue :
 
 ## Import historique Excel - personnel
 
-Correction ajoutee le 01/06/2026 : l'import historique Excel lit aussi les heures de personnel dans les zones :
+Statut au 02/06/2026 : en cours, pas encore valide.
 
-- `PROJECTION S/C AVEC PLANIFICATION SKELLO` ;
-- `FRAIS PERSONNEL REALISE`.
+Ce qui est attendu :
 
-Principe :
+- lire les heures personnel depuis `PROJECTION S/C AVEC PLANIFICATION SKELLO` ;
+- lire les heures personnel depuis `FRAIS PERSONNEL REALISE` ;
+- croiser simplement la ligne de date et la colonne statut ;
+- ne pas reprendre les couts globaux, productivites, ratios, ecarts ou taux de l'ancien Excel ;
+- laisser l'application recalculer avec les taux horaires de la configuration salaire.
 
-- detection de la zone par le titre ;
-- lecture simplifiee depuis la colonne `TOTAL HEURES` de chaque bloc ;
-- import des 5 colonnes statut qui suivent : cadre, maitrise, niveau I/II, niveau III, apprenti ;
+Regles deja validees :
+
+- les taux horaires ne viennent pas de l'ancien Excel ;
+- source taux = configuration salaire / import PDF salaires ;
+- source heures = suivi quotidien / import historique Excel ;
 - l'ancien Excel regroupe les heures par statut, sans repartition cuisine/salle fiable ;
-- l'application garde des colonnes cuisine/salle : par prudence, l'import historique place les heures sur les colonnes cuisine de chaque statut ;
-- les lignes `Total Semaine`, cumul et total mois ne servent pas de source ;
-- les heures sont ecrites dans les colonnes de saisie du suivi quotidien ;
-- les couts globaux, productivites, ratios et ecarts restent recalcules par l'application.
-
-Correction du 02/06/2026 : les heures personnel utilisent la meme ligne source corrigee que le budget/realise quand le fichier Excel presente un decalage de ligne. Cela evite que le 1er janvier prenne les heures du 2 janvier et que la derniere semaine reste vide.
-
-Correction du 02/06/2026 : le parseur de dates historique accepte maintenant aussi les dates texte francaises avec jour de semaine, par exemple `lundi 26 janvier 2026`. Objectif : eviter que la derniere semaine soit ignoree si Excel stocke ces dates en texte au lieu d'une vraie date.
+- par prudence, l'import place les heures sur les colonnes cuisine de chaque statut pour ne pas inventer une repartition salle/cuisine.
 
 Colonnes visees :
 
 - projection : colonnes cuisine `62`, `64`, `66`, `68`, `70` ;
 - realise : colonnes cuisine `77`, `79`, `81`, `83`, `85`.
 
-Les taux horaires ne sont pas repris depuis l'ancien Excel. Ils viennent de la configuration salaire du mois via les imports PDF salaires / page `Configuration Salaires et Charges`. Cela evite de figer d'anciens taux dans l'historique et respecte la regle : config salaire = source des taux, suivi quotidien = source des heures.
+Ce qui fonctionne partiellement :
+
+- le realise personnel a fini par s'afficher ;
+- la projection commence aussi a s'afficher ;
+- le decalage de ligne principal a ete corrige pour les semaines visibles.
+
+Probleme restant :
+
+- la derniere semaine du mois n'est toujours pas importee dans la partie personnel ;
+- ce probleme ne concerne pas budget, realise CA/couverts ni cout matiere, qui recuperent bien cette derniere semaine ;
+- il ne faut donc pas conclure que le format de date global est la cause principale sans preuve ;
+- la prochaine reprise doit aligner la boucle personnel sur le parcours de lignes deja valide pour budget/realise/cout matiere.
+
+Dernieres tentatives code :
+
+- detection par en-tetes statut fusionnes : trop fragile ;
+- detection par `TOTAL HEURES` puis 5 colonnes statut : plus simple et partiellement fonctionnelle ;
+- fallback de lignes autour de la ligne date : ajoute mais pas encore valide sur la derniere semaine ;
+- patch `dashboardHistoricalTextDatePatch.ts` ajoute pendant investigation, mais la cause racine semble plutot dans la lecture personnel.
+
+Consigne de reprise : privilegier une lecture croisee simple date + colonne statut, sur le meme tableau de jours que les imports deja valides. Eviter de rajouter des couches de detection complexes sans verifier le fichier Excel source.
 
 ## Configuration salaires
 
@@ -202,8 +220,8 @@ Regles de calcul :
 - `scripts/dashboardPayrollColumnPatch.ts` : patch temporaire applique a `Dashboard.tsx` au build ;
 - `scripts/dashboardStrictSalaryRatesPatch.ts` : suppression des taux salaires de secours dans les calculs de la vue complete ;
 - `scripts/payrollCpProvisionPatch.ts` : coefficient provision CP par categorie, cadre a `1,18`, autres statuts a `1,10` ;
-- `scripts/dashboardHistoricalPayrollImportPatch.ts` : ajout de l'import historique Excel des heures projection/realise ;
-- `scripts/dashboardHistoricalTextDatePatch.ts` : support des dates texte francaises dans les imports historiques ;
+- `scripts/dashboardHistoricalPayrollImportPatch.ts` : ajout de l'import historique Excel des heures projection/realise, en cours ;
+- `scripts/dashboardHistoricalTextDatePatch.ts` : support dates texte ajoute pendant investigation ;
 - `vite.config.ts` : activation des patchs.
 
 ## Point technique important
