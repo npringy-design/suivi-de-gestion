@@ -124,7 +124,7 @@ Etat technique actuel :
 - l'import place donc les heures sur les colonnes cuisine de chaque statut pour ne pas inventer une repartition salle/cuisine ;
 - colonnes visees projection : `62`, `64`, `66`, `68`, `70` ;
 - colonnes visees realise : `77`, `79`, `81`, `83`, `85` ;
-- la derniere tentative ajoute un fallback de lignes autour de la ligne source, mais le dernier retour terrain indique que la derniere semaine ne remonte toujours pas.
+- correction du 02/06/2026 : le personnel ne depend plus d'une seule colonne `TOTAL HEURES` trouvee en debut de zone. L'import conserve le parcours par date deja fiable et choisit les colonnes personnel les plus proches de la ligne importee, pour couvrir les en-tetes repetes ou decales en fin de mois.
 
 Consigne de reprise : ne pas accuser le format date sans preuve. La derniere semaine est bien lue par budget, realise et cout matiere. Le prochain correctif doit reutiliser autant que possible le meme parcours de jours que ces imports valides, puis appliquer une lecture croisee simple date + colonne statut.
 
