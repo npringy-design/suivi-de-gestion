@@ -97,16 +97,20 @@ Correction ajoutee le 01/06/2026 : l'import historique Excel lit aussi les heure
 Principe :
 
 - detection de la zone par le titre ;
-- lecture des en-tetes statut + cuisine/salle ;
-- import des heures sur les vraies lignes de date uniquement ;
+- lecture simplifiee depuis la colonne `TOTAL HEURES` de chaque bloc ;
+- import des 5 colonnes statut qui suivent : cadre, maitrise, niveau I/II, niveau III, apprenti ;
+- l'ancien Excel regroupe les heures par statut, sans repartition cuisine/salle fiable ;
+- l'application garde des colonnes cuisine/salle : par prudence, l'import historique place les heures sur les colonnes cuisine de chaque statut ;
 - les lignes `Total Semaine`, cumul et total mois ne servent pas de source ;
 - les heures sont ecrites dans les colonnes de saisie du suivi quotidien ;
 - les couts globaux, productivites, ratios et ecarts restent recalcules par l'application.
 
+Correction du 02/06/2026 : les heures personnel utilisent la meme ligne source corrigee que le budget/realise quand le fichier Excel presente un decalage de ligne. Cela evite que le 1er janvier prenne les heures du 2 janvier et que la derniere semaine reste vide.
+
 Colonnes visees :
 
-- projection : `62` a `71` ;
-- realise : `77` a `86`.
+- projection : colonnes cuisine `62`, `64`, `66`, `68`, `70` ;
+- realise : colonnes cuisine `77`, `79`, `81`, `83`, `85`.
 
 Les taux horaires ne sont pas repris depuis l'ancien Excel. Ils viennent de la configuration salaire du mois via les imports PDF salaires / page `Configuration Salaires et Charges`. Cela evite de figer d'anciens taux dans l'historique et respecte la regle : config salaire = source des taux, suivi quotidien = source des heures.
 
