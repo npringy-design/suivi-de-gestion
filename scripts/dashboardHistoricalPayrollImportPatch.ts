@@ -40,19 +40,20 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
       return /^0+:00$/.test(normalized) ? '' : normalized;
     }
 
+    const text = String(raw ?? '').trim();
+    if (/^-?\d{1,4}[:hH]\d{2}$/.test(text)) {
+      const normalized = text.replace(/[hH]/, ':');
+      return /^0+:00$/.test(normalized) ? '' : normalized;
+    }
+
     if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) {
-      const hoursDecimal = raw <= 3 ? raw * 24 : raw;
+      const hoursDecimal = raw < 1 ? raw * 24 : raw;
       const totalMinutes = Math.round(hoursDecimal * 60);
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
       return hours === 0 && minutes === 0 ? '' : hours + ':' + String(minutes).padStart(2, '0');
     }
 
-    const text = String(raw ?? display ?? '').trim();
-    if (/^-?\d{1,4}[:hH]\d{2}$/.test(text)) {
-      const normalized = text.replace(/[hH]/, ':');
-      return /^0+:00$/.test(normalized) ? '' : normalized;
-    }
     return '';
   };
 
@@ -64,24 +65,29 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
     return Math.round((hours + minutes / 60) * 100) / 100;
   };
 
-  const findHistoricalPayrollTargetColumn = (headerText: string, mode: 'projection' | 'realise') => {
+  const getHistoricalPayrollOffset = (headerText: string) => {
     const header = normalizeHistoricalSupplierName(headerText);
-    if (!header || /TOTAL|COUTGLOBAL|PRODUCTIVITE|BUDGET|PERSONNEL|RATIO|ECART|VAR/.test(header)) return 0;
-    const base = mode === 'projection' ? 62 : 77;
     const hasCuisine = header.includes('CUISINE');
     const hasSalle = header.includes('SALLE');
-    if (!hasCuisine && !hasSalle) return 0;
+    if (!hasCuisine && !hasSalle) return -1;
+    const sideOffset = hasSalle ? 1 : 0;
 
-    if (header.includes('CADRE')) return base + (hasSalle ? 1 : 0);
-    if (header.includes('MAITRISE')) return base + 2 + (hasSalle ? 1 : 0);
-    if (header.includes('NIVIETII') || header.includes('NIVEAUIETII') || header.includes('NIV12')) return base + 4 + (hasSalle ? 1 : 0);
-    if (header.includes('NIVIII') || header.includes('NIVEAUIII') || header.includes('NIV3')) return base + 6 + (hasSalle ? 1 : 0);
-    if (header.includes('APPRENT')) return base + 8 + (hasSalle ? 1 : 0);
-    return 0;
+    if (header.includes('CADRE')) return sideOffset;
+    if (header.includes('MAITRISE')) return 2 + sideOffset;
+    if (header.includes('NIVIETII') || header.includes('NIVEAUIETII') || header.includes('NIV12')) return 4 + sideOffset;
+    if (header.includes('NIVIII') || header.includes('NIVEAUIII') || header.includes('NIV3')) return 6 + sideOffset;
+    if (header.includes('APPRENT')) return 8 + sideOffset;
+    return -1;
+  };
+
+  const findHistoricalPayrollTargetColumn = (headerText: string, mode: 'projection' | 'realise') => {
+    const offset = getHistoricalPayrollOffset(headerText);
+    if (offset < 0) return 0;
+    return (mode === 'projection' ? 62 : 77) + offset;
   };
 
   const findHistoricalPayrollTitle = (sheet: XLSX.WorkSheet, range: XLSX.Range, needles: string[]) => {
-    const searchEndRow = Math.min(range.e.r, range.s.r + 120);
+    const searchEndRow = Math.min(range.e.r, range.s.r + 140);
     for (let rowNumber = range.s.r; rowNumber <= searchEndRow; rowNumber += 1) {
       for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
         const text = normalizeHistoricalSupplierName(getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.w ?? getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.v);
@@ -99,10 +105,11 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
     if (!title) return map;
 
     const headerStartRow = title.rowNumber + 1;
-    const headerEndRow = Math.min(range.e.r, title.rowNumber + 10);
-    const colEnd = Math.min(range.e.c, title.colIndex + 24);
+    const headerEndRow = Math.min(range.e.r, title.rowNumber + 14);
+    const colStart = Math.max(range.s.c, title.colIndex - 12);
+    const colEnd = Math.min(range.e.c, title.colIndex + 36);
 
-    for (let colIndex = title.colIndex; colIndex <= colEnd; colIndex += 1) {
+    for (let colIndex = colStart; colIndex <= colEnd; colIndex += 1) {
       if (map[colIndex]) continue;
       const headerParts: string[] = [];
       for (let rowNumber = headerStartRow; rowNumber <= headerEndRow; rowNumber += 1) {
@@ -116,10 +123,52 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
     return map;
   };
 
-  const getHistoricalPayrollColumnMap = (sheet: XLSX.WorkSheet, range: XLSX.Range) => ({
-    ...buildHistoricalPayrollSectionMap(sheet, range, 'projection'),
-    ...buildHistoricalPayrollSectionMap(sheet, range, 'realise'),
-  });
+  const buildHistoricalPayrollFallbackMap = (sheet: XLSX.WorkSheet, range: XLSX.Range) => {
+    const occurrences: Record<number, Set<number>> = {};
+    const searchEndRow = Math.min(range.e.r, range.s.r + 140);
+
+    for (let rowNumber = range.s.r; rowNumber <= searchEndRow; rowNumber += 1) {
+      for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
+        const headerParts: string[] = [];
+        for (let rowOffset = -3; rowOffset <= 3; rowOffset += 1) {
+          const cell = getHistoricalBudgetCell(sheet, rowNumber + rowOffset, colIndex);
+          const text = String(cell?.w ?? cell?.v ?? '').trim();
+          if (text) headerParts.push(text);
+        }
+        const offset = getHistoricalPayrollOffset(headerParts.join(' '));
+        if (offset >= 0) {
+          if (!occurrences[offset]) occurrences[offset] = new Set<number>();
+          occurrences[offset].add(colIndex);
+        }
+      }
+    }
+
+    const map: Record<number, number> = {};
+    Object.entries(occurrences).forEach(([offsetText, colSet]) => {
+      const offset = Number(offsetText);
+      const cols = Array.from(colSet).sort((a, b) => a - b);
+      if (cols[0] !== undefined) map[cols[0]] = 62 + offset;
+      if (cols[1] !== undefined) map[cols[1]] = 77 + offset;
+    });
+    return map;
+  };
+
+  const getHistoricalPayrollColumnMap = (sheet: XLSX.WorkSheet, range: XLSX.Range) => {
+    const titleMap = {
+      ...buildHistoricalPayrollSectionMap(sheet, range, 'projection'),
+      ...buildHistoricalPayrollSectionMap(sheet, range, 'realise'),
+    };
+    const fallbackMap = buildHistoricalPayrollFallbackMap(sheet, range);
+    const usedTargets = new Set(Object.values(titleMap));
+    const mergedMap: Record<number, number> = { ...titleMap };
+    Object.entries(fallbackMap).forEach(([sourceColText, targetCol]) => {
+      if (!usedTargets.has(targetCol)) {
+        mergedMap[Number(sourceColText)] = targetCol;
+        usedTargets.add(targetCol);
+      }
+    });
+    return mergedMap;
+  };
 
   const getHistoricalPayrollValues = (sheet: XLSX.WorkSheet, rowNumber: number, columnMap: Record<number, number>) => {
     const values: Record<number, string> = {};
