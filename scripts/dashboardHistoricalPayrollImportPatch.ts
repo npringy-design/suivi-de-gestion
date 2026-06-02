@@ -72,17 +72,27 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
     return null;
   };
 
+  const getHistoricalPayrollVerticalHeader = (sheet: XLSX.WorkSheet, colIndex: number, rowStart: number, rowEnd: number) => {
+    const parts: string[] = [];
+    for (let rowNumber = rowStart; rowNumber <= rowEnd; rowNumber += 1) {
+      const cell = getHistoricalBudgetCell(sheet, rowNumber, colIndex);
+      const text = String(cell?.w ?? cell?.v ?? '').trim();
+      if (text) parts.push(text);
+    }
+    return normalizeHistoricalSupplierName(parts.join(' '));
+  };
+
+  const looksLikeHistoricalPayrollTotalHeader = (text: string) => text.includes('TOTAL') && text.includes('HEURES');
+
   const findHistoricalPayrollTotalHourColNear = (sheet: XLSX.WorkSheet, range: XLSX.Range, title: { rowNumber: number; colIndex: number } | null) => {
     if (!title) return null;
     const rowStart = title.rowNumber;
-    const rowEnd = Math.min(range.e.r, title.rowNumber + 16);
-    const colStart = Math.max(range.s.c, title.colIndex - 12);
-    const colEnd = Math.min(range.e.c, title.colIndex + 48);
-    for (let rowNumber = rowStart; rowNumber <= rowEnd; rowNumber += 1) {
-      for (let colIndex = colStart; colIndex <= colEnd; colIndex += 1) {
-        const text = normalizeHistoricalSupplierName(getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.w ?? getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.v);
-        if (text.includes('TOTALHEURES')) return colIndex;
-      }
+    const rowEnd = Math.min(range.e.r, title.rowNumber + 18);
+    const colStart = Math.max(range.s.c, title.colIndex - 60);
+    const colEnd = Math.min(range.e.c, title.colIndex + 80);
+    for (let colIndex = colStart; colIndex <= colEnd; colIndex += 1) {
+      const text = getHistoricalPayrollVerticalHeader(sheet, colIndex, rowStart, rowEnd);
+      if (looksLikeHistoricalPayrollTotalHeader(text)) return colIndex;
     }
     return null;
   };
@@ -113,8 +123,8 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
     const searchEndRow = Math.min(range.e.r, range.s.r + 180);
     for (let rowNumber = range.s.r; rowNumber <= searchEndRow; rowNumber += 1) {
       for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
-        const text = normalizeHistoricalSupplierName(getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.w ?? getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.v);
-        if (text.includes('TOTALHEURES') && !totalHourCols.includes(colIndex)) totalHourCols.push(colIndex);
+        const text = getHistoricalPayrollVerticalHeader(sheet, colIndex, rowNumber, Math.min(range.e.r, rowNumber + 10));
+        if (looksLikeHistoricalPayrollTotalHeader(text) && !totalHourCols.includes(colIndex)) totalHourCols.push(colIndex);
       }
     }
     totalHourCols.sort((a, b) => a - b);
@@ -146,7 +156,7 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
           const costMatterTotal = sumHistoricalCostMatterValues(costMatterValues);
           const caMidi = couvertsMidi * tmMidi;`, `          const costMatterValues = getHistoricalCostMatterValues(sheet, rowNumber, costMatterColumnMap);
           const costMatterTotal = sumHistoricalCostMatterValues(costMatterValues);
-          const payrollValues = getHistoricalPayrollValues(sheet, rowNumber, payrollColumnMap);
+          const payrollValues = getHistoricalPayrollValues(sheet, realiseSourceRow, payrollColumnMap);
           const payrollTotalHours = sumHistoricalPayrollValues(payrollValues);
           const caMidi = couvertsMidi * tmMidi;`);
 
