@@ -39,6 +39,20 @@ L'application cherche la feuille mensuelle correspondant au mois affiche et a l'
 
 Les feuilles de type `BILAN`, `SAISIE`, `REPORTING`, `ANNUEL`, `REALISE` sont ignorees pour cet import.
 
+## Statut terrain au 02/06/2026
+
+Valide :
+
+- Budget/previsions : coherent sur janvier puis fevrier apres correction du decalage de ligne et exclusion des lignes total semaine.
+- Realise CA/couverts : coherent apres alignement sur la bonne ligne source.
+- Ecarts realise : les ecarts au budget sur semaines et total mois sont ajoutes en valeur et en pourcentage. Le pourcentage est recalcule depuis la base budget, pas additionne.
+- Cout matiere : lecture fournisseur par fournisseur validee. Les montants positifs, avoirs negatifs et fournisseurs `EPISAVEUR20%` / `EPISAVEUR5%` sont corrects ; ces colonnes doivent rester des montants et non des pourcentages.
+
+En cours :
+
+- Frais de personnel : la lecture projection/realise commence a fonctionner, la ligne est alignee sur les semaines visibles, mais la derniere semaine du mois n'est toujours pas reprise.
+- Le probleme restant est propre a la partie personnel, puisque budget, realise et cout matiere recuperent bien la derniere semaine.
+
 ## Donnees budget lues
 
 Pour chaque vraie date du mois, l'import lit :
@@ -51,6 +65,8 @@ Pour chaque vraie date du mois, l'import lit :
 Dans la structure Excel actuelle, cela correspond a la zone `COUVERT RESTAURANTS` / `Prevision Saisie`.
 
 Pour Hippo Thillois, les colonnes limonade du fichier Excel sont ignorees.
+
+Les colonnes CA budget midi, soir, total jour et cumul mois ne sont pas importees directement. Elles sont recalculees par l'application a partir des couverts et TM.
 
 ## Donnees realisees lues
 
@@ -86,6 +102,32 @@ Correction du 01/06/2026 : les avoirs cout matiere doivent etre importes en nega
 
 Les totaux achat HT, cumuls HT et ratios sans stock restent recalcules par l'application.
 
+## Frais de personnel historique - en cours
+
+Voir aussi `docs/HEURES_PERSONNEL.md`.
+
+Objectif : lire les heures personnel depuis les deux zones de l'Excel historique :
+
+- `PROJECTION S/C AVEC PLANIFICATION SKELLO` ;
+- `FRAIS PERSONNEL REALISE`.
+
+Regle validee :
+
+- reprendre les heures uniquement ;
+- ne pas reprendre les couts globaux, productivites, ratios, ecarts ou taux depuis l'ancien Excel ;
+- les taux horaires doivent venir de la configuration salaire actuelle / import PDF salaires ;
+- les couts et ratios sont recalcules par l'application.
+
+Etat technique actuel :
+
+- l'ancien Excel regroupe les heures personnel par statut, sans repartition cuisine/salle fiable ;
+- l'import place donc les heures sur les colonnes cuisine de chaque statut pour ne pas inventer une repartition salle/cuisine ;
+- colonnes visees projection : `62`, `64`, `66`, `68`, `70` ;
+- colonnes visees realise : `77`, `79`, `81`, `83`, `85` ;
+- la derniere tentative ajoute un fallback de lignes autour de la ligne source, mais le dernier retour terrain indique que la derniere semaine ne remonte toujours pas.
+
+Consigne de reprise : ne pas accuser le format date sans preuve. La derniere semaine est bien lue par budget, realise et cout matiere. Le prochain correctif doit reutiliser autant que possible le meme parcours de jours que ces imports valides, puis appliquer une lecture croisee simple date + colonne statut.
+
 ## Garde-fou lignes total semaine
 
 Correction ajoutee le 31/05/2026 : les lignes de total, semaine, cumul ou total mois sont ignorees pendant la lecture.
@@ -104,7 +146,11 @@ Les valeurs budget sont ecrites dans le dashboard du suivi quotidien :
 - TM budget soir -> colonne dashboard `9` ;
 - couverts / TM limonade -> colonnes dashboard `14` et `15`, videes pour Thillois.
 
-Les colonnes CA budget midi, soir, total jour et cumul mois ne sont pas importees directement. Elles doivent etre recalculees par l'application a partir des couverts et TM.
+Les donnees realisees sont ecrites dans les colonnes `17`, `18`, `19`, `20`, `25`, `27`, `34`.
+
+Les fournisseurs cout matiere sont ecrits dans les colonnes `45` a `57`.
+
+Les heures personnel historiques doivent alimenter les colonnes `62`, `64`, `66`, `68`, `70`, `77`, `79`, `81`, `83`, `85`.
 
 ## Securite import
 
@@ -131,6 +177,8 @@ Point important : la gestion de la limonade doit rester configurable par site. T
 - `scripts/dashboardHistoricalCostMatterImportPatch.ts` : ajout des achats cout matiere par detection d'en-tetes fournisseurs ;
 - `scripts/dashboardHistoricalCostMatterSafePatch.ts` : securisation de la correspondance fournisseurs cout matiere ;
 - `scripts/dashboardCostMatterAmountFormatPatch.ts` : conservation des imports negatifs et affichage montant des fournisseurs cout matiere ;
+- `scripts/dashboardHistoricalPayrollImportPatch.ts` : import historique Excel des heures personnel projection/realise, encore a finaliser ;
+- `scripts/dashboardHistoricalTextDatePatch.ts` : support des dates texte francaises, ajoute pendant la recherche mais pas considere comme cause racine du probleme personnel ;
 - `scripts/dashboardThilloisNoLimonadePatch.ts` : neutralisation limonade pour Thillois ;
 - `vite.config.ts` : activation des patchs ;
 - `src/Dashboard.tsx` : composant cible modifie au build.
