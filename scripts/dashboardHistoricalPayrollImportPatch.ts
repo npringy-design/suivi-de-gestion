@@ -134,7 +134,7 @@ export const dashboardHistoricalPayrollImportPatch = (): Plugin => ({
           const costMatterTotal = sumHistoricalCostMatterValues(costMatterValues);
           const caMidi = couvertsMidi * tmMidi;`, `          const costMatterValues = getHistoricalCostMatterValues(sheet, rowNumber, costMatterColumnMap);
           const costMatterTotal = sumHistoricalCostMatterValues(costMatterValues);
-          const payrollValues = getHistoricalPayrollValues(sheet, rowNumber, payrollColumnMap);
+          const payrollValues = getHistoricalPayrollValues(sheet, realiseSourceRow, payrollColumnMap);
           const payrollTotalHours = sumHistoricalPayrollValues(payrollValues);
           const caMidi = couvertsMidi * tmMidi;`);
 
