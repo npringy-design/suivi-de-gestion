@@ -11,9 +11,41 @@ Ce fichier est le point de reprise rapide du projet. Lire ensuite la documentati
 - Pousser directement les corrections terminees sauf demande contraire.
 - Verifier le build Vercel apres une modification code.
 
-## Priorite technique actuelle - consolidation patches Vite
+## Priorite technique actuelle - decoupage de `Dashboard.tsx`
 
-Statut au 02/06/2026 : priorite basculee sur l'audit et la consolidation progressive des patches Vite.
+Statut au 02/06/2026 : priorite haute sur la reduction et la restructuration de `src/Dashboard.tsx`.
+
+Document detaille : `docs/DASHBOARD_REFACTOR.md`.
+
+Decision :
+
+- `Dashboard.tsx` ne doit pas etre une page de calcul metier ;
+- cette page doit devenir une page de resume/orchestration ;
+- elle doit recuperer des montants globaux deja calcules ailleurs ou passes par des modules dedies ;
+- les calculs, imports PDF/Excel, definitions de colonnes et composants lourds doivent sortir de ce fichier ;
+- les nouvelles demandes sur cette page doivent etre evitees tant que le decoupage n'a pas commence.
+
+Constat :
+
+- `Dashboard.tsx` fait environ 4 600 lignes ;
+- le fichier concentre trop de responsabilites ;
+- il est en plus modifie par de nombreux patches Vite ;
+- continuer a ajouter des fonctionnalites directement dedans augmente fortement le risque de casse.
+
+Ordre recommande maintenant :
+
+1. Extraire types et constantes de colonnes.
+2. Extraire helpers/formatters.
+3. Extraire composants visuels simples.
+4. Extraire calculs metier par domaine.
+5. Extraire imports PDF/Excel.
+6. Reprendre ensuite l'integration des patches Vite restants.
+
+Important : l'application est encore en construction. Une casse temporaire peut etre acceptee si elle sert une consolidation structurante, mais chaque etape doit rester claire, reversible et documentee.
+
+## Priorite technique secondaire - consolidation patches Vite
+
+Statut au 02/06/2026 : audit initial effectue, mais integration des petits patches mise derriere le decoupage de `Dashboard.tsx`.
 
 Document detaille : `docs/AUDIT_PATCHES_VITE.md`.
 
@@ -21,25 +53,14 @@ Constat :
 
 - l'application fonctionne sur beaucoup de perimetres metier valides, mais le code a accumule trop de patches Vite ;
 - le vrai comportement execute au build ne correspond plus toujours directement au code visible dans `src/` ;
-- `Dashboard.tsx` concentre trop de logique metier, de rendu, de calculs et d'import ;
 - le bug de l'import personnel historique, notamment la derniere semaine non lue, montre que continuer a empiler des patches devient risque.
 
 Decision :
 
 - ne pas refaire l'application ;
 - ne pas supprimer tous les patches d'un coup ;
-- commencer par un audit complet des patches actifs dans `vite.config.ts` ;
-- classer chaque patch : valide a integrer, utile mais fragile, temporaire a supprimer, ou a reecrire ;
-- integrer ensuite les patches simples un par un dans le vrai code source ;
-- ne plus ajouter de nouveau patch Vite sauf urgence absolue.
-
-Ordre recommande :
-
-1. Audit complet des patches actifs.
-2. Integration des patches visuels/faible risque.
-3. Integration des imports historiques valides : budget, realise, cout matiere.
-4. Isolement du personnel historique avec diagnostic d'import.
-5. Decoupage progressif de `Dashboard.tsx`.
+- ne plus ajouter de nouveau patch Vite sauf urgence absolue ;
+- utiliser l'audit patches comme support du decoupage, pas comme priorite devant `Dashboard.tsx`.
 
 Garde-fou : le build Vercel ne suffit pas comme validation metier. Chaque consolidation doit etre testee dans l'application.
 
@@ -171,9 +192,9 @@ Rappel : l'import caisse lit le PDF, alimente les valeurs automatiques utiles et
 
 ## Suivi quotidien - import historique Excel
 
-Statut au 02/06/2026 : import historique global partiellement valide ; chantier personnel mis de cote temporairement au profit de l'audit/consolidation technique.
+Statut au 02/06/2026 : import historique global partiellement valide ; chantier personnel mis de cote temporairement au profit du decoupage `Dashboard.tsx` et de l'audit/consolidation technique.
 
-Document detaille : `docs/IMPORT_HISTORIQUE_EXCEL.md`, `docs/HEURES_PERSONNEL.md` et `docs/AUDIT_PATCHES_VITE.md`.
+Document detaille : `docs/IMPORT_HISTORIQUE_EXCEL.md`, `docs/HEURES_PERSONNEL.md`, `docs/AUDIT_PATCHES_VITE.md` et `docs/DASHBOARD_REFACTOR.md`.
 
 Valide terrain :
 
@@ -188,7 +209,13 @@ Non valide / mis de cote :
 - Ne pas continuer a empiler des corrections aveugles.
 - Reprise future uniquement avec diagnostic d'import visible : ligne source trouvee, bloc personnel detecte, colonnes detectees, heures lues.
 
-Constat metier important sur le personnel :
+Contexte metier important :
+
+- La page Dashboard/Suivi quotidien ne doit pas devenir la source de verite des calculs.
+- Elle doit recuperer/afficher des montants consolides ou deleguer les calculs a des modules.
+- Le decoupage du fichier est prioritaire avant d'ajouter de nouvelles fonctionnalites lourdes.
+
+Contexte metier important sur le personnel :
 
 - Il ne faut pas coder une regle fixe par date, du type `avant fevrier 2026 = ancien format` / `apres fevrier 2026 = nouveau format`.
 - Le passage au detail salle/cuisine depend du site : Thillois est passe sur le nouveau format en janvier/fevrier 2026 selon les feuilles testees, mais d'autres sites ont pu basculer un ou deux mois avant.
