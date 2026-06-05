@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Codemod volontairement idempotent : il peut être relancé sans modifier Dashboard.tsx une seconde fois.
 const rootDir = process.cwd();
 const dashboardPath = path.join(rootDir, 'src', 'Dashboard.tsx');
 const isCheckMode = process.argv.includes('--check');
