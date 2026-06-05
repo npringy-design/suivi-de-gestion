@@ -149,6 +149,34 @@ Build Vercel : OK sur le commit `4ede400`.
 
 Important : ce test est un filet de securite avant de raccorder `Dashboard.tsx` aux modules extraits. Il reduit le risque de divergence silencieuse pendant le decoupage.
 
+### 02/06/2026 - Codemod de branchement statique Dashboard
+
+Fichier cree :
+
+```txt
+scripts/dashboardRefactorStaticCodemod.ts
+```
+
+Commandes ajoutees dans `package.json` :
+
+```txt
+npm run refactor:dashboard-static:check
+npm run refactor:dashboard-static
+```
+
+Role :
+
+- detecter le bloc inline actuel de `Dashboard.tsx` ;
+- remplacer ce bloc par des imports vers les modules extraits ;
+- brancher `Dashboard.tsx` sur :
+  - `dashboardTypes.ts` ;
+  - `dashboardColumns.ts` ;
+  - `dashboardStaticConfig.ts`.
+
+Build Vercel : OK sur le commit `ac22bd2`.
+
+Important : le codemod n'a pas encore ete execute dans le depot distant. Il evite une modification manuelle risquee des 4 600 lignes. La prochaine etape doit etre d'executer la commande localement, verifier le diff, puis pousser le resultat.
+
 ## Strategie de decoupage
 
 ### Etape 1 - extraire les types et constantes
@@ -174,7 +202,7 @@ Contenu a sortir :
 
 Risque : faible/moyen.
 
-Etat : modules crees, branchement dans `Dashboard.tsx` restant a faire.
+Etat : modules crees, branchement dans `Dashboard.tsx` prepare par codemod.
 
 ### Etape 2 - extraire les formatters et helpers simples
 
@@ -195,7 +223,7 @@ Contenu a sortir :
 
 Risque : faible.
 
-Etat : modules crees, branchement dans `Dashboard.tsx` restant a faire.
+Etat : modules crees, branchement dans `Dashboard.tsx` restant a faire apres le branchement statique.
 
 ### Etape 3 - extraire les calculs metier
 
