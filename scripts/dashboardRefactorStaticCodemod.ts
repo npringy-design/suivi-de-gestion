@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 // Codemod volontairement idempotent : il peut être relancé sans modifier Dashboard.tsx une seconde fois.
+// Le workflow GitHub l'utilise pour appliquer le branchement statique sans intervention manuelle.
 const rootDir = process.cwd();
 const dashboardPath = path.join(rootDir, 'src', 'Dashboard.tsx');
 const isCheckMode = process.argv.includes('--check');
