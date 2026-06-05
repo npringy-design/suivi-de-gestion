@@ -177,6 +177,25 @@ Build Vercel : OK sur le commit `ac22bd2`.
 
 Important : le codemod n'a pas encore ete execute dans le depot distant. Il evite une modification manuelle risquee des 4 600 lignes. La prochaine etape doit etre d'executer la commande localement, verifier le diff, puis pousser le resultat.
 
+### 02/06/2026 - Verification complete du refactor Dashboard
+
+Commandes ajoutees dans `package.json` :
+
+```txt
+npm run test:dashboard-model
+npm run verify:dashboard-refactor
+```
+
+`verify:dashboard-refactor` execute :
+
+```txt
+npm run test:dashboard-model && npm run lint:ts && npm run build
+```
+
+Build Vercel : OK sur le commit `ccf2431`.
+
+Important : apres execution du codemod, cette commande doit etre lancee avant de pousser le branchement final de `Dashboard.tsx`.
+
 ## Strategie de decoupage
 
 ### Etape 1 - extraire les types et constantes
