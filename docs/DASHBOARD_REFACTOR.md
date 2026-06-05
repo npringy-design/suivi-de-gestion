@@ -103,6 +103,31 @@ Build Vercel : OK sur le commit `f299523`.
 
 Important : cette premiere etape prepare le decoupage sans encore brancher `Dashboard.tsx` sur ces modules. Le branchement direct du fichier principal doit se faire avec un vrai diff local ou par une modification controlee, car remplacer les 4 600 lignes du fichier via l'API GitHub serait trop risque.
 
+### 02/06/2026 - Preparation extraction helpers/formatters
+
+Fichiers crees :
+
+```txt
+src/features/dashboard/dashboardFormatters.ts
+src/features/dashboard/dashboardHelpers.ts
+```
+
+Contenu prepare :
+
+- normalisation d'entree numerique ;
+- parsing de nombres ;
+- formatage nombre/euro/pourcentage ;
+- parsing de valeurs de pourcentage ;
+- detection des colonnes d'ecart ;
+- detection des colonnes hachurees ;
+- detection des colonnes evenement ;
+- detection des colonnes fournisseurs editables ;
+- tonalite positive/negative/neutre des ecarts.
+
+Build Vercel : OK sur le commit `9b7f270`.
+
+Important : ces helpers ne sont pas encore branches dans `Dashboard.tsx`. Ils servent de cible stable pour le prochain passage de branchement/refactor.
+
 ## Strategie de decoupage
 
 ### Etape 1 - extraire les types et constantes
@@ -148,6 +173,8 @@ Contenu a sortir :
 - helpers de couleurs.
 
 Risque : faible.
+
+Etat : modules crees, branchement dans `Dashboard.tsx` restant a faire.
 
 ### Etape 3 - extraire les calculs metier
 
