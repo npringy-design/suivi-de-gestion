@@ -78,6 +78,31 @@ Objectif final raisonnable :
 
 Une reduction immediate sous 800 lignes n'est pas obligatoire. Le but est de sortir les blocs progressivement sans creer une refonte brutale impossible a verifier.
 
+## Avancement
+
+### 02/06/2026 - Preparation extraction types/constantes
+
+Fichiers crees :
+
+```txt
+src/features/dashboard/dashboardTypes.ts
+src/features/dashboard/dashboardColumns.ts
+src/features/dashboard/dashboardStaticConfig.ts
+```
+
+Contenu prepare :
+
+- types Dashboard partages ;
+- colonnes du tableau ;
+- jours, mois, onglets, modes de vue ;
+- colonnes editables ;
+- colonnes de contexte ;
+- lignes et totaux personnel quotidiens.
+
+Build Vercel : OK sur le commit `f299523`.
+
+Important : cette premiere etape prepare le decoupage sans encore brancher `Dashboard.tsx` sur ces modules. Le branchement direct du fichier principal doit se faire avec un vrai diff local ou par une modification controlee, car remplacer les 4 600 lignes du fichier via l'API GitHub serait trop risque.
+
 ## Strategie de decoupage
 
 ### Etape 1 - extraire les types et constantes
@@ -102,6 +127,8 @@ Contenu a sortir :
 - les groupes de colonnes.
 
 Risque : faible/moyen.
+
+Etat : modules crees, branchement dans `Dashboard.tsx` restant a faire.
 
 ### Etape 2 - extraire les formatters et helpers simples
 
