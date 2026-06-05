@@ -13,7 +13,9 @@
     "lint": "npm run lint:ts && npm run lint:eslint",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "refactor:dashboard-static": "tsx scripts/dashboardRefactorStaticCodemod.ts",
+    "refactor:dashboard-static:check": "tsx scripts/dashboardRefactorStaticCodemod.ts --check"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
