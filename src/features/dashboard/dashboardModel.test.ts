@@ -34,8 +34,8 @@ describe('dashboard shared model', () => {
     expect(dashboardColumns[45]).toEqual(['COUT MATIERE', 'ACHATS LIQUIDE HT', 'C10', 'bg-[#e2efda]']);
     expect(dashboardColumns[57]).toEqual(['COUT MATIERE', 'ACHATS SOLIDES HT', 'MARTEL', 'bg-[#e2efda]']);
     expect(dashboardColumns[76]).toEqual(['FRAIS DE PERSONNEL REALISE', '', 'TOTAL HEURES\nTRAVAILLEES', 'bg-white']);
-    expect(dashboardColumns[112]).toEqual(['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Valeur', 'bg-white']);
-    expect(dashboardColumns).toHaveLength(113);
+    expect(dashboardColumns[109]).toEqual(['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Valeur', 'bg-white']);
+    expect(dashboardColumns).toHaveLength(110);
   });
 
   it('keeps static dashboard config consistent', () => {
