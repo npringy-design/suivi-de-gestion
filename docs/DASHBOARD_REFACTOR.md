@@ -128,6 +128,27 @@ Build Vercel : OK sur le commit `9b7f270`.
 
 Important : ces helpers ne sont pas encore branches dans `Dashboard.tsx`. Ils servent de cible stable pour le prochain passage de branchement/refactor.
 
+### 02/06/2026 - Garde-fou tests modules Dashboard
+
+Fichier cree :
+
+```txt
+src/features/dashboard/dashboardModel.test.ts
+```
+
+Ce test verifie :
+
+- les index de colonnes cles avant branchement dans `Dashboard.tsx` ;
+- la longueur attendue du tableau de colonnes ;
+- les onglets et modes de vue ;
+- les colonnes editables et colonnes de contexte ;
+- les formatters numeriques/euros/pourcentages ;
+- les helpers de detection d'ecarts, hachures, evenements et fournisseurs editables.
+
+Build Vercel : OK sur le commit `4ede400`.
+
+Important : ce test est un filet de securite avant de raccorder `Dashboard.tsx` aux modules extraits. Il reduit le risque de divergence silencieuse pendant le decoupage.
+
 ## Strategie de decoupage
 
 ### Etape 1 - extraire les types et constantes
