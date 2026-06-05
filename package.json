@@ -14,8 +14,10 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "test:dashboard-model": "vitest run src/features/dashboard/dashboardModel.test.ts",
     "refactor:dashboard-static": "tsx scripts/dashboardRefactorStaticCodemod.ts",
-    "refactor:dashboard-static:check": "tsx scripts/dashboardRefactorStaticCodemod.ts --check"
+    "refactor:dashboard-static:check": "tsx scripts/dashboardRefactorStaticCodemod.ts --check",
+    "verify:dashboard-refactor": "npm run test:dashboard-model && npm run lint:ts && npm run build"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
