@@ -5,7 +5,6 @@ import {defineConfig, loadEnv} from 'vite';
 
 import { accountingSettingsRoutePatch } from './scripts/accountingSettingsRoutePatch';
 import { caisseImportRecoveryPatch } from './scripts/caisseImportRecoveryPatch';
-import { dashboardCaisseRecapPeriodePatch } from './scripts/dashboardCaisseRecapPeriodePatch';
 import { dashboardHeaderVisualPatch } from './scripts/dashboardHeaderVisualPatch';
 import { dashboardHistoricalBudgetExcelPatch } from './scripts/dashboardHistoricalBudgetExcelPatch';
 import { dashboardHistoricalBudgetFocusedPatch } from './scripts/dashboardHistoricalBudgetFocusedPatch';
@@ -15,7 +14,6 @@ import { dashboardHistoricalPayrollImportPatch } from './scripts/dashboardHistor
 import { dashboardHistoricalRealiseImportPatch } from './scripts/dashboardHistoricalRealiseImportPatch';
 import { dashboardLimonadeSplitPatch } from './scripts/dashboardLimonadeSplitPatch';
 import { dashboardPayrollColumnPatch } from './scripts/dashboardPayrollColumnPatch';
-import { dashboardRealiseCleanLayoutPatch } from './scripts/dashboardRealiseCleanLayoutPatch';
 import { dataContextCloudSyncPatch } from './scripts/dataContextCloudSyncPatch';
 import { homeHeaderPeriodPatch } from './scripts/homeHeaderPeriodPatch';
 import { homePayrollBubblePatch } from './scripts/homePayrollBubblePatch';
@@ -25,8 +23,8 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   const defineValues = { ['process.env.' + 'GEMINI_API_KEY']: JSON.stringify(env.GEMINI_API_KEY) };
   const plugins = [
-    dashboardPayrollColumnPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(),
-    dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(),
+    dashboardPayrollColumnPatch(), caisseImportRecoveryPatch(),
+    dashboardLimonadeSplitPatch(), dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(),
     dashboardHistoricalRealiseImportPatch(), dashboardHistoricalCostMatterImportPatch(), dashboardHistoricalCostMatterSafePatch(),
     dashboardHistoricalPayrollImportPatch(), dashboardHeaderVisualPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(),
     homePayrollBubblePatch(), homeVisualPolishPatch(), accountingSettingsRoutePatch(),

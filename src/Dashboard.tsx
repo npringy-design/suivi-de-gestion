@@ -3,6 +3,7 @@ import DashboardAnalysisView from '@/DashboardAnalysisView';
 
 import { useData } from '@/contexts/DataContext';
 import { averagePayrollRate, buildPayrollImportFromText } from '@/personnelSalaryImport';
+import { parseRecapPeriodeCaisse } from '@/caisseRecapPeriodeParser';
 import { parseHourInputToDecimal } from '@/utils';
 
 import { ChevronLeft, Download, Upload, FileDown, Trash2, X, Clipboard } from 'lucide-react';
@@ -106,6 +107,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     data: globalData,
     updateDashboard,
     updateTheorique,
+    updateBilanSynthese,
     updateNepting,
     updateEspeces,
     updateConecs,
@@ -456,6 +458,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     let cumulCoutMatiere = 0;
     let cumulCvtsRealise = 0;
     let cumulCvtsLimo = 0;
+    let cumulCvtsBudgetComplet = 0;
 
     // First pass: Calculate row totals (TOTAL JOUR) and CUMUL
     rows.forEach((row, rIdx) => {
@@ -486,7 +489,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const budgetSoir = parseFloat(data[`${rIdx}-1`] || '0');
         const budgetLimo = parseFloat(data[`${rIdx}-2`] || '0');
 
-        const totalJour = budgetMidi + budgetSoir + budgetLimo;
+        const budgetRestaurantTotal = budgetMidi + budgetSoir;
+        if (budgetRestaurantTotal > 0 || data[`${rIdx}-0`] || data[`${rIdx}-1`]) data[`${rIdx}-125`] = budgetRestaurantTotal.toFixed(2);
+
+        const totalJour = budgetRestaurantTotal + budgetLimo;
         if (totalJour > 0 || data[`${rIdx}-0`] || data[`${rIdx}-1`] || data[`${rIdx}-2`]) {
           data[`${rIdx}-3`] = totalJour.toFixed(2);
           cumulCA += totalJour;
@@ -503,6 +509,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           data[`${rIdx}-12`] = cumulCvts.toString();
         }
 
+        const budgetCvtsComplet = jourCvts + cvtsLimo;
+        if (budgetCvtsComplet > 0 || data[`${rIdx}-10`] || data[`${rIdx}-14`]) {
+          cumulCvtsBudgetComplet += budgetCvtsComplet;
+          data[`${rIdx}-126`] = budgetCvtsComplet.toFixed(0);
+          data[`${rIdx}-127`] = cumulCvtsBudgetComplet.toFixed(0);
+        }
+
         // REALISE CA HT — 17=VAE,18=MIDI,19=SOIR,20=LIMO,21=TOTAL,22=ECART,23=CUMUL
         const realiseVae  = parseFloat(data[`${rIdx}-17`] || '0');
         const realiseMidi = parseFloat(data[`${rIdx}-18`] || '0');
@@ -511,7 +524,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const realiseTotalJour = realiseVae + realiseMidi + realiseSoir + realiseLimo;
         if (realiseTotalJour > 0 || data[`${rIdx}-17`] || data[`${rIdx}-18`] || data[`${rIdx}-19`] || data[`${rIdx}-20`]) {
           data[`${rIdx}-21`] = realiseTotalJour.toFixed(2);
-          data[`${rIdx}-22`] = (realiseTotalJour - totalJour).toFixed(2);
+          const realiseEcartBudget = realiseTotalJour - totalJour;
+          data[`${rIdx}-22`] = realiseEcartBudget.toFixed(2);
+          if (totalJour > 0) data[`${rIdx}-117`] = ((realiseEcartBudget / totalJour) * 100).toFixed(2);
           cumulRealiseCA += realiseTotalJour;
           data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
         }
@@ -1148,6 +1163,26 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return amounts.length >= 2 ? amounts[amounts.length - 2] : amounts[0] || 0;
   };
   const extractCaisseNumbers = (text: string) => (text.match(/-?\d[\d\s]*,\d{2}/g) || []).map(parseCaisseNumber);
+  const findCaisseTtcByRate = (source: string, rate: '5,5' | '10' | '20') => {
+    const lines = source
+      .replace(/\u00a0/g, ' ')
+      .replace(/€/g, ' ')
+      .split(/\r?\n/)
+      .map(line => line.replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+    const headerIndex = lines.findIndex(line => /TVA\s+TOTAL\s+HT\s+TVA\s+TTC/i.test(line));
+    if (headerIndex < 0) return 0;
+    const rateRegex = rate === '5,5' ? /TVA\s*5[,\.]5\s*%/i : rate === '10' ? /TVA\s*10\s*%/i : /TVA\s*20\s*%/i;
+    const coeff = rate === '5,5' ? 1.055 : rate === '10' ? 1.10 : 1.20;
+    for (let index = headerIndex + 1; index < Math.min(lines.length, headerIndex + 8); index += 1) {
+      const row = lines[index];
+      if (!rateRegex.test(row)) continue;
+      const amounts = extractCaisseNumbers(row);
+      if (amounts.length >= 3) return amounts[2];
+      if (amounts.length >= 1) return Math.round(amounts[0] * coeff * 100) / 100;
+    }
+    return 0;
+  };
 
   const parseInvoiceNumber = (value: string) => {
     const cleaned = value.replace(/[^\d,.-]/g, '').replace(/\s/g, '');
@@ -1569,6 +1604,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const parseCaisseRealise = (sourceText: string): ParsedCaisseImport => {
+    const recapPeriodeParsed = parseRecapPeriodeCaisse(sourceText, normalizeImportText);
+    if (recapPeriodeParsed) return recapPeriodeParsed as ParsedCaisseImport;
+
     const text = sourceText.replace(/\u00a0/g, ' ').replace(/€/g, '').replace(/\s+/g, ' ');
     const dateMatch = text.match(/Du\s+(\d{2})\/(\d{2})\/(\d{2})/i);
     const pdfDay = dateMatch ? Number(dateMatch[1]) : null;
@@ -1646,7 +1684,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         deliveroo: findCaisseAmount(text, 'DELIVEROO'),
         clickCollect: findCaisseAmount(text, 'Click and Collect'),
       },
-    };
+      bilanValues: {
+        ttc_5_5: findCaisseTtcByRate(sourceText, '5,5'),
+        ttc_10: findCaisseTtcByRate(sourceText, '10'),
+        ttc_20: findCaisseTtcByRate(sourceText, '20'),
+      },
+    } as ParsedCaisseImport;
   };
 
   const createCaisseImportId = (fileName: string, index: number) => `${Date.now()}-caisse-${index}-${fileName}`;
@@ -1681,7 +1724,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const parsedImports: CaisseImportPreview[] = [];
       for (const [index, currentFile] of files.entries()) {
         const isPdf = currentFile.type === 'application/pdf' || currentFile.name.toLowerCase().endsWith('.pdf');
-        const text = isPdf ? await extractPdfText(currentFile) : await currentFile.text();
+        const text = isPdf ? await extractPdfLayoutText(currentFile, undefined, false) : await currentFile.text();
         parsedImports.push(parseCaisseImport(text, currentFile.name, createCaisseImportId(currentFile.name, index)));
       }
 
@@ -1694,7 +1737,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       return;
 
       const text = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-        ? await extractPdfText(file)
+        ? await extractPdfLayoutText(file, undefined, false)
         : await file.text();
       const parsed = parseCaisseRealise(text);
       const targetDayEntry = parsed.pdfDay && parsed.pdfMonth === month && parsed.pdfYear === year
@@ -1770,36 +1813,56 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       return;
     }
 
-    const usePdfDay = importDay && importMonth === month && importYear === year;
-    const targetDayEntry = usePdfDay
-      ? dayRows.find(item => item.row.dayIndex === importDay)
-      : selectedDayEntry;
-    const targetRowIndex = targetDayEntry?.index ?? selectedDayRowIndex;
+    const usePdfDate = !!importDay && importMonth !== null && importYear === year;
+    const targetMonth = usePdfDate && importMonth !== null ? importMonth : month;
+    const targetDay = usePdfDate && importDay ? importDay : selectedEntryDay;
+    const targetRowIndex = usePdfDate
+      ? getDashboardRowIndexForDay(year, targetMonth, targetDay)
+      : selectedDayRowIndex;
+    const targetDayEntry = targetMonth === month
+      ? dayRows.find(item => item.index === targetRowIndex)
+      : null;
     if (targetRowIndex < 0) {
       setImportStatus('Erreur : aucune journee cible trouvee pour importer cette feuille.');
       return;
     }
 
-    const targetDay = targetDayEntry?.row.dayIndex || selectedEntryDay;
     const parsed = caisseImportPreview.parsed;
     Object.entries(parsed.values).forEach(([col, value]) => {
-      handleCellChange(targetRowIndex, Number(col), formatImportedNumber(value, Number(col) === 25 || Number(col) === 27 || Number(col) === 34 ? 0 : 2));
+      const formattedValue = formatImportedNumber(value, Number(col) === 25 || Number(col) === 27 || Number(col) === 34 ? 0 : 2);
+      if (targetMonth === month) {
+        handleCellChange(targetRowIndex, Number(col), formattedValue);
+      } else {
+        updateDashboard(targetMonth, `${targetRowIndex}-${Number(col)}`, formattedValue);
+      }
     });
-    updateTheorique(month, targetDay, 'total_ca', formatImportedNumber(parsed.theoriqueValues.total_ca));
-    updateTheorique(month, targetDay, 'cb', formatImportedNumber(parsed.theoriqueValues.cb));
-    updateTheorique(month, targetDay, 'amex', formatImportedNumber(parsed.theoriqueValues.amex));
-    updateTheorique(month, targetDay, 'tr_papier', formatImportedNumber(parsed.theoriqueValues.tr_papier));
-    updateTheorique(month, targetDay, 'tr_carte', formatImportedNumber(parsed.theoriqueValues.tr_carte));
-    updateTheorique(month, targetDay, 'ancv', formatImportedNumber(parsed.theoriqueValues.ancv));
-    updateTheorique(month, targetDay, 'especes', formatImportedNumber(parsed.theoriqueValues.especes));
-    updateTheorique(month, targetDay, 'click_collect', formatImportedNumber(parsed.theoriqueValues.click_collect));
-    updateTheorique(month, targetDay, 'uber', formatImportedNumber(parsed.theoriqueValues.uber));
-    updateTheorique(month, targetDay, 'deliveroo', formatImportedNumber(parsed.theoriqueValues.deliveroo));
-    updateTheorique(month, targetDay, 'sunday', formatImportedNumber(parsed.theoriqueValues.sunday));
+    updateTheorique(targetMonth, targetDay, 'total_ca', formatImportedNumber(parsed.theoriqueValues.total_ca));
+    updateTheorique(targetMonth, targetDay, 'cb', formatImportedNumber(parsed.theoriqueValues.cb));
+    updateTheorique(targetMonth, targetDay, 'amex', formatImportedNumber(parsed.theoriqueValues.amex));
+    updateTheorique(targetMonth, targetDay, 'tr_papier', formatImportedNumber(parsed.theoriqueValues.tr_papier));
+    updateTheorique(targetMonth, targetDay, 'tr_carte', formatImportedNumber(parsed.theoriqueValues.tr_carte));
+    updateTheorique(targetMonth, targetDay, 'ancv', formatImportedNumber(parsed.theoriqueValues.ancv));
+    updateTheorique(targetMonth, targetDay, 'especes', formatImportedNumber(parsed.theoriqueValues.especes));
+    updateTheorique(targetMonth, targetDay, 'click_collect', formatImportedNumber(parsed.theoriqueValues.click_collect));
+    updateTheorique(targetMonth, targetDay, 'uber', formatImportedNumber(parsed.theoriqueValues.uber));
+    updateTheorique(targetMonth, targetDay, 'deliveroo', formatImportedNumber(parsed.theoriqueValues.deliveroo));
+    updateTheorique(targetMonth, targetDay, 'sunday', formatImportedNumber(parsed.theoriqueValues.sunday));
+    const bilanValues = (parsed as ParsedCaisseImport & { bilanValues?: { ttc_5_5?: number; ttc_10?: number; ttc_20?: number } }).bilanValues;
+    if (bilanValues) {
+      updateBilanSynthese(targetMonth, targetDay, 'ttc_5_5', formatImportedNumber(bilanValues.ttc_5_5 || 0));
+      updateBilanSynthese(targetMonth, targetDay, 'ttc_10', formatImportedNumber(bilanValues.ttc_10 || 0));
+      updateBilanSynthese(targetMonth, targetDay, 'ttc_20', formatImportedNumber(bilanValues.ttc_20 || 0));
+    }
 
-    if (targetDayEntry?.row.dayIndex) setSelectedEntryDay(targetDayEntry.row.dayIndex);
+    if (targetMonth !== month) {
+      setMonth(targetMonth);
+      setSelectedMonth(targetMonth);
+    }
+    setSelectedEntryDay(targetDay);
 
-    const targetLabel = targetDayEntry?.row.label || selectedDayLabel;
+    const targetLabel = usePdfDate
+      ? `${String(targetDay).padStart(2, '0')}/${String(targetMonth + 1).padStart(2, '0')}/${year}`
+      : targetDayEntry?.row.label || selectedDayLabel;
     setImportStatus(`Import realise sur le ${targetLabel}.`);
     setCaisseImportPreviews(prev => prev.filter(item => item.id !== caisseImportPreview.id));
   };
@@ -3067,13 +3130,17 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     );
   };
 
-  const previsionsGroups = groups.filter(g => ['CA', 'RESTAURANTS', 'LIMONADE'].includes(g.name));
+  const previsionsGroups = groups.filter(g => activeTab === 'PREVISIONS'
+    ? ['CA', 'RESTAURANTS', 'LIMONADE', 'CA HT', 'COUVERTS'].includes(g.name)
+    : ['CA', 'RESTAURANTS', 'LIMONADE'].includes(g.name));
   const previsionsColspan = previsionsGroups.reduce((acc, g) => acc + g.colspan, 0);
   
-  const realiseGroups = groups.filter(g => ['REALISE', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(g.name));
+  const realiseGroups = groups.filter(g => activeTab === 'REALISE'
+    ? ['REALISE', 'CA HT', 'COUVERTS', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(g.name)
+    : ['REALISE', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(g.name));
   const realiseColspan = realiseGroups.reduce((acc, g) => acc + g.colspan, 0);
   
-  const otherGroups = groups.filter(g => !['CA', 'RESTAURANTS', 'LIMONADE', 'REALISE', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(g.name));
+  const otherGroups = groups.filter(g => !['CA', 'RESTAURANTS', 'LIMONADE', 'REALISE', 'CA HT', 'COUVERTS', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(g.name));
 
   // Colour palette used consistently in the header/footer
   const HEADER_BG     = '#1e293b';   // slate-800 — cohérent NAV
@@ -3519,7 +3586,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               )}
               {realiseColspan > 0 && (
                 <th colSpan={realiseColspan} style={{ ...thBase, background: '#1e40af', color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '3px solid #475569', borderBottom: '2px solid #94a3b8' }}>
-                  RÉALISÉ &amp; ÉVÉNEMENTS
+                  {activeTab === 'REALISE' && tableViewMode === 'COMPLET' ? 'RÉALISÉ' : 'RÉALISÉ & ÉVÉNEMENTS'}
                 </th>
               )}
               {otherGroups.reduce((a, g) => a + g.colspan, 0) > 0 && (
