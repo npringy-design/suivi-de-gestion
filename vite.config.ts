@@ -5,8 +5,6 @@ import {defineConfig, loadEnv} from 'vite';
 
 import { dashboardHistoricalBudgetExcelPatch } from './scripts/dashboardHistoricalBudgetExcelPatch';
 import { dashboardHistoricalBudgetFocusedPatch } from './scripts/dashboardHistoricalBudgetFocusedPatch';
-import { dashboardHistoricalPayrollImportPatch } from './scripts/dashboardHistoricalPayrollImportPatch';
-import { dashboardHistoricalRealiseImportPatch } from './scripts/dashboardHistoricalRealiseImportPatch';
 import { dashboardPayrollColumnPatch } from './scripts/dashboardPayrollColumnPatch';
 
 export default defineConfig(({mode}) => {
@@ -15,8 +13,6 @@ export default defineConfig(({mode}) => {
   const plugins = [
     dashboardPayrollColumnPatch(),
     dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(),
-    dashboardHistoricalRealiseImportPatch(),
-    dashboardHistoricalPayrollImportPatch(),
     react(), tailwindcss()
   ];
   return {
