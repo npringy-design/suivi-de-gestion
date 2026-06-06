@@ -224,6 +224,13 @@ Statut : typage TypeScript OK.
 
 Limite locale : le build Vite et Vitest ne demarrent pas dans le sandbox Windows courant a cause d'un refus d'acces avant lecture de `vite.config.ts`. Cette erreur locale n'est pas une erreur TypeScript du projet. A verifier sur GitHub/Vercel apres push.
 
+Correctif compatibilite patches Vite :
+
+- les constantes sorties de `Dashboard.tsx` ont casse plusieurs patches qui cherchaient encore leurs cibles inline ;
+- les colonnes et configurations deja injectees par patches ont ete reportees dans les modules extraits ;
+- les patches concernes sont maintenant tolerants quand ces blocs ne sont plus dans `Dashboard.tsx` ;
+- la chaine complete des patches Dashboard a ete simulee localement avec succes.
+
 ## Strategie de decoupage
 
 ### Etape 1 - extraire les types et constantes

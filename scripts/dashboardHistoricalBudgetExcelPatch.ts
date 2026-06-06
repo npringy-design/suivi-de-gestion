@@ -12,14 +12,17 @@ export const dashboardHistoricalBudgetExcelPatch = (): Plugin => ({
     if (!id.replace(/\\/g, '/').endsWith('/src/Dashboard.tsx')) return null;
     let next = code;
 
-    next = replaceRequired(
-      next,
-      "import React, { useState, useMemo, useEffect, useRef } from 'react';",
-      "import React, { useState, useMemo, useEffect, useRef } from 'react';\nimport * as XLSX from 'xlsx';",
-      'import xlsx'
-    );
+    if (!next.includes("import * as XLSX from 'xlsx';")) {
+      next = replaceRequired(
+        next,
+        "import React, { useState, useMemo, useEffect, useRef } from 'react';",
+        "import React, { useState, useMemo, useEffect, useRef } from 'react';\nimport * as XLSX from 'xlsx';",
+        'import xlsx'
+      );
+    }
 
-    next = replaceRequired(
+    if (next.includes("type CaisseImportPreview = {")) {
+      next = replaceRequired(
       next,
       `type CaisseImportPreview = {
   id: string;
@@ -53,7 +56,8 @@ type HistoricalBudgetPreview = {
   status: string;
 };`,
       'type preview budget'
-    );
+      );
+    }
 
     next = replaceRequired(
       next,

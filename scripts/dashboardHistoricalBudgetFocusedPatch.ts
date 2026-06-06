@@ -12,7 +12,8 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
     if (!id.replace(/\\/g, '/').endsWith('/src/Dashboard.tsx')) return null;
     let next = code;
 
-    next = replaceRequired(
+    if (next.includes("  couvertsMidi: number;\n  couvertsSoir: number;")) {
+      next = replaceRequired(
       next,
       `  couvertsMidi: number;
   couvertsSoir: number;
@@ -25,7 +26,8 @@ export const dashboardHistoricalBudgetFocusedPatch = (): Plugin => ({
   couvertsTotal: number;
   status: string;`,
       'type tm preview'
-    );
+      );
+    }
 
     next = replaceRequired(
       next,

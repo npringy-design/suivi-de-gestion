@@ -35,7 +35,11 @@ describe('dashboard shared model', () => {
     expect(dashboardColumns[57]).toEqual(['COUT MATIERE', 'ACHATS SOLIDES HT', 'MARTEL', 'bg-[#e2efda]']);
     expect(dashboardColumns[76]).toEqual(['FRAIS DE PERSONNEL REALISE', '', 'TOTAL HEURES\nTRAVAILLEES', 'bg-white']);
     expect(dashboardColumns[109]).toEqual(['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Valeur', 'bg-white']);
-    expect(dashboardColumns).toHaveLength(110);
+    expect(dashboardColumns[110]).toEqual(['REALISE', 'CA HT LIMONADE', 'MIDI', 'bg-[#b4c6e7]']);
+    expect(dashboardColumns[115]).toEqual(['REALISE', 'COUVERTS\nLIMONADE', 'SOIR\nMOY', 'bg-white']);
+    expect(dashboardColumns[116]).toEqual(['REALISE', 'CA HT RESTAURANT', 'TOTAL', 'bg-[#b4c6e7]']);
+    expect(dashboardColumns[129]).toEqual(['RESTAURANTS', 'ECART VS N-1', 'VALEUR', 'bg-white']);
+    expect(dashboardColumns).toHaveLength(130);
   });
 
   it('keeps static dashboard config consistent', () => {
@@ -54,7 +58,9 @@ describe('dashboard shared model', () => {
     expect(viewModes.map(mode => mode.id)).toEqual(['SAISIE', 'ANALYSE', 'COMPLET']);
 
     expect(editableCols).toContain(45);
-    expect(editableCols).toContain(90);
+    expect(editableCols).toContain(62);
+    expect(editableCols).toContain(86);
+    expect(editableCols).toContain(110);
     expect(contextColumns.has(22)).toBe(true);
     expect(dailyPersonnelRows[0]).toEqual(['Cadre', 77, 78]);
     expect(dailyPersonnelTotals[2]).toEqual({ label: 'Masse / CA', col: 89 });

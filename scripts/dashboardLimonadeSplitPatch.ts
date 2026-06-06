@@ -12,12 +12,14 @@ export const dashboardLimonadeSplitPatch = (): Plugin => ({
     if (!id.replace(/\\/g, '/').endsWith('/src/Dashboard.tsx')) return null;
     let next = code;
 
-    next = replaceRequired(
+    if (next.includes("  ['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Valeur', 'bg-white']\n];")) {
+      next = replaceRequired(
       next,
       "  ['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Valeur', 'bg-white']\n];",
       "  ['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Valeur', 'bg-white'],\n  ['REALISE', 'CA HT LIMONADE', 'MIDI', 'bg-[#b4c6e7]'],\n  ['REALISE', 'CA HT LIMONADE', 'SOIR', 'bg-[#b4c6e7]'],\n  ['REALISE', 'COUVERTS\\nLIMONADE', 'MIDI\\nNB CVTS', 'bg-[#b4c6e7]'],\n  ['REALISE', 'COUVERTS\\nLIMONADE', 'MIDI\\nMOY', 'bg-white'],\n  ['REALISE', 'COUVERTS\\nLIMONADE', 'SOIR\\nNB CVTS', 'bg-[#b4c6e7]'],\n  ['REALISE', 'COUVERTS\\nLIMONADE', 'SOIR\\nMOY', 'bg-white']\n];",
       'colonnes detail limonade'
-    );
+      );
+    }
 
     next = replaceRequired(
       next,

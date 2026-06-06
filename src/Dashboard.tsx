@@ -10,6 +10,7 @@ import type {
   CaisseImportPreview,
   DashboardColumn,
   DashboardRow,
+  HistoricalBudgetPreview,
   InvoiceImportPreview,
   ParsedCaisseImport,
   VisibleDashboardColumn,
@@ -4409,4 +4410,3 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     </div>
   );
 }
-

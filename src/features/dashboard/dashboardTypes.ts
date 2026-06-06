@@ -69,3 +69,20 @@ export type CaisseImportPreview = {
   status: string;
   parsed: ParsedCaisseImport;
 };
+
+export type HistoricalBudgetPreview = {
+  id: string;
+  sheetName: string;
+  month: number;
+  day: number;
+  rowIndex: number;
+  caMidi: number;
+  caSoir: number;
+  caTotal: number;
+  couvertsMidi: number;
+  tmMidi: number;
+  couvertsSoir: number;
+  tmSoir: number;
+  couvertsTotal: number;
+  status: string;
+};

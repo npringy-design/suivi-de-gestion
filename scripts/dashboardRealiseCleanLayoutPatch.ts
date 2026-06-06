@@ -15,6 +15,12 @@ const replacePatternRequired = (
   return code.replace(pattern, to as any);
 };
 
+const replacePatternIfPresent = (
+  code: string,
+  pattern: RegExp,
+  to: string | ((substring: string, ...args: any[]) => string),
+) => (pattern.test(code) ? code.replace(pattern, to as any) : code);
+
 export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
   name: 'dashboard-realise-clean-layout-patch',
   enforce: 'pre',
@@ -22,18 +28,19 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
     if (!id.replace(/\\/g, '/').endsWith('/src/Dashboard.tsx')) return null;
     let next = code;
 
-    next = replaceRequired(
+    if (next.includes("  ['REALISE', 'COUVERTS\\nLIMONADE', 'SOIR\\nMOY', 'bg-white']\n];")) {
+      next = replaceRequired(
       next,
       "  ['REALISE', 'COUVERTS\\nLIMONADE', 'SOIR\\nMOY', 'bg-white']\n];",
       "  ['REALISE', 'COUVERTS\\nLIMONADE', 'SOIR\\nMOY', 'bg-white'],\n  ['REALISE', 'CA HT RESTAURANT', 'TOTAL', 'bg-[#b4c6e7]'],\n  ['REALISE', 'ECART BUDGET', '%', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', 'VALEUR', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', '%', 'bg-white'],\n  ['REALISE', 'COUVERTS', 'TOTAL JOUR', 'bg-[#b4c6e7]'],\n  ['REALISE', 'COUVERTS', 'CUMUL MOIS', 'bg-[#b4c6e7]'],\n  ['REALISE', 'ECART BUDGET', '%', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', 'VALEUR', 'bg-white'],\n  ['REALISE', 'ECART VS N-1', '%', 'bg-white'],\n  ['CA', 'CA HT RESTAURANT', 'TOTAL', 'bg-[#ffe699]'],\n  ['RESTAURANTS', 'COUVERTS', 'TOTAL JOUR', 'bg-[#fff2cc]'],\n  ['RESTAURANTS', 'COUVERTS', 'CUMUL MOIS', 'bg-[#fff2cc]'],\n  ['CA', 'ECART VS N-1', 'VALEUR', 'bg-white'],\n  ['RESTAURANTS', 'ECART VS N-1', 'VALEUR', 'bg-white']\n];",
       'colonnes complementaires realise et prevision'
-    );
+      );
+    }
 
-    next = replacePatternRequired(
+    next = replacePatternIfPresent(
       next,
       /const editableCols: number\[] = \[([\s\S]*?)\n\];/,
       (match: string) => match.includes('110') ? match : match.replace('\n];', ', 110, 111, 112, 114\n];'),
-      'colonnes saisie limonade'
     );
 
     next = replacePatternRequired(

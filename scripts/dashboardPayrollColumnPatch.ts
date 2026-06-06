@@ -11,6 +11,10 @@ const replaceEvery = (code: string, from: string, to: string, label: string) => 
   return code.split(from).join(to);
 };
 
+const replaceEveryIfPresent = (code: string, from: string, to: string) => (
+  code.includes(from) ? code.split(from).join(to) : code
+);
+
 export const dashboardPayrollColumnPatch = (): Plugin => ({
   name: 'dashboard-payroll-column-patch',
   enforce: 'pre',
@@ -20,7 +24,7 @@ export const dashboardPayrollColumnPatch = (): Plugin => ({
 
     next = mustReplace(next, "import { averagePayrollRate, buildPayrollImportFromText } from '@/personnelSalaryImport';", "import { averagePayrollRate, buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '@/personnelSalaryImport';", 'import detection periode salaires');
 
-    next = mustReplace(next, /const editableCols: number\[] = \[[\s\S]*?\n\];/, `const editableCols: number[] = [\n  6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34, 37, 38, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86\n];`, 'colonnes editables personnel');
+    next = next.replace(/const editableCols: number\[] = \[[\s\S]*?\n\];/, `const editableCols: number[] = [\n  6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34, 37, 38, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86\n];`);
 
     next = mustReplace(next, "cols[idx][1] = 'PROJECTION S/C';", "cols[idx][1] = idx >= 77 ? 'FRAIS PERSONNEL REALISE' : 'PROJECTION S/C';", 'entete projection/realise');
     next = mustReplace(next, "const namesStr = names.length > 0 ? `\\n${names.join(' + ')}` : '';", "const namesStr = '';", 'masquer noms salaries entetes');
@@ -63,7 +67,7 @@ export const dashboardPayrollColumnPatch = (): Plugin => ({
     next = replaceEvery(next, "data[`${monthTotalIdx}-88`] = (pctRealM - pctProjM).toFixed(2) + '%';", "data[`${monthTotalIdx}-92`] = (pctRealM - pctProjM).toFixed(2) + '%';", 'ecart sc mois');
 
     next = replaceEvery(next, "fraisPersonnel: parseDashboardNumber(calculatedData[`${monthTotalIdx}-83`]),", "fraisPersonnel: parseDashboardNumber(calculatedData[`${monthTotalIdx}-87`]),", 'kpi frais personnel');
-    next = replaceEvery(next, '65, 72, 73, 74, 76, 83, 84, 85, 87, 88,', '61, 72, 73, 74, 75, 76, 87, 88, 89, 90, 91, 92,', 'colonnes contexte personnel');
+    next = replaceEveryIfPresent(next, '65, 72, 73, 74, 76, 83, 84, 85, 87, 88,', '61, 72, 73, 74, 75, 76, 87, 88, 89, 90, 91, 92,');
     next = replaceEvery(next, "const nbHBudget  = parseFloat(calculatedData[`${mtIdx}-77`]  || '0');", "const nbHBudget  = parseFloat(calculatedData[`${mtIdx}-61`] || '0');", 'resultats nb heures budget');
     next = replaceEvery(next, "const coutProj   = parseFloat(calculatedData[`${mtIdx}-88`]  || '0');", "const coutProj   = parseFloat(calculatedData[`${mtIdx}-72`] || '0');", 'resultats cout projection');
     next = replaceEvery(next, "const nbHReel    = parseFloat(calculatedData[`${mtIdx}-92`]  || '0');", "const nbHReel    = parseFloat(calculatedData[`${mtIdx}-76`] || '0');", 'resultats nb heures reel');
