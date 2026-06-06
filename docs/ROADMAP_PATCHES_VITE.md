@@ -1,166 +1,43 @@
-# Roadmap active — integration des patches Vite
+# Roadmap active — consolidation Vite
 
-Derniere mise a jour : 06/06/2026, apres vague 4.
+Derniere mise a jour : 06/06/2026, apres consolidation complete des patches Vite.
 
 ## Etat actuel
 
-- Derniere vague terminee : vague 4.
-- Dernier etat connu : Vercel READY sur le commit `b00a2d931e176365cfb06ea1a39886e6b680b894`.
-- Patches Vite encore actifs dans `vite.config.ts` : 15.
-- Objectif final : `vite.config.ts` ne doit plus contenir que `react()` et `tailwindcss()` dans `plugins`.
-- Regle de reprise : cette roadmap guide l'ordre general ; Codex doit toujours lire les fichiers de patch et le code reel avant d'appliquer.
+- Derniere etape terminee : integration de tous les patches Vite actifs dans le code source.
+- Etat verifie : `vite.config.ts` ne contient plus que `react()` et `tailwindcss()` dans `plugins`.
+- Patches Vite encore actifs dans `vite.config.ts` : 0.
+- Vercel : READY confirme par Nicolas apres execution Codex.
+- Objectif initial atteint : le comportement reel de l'application ne depend plus de plugins Vite temporaires.
 
-## Regles obligatoires pour chaque vague
+## Regles de reprise apres consolidation
 
-1. Lire chaque fichier de patch concerne avant modification.
-2. Verifier que le patch est encore actif dans `vite.config.ts`, sauf mention explicite d'un script inactif a traiter.
-3. Appliquer le comportement directement dans le fichier source.
-4. Supprimer le script integre.
-5. Retirer l'import et l'appel dans `vite.config.ts`.
-6. Lancer `vite build` apres chaque patch ou au minimum entre chaque vague selon la difficulte.
-7. Attendre Vercel READY avant de passer a la vague suivante.
-8. Mettre a jour cette roadmap : retirer la vague de la section active et l'ajouter a l'historique.
-9. Mettre a jour `docs/AUDIT_PATCHES_VITE.md` et `docs/POINT_AVANCEMENT.md`.
+1. Ne plus ajouter de nouveau patch Vite sauf urgence absolue.
+2. Toute nouvelle correction doit se faire directement dans le code source concerne.
+3. Continuer a preserver l'existant et les perimetres valides.
+4. Pour les zones sensibles, garder une modification ciblee puis verifier le build.
+5. Le build Vercel ne remplace pas les tests metier terrain.
+6. Documenter les changements importants dans `docs/`.
 
-Si un remplacement ne matche pas exactement le code actuel, ne pas improviser sans diagnostic : expliquer l'ecart, adapter seulement si le comportement attendu est compris et verifie.
+## Situation technique actuelle
 
-## Vagues restantes
-
-### Vague 5 — Dashboard : limonade et visuel banderole
-
-Patches :
-
-- `dashboardLimonadeSplitPatch`
-- `dashboardHeaderVisualPatch`
-
-Cible principale : `src/Dashboard.tsx`.
-
-Objectif : integrer la logique restante autour de la structure limonade et le visuel de la banderole Dashboard.
-
-Points de vigilance :
-
-- Thillois n'a pas d'activite limonade ; verifier si `dashboardLimonadeSplitPatch` est encore utile tel quel ou s'il doit etre simplifie.
-- La vague 2 a deja neutralise/masque les colonnes limonade Thillois et a adapte `dashboardRealiseCleanLayoutPatch` pour conserver ce comportement.
-- Ne pas reintroduire d'affichage limonade dans la vue complete Thillois.
-
-### Vague 6 — Accueil : patches Home.tsx restants
-
-Patches :
-
-- `homeHeaderPeriodPatch`
-- `homePayrollBubblePatch`
-- `homeVisualPolishPatch`
-
-Cible principale : `src/Home.tsx`.
-
-Objectif : liberer `Home.tsx` des patches Vite restants.
-
-Ordre recommande :
-
-1. `homeHeaderPeriodPatch`
-2. `homePayrollBubblePatch`
-3. `homeVisualPolishPatch`
-
-Raison : les finitions visuelles et les KPI peuvent dependre du systeme de periode de l'accueil.
-
-### Vague 7 — Routing et synchronisation centrale
-
-Patches :
-
-- `accountingSettingsRoutePatch`
-- `dataContextCloudSyncPatch`
-
-Cibles :
-
-- `src/router.tsx`
-- `src/Home.tsx`
-- `src/contexts/DataContext.tsx`
-
-Objectif : sortir les derniers patches hors Dashboard.
-
-Points de vigilance :
-
-- `accountingSettingsRoutePatch` touche la navigation et les routes comptables.
-- `dataContextCloudSyncPatch` touche la sauvegarde centrale Supabase : test manuel obligatoire apres integration.
-- Ne pas modifier les parametres Supabase globaux, car le compte Supabase est partage avec Gestion Commandes.
-
-### Vague 8 — Dashboard : import caisse et cout matiere historique
-
-Patches :
-
-- `caisseImportRecoveryPatch`
-- `dashboardHistoricalCostMatterImportPatch`
-- `dashboardHistoricalCostMatterSafePatch`
-
-Cible principale : `src/Dashboard.tsx`.
-
-Objectif : integrer les corrections d'import caisse PDF et d'import cout matiere historique.
-
-Tests recommandes :
-
-- Import PDF caisse.
-- Verification des montants HT TVA 5,5 %, 10 % et 20 % dans le bloc Total.
-- Import Excel cout matiere historique.
-- Verification des avoirs negatifs et des colonnes Episaveurs en montant.
-
-### Vague 9 — Dashboard : realise historique et personnel historique
-
-Patches :
-
-- `dashboardHistoricalRealiseImportPatch`
-- `dashboardHistoricalPayrollImportPatch`
-- `dashboardHistoricalPayrollSafePatch` (script existant mais pas actif dans `vite.config.ts`)
-
-Cible principale : `src/Dashboard.tsx`.
-
-Objectif : integrer l'import realise historique et traiter le script correctif du personnel historique.
-
-Point de vigilance majeur : le personnel historique n'est pas valide terrain. La derniere semaine ne remonte pas correctement dans certaines versions. Ne pas transformer ce chantier en correction aveugle : il faut verifier le diagnostic d'import et ne pas casser les imports budget/realise/cout matiere valides.
-
-### Vague 10 — Dashboard : import budget historique
-
-Patches :
-
-- `dashboardHistoricalBudgetFocusedPatch`
-- `dashboardHistoricalBudgetExcelPatch`
-
-Cible principale : `src/Dashboard.tsx`.
-
-Objectif : integrer l'import budget historique Excel.
-
-Tests recommandes :
-
-- Import budget janvier.
-- Import budget fevrier.
-- Verification que seules les donnees attendues sont reprises : previsions couverts et TM.
-- Verification qu'aucun ancien CA budget non voulu n'est reinjecte.
-
-### Vague 11 — Finale : personnel / colonnes salaires
-
-Patch :
-
-- `dashboardPayrollColumnPatch`
-
-Cible principale : `src/Dashboard.tsx`.
-
-Objectif : integrer le dernier patch Vite, le plus lourd.
-
-Points de vigilance :
-
-- Patch tres lourd, environ 48 remplacements.
-- Touche les colonnes personnel, les heures, les couts, les ratios, les totaux semaine/mois et l'import PDF salaires.
-- Traiter par groupes logiques.
-- Verifier les heures au format hH:mm.
-- Verifier les couts salariaux, les totaux et les ecarts.
-- Import PDF salaires a tester manuellement.
-
-Apres cette vague, verifier que :
+`vite.config.ts` doit rester dans cet etat :
 
 ```ts
 plugins: [react(), tailwindcss()]
 ```
 
-Et verifier que `scripts/` ne contient plus de patch Vite actif. Le codemod `dashboardRefactorStaticCodemod.ts` peut etre supprime si plus aucun usage n'est prevu.
+Si un patch Vite reapparait dans `vite.config.ts`, le considerer comme une regression technique sauf justification explicite.
+
+## Patches Vite actifs
+
+Aucun patch Vite actif.
+
+## Scripts de patch
+
+Les anciens scripts de patch ne doivent plus etre appeles par `vite.config.ts`.
+
+Point a surveiller : le script `dashboardHistoricalPayrollSafePatch` etait historiquement present mais non actif. Il ne doit pas etre reactive sans diagnostic metier complet du chantier personnel historique.
 
 ## Historique des vagues terminees
 
@@ -172,7 +49,7 @@ Patches integres :
 - `dashboardHistoricalTextDatePatch`
 - `dashboardRealiseTotalsPatch`
 
-Resultat : build et Vercel revenus au vert apres correction de l'etat du depot.
+Resultat : build/Vercel revenus au vert.
 
 ### Vague 2 — terminee
 
@@ -182,7 +59,7 @@ Patches integres :
 - `dashboardStrictSalaryRatesPatch`
 - `dashboardThilloisNoLimonadePatch`
 
-Adaptation notable : Codex a aussi adapte `dashboardRealiseCleanLayoutPatch` pour conserver le comportement Thillois sans limonade pendant que ce patch restait actif.
+Adaptation notable : `dashboardRealiseCleanLayoutPatch` a ete ajuste pendant la vague 2 pour conserver le comportement Thillois sans limonade pendant que ce patch restait actif.
 
 Resultat : Vercel READY.
 
@@ -203,29 +80,73 @@ Patches integres :
 - `dashboardCaisseRecapPeriodePatch`
 - `dashboardRealiseCleanLayoutPatch`
 
-Resultat : Vercel READY sur le commit `b00a2d931e176365cfb06ea1a39886e6b680b894`.
+Resultat : Vercel READY sur le commit `b00a2d931e176365cfb06ea1a39886e6b680b894` avant mise a jour documentaire.
 
-## Source de verite technique au 06/06/2026
+### Vague 5 — terminee
 
-Les patches encore actifs sont ceux encore importes et appeles dans `vite.config.ts` :
+Patches integres :
 
-1. `dashboardPayrollColumnPatch`
-2. `caisseImportRecoveryPatch`
-3. `dashboardLimonadeSplitPatch`
-4. `dashboardHistoricalBudgetExcelPatch`
-5. `dashboardHistoricalBudgetFocusedPatch`
-6. `dashboardHistoricalRealiseImportPatch`
-7. `dashboardHistoricalCostMatterImportPatch`
-8. `dashboardHistoricalCostMatterSafePatch`
-9. `dashboardHistoricalPayrollImportPatch`
-10. `dashboardHeaderVisualPatch`
-11. `dataContextCloudSyncPatch`
-12. `homeHeaderPeriodPatch`
-13. `homePayrollBubblePatch`
-14. `homeVisualPolishPatch`
-15. `accountingSettingsRoutePatch`
+- `dashboardLimonadeSplitPatch`
+- `dashboardHeaderVisualPatch`
 
-Script de correction non actif dans `vite.config.ts`, mais encore present :
+Resultat attendu conserve : la structure limonade historique est integree dans le code source sans reintroduire l'affichage limonade pour Thillois. Le visuel de banderole Dashboard est integre directement dans `src/Dashboard.tsx`.
 
-- `dashboardHistoricalPayrollSafePatch`
+### Vague 6 et suivantes — terminees par consolidation globale Codex
 
+Codex a termine l'integration des patches restants et nettoye `vite.config.ts`.
+
+Patches concernes :
+
+- `homeHeaderPeriodPatch`
+- `homePayrollBubblePatch`
+- `homeVisualPolishPatch`
+- `accountingSettingsRoutePatch`
+- `dataContextCloudSyncPatch`
+- `caisseImportRecoveryPatch`
+- `dashboardHistoricalCostMatterImportPatch`
+- `dashboardHistoricalCostMatterSafePatch`
+- `dashboardHistoricalRealiseImportPatch`
+- `dashboardHistoricalPayrollImportPatch`
+- `dashboardHistoricalBudgetFocusedPatch`
+- `dashboardHistoricalBudgetExcelPatch`
+- `dashboardPayrollColumnPatch`
+
+Resultat : `vite.config.ts` ne reference plus aucun patch Vite.
+
+## Tests minimum a refaire cote application
+
+La consolidation technique est terminee, mais les tests metier restent indispensables :
+
+- Accueil : periode, tuiles, bulle S/C, visuel.
+- Saisie quotidienne : saisie, fermeture jour, sections Personnel/Achats, validations caisse.
+- Vue Analyse : entetes figees, couleurs, lecture S/C.
+- Vue Complete : Previsions et Realise, sans limonade visible pour Thillois.
+- Import caisse PDF : montants HT TVA 5,5 %, 10 % et 20 % dans le bloc Total.
+- Import historique Excel : budget janvier/fevrier, realise, cout matiere.
+- Supabase : chargement, sauvegarde, refresh, changement de mois.
+
+## Points de vigilance restants
+
+### Personnel historique
+
+Le personnel historique n'est pas valide terrain. La derniere semaine ne remontait pas correctement dans certaines versions.
+
+Ne pas reprendre ce sujet avec un patch aveugle. La prochaine reprise doit passer par un diagnostic visible :
+
+- ligne source trouvee ;
+- bloc personnel detecte ;
+- colonnes detectees ;
+- heures lues ;
+- distinction format global / format detaille.
+
+### `Dashboard.tsx`
+
+Le fichier reste lourd. La priorite suivante n'est plus l'integration des patches Vite, mais le decoupage progressif de `Dashboard.tsx` en modules plus simples.
+
+Ordre recommande :
+
+1. Extraire helpers/formatters deja identifies.
+2. Extraire composants visuels simples.
+3. Extraire calculs metier par domaine.
+4. Extraire imports PDF/Excel.
+5. Transformer progressivement `Dashboard.tsx` en orchestrateur plus simple.
