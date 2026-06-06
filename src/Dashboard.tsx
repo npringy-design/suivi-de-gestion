@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import DashboardAnalysisView from '@/DashboardAnalysisView';
 
 import { useData } from '@/contexts/DataContext';
-import { averagePayrollRate, buildPayrollImportFromText } from '@/personnelSalaryImport';
+import { averagePayrollRate, buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '@/personnelSalaryImport';
 import { parseRecapPeriodeCaisse } from '@/caisseRecapPeriodeParser';
 import { parseHourInputToDecimal } from '@/utils';
 
@@ -227,33 +227,33 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           .filter((row: any) => !department || !row.department || row.department === department)
           .map((row: any) => String(row.nom || '').trim())
           .filter(Boolean);
-        const namesStr = names.length > 0 ? `\n${names.join(' + ')}` : '';
+        const namesStr = '';
         const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
         cols[idx] = [...cols[idx]];
-        cols[idx][1] = 'PROJECTION S/C';
+        cols[idx][1] = idx >= 77 ? 'FRAIS PERSONNEL REALISE' : 'PROJECTION S/C';
         cols[idx][2] = `${label}${namesStr}${avgStr}`;
       };
 
-      updateHeader(74, 'cadre',    'CADRE\nCUISINE', 'cuisine');
-      updateHeader(75, 'cadre',    'CADRE\nSALLE', 'salle');
-      updateHeader(76, 'maitrise', 'MAITRISE\nCUISINE', 'cuisine');
-      updateHeader(77, 'maitrise', 'MAITRISE\nSALLE', 'salle');
-      updateHeader(78, 'niv12',    'NIV I ET II\nCUISINE', 'cuisine');
-      updateHeader(79, 'niv12',    'NIV I ET II\nSALLE', 'salle');
-      updateHeader(80, 'niv3',     'NIV III\nCUISINE', 'cuisine');
-      updateHeader(81, 'niv3',     'NIV III\nSALLE', 'salle');
-      updateHeader(82, 'apprenti', 'APPRENTI\nCUISINE', 'cuisine');
-      updateHeader(83, 'apprenti', 'APPRENTI\nSALLE', 'salle');
-      updateHeader(89, 'cadre',    'CADRE\nCUISINE', 'cuisine');
-      updateHeader(90, 'cadre',    'CADRE\nSALLE', 'salle');
-      updateHeader(91, 'maitrise', 'MAITRISE\nCUISINE', 'cuisine');
-      updateHeader(92, 'maitrise', 'MAITRISE\nSALLE', 'salle');
-      updateHeader(93, 'niv12',    'NIV I ET II\nCUISINE', 'cuisine');
-      updateHeader(94, 'niv12',    'NIV I ET II\nSALLE', 'salle');
-      updateHeader(95, 'niv3',     'NIV III\nCUISINE', 'cuisine');
-      updateHeader(96, 'niv3',     'NIV III\nSALLE', 'salle');
-      updateHeader(97, 'apprenti', 'APPRENTI\nCUISINE', 'cuisine');
-      updateHeader(98, 'apprenti', 'APPRENTI\nSALLE', 'salle');
+      updateHeader(62, 'cadre', 'CADRE\nCUISINE', 'cuisine');
+      updateHeader(63, 'cadre', 'CADRE\nSALLE', 'salle');
+      updateHeader(64, 'maitrise', 'MAITRISE\nCUISINE', 'cuisine');
+      updateHeader(65, 'maitrise', 'MAITRISE\nSALLE', 'salle');
+      updateHeader(66, 'niv12', 'NIV I ET II\nCUISINE', 'cuisine');
+      updateHeader(67, 'niv12', 'NIV I ET II\nSALLE', 'salle');
+      updateHeader(68, 'niv3', 'NIV III\nCUISINE', 'cuisine');
+      updateHeader(69, 'niv3', 'NIV III\nSALLE', 'salle');
+      updateHeader(70, 'apprenti', 'APPRENTI\nCUISINE', 'cuisine');
+      updateHeader(71, 'apprenti', 'APPRENTI\nSALLE', 'salle');
+      updateHeader(77, 'cadre', 'CADRE\nCUISINE', 'cuisine');
+      updateHeader(78, 'cadre', 'CADRE\nSALLE', 'salle');
+      updateHeader(79, 'maitrise', 'MAITRISE\nCUISINE', 'cuisine');
+      updateHeader(80, 'maitrise', 'MAITRISE\nSALLE', 'salle');
+      updateHeader(81, 'niv12', 'NIV I ET II\nCUISINE', 'cuisine');
+      updateHeader(82, 'niv12', 'NIV I ET II\nSALLE', 'salle');
+      updateHeader(83, 'niv3', 'NIV III\nCUISINE', 'cuisine');
+      updateHeader(84, 'niv3', 'NIV III\nSALLE', 'salle');
+      updateHeader(85, 'apprenti', 'APPRENTI\nCUISINE', 'cuisine');
+      updateHeader(86, 'apprenti', 'APPRENTI\nSALLE', 'salle');
     }
     Object.entries(purchaseSupplierNames).forEach(([col, name]) => {
       const colIndex = Number(col);
@@ -295,6 +295,31 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       document.removeEventListener('touchstart', handleOutsidePointer);
     };
   }, [isDatePickerOpen]);
+
+  const isPayrollInputColumn = (colIndex: number) => (colIndex >= 62 && colIndex <= 71) || (colIndex >= 77 && colIndex <= 86);
+
+  const parsePayrollHourForCalculation = (value: string | number | undefined) => {
+    if (value === undefined || value === null || value === '') return 0;
+    const converted = parseHourInputToDecimal(value);
+    return Number.isFinite(converted) && converted > 0 ? Math.round(converted * 100) / 100 : 0;
+  };
+
+  const formatPayrollHourDecimalValue = (value: string | number | undefined) => {
+    if (value === undefined || value === null || value === '') return '';
+    const converted = parsePayrollHourForCalculation(value);
+    return converted > 0 ? converted.toFixed(2).replace('.', ',') : String(value);
+  };
+
+  const formatPayrollHourVisualValue = (value: string | number | undefined) => {
+    if (value === undefined || value === null || value === '') return '';
+    const converted = parseHourInputToDecimal(value);
+    if (!Number.isFinite(converted) || converted <= 0) return String(value);
+    const hours = Math.floor(converted);
+    const minutesTotal = Math.round((converted - hours) * 60);
+    const normalizedHours = hours + Math.floor(minutesTotal / 60);
+    const normalizedMinutes = minutesTotal % 60;
+    return `${normalizedHours}h${String(normalizedMinutes).padStart(2, '0')}`;
+  };
 
   const cellData = globalData[month]?.dashboard || {};
   const [focusedCell, setFocusedCell] = useState<string | null>(null);
@@ -458,10 +483,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const isTextCol = [37, 38, 44, 49, 50].includes(cIdx) || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName);
     
     if (isTextCol) {
-      // Allow text for events columns and text columns
       updateDashboard(month, `${rIdx}-${cIdx}`, value);
+    } else if (isPayrollInputColumn(cIdx)) {
+      const cleanHourValue = value.replace(/[^0-9hH:.,\s]/g, '');
+      updateDashboard(month, `${rIdx}-${cIdx}`, cleanHourValue);
     } else {
-      // Only allow numbers for calculation purposes
       const cleanValue = value.replace(/[^0-9.,-]/g, '').replace(',', '.');
       updateDashboard(month, `${rIdx}-${cIdx}`, cleanValue);
     }
@@ -649,9 +675,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         ];
 
         for (let i = 0; i < 10; i++) {
-          const colIdx = 78 + i; // PROJECTION S/C columns start at 76 (CADRE en 74+75 éditable séparément)
+          const colIdx = 62 + i;
           if (data[`${rIdx}-${colIdx}`]) {
-            const val = parseHourInputToDecimal(data[`${rIdx}-${colIdx}`] || '0');
+            const val = parsePayrollHourForCalculation(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresProj += val;
             coutGlobalProj += val * projRates[i];
             hasProjData = true;
@@ -659,7 +685,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
         
         if (hasProjData) {
-          data[`${rIdx}-65`] = totalHeuresProj.toFixed(2);
+          data[`${rIdx}-61`] = totalHeuresProj.toFixed(2);
           data[`${rIdx}-72`] = coutGlobalProj.toFixed(2);
           if (totalHeuresProj > 0) {
             data[`${rIdx}-73`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
@@ -675,9 +701,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let hasRealData = false;
         
         for (let i = 0; i < 10; i++) {
-          const colIdx = 91 + i;
+          const colIdx = 77 + i;
           if (data[`${rIdx}-${colIdx}`]) {
-            const val = parseHourInputToDecimal(data[`${rIdx}-${colIdx}`] || '0');
+            const val = parsePayrollHourForCalculation(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresReal += val;
             coutGlobalReal += val * projRates[i];
             hasRealData = true;
@@ -686,21 +712,21 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         
         if (hasRealData) {
           data[`${rIdx}-76`] = totalHeuresReal.toFixed(2);
-          data[`${rIdx}-83`] = coutGlobalReal.toFixed(2);
+          data[`${rIdx}-87`] = coutGlobalReal.toFixed(2);
           if (totalHeuresReal > 0) {
-            data[`${rIdx}-84`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
+            data[`${rIdx}-88`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
           }
           if (realiseTotalJour > 0) {
-            data[`${rIdx}-85`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-89`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
           }
           
           // Ecarts
           if (hasProjData) {
-            data[`${rIdx}-87`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
+            data[`${rIdx}-91`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
             if (realiseTotalJour > 0) {
               const pctReal = (coutGlobalReal / realiseTotalJour) * 100;
               const pctProj = (coutGlobalProj / realiseTotalJour) * 100;
-              data[`${rIdx}-88`] = (pctReal - pctProj).toFixed(2) + '%';
+              data[`${rIdx}-92`] = (pctReal - pctProj).toFixed(2) + '%';
             }
           }
         }
@@ -720,13 +746,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 35, 59, 60, 73, 74, 77, 78, 79, 84, 85, 88].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 59, 60, 73, 74, 75, 88, 89, 90, 91, 92, 117, 122].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
           weekDays.forEach(day => {
-            const val = parseFloat(data[`${day.originalIdx}-${cIdx}`] || '0');
-            if (!isNaN(val) && data[`${day.originalIdx}-${cIdx}`]) {
+            const rawVal = data[`${day.originalIdx}-${cIdx}`] || '';
+            const val = isPayrollInputColumn(cIdx) ? parsePayrollHourForCalculation(rawVal) : parseFloat(rawVal || '0');
+            if (!isNaN(val) && rawVal) {
               colSum += val;
               hasData = true;
             }
@@ -785,7 +812,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const coutMatiereW = parseFloat(data[`${rIdx}-58`] || '0');
         if (realiseCAW > 0) data[`${rIdx}-60`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
 
-        const totalHeuresProjW = parseFloat(data[`${rIdx}-65`] || '0');
+        const totalHeuresProjW = parseFloat(data[`${rIdx}-61`] || '0');
         const coutGlobalProjW = parseFloat(data[`${rIdx}-72`] || '0');
         if (totalHeuresProjW > 0) data[`${rIdx}-73`] = (realiseCAW / totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
@@ -794,18 +821,18 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
         
         const totalHeuresRealW = parseFloat(data[`${rIdx}-76`] || '0');
-        const coutGlobalRealW = parseFloat(data[`${rIdx}-83`] || '0');
-        if (totalHeuresRealW > 0) data[`${rIdx}-84`] = (realiseCAW / totalHeuresRealW).toFixed(2);
+        const coutGlobalRealW = parseFloat(data[`${rIdx}-87`] || '0');
+        if (totalHeuresRealW > 0) data[`${rIdx}-88`] = (realiseCAW / totalHeuresRealW).toFixed(2);
         if (realiseCAW > 0) {
-          data[`${rIdx}-85`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-86`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-89`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-90`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        data[`${rIdx}-87`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
+        data[`${rIdx}-91`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
           const pctRealW = (coutGlobalRealW / realiseCAW) * 100;
           const pctProjW = (coutGlobalProjW / realiseCAW) * 100;
-          data[`${rIdx}-88`] = (pctRealW - pctProjW).toFixed(2) + '%';
+          data[`${rIdx}-92`] = (pctRealW - pctProjW).toFixed(2) + '%';
         }
       }
     });
@@ -819,7 +846,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 35, 59, 60, 73, 74, 77, 78, 79, 84, 85, 88].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 59, 60, 73, 74, 75, 88, 89, 90, 91, 92, 117, 122].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -883,7 +910,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         if (budgetCvtsM > 0) data[`${monthTotalIdx}-122`] = ((ecartCvtsM / budgetCvtsM) * 100).toFixed(2);
       }
 
-      const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-65`] || '0');
+      const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-61`] || '0');
       const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-72`] || '0');
       if (totalHeuresProjM > 0) data[`${monthTotalIdx}-73`] = (realiseCAM / totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
@@ -892,18 +919,18 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       }
       
       const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-76`] || '0');
-      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-83`] || '0');
-      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-84`] = (realiseCAM / totalHeuresRealM).toFixed(2);
+      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-87`] || '0');
+      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-88`] = (realiseCAM / totalHeuresRealM).toFixed(2);
       if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-85`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-86`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-89`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-90`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      data[`${monthTotalIdx}-87`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
+      data[`${monthTotalIdx}-91`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
         const pctRealM = (coutGlobalRealM / realiseCAM) * 100;
         const pctProjM = (coutGlobalProjM / realiseCAM) * 100;
-        data[`${monthTotalIdx}-88`] = (pctRealM - pctProjM).toFixed(2) + '%';
+        data[`${monthTotalIdx}-92`] = (pctRealM - pctProjM).toFixed(2) + '%';
       }
 
       // Calculate FRAIS GENERAUX box totals
@@ -966,7 +993,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       couverts: parseDashboardNumber(calculatedData[`${monthTotalIdx}-29`]),
       ticketMoyen: parseDashboardNumber(calculatedData[`${monthTotalIdx}-30`]),
       coutMatiere: parseDashboardNumber(calculatedData[`${monthTotalIdx}-58`]),
-      fraisPersonnel: parseDashboardNumber(calculatedData[`${monthTotalIdx}-83`]),
+      fraisPersonnel: parseDashboardNumber(calculatedData[`${monthTotalIdx}-87`]),
     };
   }, [calculatedData, rows]);
 
@@ -979,8 +1006,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     };
   }, []);
 
-  const formatValue = (val: string | number | undefined, c: string[]) => {
+  const formatValue = (val: string | number | undefined, c: string[], colIndex?: number) => {
     if (val === '' || val === undefined || val === null) return '';
+
+    if (typeof colIndex === 'number' && isPayrollInputColumn(colIndex)) {
+      return formatPayrollHourDecimalValue(val);
+    }
     
     // If the value already contains a percentage sign, return it as is
     if (typeof val === 'string' && val.includes('%')) return val;
@@ -2591,6 +2622,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       const text = isPdf ? await extractPdfLayoutText(file, undefined, false) : await file.text();
+      const payrollPeriod = getPayrollTargetPeriodFromText(text);
+      if (!payrollPeriod) {
+        setSalaryImportStatus('Erreur : le mois du PDF salaires n a pas pu etre detecte.');
+        return;
+      }
       const result = buildPayrollImportFromText(text, configuredPersonnel);
 
       if (result.matches.length === 0) {
@@ -2598,19 +2634,22 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         return;
       }
 
-      const currentConfig = globalData[month]?.salariesConfig || { locked: false, categories: result.categories };
+      const targetMonth = payrollPeriod.targetMonth;
+      const currentConfig = globalData[targetMonth]?.salariesConfig || { locked: false, categories: result.categories };
       if (currentConfig.locked) {
         setSalaryImportStatus('Erreur : le mois est verrouille dans la configuration salaires.');
         return;
       }
 
-      updateSalariesConfig(month, {
+      updateSalariesConfig(targetMonth, {
         ...currentConfig,
         categories: result.categories,
       });
 
       const unmatchedText = result.unmatched.length > 0 ? ` ${result.unmatched.length} non matche(s).` : '';
-      setSalaryImportStatus(`${result.matches.length} salarie(s) importe(s) sur ${selectedMonthLabel}. Taux horaires mis a jour par statut et section.${unmatchedText}`);
+      setMonth(targetMonth);
+      setSelectedMonth(targetMonth);
+      setSalaryImportStatus(`${result.matches.length} salarie(s) importe(s). PDF ${payrollPeriod.sourceLabel} applique sur ${payrollPeriod.targetLabel}. Snapshot des taux sauvegarde, aucun import brut conserve.${unmatchedText}`);
     } catch (error) {
       setSalaryImportStatus(`Erreur : ${error instanceof Error ? error.message : "le PDF salaires n'a pas pu etre lu."}`);
     } finally {
@@ -2665,7 +2704,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setInvoiceImportPreviews(prev => prev.filter(item => item.id !== invoiceImportPreview.id));
   };
   const getDailyCellValue = (col: number) => selectedDayRowIndex >= 0 ? calculatedData[`${selectedDayRowIndex}-${col}`] || '' : '';
-  const getDailyDisplayValue = (col: number) => formatValue(getDailyCellValue(col), dynamicColumns[col] || ['', '', '', '']);
+  const getDailyDisplayValue = (col: number) => {
+    const value = getDailyCellValue(col);
+    return isPayrollInputColumn(col) ? formatPayrollHourVisualValue(value) : formatValue(value, dynamicColumns[col] || ['', '', '', ''], col);
+  };
   const isDailyFieldFocused = (col: number) => focusedCell === `${selectedDayRowIndex}-${col}`;
 
   const formatDailyRecapNumber = (value: number, decimals = 2) => new Intl.NumberFormat('fr-FR', {
@@ -4454,7 +4496,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
                     const cellKey = `${rIdx}-${originalCIdx}`;
                     const val = calculatedData[cellKey] || '';
-                    const displayVal = formatValue(val, [c[0], c[1], c[2], c[3]]);
+                    const displayVal = formatValue(val, [c[0], c[1], c[2], c[3]], originalCIdx);
                     const isFocused = focusedCell === cellKey;
                     
                     const isEditableCol = editableCols.includes(originalCIdx) || c[0] === 'FRAIS GENERAUX' || c[0] === 'CONTRAT MENSUALISES';
@@ -4681,10 +4723,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                       const consoReel  = achatTotal + varStock;
                       const ratioReel  = caR > 0 ? (consoReel / caR) * 100 : 0;
                       const margeReel  = caR - consoReel;
-                      const nbHBudget  = parseFloat(calculatedData[`${mtIdx}-77`]  || '0');
-                      const coutProj   = parseFloat(calculatedData[`${mtIdx}-88`]  || '0');
-                      const nbHReel    = parseFloat(calculatedData[`${mtIdx}-92`]  || '0');
-                      const coutReel   = parseFloat(calculatedData[`${mtIdx}-103`] || '0');
+                      const nbHBudget  = parseFloat(calculatedData[`${mtIdx}-61`] || '0');
+                      const coutProj   = parseFloat(calculatedData[`${mtIdx}-72`] || '0');
+                      const nbHReel    = parseFloat(calculatedData[`${mtIdx}-76`] || '0');
+                      const coutReel   = parseFloat(calculatedData[`${mtIdx}-87`] || '0');
 
                       const f = (n: number, dec = 2) => n.toFixed(dec).replace('.', ',');
                       const eur = (n: number) => f(n) + ' €';
