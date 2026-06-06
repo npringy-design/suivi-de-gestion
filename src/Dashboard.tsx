@@ -1281,24 +1281,20 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
   const extractCaisseNumbers = (text: string) => (text.match(/-?\d[\d\s]*,\d{2}/g) || []).map(parseCaisseNumber);
   const findCaisseTtcByRate = (source: string, rate: '5,5' | '10' | '20') => {
-    const lines = source
-      .replace(/\u00a0/g, ' ')
-      .replace(/€/g, ' ')
-      .split(/\r?\n/)
-      .map(line => line.replace(/\s+/g, ' ').trim())
-      .filter(Boolean);
-    const headerIndex = lines.findIndex(line => /TVA\s+TOTAL\s+HT\s+TVA\s+TTC/i.test(line));
-    if (headerIndex < 0) return 0;
+    const text = source.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ');
+    const headerMatch = text.match(/TVA\s+TOTAL\s+HT\s+TVA\s+TTC/i);
+    if (!headerMatch || headerMatch.index === undefined) return 0;
+    const block = text.slice(headerMatch.index, headerMatch.index + 450);
     const rateRegex = rate === '5,5' ? /TVA\s*5[,\.]5\s*%/i : rate === '10' ? /TVA\s*10\s*%/i : /TVA\s*20\s*%/i;
+    const rateMatch = block.match(rateRegex);
+    if (!rateMatch || rateMatch.index === undefined) return 0;
+    const afterRate = block.slice(rateMatch.index + rateMatch[0].length);
+    const nextRow = afterRate.search(/TVA\s*(?:5[,\.]5|10|20)\s*%|\bTOTAL\b/i);
+    const rowText = nextRow >= 0 ? afterRate.slice(0, nextRow) : afterRate.slice(0, 160);
+    const amounts = extractCaisseNumbers(rowText);
+    const ht = amounts[2] || amounts[0] || 0;
     const coeff = rate === '5,5' ? 1.055 : rate === '10' ? 1.10 : 1.20;
-    for (let index = headerIndex + 1; index < Math.min(lines.length, headerIndex + 8); index += 1) {
-      const row = lines[index];
-      if (!rateRegex.test(row)) continue;
-      const amounts = extractCaisseNumbers(row);
-      if (amounts.length >= 3) return amounts[2];
-      if (amounts.length >= 1) return Math.round(amounts[0] * coeff * 100) / 100;
-    }
-    return 0;
+    return Math.round(ht * coeff * 100) / 100;
   };
 
   const parseInvoiceNumber = (value: string) => {
@@ -1841,7 +1837,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const parsedImports: CaisseImportPreview[] = [];
       for (const [index, currentFile] of files.entries()) {
         const isPdf = currentFile.type === 'application/pdf' || currentFile.name.toLowerCase().endsWith('.pdf');
-        const text = isPdf ? await extractPdfLayoutText(currentFile, undefined, false) : await currentFile.text();
+        const text = isPdf ? await extractPdfText(currentFile) : await currentFile.text();
         parsedImports.push(parseCaisseImport(text, currentFile.name, createCaisseImportId(currentFile.name, index)));
       }
 
@@ -1854,7 +1850,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       return;
 
       const text = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-        ? await extractPdfLayoutText(file, undefined, false)
+        ? await extractPdfText(file)
         : await file.text();
       const parsed = parseCaisseRealise(text);
       const targetDayEntry = parsed.pdfDay && parsed.pdfMonth === month && parsed.pdfYear === year

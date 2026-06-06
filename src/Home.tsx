@@ -234,6 +234,7 @@ export default function Home() {
       goToConfigSalaires: () => navigate('/config-salaires'),
       goToCalculetteSalaires: () => navigate('/calculette-salaires'),
       goToVisuelVacances: () => navigate('/visuel-vacances'),
+      goToEcrituresComptables: () => navigate('/ecritures-comptables'),
     }),
     [navigate, month],
   );
@@ -956,6 +957,7 @@ export default function Home() {
               <NavItem label="Config Salaires" onClick={navigationHandlers.goToConfigSalaires} />
               <NavItem label="Info personnel" onClick={navigationHandlers.goToCalculetteSalaires} />
               <NavItem label="Vacances" onClick={navigationHandlers.goToVisuelVacances} />
+              <NavItem label="Ecritures comptables" onClick={navigationHandlers.goToEcrituresComptables} />
             </NavGroup>
           </nav>
         </div>
