@@ -126,9 +126,7 @@ export function SummaryCard({ label, value, description, icon: Icon, accentClass
           <Icon className="h-[clamp(1.15rem,1.55vw,1.5rem)] w-[clamp(1.15rem,1.55vw,1.5rem)]" />
         </div>
       </div>
-      <div className="home-summary-footer mt-auto border-t border-cyan-100/20 pt-[clamp(0.45rem,0.8vh,0.75rem)]">
-        <div className="home-card-description text-xs leading-relaxed text-cyan-50/80">{description}</div>
-      </div>
+
     </div>
   );
 }
@@ -142,8 +140,57 @@ const fe = (v: number) =>
   new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'EUR',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(v);
+
+type HomePeriodMode = 'day' | 'range' | 'month' | 'year';
+
+type HomePeriodSelection = {
+  mode: HomePeriodMode;
+  start: string;
+  end: string;
+};
+
+const periodModeLabels: Record<HomePeriodMode, string> = {
+  day: 'Jour',
+  range: 'Période',
+  month: 'Mois entier',
+  year: 'Année entière',
+};
+
+const toDateInputValue = (date: Date) => {
+  const yearValue = String(date.getFullYear());
+  const monthValue = String(date.getMonth() + 1).padStart(2, '0');
+  const dayValue = String(date.getDate()).padStart(2, '0');
+  return [yearValue, monthValue, dayValue].join('-');
+};
+
+const makeLocalDate = (value: string) => {
+  const [yearValue, monthValue, dayValue] = value.split('-').map(part => Number.parseInt(part, 10));
+  if (!Number.isFinite(yearValue) || !Number.isFinite(monthValue) || !Number.isFinite(dayValue)) return new Date();
+  return new Date(yearValue, monthValue - 1, dayValue);
+};
+
+const formatShortPeriodDate = (date: Date) =>
+  date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
+const formatHomePeriodLabel = (period: HomePeriodSelection) => {
+  const start = makeLocalDate(period.start);
+  const end = makeLocalDate(period.end);
+
+  if (period.mode === 'day') return formatShortPeriodDate(start);
+  if (period.mode === 'month') {
+    const formatted = start.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }
+  if (period.mode === 'year') return String(start.getFullYear());
+  return formatShortPeriodDate(start) + ' au ' + formatShortPeriodDate(end);
+};
 
 export default function Home() {
   const { data, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth } = useData();
@@ -153,7 +200,20 @@ export default function Home() {
   const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null);
   const [weeklyForecast, setWeeklyForecast] = useState<Array<{ date: string; code: number; tempMin: number; tempMax: number; rain: number }>>([]);
   const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
+  const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
   const [dayEvent, setDayEvent] = useState('Fête du jour');
+  const [homePeriod, setHomePeriod] = useState<HomePeriodSelection>(() => {
+    const now = new Date();
+    const safeDay = selectedYear === now.getFullYear() && selectedMonth === now.getMonth() ? now.getDate() : 1;
+    const current = toDateInputValue(new Date(selectedYear, selectedMonth, safeDay));
+    return { mode: 'day', start: current, end: current };
+  });
+  const [periodMode, setPeriodMode] = useState<HomePeriodMode>('day');
+  const [periodDay, setPeriodDay] = useState(() => homePeriod.start);
+  const [periodStart, setPeriodStart] = useState(() => homePeriod.start);
+  const [periodEnd, setPeriodEnd] = useState(() => homePeriod.end);
+  const [periodMonth, setPeriodMonth] = useState(() => String(selectedYear) + '-' + String(selectedMonth + 1).padStart(2, '0'));
+  const [periodYear, setPeriodYear] = useState(() => String(selectedYear));
   const [today, setToday] = useState(() => new Date());
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
 
@@ -205,7 +265,7 @@ export default function Home() {
   const loadWeather = useCallback(async () => {
     try {
       const res = await fetch(
-        'https://api.open-meteo.com/v1/forecast?latitude=48.8755&longitude=2.7467&current_weather=true&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FParis&forecast_days=7',
+        'https://api.open-meteo.com/v1/forecast?latitude=49.2567&longitude=3.955&current_weather=true&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FParis&forecast_days=7',
       );
       const meteo = await res.json();
 
@@ -239,8 +299,8 @@ export default function Home() {
   }, [loadWeather]);
 
   const getWeatherIcon = useCallback((code: number, size = 'w-4 h-4') => {
-      if (code === 0) return <Sun className={`${size} text-amber-400`} />;
-      if (code === 1 || code === 2 || code === 3) return <Cloud className={`${size} text-slate-300`} />;
+      if (code === 0 || code === 1 || code === 2) return <Sun className={`${size} text-amber-400`} />;
+      if (code === 3) return <Cloud className={`${size} text-slate-300`} />;
       if (code >= 51 && code <= 67) return <CloudRain className={`${size} text-blue-400`} />;
       if (code >= 71 && code <= 77) return <CloudSnow className={`${size} text-slate-200`} />;
       if (code >= 80 && code <= 82) return <CloudRain className={`${size} text-blue-400`} />;
@@ -257,9 +317,9 @@ export default function Home() {
       case 0:
         return 'Ciel dégagé';
       case 1:
-        return 'Peu nuageux';
+        return 'Beau temps';
       case 2:
-        return 'Partiellement nuageux';
+        return 'Éclaircies';
       case 3:
         return 'Couvert';
       case 45:
@@ -316,6 +376,60 @@ export default function Home() {
     });
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   };
+
+  const selectedPeriodLabel = useMemo(() => formatHomePeriodLabel(homePeriod), [homePeriod]);
+  const selectedPeriodDescription = periodModeLabels[homePeriod.mode];
+
+  const openPeriodModal = useCallback(() => {
+    const start = makeLocalDate(homePeriod.start);
+    setPeriodMode(homePeriod.mode);
+    setPeriodDay(homePeriod.start);
+    setPeriodStart(homePeriod.start);
+    setPeriodEnd(homePeriod.end);
+    setPeriodMonth(String(start.getFullYear()) + '-' + String(start.getMonth() + 1).padStart(2, '0'));
+    setPeriodYear(String(start.getFullYear()));
+    setIsPeriodModalOpen(true);
+  }, [homePeriod]);
+
+  const applyPeriodSelection = useCallback(() => {
+    let nextStart = makeLocalDate(periodDay);
+    let nextEnd = makeLocalDate(periodDay);
+
+    if (periodMode === 'range') {
+      nextStart = makeLocalDate(periodStart);
+      nextEnd = makeLocalDate(periodEnd);
+    }
+
+    if (periodMode === 'month') {
+      const [yearValue, monthValue] = periodMonth.split('-').map(part => Number.parseInt(part, 10));
+      const safeYear = Number.isFinite(yearValue) ? yearValue : selectedYear;
+      const safeMonth = Number.isFinite(monthValue) ? monthValue - 1 : selectedMonth;
+      nextStart = new Date(safeYear, safeMonth, 1);
+      nextEnd = new Date(safeYear, safeMonth + 1, 0);
+    }
+
+    if (periodMode === 'year') {
+      const safeYear = Number.parseInt(periodYear, 10);
+      const finalYear = Number.isFinite(safeYear) ? safeYear : selectedYear;
+      nextStart = new Date(finalYear, 0, 1);
+      nextEnd = new Date(finalYear, 11, 31);
+    }
+
+    if (nextEnd.getTime() < nextStart.getTime()) {
+      const previousStart = nextStart;
+      nextStart = nextEnd;
+      nextEnd = previousStart;
+    }
+
+    setSelectedYear(nextStart.getFullYear());
+    setSelectedMonth(nextStart.getMonth());
+    setHomePeriod({
+      mode: periodMode,
+      start: toDateInputValue(nextStart),
+      end: toDateInputValue(nextEnd),
+    });
+    setIsPeriodModalOpen(false);
+  }, [periodDay, periodEnd, periodMode, periodMonth, periodStart, periodYear, selectedMonth, selectedYear, setSelectedMonth, setSelectedYear]);
 
   const getDayEvent = (date: Date) => {
     const currentMonth = date.getMonth() + 1;
@@ -396,40 +510,208 @@ export default function Home() {
   const { moisIndex, jourIndex } = indices;
 
   const kpis = useMemo(() => {
-    if (!Array.isArray(data) || data.length === 0) {
-      return { caMois: 0, caJour: 0, tmJour: 0, budgetCouvert: 0 };
-    }
+    const monthData = data?.[month];
+    const dashboard = monthData?.dashboard || {};
+    const parseDashboardValue = (value: unknown) => {
+      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+      return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
+    };
+    const dashboardValue = (rowIndex: number, colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const now = new Date();
+    const selectedDay = now.getFullYear() === year && now.getMonth() === month ? Math.max(1, Math.min(now.getDate() - 1, daysInMonth)) : daysInMonth;
+    const rowIndexForDay = (day: number) => dashboardRowIndices[day];
+    const realisedDayCA = (day: number) => {
+      const rowIndex = rowIndexForDay(day);
+      if (typeof rowIndex !== 'number') return 0;
+      return [17, 18, 19, 20].reduce((sum, col) => sum + dashboardValue(rowIndex, col), 0);
+    };
+    const budgetDayCA = (day: number) => {
+      const rowIndex = rowIndexForDay(day);
+      if (typeof rowIndex !== 'number') return 0;
+      const savedTotal = dashboardValue(rowIndex, 3);
+      if (savedTotal > 0) return savedTotal;
+      const caMidi = dashboardValue(rowIndex, 0) || dashboardValue(rowIndex, 6) * dashboardValue(rowIndex, 7);
+      const caSoir = dashboardValue(rowIndex, 1) || dashboardValue(rowIndex, 8) * dashboardValue(rowIndex, 9);
+      const caLimo = dashboardValue(rowIndex, 2) || dashboardValue(rowIndex, 14) * dashboardValue(rowIndex, 15);
+      return caMidi + caSoir + caLimo;
+    };
 
-    const caMois = moisIndex >= 0 ? n(data[moisIndex]?.CA_Realise) : 0;
-    const caJour = jourIndex >= 0 ? n(data[jourIndex]?.CA_Realise) : 0;
-    const nbCouverts = jourIndex >= 0 ? n(data[jourIndex]?.Nombre_de_Couverts) : 0;
-    const tmJour = nbCouverts > 0 ? caJour / nbCouverts : 0;
-
+    let caMois = 0;
     let totalBudgetCA = 0;
-    let totalRealiseCA = 0;
-
-    for (let i = rowFirstDay; i <= rowLastDay && i < data.length; i++) {
-      totalBudgetCA += n(data[i]?.CA_Budget);
-      totalRealiseCA += n(data[i]?.CA_Realise);
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      caMois += realisedDayCA(day);
+      totalBudgetCA += budgetDayCA(day);
     }
 
-    const budgetCouvert = totalBudgetCA > 0 ? (totalRealiseCA / totalBudgetCA) * 100 : 0;
+    const caJour = realisedDayCA(selectedDay);
+    const selectedRowIndex = rowIndexForDay(selectedDay);
+    const nbCouverts = typeof selectedRowIndex === 'number' ? dashboardValue(selectedRowIndex, 25) + dashboardValue(selectedRowIndex, 27) : 0;
+    const caRestaurant = typeof selectedRowIndex === 'number' ? dashboardValue(selectedRowIndex, 18) + dashboardValue(selectedRowIndex, 19) : 0;
+    const tmJour = nbCouverts > 0 ? caRestaurant / nbCouverts : 0;
+    const budgetCouvert = totalBudgetCA > 0 ? (caMois / totalBudgetCA) * 100 : 0;
+
+    const buildPeriodDates = (start: Date, end: Date) => {
+      const dates: Date[] = [];
+      const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      let guard = 0;
+      while (cursor.getTime() <= end.getTime() && guard < 400) {
+        if (cursor.getFullYear() === year) dates.push(new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate()));
+        cursor.setDate(cursor.getDate() + 1);
+        guard += 1;
+      }
+      return dates;
+    };
+
+    const statsForDate = (date: Date) => {
+      const statMonth = date.getMonth();
+      const monthData = data?.[statMonth];
+      const dashboardForDate = monthData?.dashboard || {};
+      const rowIndex = getDashboardRowIndices(statMonth, date.getFullYear())[date.getDate()];
+      if (date.getFullYear() !== year || typeof rowIndex !== 'number') return { ca: 0, budget: 0, restaurant: 0, couverts: 0 };
+      const value = (colIndex: number) => parseDashboardValue(dashboardForDate[String(rowIndex) + '-' + String(colIndex)]);
+      const ca = [17, 18, 19, 20].reduce((sum, col) => sum + value(col), 0);
+      const savedBudget = value(3);
+      const budget = savedBudget > 0 ? savedBudget : (value(0) || value(6) * value(7)) + (value(1) || value(8) * value(9)) + (value(2) || value(14) * value(15));
+      return { ca, budget, restaurant: value(18) + value(19), couverts: value(25) + value(27) };
+    };
+
+    const summarizeDates = (dates: Date[]) => dates.reduce((acc, date) => {
+      const stats = statsForDate(date);
+      return { ca: acc.ca + stats.ca, budget: acc.budget + stats.budget, restaurant: acc.restaurant + stats.restaurant, couverts: acc.couverts + stats.couverts };
+    }, { ca: 0, budget: 0, restaurant: 0, couverts: 0 });
+
+    const todayKey = toDateInputValue(today);
+    const isDefaultView = homePeriod.mode === 'day' && homePeriod.start === todayKey && homePeriod.end === todayKey;
+    if (!isDefaultView) {
+      const startRaw = makeLocalDate(homePeriod.start);
+      const endRaw = makeLocalDate(homePeriod.end);
+      const startDate = startRaw.getTime() <= endRaw.getTime() ? startRaw : endRaw;
+      const endDate = startRaw.getTime() <= endRaw.getTime() ? endRaw : startRaw;
+      const selectedDates = buildPeriodDates(startDate, endDate);
+      const safeDates = selectedDates.length > 0 ? selectedDates : [startDate];
+      const totals = summarizeDates(safeDates);
+      const selectedTm = totals.couverts > 0 ? totals.restaurant / totals.couverts : 0;
+      const selectedBudget = totals.budget > 0 ? (totals.ca / totals.budget) * 100 : 0;
+
+      if (homePeriod.mode === 'year') return { caMois: totals.ca, caJour: totals.ca / 12, tmJour: selectedTm, budgetCouvert: selectedBudget };
+      if (homePeriod.mode === 'day') return { caMois: totals.ca, caJour: totals.restaurant, tmJour: selectedTm, budgetCouvert: selectedBudget };
+      return { caMois: totals.ca, caJour: totals.ca / Math.max(1, safeDates.length), tmJour: selectedTm, budgetCouvert: selectedBudget };
+    }
 
     return { caMois, caJour, tmJour, budgetCouvert };
-  }, [data, moisIndex, jourIndex, rowFirstDay, rowLastDay]);
+  }, [data, month, year, dashboardRowIndices, homePeriod, today]);
+
+
+  const payrollCostBubble = useMemo(() => {
+    const monthData = data?.[month];
+    const dashboard = monthData?.dashboard || {};
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const now = new Date();
+    const isSelectedCurrentMonth = now.getFullYear() === year && now.getMonth() === month;
+    const referenceDay = isSelectedCurrentMonth ? Math.min(now.getDate(), daysInMonth) : daysInMonth;
+
+    const parseValue = (value: unknown) => {
+      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+      return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
+    };
+
+    const dayStats = (day: number) => {
+      const rowIndex = dashboardRowIndices[day];
+      if (typeof rowIndex !== 'number') return { ca: 0, cost: 0 };
+      const rowKey = String(rowIndex) + '-';
+      const ca = [17, 18, 19, 20].reduce((sum, col) => sum + parseValue(dashboard[rowKey + String(col)]), 0);
+      const costFromComplete = parseValue(dashboard[rowKey + '87']);
+      const ratioFromComplete = parseValue(dashboard[rowKey + '89']);
+      const cost = costFromComplete > 0 ? costFromComplete : (ca > 0 && ratioFromComplete > 0 ? (ca * ratioFromComplete) / 100 : 0);
+      return { ca, cost };
+    };
+
+    const ratioForDays = (days: number[]) => {
+      const totals = days.reduce((acc, day) => {
+        const stats = dayStats(day);
+        return { ca: acc.ca + stats.ca, cost: acc.cost + stats.cost };
+      }, { ca: 0, cost: 0 });
+      if (totals.ca <= 0 || totals.cost <= 0) return null;
+      return (totals.cost / totals.ca) * 100;
+    };
+
+    const weekNumberForDay = (targetDay: number) => {
+      let weekNumber = 1;
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        if (day === targetDay) return weekNumber;
+        if (new Date(year, month, day).getDay() === 0) weekNumber += 1;
+      }
+      return weekNumber;
+    };
+
+    const weeks: Array<{ week: number; days: number[] }> = [];
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const week = weekNumberForDay(day);
+      let item = weeks.find(entry => entry.week === week);
+      if (!item) {
+        item = { week, days: [] };
+        weeks.push(item);
+      }
+      item.days.push(day);
+    }
+
+    const currentWeekNumber = weekNumberForDay(referenceDay);
+    const yesterdayDate = new Date(now);
+    yesterdayDate.setDate(now.getDate() - 1);
+    const yesterdayDay = yesterdayDate.getFullYear() === year && yesterdayDate.getMonth() === month ? yesterdayDate.getDate() : null;
+    const formatPercent = (value: number | null) => value === null ? '-' : value.toFixed(2).replace('.', ',') + ' %';
+
+    const currentWeekDays = weeks.find(entry => entry.week === currentWeekNumber)?.days.filter(day => day <= referenceDay) || [];
+    const monthDays = Array.from({ length: referenceDay }, (_, index) => index + 1);
+    const previousWeeks = weeks
+      .filter(entry => entry.week < currentWeekNumber)
+      .map(entry => ({ label: 'Semaine ' + entry.week, value: formatPercent(ratioForDays(entry.days)) }));
+    const currentWeekRatio = ratioForDays(currentWeekDays);
+    const monthRatio = ratioForDays(monthDays);
+    const yesterdayRatio = yesterdayDay ? ratioForDays([yesterdayDay]) : null;
+    const weekRows = [
+      ...previousWeeks,
+      { label: 'Semaine ' + currentWeekNumber + ' en cours', value: formatPercent(currentWeekRatio) },
+    ];
+
+    return {
+      headline: formatPercent(currentWeekRatio ?? monthRatio ?? yesterdayRatio),
+      yesterday: formatPercent(yesterdayRatio),
+      currentWeek: formatPercent(currentWeekRatio),
+      currentWeekLabel: 'Semaine ' + currentWeekNumber,
+      month: formatPercent(monthRatio),
+      previousWeeks,
+      weekRows,
+    };
+  }, [data, month, year, dashboardRowIndices]);
 
   const chartDataCA = useMemo(() => {
-    if (!Array.isArray(data) || data.length === 0) return [];
+    const monthData = data?.[month];
+    const dashboard = monthData?.dashboard || {};
+    const parseDashboardValue = (value: unknown) => {
+      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+      return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
+    };
+    const dashboardValue = (rowIndex: number, colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const rows = [];
 
-    const res = [];
-    for (let i = rowFirstDay; i <= rowLastDay && i < data.length; i++) {
-      const jour = data[i]?.Jour || '';
-      const caReal = n(data[i]?.CA_Realise);
-      const caBudg = n(data[i]?.CA_Budget);
-      res.push({ name: jour, CA_Realise: caReal, CA_Budget: caBudg });
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const rowIndex = dashboardRowIndices[day];
+      if (typeof rowIndex !== 'number') continue;
+      const caReal = [17, 18, 19, 20].reduce((sum, col) => sum + dashboardValue(rowIndex, col), 0);
+      const savedBudget = dashboardValue(rowIndex, 3);
+      const caBudget = savedBudget > 0
+        ? savedBudget
+        : (dashboardValue(rowIndex, 0) || dashboardValue(rowIndex, 6) * dashboardValue(rowIndex, 7))
+          + (dashboardValue(rowIndex, 1) || dashboardValue(rowIndex, 8) * dashboardValue(rowIndex, 9))
+          + (dashboardValue(rowIndex, 2) || dashboardValue(rowIndex, 14) * dashboardValue(rowIndex, 15));
+      rows.push({ name: String(day), CA_Realise: caReal, CA_Budget: caBudget });
     }
-    return res;
-  }, [data, rowFirstDay, rowLastDay]);
+
+    return rows;
+  }, [data, month, year, dashboardRowIndices]);
 
   const chartDataFG = useMemo(() => {
     if (!Array.isArray(data) || data.length === 0 || moisIndex < 0) return [];
@@ -706,42 +988,18 @@ export default function Home() {
                 <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/35 via-blue-950/20 to-transparent" />
                 <div className="absolute -right-12 -bottom-16 h-32 w-32 rounded-full bg-amber-200/20 blur-3xl" />
 
-                <div className="relative grid gap-3 lg:grid-cols-[minmax(260px,1fr)_minmax(170px,230px)_auto] lg:items-center">
-                  <div className="min-w-0 py-0.5">
-                    <div className="home-separator mb-1.5 h-px max-w-[360px] bg-gradient-to-r from-transparent via-amber-200/80 to-transparent" />
-                    <h1 className="home-title font-serif text-[clamp(2rem,3.4vw,3rem)] font-black uppercase leading-none tracking-[0.08em] text-amber-50 drop-shadow">
-                      Au Bureau
+                <div className="relative grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto] lg:items-center">
+                  <div className="min-w-0 py-0.5 text-center lg:pl-[clamp(1.5rem,5vw,6rem)]">
+                    <div className="home-separator mx-auto mb-1.5 h-px max-w-[520px] bg-gradient-to-r from-transparent via-amber-200/80 to-transparent" />
+                    <h1 className="home-title text-center font-serif text-[clamp(2rem,3.4vw,3rem)] font-black uppercase leading-none tracking-[0.08em] text-amber-50 drop-shadow">
+                      Hippopotamus
                     </h1>
-                    <div className="home-separator mt-1.5 h-px max-w-[360px] bg-gradient-to-r from-transparent via-amber-200/75 to-transparent" />
-                    <div className="home-location mt-1.5 max-w-[360px] text-center text-[11px] font-bold uppercase tracking-[0.42em] text-white/85 sm:text-xs">
-                      Montévrain
+                    <div className="home-separator mx-auto mt-1.5 h-px max-w-[520px] bg-gradient-to-r from-transparent via-amber-200/75 to-transparent" />
+                    <div className="home-location mx-auto mt-1.5 max-w-[520px] text-center text-[11px] font-bold uppercase tracking-[0.42em] text-white/85 sm:text-xs">
+                      Thillois
                     </div>
                   </div>
 
-                  <div className="home-period-panel grid grid-cols-2 gap-2 rounded-2xl border border-cyan-100/25 bg-[#052a34]/72 p-2 shadow-lg shadow-black/20 ring-1 ring-white/10 backdrop-blur-sm lg:grid-cols-1">
-                    <select
-                      value={month}
-                      onChange={e => setSelectedMonth(parseInt(e.target.value, 10))}
-                      className="h-9 rounded-xl border border-cyan-100/15 bg-[#0a3a45]/95 px-3 text-sm font-extrabold text-cyan-50 shadow-inner outline-none transition-all focus:ring-2 focus:ring-cyan-300/35"
-                    >
-                      {months.map(m => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={year}
-                      onChange={e => setSelectedYear(parseInt(e.target.value))}
-                      className="h-9 rounded-xl border border-cyan-100/15 bg-[#0a3a45]/95 px-3 text-sm font-extrabold text-cyan-50 shadow-inner outline-none transition-all focus:ring-2 focus:ring-cyan-300/35"
-                    >
-                      {years.map(y => (
-                        <option key={y} value={y}>
-                          {y}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
 
                   <div className="w-full lg:w-auto">
                     <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:items-stretch">
@@ -752,7 +1010,7 @@ export default function Home() {
                         aria-label="Ouvrir les prévisions météo de la semaine"
                       >
                         <div className="border-b border-cyan-100/20 pb-0.5 text-center text-[11px] font-black text-cyan-50">
-                          Météo Montévrain
+                          Météo Thillois
                         </div>
                         <div className="mt-1.5 flex items-center justify-center gap-2">
                           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 shadow-inner ring-1 ring-cyan-100/20">
@@ -767,7 +1025,12 @@ export default function Home() {
                         </div>
                       </button>
 
-                      <div className="home-date-tile relative min-h-[72px] overflow-hidden rounded-[16px] border border-cyan-100/25 bg-gradient-to-br from-[#06313b] via-[#0b5f65] to-[#16847d] px-3 py-1.5 shadow-lg shadow-black/20 ring-1 ring-white/20 sm:min-w-[clamp(215px,18vw,265px)]">
+                      <button
+                        type="button"
+                        onClick={openPeriodModal}
+                        className="home-date-tile relative min-h-[72px] overflow-hidden rounded-[16px] border border-cyan-100/25 bg-gradient-to-br from-[#06313b] via-[#0b5f65] to-[#16847d] px-3 py-1.5 text-left shadow-lg shadow-black/20 ring-1 ring-white/20 transition-all hover:border-amber-100/45 hover:shadow-amber-950/20 sm:min-w-[clamp(245px,20vw,305px)]"
+                        aria-label="Ouvrir le calendrier de sélection"
+                      >
                         <div className="absolute inset-x-0 bottom-0 h-7 bg-cyan-950/20" />
                         <div className="relative flex h-full items-center gap-3">
                           <div className="home-date-calendar relative flex h-[52px] w-[42px] shrink-0 flex-col overflow-hidden rounded-lg bg-amber-50/95 shadow-md ring-1 ring-cyan-100/30">
@@ -788,9 +1051,14 @@ export default function Home() {
                             <div className="truncate text-[12px] font-extrabold text-cyan-50/80 sm:text-[13px]">
                               {dayEvent}
                             </div>
+                            {!(homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today)) && (
+                              <div className="mt-1 truncate rounded-lg bg-cyan-950/25 px-2 py-0.5 text-[10.5px] font-black uppercase tracking-[0.08em] text-amber-100/90 ring-1 ring-cyan-100/10">
+                                {homePeriod.mode === 'day' ? 'Jour sélectionné · ' + selectedPeriodLabel : selectedPeriodDescription + ' · ' + selectedPeriodLabel}
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -800,28 +1068,28 @@ export default function Home() {
             <section className="shrink-0">
               <div className="home-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard
-                  label="CA Réalisé"
+                  label={homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today) ? 'CA réalisé' : homePeriod.mode === 'month' ? 'CA mois' : homePeriod.mode === 'year' ? 'CA année' : homePeriod.mode === 'day' ? 'CA total jour' : 'CA période'}
                   value={fe(kpis.caMois)}
                   description="Performance du mois en cours versus budget"
                   icon={TrendingUp}
                   accentClass="bg-gradient-to-br from-cyan-600 to-teal-800"
                 />
                 <SummaryCard
-                  label="CA du Jour"
+                  label={homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today) ? 'CA veille' : homePeriod.mode === 'year' ? 'CA moy. / mois' : homePeriod.mode === 'day' ? 'CA resto hors VAE' : 'CA moy. / jour'}
                   value={fe(kpis.caJour)}
-                  description="Résultat journalier mesuré aujourd'hui"
+                  description="Résultat de la veille"
                   icon={DollarSign}
                   accentClass="bg-gradient-to-br from-teal-500 to-cyan-800"
                 />
                 <SummaryCard
-                  label="Ticket Moyen"
+                  label={homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today) ? 'TM veille' : homePeriod.mode === 'month' ? 'TM mois' : homePeriod.mode === 'year' ? 'TM année' : homePeriod.mode === 'day' ? 'TM resto jour' : 'TM période'}
                   value={fe(kpis.tmJour)}
-                  description="Valeur moyenne par couvert du jour"
+                  description="Valeur moyenne par couvert de la veille"
                   icon={Activity}
                   accentClass="bg-gradient-to-br from-amber-500 to-teal-700"
                 />
                 <SummaryCard
-                  label="Réalisation Budget"
+                  label={homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today) ? 'Réalisation Budget' : homePeriod.mode === 'month' ? 'Budget mois' : homePeriod.mode === 'year' ? 'Budget année' : homePeriod.mode === 'day' ? 'Budget jour' : 'Budget période'}
                   value={`${Math.min(kpis.budgetCouvert, 999).toFixed(1)} %`}
                   description="Taux d'atteinte du budget mensuel"
                   icon={FileSpreadsheet}
@@ -834,6 +1102,46 @@ export default function Home() {
               </div>
             </section>
 
+            <section className="shrink-0">
+              <div className="home-summary-card group relative min-h-[112px] overflow-hidden rounded-2xl border border-cyan-200/25 bg-gradient-to-br from-[#061f28] via-[#073846] to-[#0b5a62] p-[clamp(0.8rem,1vw,1.15rem)] shadow-sm shadow-slate-950/10 backdrop-blur-sm transition-all duration-500 hover:border-cyan-200/50 hover:shadow-xl hover:shadow-cyan-950/20">
+                <div className="pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full bg-cyan-200/10 blur-2xl" />
+                <div className="relative grid gap-3 lg:grid-cols-[minmax(250px,0.9fr)_minmax(300px,1.1fr)] lg:items-stretch">
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                    <div className="rounded-xl border border-cyan-100/20 bg-cyan-950/25 px-3 py-2 ring-1 ring-white/5">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70">S/C Veille</div>
+                      <div className="mt-1 text-[clamp(1.7rem,2.1vw,2.25rem)] font-black leading-none text-amber-50 drop-shadow-sm">
+                        {payrollCostBubble.yesterday}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-cyan-100/20 bg-cyan-950/25 px-3 py-2 ring-1 ring-white/5">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70">S/C Mois</div>
+                      <div className="mt-1 text-[clamp(1.7rem,2.1vw,2.25rem)] font-black leading-none text-amber-50 drop-shadow-sm">
+                        {payrollCostBubble.month}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-cyan-100/20 bg-white/8 px-3 py-2 ring-1 ring-white/10">
+                    <div className="mb-2 flex items-center justify-between gap-3 border-b border-cyan-100/20 pb-2">
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/75">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-cyan-300/10 text-[10px] text-cyan-50 ring-1 ring-cyan-100/20">S/C</span>
+                        Semaine
+                      </div>
+                      <div className="text-sm font-black text-amber-50">{payrollCostBubble.headline}</div>
+                    </div>
+                    <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
+                      {payrollCostBubble.weekRows.map(item => (
+                        <div key={item.label} className="flex items-center justify-between gap-2 rounded-lg bg-cyan-950/25 px-2.5 py-1.5 ring-1 ring-cyan-100/10">
+                          <span className="truncate text-[11px] font-bold text-cyan-50/75">{item.label}</span>
+                          <span className="shrink-0 text-[12px] font-black text-amber-50">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             <section className="home-chart-section grid flex-1 gap-3 overflow-hidden lg:min-h-0 lg:grid-cols-2 xl:gap-4">
               <div className="home-chart-card flex min-h-[260px] flex-col rounded-2xl border border-cyan-900/10 bg-white/90 p-[clamp(0.9rem,1.2vw,1.35rem)] shadow-sm transition-shadow duration-300 hover:shadow-lg lg:min-h-0">
                 <div className="home-chart-header mb-3 flex items-center justify-between">
@@ -842,7 +1150,7 @@ export default function Home() {
                       <TrendingUp className="h-5 w-5 text-cyan-700" />
                       Évolution du CA
                     </div>
-                    <p className="home-chart-subtitle text-xs text-slate-500">Réalisé vs Budget mensuel</p>
+                    <p className="home-chart-subtitle text-xs text-slate-500">{homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today) ? 'Réalisé vs Budget mensuel' : homePeriod.mode === 'month' ? 'Réalisé vs Budget du mois sélectionné' : homePeriod.mode === 'year' ? 'Réalisé vs Budget annuel' : homePeriod.mode === 'day' ? 'Réalisé vs Budget du jour sélectionné' : 'Réalisé vs Budget de la période sélectionnée'}</p>
                   </div>
                 </div>
                 <div className="min-h-0 flex-1">
@@ -955,6 +1263,129 @@ export default function Home() {
         </div>
       </main>
 
+      {isPeriodModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" onClick={() => setIsPeriodModalOpen(false)}>
+          <div
+            className="w-full max-w-xl overflow-hidden rounded-2xl border border-cyan-100/25 bg-gradient-to-br from-[#052a34] via-[#0a4d58] to-[#0d6b6f] shadow-2xl ring-1 ring-white/20"
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-cyan-100/20 px-4 py-3">
+              <div>
+                <div className="text-sm font-black text-cyan-50">Sélection de période</div>
+                <div className="text-xs font-semibold text-cyan-50/70">{selectedPeriodDescription} · {selectedPeriodLabel}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPeriodModalOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-cyan-50 transition-colors hover:bg-white/20"
+                aria-label="Fermer le calendrier"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="grid gap-4 p-4">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {(['day', 'range', 'month', 'year'] as const).map(mode => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setPeriodMode(mode)}
+                    className={
+                      periodMode === mode
+                        ? 'rounded-xl bg-amber-100 px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-slate-950 shadow ring-1 ring-amber-200'
+                        : 'rounded-xl bg-white/10 px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-cyan-50 ring-1 ring-cyan-100/15 transition-colors hover:bg-white/15'
+                    }
+                  >
+                    {periodModeLabels[mode]}
+                  </button>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-cyan-100/15 bg-white/10 p-4 ring-1 ring-white/10">
+                {periodMode === 'day' && (
+                  <label className="grid gap-2 text-sm font-bold text-cyan-50">
+                    Jour à afficher
+                    <input
+                      type="date"
+                      value={periodDay}
+                      onChange={event => setPeriodDay(event.target.value)}
+                      className="h-10 rounded-xl border border-cyan-100/15 bg-[#062f3a] px-3 text-sm font-extrabold text-cyan-50 outline-none focus:ring-2 focus:ring-amber-100/45"
+                    />
+                  </label>
+                )}
+
+                {periodMode === 'range' && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="grid gap-2 text-sm font-bold text-cyan-50">
+                      Début
+                      <input
+                        type="date"
+                        value={periodStart}
+                        onChange={event => setPeriodStart(event.target.value)}
+                        className="h-10 rounded-xl border border-cyan-100/15 bg-[#062f3a] px-3 text-sm font-extrabold text-cyan-50 outline-none focus:ring-2 focus:ring-amber-100/45"
+                      />
+                    </label>
+                    <label className="grid gap-2 text-sm font-bold text-cyan-50">
+                      Fin
+                      <input
+                        type="date"
+                        value={periodEnd}
+                        onChange={event => setPeriodEnd(event.target.value)}
+                        className="h-10 rounded-xl border border-cyan-100/15 bg-[#062f3a] px-3 text-sm font-extrabold text-cyan-50 outline-none focus:ring-2 focus:ring-amber-100/45"
+                      />
+                    </label>
+                  </div>
+                )}
+
+                {periodMode === 'month' && (
+                  <label className="grid gap-2 text-sm font-bold text-cyan-50">
+                    Mois entier
+                    <input
+                      type="month"
+                      value={periodMonth}
+                      onChange={event => setPeriodMonth(event.target.value)}
+                      className="h-10 rounded-xl border border-cyan-100/15 bg-[#062f3a] px-3 text-sm font-extrabold text-cyan-50 outline-none focus:ring-2 focus:ring-amber-100/45"
+                    />
+                  </label>
+                )}
+
+                {periodMode === 'year' && (
+                  <label className="grid gap-2 text-sm font-bold text-cyan-50">
+                    Année entière
+                    <input
+                      type="number"
+                      min="2024"
+                      max="2035"
+                      value={periodYear}
+                      onChange={event => setPeriodYear(event.target.value)}
+                      className="h-10 rounded-xl border border-cyan-100/15 bg-[#062f3a] px-3 text-sm font-extrabold text-cyan-50 outline-none focus:ring-2 focus:ring-amber-100/45"
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsPeriodModalOpen(false)}
+                  className="rounded-xl bg-white/10 px-4 py-2 text-sm font-black text-cyan-50 ring-1 ring-cyan-100/15 transition-colors hover:bg-white/15"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={applyPeriodSelection}
+                  className="rounded-xl bg-amber-100 px-4 py-2 text-sm font-black text-slate-950 shadow-lg ring-1 ring-amber-200 transition-colors hover:bg-amber-50"
+                >
+                  Appliquer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isWeatherModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" onClick={() => setIsWeatherModalOpen(false)}>
           <div
@@ -964,7 +1395,7 @@ export default function Home() {
             <div className="flex items-center justify-between border-b border-cyan-100/20 px-4 py-3">
               <div>
                 <div className="text-sm font-black text-cyan-50">Prévision semaine</div>
-                <div className="text-xs font-semibold text-cyan-50/70">Montévrain</div>
+                <div className="text-xs font-semibold text-cyan-50/70">Thillois</div>
               </div>
               <button
                 type="button"

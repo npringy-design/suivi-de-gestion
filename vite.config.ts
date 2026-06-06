@@ -13,9 +13,6 @@ import { dashboardHistoricalPayrollImportPatch } from './scripts/dashboardHistor
 import { dashboardHistoricalRealiseImportPatch } from './scripts/dashboardHistoricalRealiseImportPatch';
 import { dashboardPayrollColumnPatch } from './scripts/dashboardPayrollColumnPatch';
 import { dataContextCloudSyncPatch } from './scripts/dataContextCloudSyncPatch';
-import { homeHeaderPeriodPatch } from './scripts/homeHeaderPeriodPatch';
-import { homePayrollBubblePatch } from './scripts/homePayrollBubblePatch';
-import { homeVisualPolishPatch } from './scripts/homeVisualPolishPatch';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
@@ -24,8 +21,7 @@ export default defineConfig(({mode}) => {
     dashboardPayrollColumnPatch(), caisseImportRecoveryPatch(),
     dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(),
     dashboardHistoricalRealiseImportPatch(), dashboardHistoricalCostMatterImportPatch(), dashboardHistoricalCostMatterSafePatch(),
-    dashboardHistoricalPayrollImportPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(),
-    homePayrollBubblePatch(), homeVisualPolishPatch(), accountingSettingsRoutePatch(),
+    dashboardHistoricalPayrollImportPatch(), dataContextCloudSyncPatch(), accountingSettingsRoutePatch(),
     react(), tailwindcss()
   ];
   return {
