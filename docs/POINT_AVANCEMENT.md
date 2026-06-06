@@ -43,6 +43,13 @@ Ordre recommande maintenant :
 
 Important : l'application est encore en construction. Une casse temporaire peut etre acceptee si elle sert une consolidation structurante, mais chaque etape doit rester claire, reversible et documentee.
 
+Avancement au 06/06/2026 :
+
+- le codemod `scripts/dashboardRefactorStaticCodemod.ts` a ete execute localement ;
+- `src/Dashboard.tsx` est maintenant branche sur `src/features/dashboard/dashboardTypes.ts`, `dashboardColumns.ts` et `dashboardStaticConfig.ts` ;
+- le typage TypeScript complet passe ;
+- prochaine etape : brancher les helpers/formatters deja extraits sans modifier les calculs metier.
+
 ## Priorite technique secondaire - consolidation patches Vite
 
 Statut au 02/06/2026 : audit initial effectue, mais integration des petits patches mise derriere le decoupage de `Dashboard.tsx`.

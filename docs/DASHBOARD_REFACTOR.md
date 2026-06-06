@@ -175,7 +175,7 @@ Role :
 
 Build Vercel : OK sur le commit `ac22bd2`.
 
-Important : le codemod n'a pas encore ete execute dans le depot distant. Il evite une modification manuelle risquee des 4 600 lignes. La prochaine etape doit etre d'executer la commande localement, verifier le diff, puis pousser le resultat.
+Important : le codemod a ete execute localement le 06/06/2026. Il evite une modification manuelle risquee des 4 600 lignes. La prochaine etape est de verifier/pousser ce branchement, puis de brancher les helpers et formatters extraits.
 
 ### 02/06/2026 - Verification complete du refactor Dashboard
 
@@ -195,6 +195,34 @@ npm run test:dashboard-model && npm run lint:ts && npm run build
 Build Vercel : OK sur le commit `ccf2431`.
 
 Important : apres execution du codemod, cette commande doit etre lancee avant de pousser le branchement final de `Dashboard.tsx`.
+
+### 06/06/2026 - Branchement statique applique localement
+
+Action effectuee :
+
+```txt
+npm run refactor:dashboard-static
+```
+
+Resultat :
+
+- `Dashboard.tsx` est branche sur les modules extraits :
+  - `dashboardTypes.ts` ;
+  - `dashboardColumns.ts` ;
+  - `dashboardStaticConfig.ts`.
+- le bloc inline des types, colonnes et constantes statiques a ete retire de `Dashboard.tsx` ;
+- `Dashboard.tsx` passe d'environ 4 273 lignes a environ 4 080 lignes ;
+- `npm run refactor:dashboard-static:check` confirme que le branchement est applique.
+
+Verification locale effectuee :
+
+```txt
+npm run lint:ts
+```
+
+Statut : typage TypeScript OK.
+
+Limite locale : le build Vite et Vitest ne demarrent pas dans le sandbox Windows courant a cause d'un refus d'acces avant lecture de `vite.config.ts`. Cette erreur locale n'est pas une erreur TypeScript du projet. A verifier sur GitHub/Vercel apres push.
 
 ## Strategie de decoupage
 
@@ -242,7 +270,7 @@ Contenu a sortir :
 
 Risque : faible.
 
-Etat : modules crees, branchement dans `Dashboard.tsx` restant a faire apres le branchement statique.
+Etat : modules crees, branchement statique applique dans `Dashboard.tsx`. Le branchement des helpers/formatters reste a faire dans une etape separee.
 
 ### Etape 3 - extraire les calculs metier
 
@@ -335,7 +363,7 @@ Mais meme avec cette tolerance, chaque etape doit rester identifiable et reversi
 
 ## Premiere action technique
 
-La premiere vraie action technique doit etre l'extraction des types et de la constante colonnes.
+La premiere vraie action technique etait l'extraction des types et de la constante colonnes. Elle est maintenant appliquee localement.
 
 Pourquoi :
 
@@ -344,10 +372,10 @@ Pourquoi :
 - il prepare les autres extractions ;
 - il ne devrait pas changer le comportement metier.
 
-Avant de le faire, il faut recuperer le fichier complet en environnement local ou par un outil capable d'appliquer un vrai diff. Remplacer manuellement tout `Dashboard.tsx` via l'API GitHub est possible mais trop risque sans diff local.
+Cette etape a ete faite avec le codemod local, pas par remplacement manuel complet de `Dashboard.tsx`.
 
 ## Decision actuelle
 
-Le chantier prioritaire devient : **decoupage de `Dashboard.tsx`**.
+Le chantier prioritaire reste : **decoupage de `Dashboard.tsx`**.
 
-L'audit des patches Vite reste documente, mais l'integration du petit patch `dashboardVarianceSoftColorsPatch` n'est plus la meilleure prochaine etape. La prochaine etape pertinente est de sortir les blocs structurants de `Dashboard.tsx`.
+L'audit des patches Vite reste documente, mais l'integration du petit patch `dashboardVarianceSoftColorsPatch` n'est plus la meilleure prochaine etape. La prochaine etape pertinente est de brancher les helpers/formatters deja extraits, puis de sortir les calculs metier de `Dashboard.tsx`.

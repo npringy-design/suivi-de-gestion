@@ -5,225 +5,27 @@ import { averagePayrollRate, buildPayrollImportFromText } from '@/personnelSalar
 import { parseHourInputToDecimal } from '@/utils';
 
 import { ChevronLeft, Download, Upload, FileDown, Trash2, X, Clipboard } from 'lucide-react';
-// ── Constantes Dashboard inline (dashboardConstants.ts intégré) ─────────────
-type DashboardColumn = [string, string, string, string];
-type VisibleDashboardColumn = DashboardColumn & { originalIndex: number };
-type DashboardRow = {
-  type: 'day' | 'total' | 'month_total' | 'fg_box4_total';
-  label: string;
-  isWeekend?: boolean;
-  isSchoolHoliday?: boolean;
-  isPublicHoliday?: boolean;
-  isCustomEvent?: boolean;
-  dateObj?: Date;
-  dayIndex?: number;
-  weekIndex?: number;
-};
-
-type InvoiceImportPreview = {
-  id: string;
-  fileName: string;
-  supplier: string;
-  amountHt: string;
-  invoiceDate: string;
-  targetCol: number;
-  status: string;
-  confidence: 'verified' | 'review';
-};
-
-type ParsedCaisseImport = {
-  pdfDay: number | null;
-  pdfMonth: number | null;
-  pdfYear: number | null;
-  values: Record<number, number>;
-  theoriqueValues: {
-    total_ca: number;
-    cb: number;
-    amex: number;
-    tr_papier: number;
-    tr_carte: number;
-    ancv: number;
-    especes: number;
-    click_collect: number;
-    uber: number;
-    deliveroo: number;
-    sunday: number;
-  };
-  realValues: {
-    cb: number;
-    pourboires: number;
-    especes: number;
-    pieces: number;
-    amexAncvCarte: number;
-    trCarte: number;
-    ancvPapier: number;
-    trPapier: number;
-    sunday: number;
-    uber: number;
-    deliveroo: number;
-    clickCollect: number;
-  };
-};
-
-type CaisseImportPreview = {
-  id: string;
-  fileName: string;
-  businessDate: string;
-  confidence: 'verified' | 'review';
-  status: string;
-  parsed: ParsedCaisseImport;
-};
-
-const C: DashboardColumn[] = [
-  ['CA', 'Midi Saisie', 'CA HT MIDI', 'bg-[#ffe699]'],
-  ['CA', 'Soir Saisie', 'CA HT SOIR', 'bg-[#ffe699]'],
-  ['CA', 'Limonade Saisie', 'CA HT LIMONADE', 'bg-[#ffe699]'],
-  ['CA', 'TOTAL JOUR', 'CAHT JOUR', 'bg-[#ffe699]'],
-  ['CA', 'CUMUL DEPUIS LE 01', 'CAHTCUMUL', 'bg-[#ffe699]'],
-  ['CA', 'VAR % VS N-1', '', 'bg-hatched'],
-  ['RESTAURANTS', 'MIDI\nPrevision Saisie', 'NB CVTS', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'MIDI\nPrevision Saisie', 'CVTS MOY HT', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'SOIR\nPrevision Saisie', 'NB CVTS', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'SOIR\nPrevision Saisie', 'CVTS MOY HT', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'JOUR\nPrevision Saisie', 'NB CVTS', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'JOUR\nPrevision Saisie', 'CVTS MOY HT', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'JOUR\nPrevision Saisie', 'CVTS CUMUL', 'bg-[#fff2cc]'],
-  ['RESTAURANTS', 'VAR % VS N-1', '', 'bg-hatched'],
-  ['LIMONADE', 'JOUR\nPrevision Saisie', 'NB CVTS', 'bg-[#fff2cc]'],
-  ['LIMONADE', 'JOUR\nPrevision Saisie', 'CVTS MOY HT', 'bg-[#fff2cc]'],
-  ['LIMONADE', 'VAR % VS N-1', '', 'bg-hatched'],
-  ['REALISE', 'CA HT', 'VAE', 'bg-[#b4c6e7]'],
-  ['REALISE', 'CA HT', 'MIDI', 'bg-[#b4c6e7]'],
-  ['REALISE', 'CA HT', 'SOIR', 'bg-[#b4c6e7]'],
-  ['REALISE', 'CA HT', 'LIMONADE', 'bg-[#b4c6e7]'],
-  ['REALISE', 'CA HT', 'TOTAL JOUR', 'bg-[#b4c6e7]'],
-  ['REALISE', 'CA HT', 'ECART\nBUDGET', 'bg-white'],
-  ['REALISE', 'CA HT', 'CUMUL\nDEPUIS LE 01', 'bg-[#b4c6e7]'],
-  ['REALISE', 'CA HT', 'VAR %\nVS N-1', 'bg-hatched'],
-  ['REALISE', 'COUVERTS\nRESTAURANT', 'MIDI\nNB CVTS', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS\nRESTAURANT', 'MIDI\nMOY', 'bg-white'],
-  ['REALISE', 'COUVERTS\nRESTAURANT', 'SOIR\nNB CVTS', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS\nRESTAURANT', 'SOIR\nMOY', 'bg-white'],
-  ['REALISE', 'COUVERTS\nRESTAURANT', 'TOTAL JOUR', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS\nRESTAURANT', 'MOY JOUR', 'bg-white'],
-  ['REALISE', 'COUVERTS\nRESTAURANT', 'ECART TM\nBUDGET', 'bg-[#fce4d6]'],
-  ['REALISE', 'COUVERTS\nRESTAURANT', 'CUMUL', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS\nRESTAURANT', 'ECART\nBUDGET', 'bg-[#fce4d6]'],
-  ['REALISE', 'COUVERTS\nLIMONADE', 'NB CVTS', 'bg-[#b4c6e7]'],
-  ['REALISE', 'COUVERTS\nLIMONADE', 'MOY', 'bg-white'],
-  ['REALISE', 'COUVERTS\nLIMONADE', 'CUMUL', 'bg-[#b4c6e7]'],
-  ['EVENEMENTS RESTAURANTS', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS\nRESTAURANTS', 'bg-[#e9eef7]'],
-  ['EVENEMENTS NATIONAL', 'EVENEMENTS NATIONAL', 'EVENEMENTS\nNATIONAL', 'bg-[#e2efda]'],
-  ['DEMARQUES', 'PERSONNEL', '', 'bg-[#e2efda]'],
-  ['DEMARQUES', 'Ratio\nPerso', '', 'bg-[#fce4d6]'],
-  ['DEMARQUES', 'OPERATIONEL', '', 'bg-[#e2efda]'],
-  ['DEMARQUES', 'Ratio Cuisine', '', 'bg-[#fce4d6]'],
-  ['DEMARQUES', 'TOTAL', '', 'bg-[#e2efda]'],
-  ['DEMARQUES', 'EXPLICATION DEMARQUE', '', 'bg-white'],
-  ['COUT MATIERE', 'ACHATS LIQUIDE HT', 'C10', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS LIQUIDE HT', 'RICHARD VINS', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS LIQUIDE HT', 'CAFE RICHARD', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS LIQUIDE HT', 'STORIA', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'BRAKE', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'POMONA F&L', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'SOCOPA', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'EPISAVEUR', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'MAMMAFIORE', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'COMPAGNIE DES DESSERTS', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'DISTRIPATE', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'METRO /\nDEPANNAGE', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHATS SOLIDES HT', 'MARTEL', 'bg-[#e2efda]'],
-  ['COUT MATIERE', 'ACHAT HT', 'TOTAL HT', 'bg-[#a9d08e]'],
-  ['COUT MATIERE', 'ACHAT HT', 'CUMUL HT', 'bg-[#a9d08e]'],
-  ['COUT MATIERE', 'RATIO', 'SANS LE\nSTOCK', 'bg-[#e2efda]'],
-  ['FRAIS DE PERSONNEL PROJECTION', '', 'TOTAL HEURES\nTRAVAILLEES', 'bg-white'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'CADRE\nCUISINE\n38,54 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'CADRE\nSALLE\n38,54 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'MAITRISE\nCUISINE\n20,85 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'MAITRISE\nSALLE\n20,85 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV I ET II\nCUISINE\n16,04 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV I ET II\nSALLE\n16,04 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV III\nCUISINE\n18,35 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'NIV III\nSALLE\n18,35 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'APPRENTI\nCUISINE\n8,39 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'APPRENTI\nSALLE\n8,39 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL PROJECTION', '', 'COUT GLOBAL', 'bg-white'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'PRODUCTIVITE\nCIBLE\n50,00', 'PRODUCTIVITE\nREELLE', 'bg-white'],
-  ['FRAIS DE PERSONNEL PROJECTION', 'BUDGET FRAIS\nPERSONNEL\n35,00%', 'FRAIS PERSONNEL\n%', 'bg-white'],
-  ['FRAIS DE PERSONNEL PROJECTION', '', 'RATIO HEBDO %', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'TOTAL HEURES\nTRAVAILLEES', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'CADRE\nCUISINE\n38,54 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'CADRE\nSALLE\n38,54 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'MAITRISE\nCUISINE\n20,85 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'MAITRISE\nSALLE\n20,85 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV I ET II\nCUISINE\n16,04 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV I ET II\nSALLE\n16,04 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV III\nCUISINE\n18,35 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV III\nSALLE\n18,35 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'APPRENT\nI CUISINE\n8,39 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'APPRENT\nI SALLE\n8,39 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'COUT GLOBAL', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', 'PRODUCTIVITE\nCIBLE\n50,00', 'PRODUCTIVITE\nREELLE', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', 'BUDGET FRAIS\nPERSONNEL\n35,00%', 'FRAIS PERSONNEL\n%', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'RATIO HEBDO %', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'Ecart au Budget\nNB d\'Heure', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'Ecart au budget\nS/C %', 'bg-white'],
-  ['FRAIS DE PERSONNEL REALISE', '', 'VAR %\nVS N-1', 'bg-hatched'],
-  ['FRAIS GENERAUX', 'ENTRETIEN ET REPARATION', 'DATE', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ENTRETIEN ET REPARATION', 'FOURNISSEUR', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ENTRETIEN ET REPARATION', 'MOTIF ACHAT', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ENTRETIEN ET REPARATION', 'MONTANT HT', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ECOLAB / DIVERSEY', 'DATE', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ECOLAB / DIVERSEY', 'FOURNISSEURS', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ECOLAB / DIVERSEY', 'MOTIF ACHAT', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'ECOLAB / DIVERSEY', 'MONTANT HT', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)', 'DATE', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)', 'FOURNISSEURS', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)', 'MOTIF ACHAT', 'bg-[#e9eef7]'],
-  ['FRAIS GENERAUX', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)', 'MONTANT HT', 'bg-[#e9eef7]'],
-  ['CONTRAT MENSUALISES', '', 'Nom', 'bg-[#e9eef7]'],
-  ['CONTRAT MENSUALISES', '', 'Montant', 'bg-[#e9eef7]'],
-  ['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Indicateur', 'bg-[#fff2cc]'],
-  ['RESULTATS MENSUEL HT', 'CA / COUVERTS', 'Valeur', 'bg-white']
-];
-const days: string[] = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-const monthNames: string[] = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-const tabs: { id: string; label: string }[] = [
-  { id: 'PREVISIONS', label: 'Prévisions' },
-  { id: 'REALISE', label: 'Réalisé' },
-  { id: 'COUT_MATIERE', label: 'Coût matière' },
-  { id: 'PERSONNEL', label: 'Personnel' },
-  { id: 'FRAIS_GENERAUX', label: 'Frais généraux' },
-  { id: 'RESULTATS', label: 'Résultats' },
-];
-const viewModes = [
-  { id: 'SAISIE', label: 'Saisie' },
-  { id: 'ANALYSE', label: 'Analyse' },
-  { id: 'COMPLET', label: 'Complet' },
-] as const;
-
-type TableViewMode = (typeof viewModes)[number]['id'];
-const editableCols: number[] = [
-  6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34, 37, 38, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90
-];
-const contextColumns = new Set([
-  0, 1, 2, 3, 4, 10, 11, 12,
-  21, 22, 23, 29, 30, 31, 32, 33, 35, 36,
-  49, 58, 59, 60,
-  65, 72, 73, 74, 76, 83, 84, 85, 87, 88,
-]);
-const dailyPersonnelRows = [
-  ['Cadre', 77, 78],
-  ['Agent de maîtrise', 79, 80],
-  ['NIV I et II', 81, 82],
-  ['NIV III', 83, 84],
-  ['Apprenti', 85, 86],
-] as const;
-const dailyPersonnelTotals = [
-  { label: 'Total heures', col: 76 },
-  { label: 'Masse salariale', col: 87 },
-  { label: 'Masse / CA', col: 89 },
-];
+// ── Modèle Dashboard extrait (types, colonnes, configuration statique) ────────
+import type {
+  CaisseImportPreview,
+  DashboardColumn,
+  DashboardRow,
+  InvoiceImportPreview,
+  ParsedCaisseImport,
+  VisibleDashboardColumn,
+} from '@/features/dashboard/dashboardTypes';
+import { dashboardColumns as C } from '@/features/dashboard/dashboardColumns';
+import {
+  contextColumns,
+  dailyPersonnelRows,
+  dailyPersonnelTotals,
+  days,
+  editableCols,
+  monthNames,
+  tabs,
+  viewModes,
+} from '@/features/dashboard/dashboardStaticConfig';
+import type { TableViewMode } from '@/features/dashboard/dashboardStaticConfig';
 // ─────────────────────────────────────────────────────────────────────────────
 import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';

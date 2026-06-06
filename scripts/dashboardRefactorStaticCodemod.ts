@@ -1,5 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 // Codemod volontairement idempotent : il peut être relancé sans modifier Dashboard.tsx une seconde fois.
 // Le workflow GitHub l'utilise pour appliquer le branchement statique sans intervention manuelle.
