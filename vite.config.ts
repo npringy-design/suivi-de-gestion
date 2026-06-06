@@ -7,7 +7,6 @@ import { accountingSettingsRoutePatch } from './scripts/accountingSettingsRouteP
 import { caisseImportRecoveryPatch } from './scripts/caisseImportRecoveryPatch';
 import { dashboardAnalysisModePatch } from './scripts/dashboardAnalysisModePatch';
 import { dashboardCaisseRecapPeriodePatch } from './scripts/dashboardCaisseRecapPeriodePatch';
-import { dashboardCostMatterAmountFormatPatch } from './scripts/dashboardCostMatterAmountFormatPatch';
 import { dashboardHeaderVisualPatch } from './scripts/dashboardHeaderVisualPatch';
 import { dashboardHistoricalBudgetExcelPatch } from './scripts/dashboardHistoricalBudgetExcelPatch';
 import { dashboardHistoricalBudgetFocusedPatch } from './scripts/dashboardHistoricalBudgetFocusedPatch';
@@ -18,8 +17,6 @@ import { dashboardHistoricalRealiseImportPatch } from './scripts/dashboardHistor
 import { dashboardLimonadeSplitPatch } from './scripts/dashboardLimonadeSplitPatch';
 import { dashboardPayrollColumnPatch } from './scripts/dashboardPayrollColumnPatch';
 import { dashboardRealiseCleanLayoutPatch } from './scripts/dashboardRealiseCleanLayoutPatch';
-import { dashboardStrictSalaryRatesPatch } from './scripts/dashboardStrictSalaryRatesPatch';
-import { dashboardThilloisNoLimonadePatch } from './scripts/dashboardThilloisNoLimonadePatch';
 import { dataContextCloudSyncPatch } from './scripts/dataContextCloudSyncPatch';
 import { homeHeaderPeriodPatch } from './scripts/homeHeaderPeriodPatch';
 import { homePayrollBubblePatch } from './scripts/homePayrollBubblePatch';
@@ -31,12 +28,10 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   const defineValues = { ['process.env.' + 'GEMINI_API_KEY']: JSON.stringify(env.GEMINI_API_KEY) };
   const plugins = [
-    payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardStrictSalaryRatesPatch(),
-    dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(),
-    dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardThilloisNoLimonadePatch(),
-    dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(),
+    payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(),
+    dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(),
     dashboardHistoricalRealiseImportPatch(), dashboardHistoricalCostMatterImportPatch(), dashboardHistoricalCostMatterSafePatch(),
-    dashboardCostMatterAmountFormatPatch(), dashboardHistoricalPayrollImportPatch(), dashboardAnalysisModePatch(),
+    dashboardHistoricalPayrollImportPatch(), dashboardAnalysisModePatch(),
     dashboardHeaderVisualPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(),
     homePayrollBubblePatch(), homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(), accountingSettingsRoutePatch(),
     react(), tailwindcss()

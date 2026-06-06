@@ -459,6 +459,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     // First pass: Calculate row totals (TOTAL JOUR) and CUMUL
     rows.forEach((row, rIdx) => {
       if (row.type === 'day') {
+        // Hippo Thillois : pas d'activite limonade. Les valeurs restent ignorees meme si une ancienne donnee existe.
+        [2, 14, 15, 16, 20, 34, 35, 36, 110, 111, 112, 113, 114, 115].forEach(col => {
+          data[`${rIdx}-${col}`] = '';
+        });
+
         // Read inputs
         const cvtsMidi = parseFloat(data[`${rIdx}-6`] || '0');
         const moyMidi = parseFloat(data[`${rIdx}-7`] || '0');
@@ -574,16 +579,16 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         };
 
         const projRates = [
-          getAvgRate('cadre', 'cuisine') || 38.54,
-          getAvgRate('cadre', 'salle') || 38.54,
-          getAvgRate('maitrise', 'cuisine') || 20.85,
-          getAvgRate('maitrise', 'salle') || 20.85,
-          getAvgRate('niv12', 'cuisine') || 16.04,
-          getAvgRate('niv12', 'salle') || 16.04,
-          getAvgRate('niv3', 'cuisine') || 18.35,
-          getAvgRate('niv3', 'salle') || 18.35,
-          getAvgRate('apprenti', 'cuisine') || 8.39,
-          getAvgRate('apprenti', 'salle') || 8.39
+          getAvgRate('cadre', 'cuisine'),
+          getAvgRate('cadre', 'salle'),
+          getAvgRate('maitrise', 'cuisine'),
+          getAvgRate('maitrise', 'salle'),
+          getAvgRate('niv12', 'cuisine'),
+          getAvgRate('niv12', 'salle'),
+          getAvgRate('niv3', 'cuisine'),
+          getAvgRate('niv3', 'salle'),
+          getAvgRate('apprenti', 'cuisine'),
+          getAvgRate('apprenti', 'salle')
         ];
 
         for (let i = 0; i < 10; i++) {
@@ -931,7 +936,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const colName = c[2] || c[1];
 
     // Check if it's a percentage column
-    const isPercentage = colName.includes('RATIO') || colName.includes('%') || subGroupName.includes('RATIO');
+    const isPercentage = groupName !== 'COUT MATIERE' && (colName.includes('RATIO') || colName.includes('%') || subGroupName.includes('RATIO'));
 
     // Check if it's a currency column
     const isCurrency = !isPercentage && (colName.includes('CA') || colName.includes('HT') || colName.includes('PANIER') || colName.includes('MONTANT') || colName.includes('€') || colName.includes('COUT') ||
@@ -1058,7 +1063,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const parseCaisseNumber = (value: string) => Number(value.replace(/\s/g, '').replace(',', '.')) || 0;
-  const formatImportedNumber = (value: number, decimals = 2) => value > 0 ? value.toFixed(decimals) : '';
+  const formatImportedNumber = (value: number, decimals = 2) => value !== 0 ? value.toFixed(decimals) : '';
   const formatImportedCurrencyLabel = (value: number, decimals = 2) => formatImportedNumber(value, decimals) || '-';
   const formatImportedIntegerLabel = (value: number) => formatImportedNumber(value, 0) || '-';
   const formatImportBusinessDate = (day: number | null, monthValue: number | null, yearValue: number | null) => {

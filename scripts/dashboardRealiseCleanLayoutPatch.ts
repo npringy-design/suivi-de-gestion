@@ -46,7 +46,12 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
     next = replacePatternRequired(
       next,
       / {4}const limonadeMoveSet[\s\S]*?\n {2}}, \[activeTab, tableViewMode, dynamicColumns\]\);/,
-      `    const findColumn = (colIndex: number) => baseVisibleColumns.find(col => col.originalIndex === colIndex);
+      `    const thilloisNoLimonadeColumns = new Set([2, 14, 15, 16, 20, 34, 35, 36, 110, 111, 112, 113, 114, 115]);
+    const visibleColumnsWithoutLimonade = baseVisibleColumns.filter(col => {
+      const text = [col[0], col[1], col[2]].join(' ').toUpperCase();
+      return !thilloisNoLimonadeColumns.has(col.originalIndex) && !text.includes('LIMONADE');
+    });
+    const findColumn = (colIndex: number) => visibleColumnsWithoutLimonade.find(col => col.originalIndex === colIndex);
     const buildColumn = (colIndex: number, group: string, subGroup: string, label: string, bg?: string) => {
       const source = findColumn(colIndex);
       if (!source) return null;
@@ -83,7 +88,7 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
       ].filter(Boolean) as VisibleDashboardColumn[];
     }
 
-    if (activeTab !== 'REALISE' || tableViewMode !== 'COMPLET') return baseVisibleColumns;
+    if (activeTab !== 'REALISE' || tableViewMode !== 'COMPLET') return visibleColumnsWithoutLimonade;
 
     return [
       buildColumn(17, 'CA HT', '', 'VAE'),
@@ -192,7 +197,7 @@ export const dashboardRealiseCleanLayoutPatch = (): Plugin => ({
     next = replaceRequired(
       next,
       "{renderDailyServiceRow('Limonade midi', 110, 113, 114)}\n                  {renderDailyServiceRow('Limonade soir', 111, 115, 116)}",
-      "{renderDailyServiceRow('Limonade midi', 110, 112, 113)}\n                  {renderDailyServiceRow('Limonade soir', 111, 114, 115)}",
+      "",
       'colonnes saisie limonade corrigees'
     );
 
