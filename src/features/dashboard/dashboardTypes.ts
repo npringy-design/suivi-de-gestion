@@ -84,5 +84,16 @@ export type HistoricalBudgetPreview = {
   couvertsSoir: number;
   tmSoir: number;
   couvertsTotal: number;
+  realiseVae: number;
+  realiseMidi: number;
+  realiseSoir: number;
+  realiseLimo: number;
+  realiseCouvertsMidi: number;
+  realiseCouvertsSoir: number;
+  realiseCouvertsLimo: number;
+  costMatterValues: Record<number, number>;
+  costMatterTotal: number;
+  payrollValues: Record<number, string>;
+  payrollTotalHours: number;
   status: string;
 };
