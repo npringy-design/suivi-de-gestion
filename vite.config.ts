@@ -5,14 +5,12 @@ import {defineConfig, loadEnv} from 'vite';
 
 import { accountingSettingsRoutePatch } from './scripts/accountingSettingsRoutePatch';
 import { caisseImportRecoveryPatch } from './scripts/caisseImportRecoveryPatch';
-import { dashboardHeaderVisualPatch } from './scripts/dashboardHeaderVisualPatch';
 import { dashboardHistoricalBudgetExcelPatch } from './scripts/dashboardHistoricalBudgetExcelPatch';
 import { dashboardHistoricalBudgetFocusedPatch } from './scripts/dashboardHistoricalBudgetFocusedPatch';
 import { dashboardHistoricalCostMatterImportPatch } from './scripts/dashboardHistoricalCostMatterImportPatch';
 import { dashboardHistoricalCostMatterSafePatch } from './scripts/dashboardHistoricalCostMatterSafePatch';
 import { dashboardHistoricalPayrollImportPatch } from './scripts/dashboardHistoricalPayrollImportPatch';
 import { dashboardHistoricalRealiseImportPatch } from './scripts/dashboardHistoricalRealiseImportPatch';
-import { dashboardLimonadeSplitPatch } from './scripts/dashboardLimonadeSplitPatch';
 import { dashboardPayrollColumnPatch } from './scripts/dashboardPayrollColumnPatch';
 import { dataContextCloudSyncPatch } from './scripts/dataContextCloudSyncPatch';
 import { homeHeaderPeriodPatch } from './scripts/homeHeaderPeriodPatch';
@@ -24,9 +22,9 @@ export default defineConfig(({mode}) => {
   const defineValues = { ['process.env.' + 'GEMINI_API_KEY']: JSON.stringify(env.GEMINI_API_KEY) };
   const plugins = [
     dashboardPayrollColumnPatch(), caisseImportRecoveryPatch(),
-    dashboardLimonadeSplitPatch(), dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(),
+    dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(),
     dashboardHistoricalRealiseImportPatch(), dashboardHistoricalCostMatterImportPatch(), dashboardHistoricalCostMatterSafePatch(),
-    dashboardHistoricalPayrollImportPatch(), dashboardHeaderVisualPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(),
+    dashboardHistoricalPayrollImportPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(),
     homePayrollBubblePatch(), homeVisualPolishPatch(), accountingSettingsRoutePatch(),
     react(), tailwindcss()
   ];

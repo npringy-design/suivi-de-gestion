@@ -191,6 +191,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [salaryImportStatus, setSalaryImportStatus] = useState('');
   const [dailyRecapStatus, setDailyRecapStatus] = useState('');
   const recapPreviewRef = useRef<HTMLDivElement>(null);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   const [isDailyRecapModalOpen, setIsDailyRecapModalOpen] = useState(false);
   const [dailyRecapManagers, setDailyRecapManagers] = useState({ midi: '', soir: '' });
   const [dailyRecapServiceComments, setDailyRecapServiceComments] = useState({ midi: '', soir: '' });
@@ -277,6 +278,21 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!isDatePickerOpen) return;
+    const handleOutsidePointer = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (target && datePickerRef.current?.contains(target)) return;
+      setIsDatePickerOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutsidePointer);
+    document.addEventListener('touchstart', handleOutsidePointer);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsidePointer);
+      document.removeEventListener('touchstart', handleOutsidePointer);
+    };
+  }, [isDatePickerOpen]);
 
   const cellData = globalData[month]?.dashboard || {};
   const [focusedCell, setFocusedCell] = useState<string | null>(null);
@@ -520,8 +536,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const realiseVae  = parseFloat(data[`${rIdx}-17`] || '0');
         const realiseMidi = parseFloat(data[`${rIdx}-18`] || '0');
         const realiseSoir = parseFloat(data[`${rIdx}-19`] || '0');
-        const realiseLimo = parseFloat(data[`${rIdx}-20`] || '0');
-        const realiseTotalJour = realiseVae + realiseMidi + realiseSoir + realiseLimo;
+        const realiseLimoMidiDetail = parseFloat(data[`${rIdx}-110`] || '0');
+        const realiseLimoSoirDetail = parseFloat(data[`${rIdx}-111`] || '0');
+        const realiseLimoDetailTotal = realiseLimoMidiDetail + realiseLimoSoirDetail;
+        const realiseLimo = realiseLimoDetailTotal > 0 ? realiseLimoDetailTotal : parseFloat(data[`${rIdx}-20`] || '0');
+        if (realiseLimoDetailTotal > 0) data[`${rIdx}-20`] = realiseLimoDetailTotal.toFixed(2);
+        const realiseRestaurantTotal = realiseMidi + realiseSoir;
+        if (realiseRestaurantTotal > 0 || data[`${rIdx}-18`] || data[`${rIdx}-19`]) data[`${rIdx}-116`] = realiseRestaurantTotal.toFixed(2);
+        const realiseTotalJour = realiseVae + realiseRestaurantTotal + realiseLimo;
         if (realiseTotalJour > 0 || data[`${rIdx}-17`] || data[`${rIdx}-18`] || data[`${rIdx}-19`] || data[`${rIdx}-20`]) {
           data[`${rIdx}-21`] = realiseTotalJour.toFixed(2);
           const realiseEcartBudget = realiseTotalJour - totalJour;
@@ -552,12 +574,29 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           const budgetCvtsJour = parseFloat(data[`${rIdx}-10`] || '0');
           if (budgetCvtsJour > 0) data[`${rIdx}-33`] = (totalCvtsJour - budgetCvtsJour).toFixed(0);
         }
-        // COUVERTS LIMONADE — 32=NB,33=MOY,34=CUMUL
-        const nbCvtsLimo = parseFloat(data[`${rIdx}-34`] || '0');
+        // COUVERTS LIMONADE — detail midi/soir + total historique
+        const nbCvtsLimoMidiDetail = parseFloat(data[`${rIdx}-112`] || '0');
+        const nbCvtsLimoSoirDetail = parseFloat(data[`${rIdx}-114`] || '0');
+        const nbCvtsLimoDetailTotal = nbCvtsLimoMidiDetail + nbCvtsLimoSoirDetail;
+        const nbCvtsLimo = nbCvtsLimoDetailTotal > 0 ? nbCvtsLimoDetailTotal : parseFloat(data[`${rIdx}-34`] || '0');
+        if (nbCvtsLimoDetailTotal > 0) data[`${rIdx}-34`] = nbCvtsLimoDetailTotal.toFixed(0);
+        if (nbCvtsLimoMidiDetail > 0 && realiseLimoMidiDetail > 0) data[`${rIdx}-113`] = (realiseLimoMidiDetail / nbCvtsLimoMidiDetail).toFixed(2);
+        if (nbCvtsLimoSoirDetail > 0 && realiseLimoSoirDetail > 0) data[`${rIdx}-115`] = (realiseLimoSoirDetail / nbCvtsLimoSoirDetail).toFixed(2);
         if (nbCvtsLimo > 0 && realiseLimo > 0) data[`${rIdx}-35`] = (realiseLimo / nbCvtsLimo).toFixed(2);
         if (nbCvtsLimo > 0) {
           cumulCvtsLimo = (cumulCvtsLimo || 0) + nbCvtsLimo;
           data[`${rIdx}-36`] = cumulCvtsLimo.toFixed(0);
+        }
+        const totalCvtsJourComplet = totalCvtsJour + nbCvtsLimo;
+        if (totalCvtsJourComplet > 0) {
+          data[`${rIdx}-120`] = totalCvtsJourComplet.toFixed(0);
+          data[`${rIdx}-121`] = (cumulCvtsRealise + cumulCvtsLimo).toFixed(0);
+          const budgetCvtsJourComplet = parseFloat(data[`${rIdx}-10`] || '0') + parseFloat(data[`${rIdx}-14`] || '0');
+          if (budgetCvtsJourComplet > 0) {
+            const ecartCvtsComplet = totalCvtsJourComplet - budgetCvtsJourComplet;
+            data[`${rIdx}-33`] = ecartCvtsComplet.toFixed(0);
+            data[`${rIdx}-122`] = ((ecartCvtsComplet / budgetCvtsJourComplet) * 100).toFixed(2);
+          }
         }
 
         // COUT MATIERE calculations
@@ -969,7 +1008,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const visibleColumns = useMemo(() => {
-    return dynamicColumns.map((c, index) => Object.assign([...c] as DashboardColumn, { originalIndex: index })).filter(c => {
+    const baseVisibleColumns = dynamicColumns.map((c, index) => Object.assign([...c] as DashboardColumn, { originalIndex: index })).filter(c => {
       const group = c[0];
       const colIndex = c.originalIndex;
 
@@ -1008,6 +1047,84 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       return !isEditableColumn || contextColumns.has(colIndex);
     });
+
+    const thilloisNoLimonadeColumns = new Set([2, 14, 15, 16, 20, 34, 35, 36, 110, 111, 112, 113, 114, 115]);
+    const visibleColumnsWithoutLimonade = baseVisibleColumns.filter(col => {
+      const text = [col[0], col[1], col[2]].join(' ').toUpperCase();
+      return !thilloisNoLimonadeColumns.has(col.originalIndex) && !text.includes('LIMONADE');
+    });
+    const findColumn = (colIndex: number) => visibleColumnsWithoutLimonade.find(col => col.originalIndex === colIndex);
+    const buildColumn = (colIndex: number, group: string, subGroup: string, label: string, bg?: string) => {
+      const source = findColumn(colIndex);
+      if (!source) return null;
+      const column = Object.assign([...source] as DashboardColumn, { originalIndex: source.originalIndex });
+      column[0] = group;
+      column[1] = subGroup;
+      column[2] = label;
+      if (bg) column[3] = bg;
+      return column as VisibleDashboardColumn;
+    };
+
+    if (activeTab === 'PREVISIONS' && tableViewMode === 'COMPLET') {
+      return [
+        buildColumn(0, 'CA HT', 'CA HT RESTAURANT', 'MIDI'),
+        buildColumn(1, 'CA HT', 'CA HT RESTAURANT', 'SOIR'),
+        buildColumn(125, 'CA HT', 'CA HT RESTAURANT', 'TOTAL'),
+        buildColumn(2, 'CA HT', 'CA HT LIMONADE', 'TOTAL'),
+        buildColumn(3, 'CA HT', '', 'TOTAL JOUR'),
+        buildColumn(4, 'CA HT', '', 'CUMUL MOIS'),
+        buildColumn(128, 'CA HT', 'ECART VS N-1', 'VALEUR', 'bg-white'),
+        buildColumn(5, 'CA HT', 'ECART VS N-1', '%', 'bg-white'),
+        buildColumn(6, 'COUVERTS', 'COUVERTS RESTAURANT', 'MIDI'),
+        buildColumn(7, 'COUVERTS', 'COUVERTS RESTAURANT', 'TM MIDI'),
+        buildColumn(8, 'COUVERTS', 'COUVERTS RESTAURANT', 'SOIR'),
+        buildColumn(9, 'COUVERTS', 'COUVERTS RESTAURANT', 'TM SOIR'),
+        buildColumn(10, 'COUVERTS', 'COUVERTS RESTAURANT', 'TOTAL'),
+        buildColumn(11, 'COUVERTS', 'COUVERTS RESTAURANT', 'TM TOTAL'),
+        buildColumn(14, 'COUVERTS', 'COUVERTS LIMONADE', 'TOTAL'),
+        buildColumn(15, 'COUVERTS', 'COUVERTS LIMONADE', 'TM TOTAL'),
+        buildColumn(126, 'COUVERTS', '', 'TOTAL JOUR'),
+        buildColumn(127, 'COUVERTS', '', 'CUMUL MOIS'),
+        buildColumn(129, 'COUVERTS', 'ECART VS N-1', 'VALEUR', 'bg-white'),
+        buildColumn(13, 'COUVERTS', 'ECART VS N-1', '%', 'bg-white'),
+      ].filter(Boolean) as VisibleDashboardColumn[];
+    }
+
+    if (activeTab !== 'REALISE' || tableViewMode !== 'COMPLET') return visibleColumnsWithoutLimonade;
+
+    return [
+      buildColumn(17, 'CA HT', '', 'VAE'),
+      buildColumn(18, 'CA HT', 'CA HT RESTAURANT', 'MIDI'),
+      buildColumn(19, 'CA HT', 'CA HT RESTAURANT', 'SOIR'),
+      buildColumn(116, 'CA HT', 'CA HT RESTAURANT', 'TOTAL'),
+      buildColumn(110, 'CA HT', 'CA HT LIMONADE', 'MIDI'),
+      buildColumn(111, 'CA HT', 'CA HT LIMONADE', 'SOIR'),
+      buildColumn(20, 'CA HT', 'CA HT LIMONADE', 'TOTAL'),
+      buildColumn(21, 'CA HT', '', 'TOTAL JOUR'),
+      buildColumn(23, 'CA HT', '', 'CUMUL MOIS'),
+      buildColumn(22, 'CA HT', 'ECART BUDGET', 'VALEUR', 'bg-white'),
+      buildColumn(117, 'CA HT', 'ECART BUDGET', '%', 'bg-white'),
+      buildColumn(118, 'CA HT', 'ECART VS N-1', 'VALEUR', 'bg-white'),
+      buildColumn(119, 'CA HT', 'ECART VS N-1', '%', 'bg-white'),
+      buildColumn(25, 'COUVERTS', 'COUVERTS RESTAURANT', 'MIDI'),
+      buildColumn(26, 'COUVERTS', 'COUVERTS RESTAURANT', 'TM MIDI'),
+      buildColumn(27, 'COUVERTS', 'COUVERTS RESTAURANT', 'SOIR'),
+      buildColumn(28, 'COUVERTS', 'COUVERTS RESTAURANT', 'TM SOIR'),
+      buildColumn(29, 'COUVERTS', 'COUVERTS RESTAURANT', 'TOTAL'),
+      buildColumn(30, 'COUVERTS', 'COUVERTS RESTAURANT', 'TM TOTAL'),
+      buildColumn(112, 'COUVERTS', 'COUVERTS LIMONADE', 'MIDI'),
+      buildColumn(113, 'COUVERTS', 'COUVERTS LIMONADE', 'TM MIDI'),
+      buildColumn(114, 'COUVERTS', 'COUVERTS LIMONADE', 'SOIR'),
+      buildColumn(115, 'COUVERTS', 'COUVERTS LIMONADE', 'TM SOIR'),
+      buildColumn(34, 'COUVERTS', 'COUVERTS LIMONADE', 'TOTAL'),
+      buildColumn(35, 'COUVERTS', 'COUVERTS LIMONADE', 'TM TOTAL'),
+      buildColumn(120, 'COUVERTS', '', 'TOTAL JOUR'),
+      buildColumn(121, 'COUVERTS', '', 'CUMUL MOIS'),
+      buildColumn(33, 'COUVERTS', 'ECART BUDGET', 'VALEUR', 'bg-white'),
+      buildColumn(122, 'COUVERTS', 'ECART BUDGET', '%', 'bg-white'),
+      buildColumn(123, 'COUVERTS', 'ECART VS N-1', 'VALEUR', 'bg-white'),
+      buildColumn(124, 'COUVERTS', 'ECART VS N-1', '%', 'bg-white'),
+    ].filter(Boolean) as VisibleDashboardColumn[];
   }, [activeTab, tableViewMode, dynamicColumns]);
 
   const groups: Array<{ name: string; colspan: number; bg: string }> = [];
@@ -3024,7 +3141,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   {renderDailySingleRow('VAE', 17, { readOnly: true })}
                   {renderDailyServiceRow('Midi', 18, 25, 26)}
                   {renderDailyServiceRow('Soir', 19, 27, 28)}
-                  {renderDailyServiceRow('Limonade', 20, 34, 35)}
+                  
                   {renderDailyTotalRow([
                     { label: 'Total CA', col: 21 },
                     { label: 'Total couverts', col: 29 },
@@ -3055,15 +3172,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             </div>
           </div>
 
-          {renderDailySection('Achats / livraisons', 'Factures fournisseurs reçues dans la journée', (
-            <>
-              {achatFields}
-              {renderDailyTotalRow([
-                { label: 'Total achats HT', col: 58 },
-              ])}
-            </>
-          ), '#16a34a')}
-
           {renderDailySection('Personnel', 'Saisie des heures par équipe et masse salariale liée au CA du jour', (
             renderPersonnelTable(
               <>
@@ -3072,6 +3180,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               </>
             )
           ), '#9333ea')}
+
+          {renderDailySection('Achats / livraisons', 'Factures fournisseurs reçues dans la journée', (
+            <>
+              {achatFields}
+              {renderDailyTotalRow([
+                { label: 'Total achats HT', col: 58 },
+              ])}
+            </>
+          ), '#16a34a')}
         </div>
         {isCashValidationModalOpen && selectedDayRow?.dayIndex ? (
           <div style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 18, background: 'rgba(15, 23, 42, .55)' }}>
@@ -3394,14 +3511,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8fafc' }}>
         
         {/* Top Header for Sections */}
-        <header style={{ background: tableViewMode === 'SAISIE' ? sidebarThemeWide : '#fff', borderBottom: tableViewMode === 'SAISIE' ? '1px solid rgba(125, 211, 252, .24)' : '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90, position: 'relative', boxShadow: tableViewMode === 'SAISIE' ? '0 14px 32px rgba(15, 23, 42, .20), inset 0 -1px 0 rgba(255,255,255,.06)' : 'none' }}>
-          <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', minHeight: tableViewMode === 'SAISIE' ? (isMobile ? 86 : 78) : (isMobile ? 58 : 64), padding: tableViewMode === 'SAISIE' ? (isMobile ? '12px 0' : '14px 0 10px') : 0, display: 'flex', alignItems: tableViewMode === 'SAISIE' && isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 16, flexDirection: tableViewMode === 'SAISIE' && isMobile ? 'column' : 'row' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: tableViewMode === 'SAISIE' ? 18 : 12, minWidth: 0 }}>
-              <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: tableViewMode === 'SAISIE' ? '#cbd5e1' : '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 800, padding: 0, flexShrink: 0 }}>
+        <header style={{ background: sidebarThemeWide, borderBottom: '1px solid rgba(125, 211, 252, .24)', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90, position: 'relative', boxShadow: '0 14px 32px rgba(15, 23, 42, .20), inset 0 -1px 0 rgba(255,255,255,.06)' }}>
+          <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', minHeight: isMobile ? 86 : 78, padding: isMobile ? '12px 0' : '14px 0 10px', display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 16, flexDirection: isMobile ? 'column' : 'row' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
+              <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#cbd5e1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 800, padding: 0, flexShrink: 0 }}>
                 <ChevronLeft size={16} /> Retour Accueil
               </button>
               {tableViewMode === 'SAISIE' ? (
-                <div style={{ position: 'relative' }}>
+                <div ref={datePickerRef} style={{ position: 'relative' }}>
                   <button
                     type="button"
                     onClick={() => setIsDatePickerOpen(prev => !prev)}
@@ -3413,9 +3530,17 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   {isDatePickerOpen && renderDatePicker()}
                 </div>
               ) : (
-                <h2 style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, color: '#0f172a', margin: 0, textTransform: 'capitalize', letterSpacing: '-0.02em' }}>
-                  {monthNames[month]} {year}
-                </h2>
+                <div ref={datePickerRef} style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsDatePickerOpen(prev => !prev)}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(207,250,254,.14)', borderRadius: 14, cursor: 'pointer', color: '#fff', padding: isMobile ? '9px 11px' : '10px 14px', textAlign: 'left', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08)' }}
+                  >
+                    <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>{tableViewMode === 'ANALYSE' ? 'Vue analyse' : 'Vue complète'}</span>
+                    <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1, color: '#fef3c7' }}>{monthNames[month]} {year}</span>
+                  </button>
+                  {isDatePickerOpen && renderDatePicker()}
+                </div>
               )}
             </div>
             <div style={{ display: 'flex', gap: 8, alignSelf: tableViewMode === 'SAISIE' && isMobile ? 'stretch' : 'auto', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
@@ -3448,7 +3573,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             </div>
           </div>
 
-          {tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && (
+          {false && tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && (
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(7, minmax(116px, 1fr))', gap: 8, padding: isMobile ? '0 0 12px' : '0 0 12px', overflowX: isMobile ? 'visible' : 'auto' }}>
               {[
                 { label: 'CA budget', value: formatKpiCurrency(summaryKpis.budgetCa), color: '#64748b', icon: '€' },
@@ -3485,9 +3610,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           )}
 
           {/* Section Tabs */}
-          <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: tableViewMode === 'SAISIE' ? '0 0 14px' : (isMobile ? '10px 0' : '10px 0 12px'), display: 'flex', gap: 8, background: 'transparent', borderBottom: tableViewMode === 'SAISIE' ? 'none' : '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 4, border: tableViewMode === 'SAISIE' ? '1px solid rgba(255,255,255,.18)' : '1px solid #e2e8f0', borderRadius: 10, background: tableViewMode === 'SAISIE' ? 'rgba(255,255,255,.10)' : '#f8fafc', flexShrink: 0 }}>
-              <span style={{ padding: '0 6px', fontSize: 10, fontWeight: 900, color: tableViewMode === 'SAISIE' ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Vue</span>
+          <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: isMobile ? '0 0 12px' : '0 0 14px', display: 'flex', gap: 8, background: 'transparent', borderBottom: 'none', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 4, border: '1px solid rgba(255,255,255,.18)', borderRadius: 10, background: 'rgba(255,255,255,.10)', flexShrink: 0 }}>
+              <span style={{ padding: '0 6px', fontSize: 10, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>Vue</span>
               {viewModes.map(mode => {
                 const isModeActive = tableViewMode === mode.id;
                 return (
@@ -3498,8 +3623,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     style={{
                       border: 'none',
                       borderRadius: 7,
-                      background: isModeActive ? (tableViewMode === 'SAISIE' ? '#fff' : '#0f172a') : 'transparent',
-                      color: isModeActive ? (tableViewMode === 'SAISIE' ? '#0f172a' : '#fff') : (tableViewMode === 'SAISIE' ? '#cbd5e1' : '#475569'),
+                      background: isModeActive ? '#fff' : 'transparent',
+                      color: isModeActive ? '#0f172a' : '#cbd5e1',
                       cursor: 'pointer',
                       fontSize: 11,
                       fontWeight: 800,
@@ -3535,16 +3660,16 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '9px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
-                    background: isActive ? accentBg : '#f8fafc',
-                    border: `1.5px solid ${isActive ? accentBg : '#e2e8f0'}`,
-                    boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                    background: isActive ? accentBg : 'rgba(255,255,255,.10)',
+                    border: `1.5px solid ${isActive ? accentBg : 'rgba(255,255,255,.18)'}`,
+                    boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'inset 0 1px 0 rgba(255,255,255,.08)',
                     transition: 'all .15s',
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  <span style={{ width: 22, height: 22, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'rgba(255,255,255,.16)' : '#e2e8f0', color: isActive ? '#fff' : accentBg, fontSize: 9, fontWeight: 900 }}>{icon}</span>
+                  <span style={{ width: 22, height: 22, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.14)', color: isActive ? '#fff' : '#cbd5e1', fontSize: 9, fontWeight: 900 }}>{icon}</span>
                   <span style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? accentColor : '#334155', letterSpacing: '.02em', lineHeight: 1.3 }}>{tab.label}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? accentColor : '#e2e8f0', letterSpacing: '.02em', lineHeight: 1.3 }}>{tab.label}</span>
                   </span>
                   {isActive && (
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 2 }}>
