@@ -11,33 +11,35 @@ Ce fichier est le point de reprise rapide du projet. Lire ensuite la documentati
 - Pousser directement les corrections terminees sauf demande contraire.
 - Verifier le build Vercel apres une modification code.
 
-## Reprise immediate - patches Vite
+## Reprise immediate - consolidation Vite
 
-Statut au 06/06/2026 : vagues 1 a 4 terminees, Vercel READY sur le commit `b00a2d931e176365cfb06ea1a39886e6b680b894` avant mise a jour documentaire.
+Statut au 06/06/2026 : consolidation des patches Vite terminee. Codex a integre les patches restants dans le code source et `vite.config.ts` ne contient plus aucun patch Vite.
 
-Documents detaillees :
+Documents detailles :
 
-- `docs/ROADMAP_PATCHES_VITE.md` : roadmap active, vagues restantes et historique des vagues terminees.
-- `docs/AUDIT_PATCHES_VITE.md` : audit technique des patches Vite et source de verite.
+- `docs/ROADMAP_PATCHES_VITE.md` : historique de consolidation et points de vigilance apres suppression des patches Vite.
+- `docs/AUDIT_PATCHES_VITE.md` : audit technique actualise, source de verite et tests minimum apres consolidation.
 - `docs/DASHBOARD_REFACTOR.md` : suivi du decoupage de `Dashboard.tsx`.
 
 Etat actuel :
 
-- `Dashboard.tsx` est branche sur `src/features/dashboard/dashboardTypes.ts`, `dashboardColumns.ts` et `dashboardStaticConfig.ts`.
-- Les vagues 1 a 4 ont integre plusieurs patches directement dans le code source.
-- `vite.config.ts` contient encore 15 patches actifs.
-- Prochaine vague recommandee : vague 5, `dashboardLimonadeSplitPatch` + `dashboardHeaderVisualPatch`.
+- `vite.config.ts` doit rester limite a `react()` et `tailwindcss()` dans `plugins`.
+- Patches Vite actifs : 0.
+- L'ancien comportement injecte au build doit maintenant etre porte directement par les fichiers source.
+- Vercel READY a ete confirme par Nicolas apres execution Codex.
+- La prochaine priorite technique n'est plus de supprimer des patches, mais de verifier les zones metier puis de poursuivre le decoupage de `Dashboard.tsx`.
 
 Regles de reprise :
 
-- Ne pas repartir d'une ancienne conversation : relire d'abord cette page, puis `docs/ROADMAP_PATCHES_VITE.md`, puis le patch concerne.
-- La roadmap guide l'ordre, mais Codex/l'intervenant doit s'adapter a l'etat reel du code.
-- Apres chaque vague : retirer la vague de la section active de la roadmap, l'ajouter dans l'historique, mettre a jour le nombre de patches restants et verifier Vercel READY.
-- Si un remplacement ne matche pas exactement, ne pas improviser sans diagnostic.
+- Ne pas repartir d'une ancienne conversation : relire d'abord cette page, puis la doc concernee.
+- Ne plus ajouter de patch Vite sauf urgence absolue et decision documentee.
+- Toute correction doit se faire directement dans le code source.
+- Le build Vercel ne suffit pas comme validation metier.
+- Apres une modification importante : verifier Vercel READY et mettre a jour la documentation concernee.
 
 ## Priorite technique actuelle - decoupage de `Dashboard.tsx`
 
-Statut au 02/06/2026 : priorite haute sur la reduction et la restructuration de `src/Dashboard.tsx`.
+Statut au 06/06/2026 : les patches Vite sont consolides ; la priorite technique redevient la reduction et la restructuration progressive de `src/Dashboard.tsx`.
 
 Document detaille : `docs/DASHBOARD_REFACTOR.md`.
 
@@ -47,18 +49,18 @@ Decision :
 - cette page doit devenir une page de resume/orchestration ;
 - elle doit recuperer des montants globaux deja calcules ailleurs ou passes par des modules dedies ;
 - les calculs, imports PDF/Excel, definitions de colonnes et composants lourds doivent sortir de ce fichier ;
-- les nouvelles demandes sur cette page doivent etre evitees tant que le decoupage n'a pas commence.
+- les nouvelles demandes lourdes sur cette page doivent etre evitees tant que le decoupage n'a pas avance.
 
 Constat :
 
 - `Dashboard.tsx` reste un fichier lourd ;
 - le fichier concentre trop de responsabilites ;
-- il est encore modifie par plusieurs patches Vite ;
+- les patches Vite ne modifient plus le build, mais la dette technique reste dans le fichier source ;
 - continuer a ajouter des fonctionnalites directement dedans augmente fortement le risque de casse.
 
 Ordre recommande maintenant :
 
-1. Continuer l'integration progressive des patches Vite restants.
+1. Faire une verification metier rapide apres consolidation Vite.
 2. Extraire helpers/formatters deja identifies.
 3. Extraire composants visuels simples.
 4. Extraire calculs metier par domaine.
@@ -70,53 +72,35 @@ Important : l'application est encore en construction. Chaque etape doit rester c
 Avancement au 06/06/2026 :
 
 - le codemod `scripts/dashboardRefactorStaticCodemod.ts` a ete execute localement ;
-- `src/Dashboard.tsx` est maintenant branche sur `src/features/dashboard/dashboardTypes.ts`, `dashboardColumns.ts` et `dashboardStaticConfig.ts` ;
-- les vagues 1 a 4 d'integration des patches Vite sont terminees ;
-- les prochaines vagues doivent suivre `docs/ROADMAP_PATCHES_VITE.md`.
+- `src/Dashboard.tsx` est branche sur `src/features/dashboard/dashboardTypes.ts`, `dashboardColumns.ts` et `dashboardStaticConfig.ts` ;
+- les vagues 1 a 5 ont ete documentees ;
+- Codex a termine l'integration des patches restants ;
+- `vite.config.ts` est nettoye ;
+- les docs `ROADMAP_PATCHES_VITE.md` et `AUDIT_PATCHES_VITE.md` ont ete alignees sur cet etat.
 
-## Priorite technique secondaire - consolidation patches Vite
+## Priorite technique secondaire - validation post-consolidation
 
-Statut au 06/06/2026 : chantier actif. Les vagues 1 a 4 sont terminees. Il reste 15 patches actifs dans `vite.config.ts`.
+Statut au 06/06/2026 : chantier patches Vite termine techniquement. Il faut maintenant verifier les zones sensibles dans l'application.
 
-Document detaille : `docs/AUDIT_PATCHES_VITE.md` et `docs/ROADMAP_PATCHES_VITE.md`.
+Documents detailles : `docs/AUDIT_PATCHES_VITE.md`, `docs/ROADMAP_PATCHES_VITE.md` et `docs/DASHBOARD_REFACTOR.md`.
 
 Constat :
 
-- l'application fonctionne sur beaucoup de perimetres metier valides, mais le code a accumule trop de patches Vite ;
-- le vrai comportement execute au build ne correspond plus toujours directement au code visible dans `src/` ;
-- le bug de l'import personnel historique, notamment la derniere semaine non lue, montre que continuer a empiler des patches devient risque.
+- l'application ne depend plus de patches Vite actifs ;
+- le code source est maintenant la source de verite du comportement execute ;
+- des validations metier restent necessaires car un build Vercel vert ne garantit pas que tous les calculs/imports sont bons.
 
-Decision :
+Tests minimum a refaire :
 
-- ne pas refaire l'application ;
-- ne pas supprimer tous les patches d'un coup ;
-- ne plus ajouter de nouveau patch Vite sauf urgence absolue ;
-- integrer les patches progressivement dans le code source ;
-- documenter chaque vague terminee.
+- Accueil : periode, tuiles, bulle S/C, visuel.
+- Saisie quotidienne : saisie, fermeture jour, sections Personnel/Achats, validations caisse.
+- Vue Analyse : entetes figees, couleurs, lecture S/C.
+- Vue Complete : Previsions et Realise, sans limonade visible pour Thillois.
+- Import caisse PDF : montants HT TVA 5,5 %, 10 % et 20 % dans le bloc Total.
+- Import historique Excel : budget janvier/fevrier, realise, cout matiere.
+- Supabase : chargement, sauvegarde, refresh, changement de mois.
 
-Garde-fou : le build Vercel ne suffit pas comme validation metier. Chaque consolidation doit etre testee dans l'application.
-
-Patches actifs au 06/06/2026 apres vague 4 :
-
-1. `dashboardPayrollColumnPatch`
-2. `caisseImportRecoveryPatch`
-3. `dashboardLimonadeSplitPatch`
-4. `dashboardHistoricalBudgetExcelPatch`
-5. `dashboardHistoricalBudgetFocusedPatch`
-6. `dashboardHistoricalRealiseImportPatch`
-7. `dashboardHistoricalCostMatterImportPatch`
-8. `dashboardHistoricalCostMatterSafePatch`
-9. `dashboardHistoricalPayrollImportPatch`
-10. `dashboardHeaderVisualPatch`
-11. `dataContextCloudSyncPatch`
-12. `homeHeaderPeriodPatch`
-13. `homePayrollBubblePatch`
-14. `homeVisualPolishPatch`
-15. `accountingSettingsRoutePatch`
-
-Script present mais non actif dans `vite.config.ts` :
-
-- `scripts/dashboardHistoricalPayrollSafePatch.ts`
+Garde-fou : le personnel historique reste non valide et ne doit pas etre repris avec un patch aveugle.
 
 ## Authentification
 
@@ -206,7 +190,6 @@ Fichiers importants :
 - `src/HomeWithAdminLink.tsx`
 - `src/lib/suiviPermissions.ts`
 - `api/suiviAccount.ts`
-- `scripts/dataContextCloudSyncPatch.ts`
 - `src/router.tsx`
 - `supabase/APP_STATE_SETUP.sql`
 - `supabase/AUTH_USERS_SETUP.sql`
@@ -246,7 +229,7 @@ Rappel : l'import caisse lit le PDF, alimente les valeurs automatiques utiles et
 
 ## Suivi quotidien - import historique Excel
 
-Statut au 06/06/2026 : import historique global partiellement valide ; chantier personnel mis de cote temporairement au profit du decoupage `Dashboard.tsx` et de l'audit/consolidation technique.
+Statut au 06/06/2026 : import historique global partiellement valide ; chantier personnel mis de cote temporairement au profit du decoupage `Dashboard.tsx` et de la validation post-consolidation technique.
 
 Document detaille : `docs/IMPORT_HISTORIQUE_EXCEL.md`, `docs/HEURES_PERSONNEL.md`, `docs/AUDIT_PATCHES_VITE.md`, `docs/ROADMAP_PATCHES_VITE.md` et `docs/DASHBOARD_REFACTOR.md`.
 
@@ -290,4 +273,4 @@ Objectif de reprise future du chantier personnel :
   - mois/periode 100 % global : analyse par echelon global uniquement ;
   - periode mixte : total personnel fiable, detail salle/cuisine seulement sur la partie detaillee, partie ancienne affichee comme non ventilee.
 
-Derniers fichiers de patch concernes par la suite : voir `docs/ROADMAP_PATCHES_VITE.md`.
+Dernier point de reprise technique : voir `docs/DASHBOARD_REFACTOR.md` pour continuer le decoupage, et `docs/ROADMAP_PATCHES_VITE.md` pour l'historique de consolidation terminee.
