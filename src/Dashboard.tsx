@@ -700,6 +700,25 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const caSoirWr = parseFloat(data[`${rIdx}-19`] || '0');
         if (nbMidiW > 0 && caMidiWr > 0) data[`${rIdx}-26`] = (caMidiWr / nbMidiW).toFixed(2);
         if (nbSoirW > 0 && caSoirWr > 0) data[`${rIdx}-28`] = (caSoirWr / nbSoirW).toFixed(2);
+        const budgetCaW = parseFloat(data[`${rIdx}-3`] || '0');
+        if (budgetCaW > 0 || realiseCAW > 0) {
+          const ecartCaBudgetW = realiseCAW - budgetCaW;
+          data[`${rIdx}-22`] = ecartCaBudgetW.toFixed(2);
+          if (budgetCaW > 0) data[`${rIdx}-117`] = ((ecartCaBudgetW / budgetCaW) * 100).toFixed(2);
+        }
+        const totalCvtsRealiseW = nbMidiW + nbSoirW;
+        if (totalCvtsRealiseW > 0) {
+          const moyJourRealiseW = (caMidiWr + caSoirWr) / totalCvtsRealiseW;
+          data[`${rIdx}-29`] = totalCvtsRealiseW.toFixed(0);
+          data[`${rIdx}-30`] = moyJourRealiseW.toFixed(2);
+          const budgetMoyJourW = parseFloat(data[`${rIdx}-11`] || '0');
+          if (budgetMoyJourW > 0) data[`${rIdx}-31`] = (moyJourRealiseW - budgetMoyJourW).toFixed(2);
+          const lastWeekDay = weekDays[weekDays.length - 1];
+          if (lastWeekDay) data[`${rIdx}-32`] = data[`${lastWeekDay.originalIdx}-32`] || totalCvtsRealiseW.toFixed(0);
+          const budgetCvtsW = parseFloat(data[`${rIdx}-10`] || '0') + parseFloat(data[`${rIdx}-14`] || '0');
+          const ecartCvtsW = parseFloat(data[`${rIdx}-33`] || '0');
+          if (budgetCvtsW > 0) data[`${rIdx}-122`] = ((ecartCvtsW / budgetCvtsW) * 100).toFixed(2);
+        }
         // Cout matiere semaine
         const coutMatiereW = parseFloat(data[`${rIdx}-58`] || '0');
         if (realiseCAW > 0) data[`${rIdx}-60`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
@@ -783,8 +802,24 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const caSoirMr = parseFloat(data[`${monthTotalIdx}-19`] || '0');
       if (nbMidiM > 0 && caMidiMr > 0) data[`${monthTotalIdx}-26`] = (caMidiMr / nbMidiM).toFixed(2);
       if (nbSoirM > 0 && caSoirMr > 0) data[`${monthTotalIdx}-28`] = (caSoirMr / nbSoirM).toFixed(2);
+      const budgetCaM = parseFloat(data[`${monthTotalIdx}-3`] || '0');
+      if (budgetCaM > 0 || realiseCAM > 0) {
+        const ecartCaBudgetM = realiseCAM - budgetCaM;
+        data[`${monthTotalIdx}-22`] = ecartCaBudgetM.toFixed(2);
+        if (budgetCaM > 0) data[`${monthTotalIdx}-117`] = ((ecartCaBudgetM / budgetCaM) * 100).toFixed(2);
+      }
       const totalCvtsM = nbMidiM + nbSoirM;
-      if (totalCvtsM > 0) data[`${monthTotalIdx}-29`] = totalCvtsM.toFixed(0);
+      if (totalCvtsM > 0) {
+        const moyJourRealiseM = (caMidiMr + caSoirMr) / totalCvtsM;
+        data[`${monthTotalIdx}-29`] = totalCvtsM.toFixed(0);
+        data[`${monthTotalIdx}-30`] = moyJourRealiseM.toFixed(2);
+        data[`${monthTotalIdx}-32`] = totalCvtsM.toFixed(0);
+        const budgetMoyJourM = parseFloat(data[`${monthTotalIdx}-11`] || '0');
+        if (budgetMoyJourM > 0) data[`${monthTotalIdx}-31`] = (moyJourRealiseM - budgetMoyJourM).toFixed(2);
+        const budgetCvtsM = parseFloat(data[`${monthTotalIdx}-10`] || '0') + parseFloat(data[`${monthTotalIdx}-14`] || '0');
+        const ecartCvtsM = parseFloat(data[`${monthTotalIdx}-33`] || '0');
+        if (budgetCvtsM > 0) data[`${monthTotalIdx}-122`] = ((ecartCvtsM / budgetCvtsM) * 100).toFixed(2);
+      }
 
       const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-65`] || '0');
       const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-72`] || '0');
@@ -3678,10 +3713,16 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     if (isMonthTotal) cellBorderClasses += ' border-y-2 border-y-amber-500';
 
                     let textColorClass = isMonthTotal ? 'text-amber-900' : 'text-slate-800';
-                    if (c[2] === 'ECART AU\nBUDGET\nJOUR' && val !== '') {
-                      const numVal = parseFloat(val);
-                      if (numVal > 0) textColorClass = 'text-green-600 font-bold';
-                      else if (numVal < 0) textColorClass = 'text-red-600 font-bold';
+                    const isVarianceCol = c[1].includes('ECART') || c[2].includes('ECART') || [22, 31, 33, 117, 122].includes(originalCIdx);
+                    if ((c[2] === 'ECART AU\nBUDGET\nJOUR' || isVarianceCol) && val !== '') {
+                      const numVal = parseFloat(String(val).replace(',', '.'));
+                      if (numVal > 0) {
+                        textColorClass = 'text-emerald-800 font-bold';
+                        if (!isHatched && !isTotalRow && !isMonthTotal) cellBg = 'bg-emerald-50';
+                      } else if (numVal < 0) {
+                        textColorClass = 'text-red-800 font-bold';
+                        if (!isHatched && !isTotalRow && !isMonthTotal) cellBg = 'bg-red-50';
+                      }
                     }
 
                     if (isFraisGeneraux) {

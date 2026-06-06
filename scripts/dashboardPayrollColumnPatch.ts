@@ -46,7 +46,7 @@ export const dashboardPayrollColumnPatch = (): Plugin => ({
     next = replaceEvery(next, "data[`${rIdx}-87`] = (totalHeuresReal - totalHeuresProj).toFixed(2);", "data[`${rIdx}-91`] = (totalHeuresReal - totalHeuresProj).toFixed(2);", 'ecart heures jour');
     next = replaceEvery(next, "data[`${rIdx}-88`] = (pctReal - pctProj).toFixed(2) + '%';", "data[`${rIdx}-92`] = (pctReal - pctProj).toFixed(2) + '%';", 'ecart sc jour');
 
-    next = replaceEvery(next, '[7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 35, 59, 60, 73, 74, 77, 78, 79, 84, 85, 88]', '[7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 35, 59, 60, 73, 74, 75, 88, 89, 90, 91, 92]', 'colonnes calculees totaux');
+    next = replaceEvery(next, '[7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 35, 59, 60, 73, 74, 77, 78, 79, 84, 85, 88]', '[7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 59, 60, 73, 74, 75, 88, 89, 90, 91, 92, 117, 122]', 'colonnes calculees totaux');
 
     next = mustReplace(next, /const val = parseFloat\(data\[`\$\{day\.originalIdx\}-\$\{cIdx\}`\] \|\| '0'\);\r?\n {12}if \(!isNaN\(val\) && data\[`\$\{day\.originalIdx\}-\$\{cIdx\}`\]\) \{/, "const rawVal = data[`${day.originalIdx}-${cIdx}`] || '';\n            const val = isPayrollInputColumn(cIdx) ? parsePayrollHourForCalculation(rawVal) : parseFloat(rawVal || '0');\n            if (!isNaN(val) && rawVal) {", 'conversion heures personnel totaux semaine/mois');
 

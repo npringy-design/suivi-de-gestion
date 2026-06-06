@@ -15,14 +15,11 @@ import { dashboardHistoricalCostMatterImportPatch } from './scripts/dashboardHis
 import { dashboardHistoricalCostMatterSafePatch } from './scripts/dashboardHistoricalCostMatterSafePatch';
 import { dashboardHistoricalPayrollImportPatch } from './scripts/dashboardHistoricalPayrollImportPatch';
 import { dashboardHistoricalRealiseImportPatch } from './scripts/dashboardHistoricalRealiseImportPatch';
-import { dashboardHistoricalTextDatePatch } from './scripts/dashboardHistoricalTextDatePatch';
 import { dashboardLimonadeSplitPatch } from './scripts/dashboardLimonadeSplitPatch';
 import { dashboardPayrollColumnPatch } from './scripts/dashboardPayrollColumnPatch';
 import { dashboardRealiseCleanLayoutPatch } from './scripts/dashboardRealiseCleanLayoutPatch';
-import { dashboardRealiseTotalsPatch } from './scripts/dashboardRealiseTotalsPatch';
 import { dashboardStrictSalaryRatesPatch } from './scripts/dashboardStrictSalaryRatesPatch';
 import { dashboardThilloisNoLimonadePatch } from './scripts/dashboardThilloisNoLimonadePatch';
-import { dashboardVarianceSoftColorsPatch } from './scripts/dashboardVarianceSoftColorsPatch';
 import { dataContextCloudSyncPatch } from './scripts/dataContextCloudSyncPatch';
 import { homeHeaderPeriodPatch } from './scripts/homeHeaderPeriodPatch';
 import { homePayrollBubblePatch } from './scripts/homePayrollBubblePatch';
@@ -34,13 +31,13 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   const defineValues = { ['process.env.' + 'GEMINI_API_KEY']: JSON.stringify(env.GEMINI_API_KEY) };
   const plugins = [
-    payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardRealiseTotalsPatch(),
-    dashboardStrictSalaryRatesPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(),
+    payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardStrictSalaryRatesPatch(),
+    dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(),
     dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardThilloisNoLimonadePatch(),
-    dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalTextDatePatch(), dashboardHistoricalBudgetFocusedPatch(),
+    dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(),
     dashboardHistoricalRealiseImportPatch(), dashboardHistoricalCostMatterImportPatch(), dashboardHistoricalCostMatterSafePatch(),
     dashboardCostMatterAmountFormatPatch(), dashboardHistoricalPayrollImportPatch(), dashboardAnalysisModePatch(),
-    dashboardHeaderVisualPatch(), dashboardVarianceSoftColorsPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(),
+    dashboardHeaderVisualPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(),
     homePayrollBubblePatch(), homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(), accountingSettingsRoutePatch(),
     react(), tailwindcss()
   ];
