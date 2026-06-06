@@ -1,59 +1,44 @@
 # Audit patches Vite et plan de consolidation
 
-Derniere mise a jour : 06/06/2026, apres vague 4.
+Derniere mise a jour : 06/06/2026, apres consolidation complete des patches Vite.
 
 ## Pourquoi ce document existe
 
-Le projet fonctionne, mais une partie importante du comportement reel de l'application a longtemps ete injectee au build via des plugins Vite situes dans `scripts/`.
+Le projet a longtemps fonctionne avec une partie importante du comportement reel injectee au build via des plugins Vite situes dans `scripts/`.
 
-Ces patches ont permis d'avancer vite sans modifier directement les gros fichiers, notamment `src/Dashboard.tsx`. Le probleme est qu'ils rendent le projet fragile :
+Ces patches ont permis d'avancer vite sans modifier directement les gros fichiers, notamment `src/Dashboard.tsx`. Le probleme etait qu'ils rendaient le projet fragile :
 
-- le code visible dans les fichiers source ne correspond pas toujours au code execute apres build ;
-- les patches dependent souvent de chaines exactes ;
-- plusieurs patches touchent la meme zone fonctionnelle ;
-- les bugs deviennent difficiles a diagnostiquer, comme l'import personnel historique et la derniere semaine non lue ;
+- le code visible dans les fichiers source ne correspondait pas toujours au code execute apres build ;
+- les patches dependaient souvent de chaines exactes ;
+- plusieurs patches touchaient la meme zone fonctionnelle ;
+- les bugs devenaient difficiles a diagnostiquer, comme l'import personnel historique et la derniere semaine non lue ;
 - `Dashboard.tsx` concentre encore trop de logique metier, de rendu, de calculs et d'import.
 
-Conclusion : il ne faut pas refaire l'application. Il faut consolider progressivement.
+Conclusion : la consolidation Vite est terminee, mais il ne faut toujours pas refaire l'application. Il faut maintenant poursuivre le decoupage progressif du code source.
 
-## Regle de travail du chantier
+## Regle de travail actuelle
 
+- Ne pas ajouter de nouveau patch Vite sauf urgence absolue.
+- Faire les corrections directement dans les fichiers source.
 - Ne pas faire de refonte globale.
-- Ne pas supprimer plusieurs patches sans build entre les etapes.
 - Ne pas modifier une partie validee sans test terrain.
-- Integrer un patch dans le vrai code source avant de supprimer le script.
-- Retirer ensuite l'import et l'appel du patch dans `vite.config.ts`.
-- Verifier le build Vercel apres chaque vague.
-- Documenter chaque integration importante.
+- Verifier le build Vercel apres chaque modification code importante.
+- Documenter chaque changement important.
 - Conserver les comportements valides avant toute optimisation.
 
 ## Source de verite actuelle
 
 Les patches actifs sont ceux importes et appeles dans `vite.config.ts`.
 
-Patches actifs au 06/06/2026 apres vague 4 :
+Etat au 06/06/2026 : aucun patch Vite actif.
 
-1. `dashboardPayrollColumnPatch`
-2. `caisseImportRecoveryPatch`
-3. `dashboardLimonadeSplitPatch`
-4. `dashboardHistoricalBudgetExcelPatch`
-5. `dashboardHistoricalBudgetFocusedPatch`
-6. `dashboardHistoricalRealiseImportPatch`
-7. `dashboardHistoricalCostMatterImportPatch`
-8. `dashboardHistoricalCostMatterSafePatch`
-9. `dashboardHistoricalPayrollImportPatch`
-10. `dashboardHeaderVisualPatch`
-11. `dataContextCloudSyncPatch`
-12. `homeHeaderPeriodPatch`
-13. `homePayrollBubblePatch`
-14. `homeVisualPolishPatch`
-15. `accountingSettingsRoutePatch`
+`vite.config.ts` est revenu a l'etat attendu :
 
-Script present mais non actif dans `vite.config.ts` :
+```ts
+plugins: [react(), tailwindcss()]
+```
 
-- `dashboardHistoricalPayrollSafePatch`
-
-Document de pilotage actif : `docs/ROADMAP_PATCHES_VITE.md`.
+Si un patch Vite reapparait dans `vite.config.ts`, c'est une regression technique sauf decision explicite et documentee.
 
 ## Vagues terminees
 
@@ -98,96 +83,88 @@ Patches integres :
 
 Resultat : Vercel READY sur le commit `b00a2d931e176365cfb06ea1a39886e6b680b894` avant mise a jour documentaire.
 
-## Dependances importantes encore valables
+### Vague 5 — terminee
 
-### Chaine import historique
-
-Patches encore concernes :
-
-1. `dashboardHistoricalBudgetExcelPatch`
-2. `dashboardHistoricalBudgetFocusedPatch`
-3. `dashboardHistoricalRealiseImportPatch`
-4. `dashboardHistoricalCostMatterImportPatch`
-5. `dashboardHistoricalCostMatterSafePatch`
-6. `dashboardHistoricalPayrollImportPatch`
-7. `dashboardHistoricalPayrollSafePatch` (script non actif mais encore present)
-
-Le personnel est le dernier de la chaine et n'est pas valide terrain. Il ne doit pas bloquer l'integration future des imports valides, mais il ne faut pas l'integrer aveuglement.
-
-### Chaine accueil
-
-Patches encore concernes :
-
-1. `homeHeaderPeriodPatch`
-2. `homePayrollBubblePatch`
-3. `homeVisualPolishPatch`
-
-`homeSmartPeriodSourcesPatch` a deja ete integre en vague 3.
-
-### Chaine limonade / vue complete
-
-Patches encore concernes :
+Patches integres :
 
 - `dashboardLimonadeSplitPatch`
 - `dashboardHeaderVisualPatch`
 
-`dashboardThilloisNoLimonadePatch` et `dashboardRealiseCleanLayoutPatch` ont deja ete integres. La prochaine intervention sur la limonade doit verifier qu'elle ne reintroduit pas l'affichage limonade pour Thillois.
+Resultat attendu conserve : la limonade ne doit pas reapparaitre pour Thillois ; le visuel de banderole Dashboard est integre dans le code source.
 
-### Chaine salaires/personnel
+### Consolidation finale Codex — terminee
 
-Patches encore concernes :
+Codex a termine l'integration des patches Vite restants et `vite.config.ts` ne reference plus aucun patch.
+
+Patches concernes :
 
 - `dashboardPayrollColumnPatch`
-- `homePayrollBubblePatch`
+- `caisseImportRecoveryPatch`
+- `dashboardHistoricalBudgetExcelPatch`
+- `dashboardHistoricalBudgetFocusedPatch`
+- `dashboardHistoricalRealiseImportPatch`
+- `dashboardHistoricalCostMatterImportPatch`
+- `dashboardHistoricalCostMatterSafePatch`
 - `dashboardHistoricalPayrollImportPatch`
-- `dashboardHistoricalPayrollSafePatch`
+- `dataContextCloudSyncPatch`
+- `homeHeaderPeriodPatch`
+- `homePayrollBubblePatch`
+- `homeVisualPolishPatch`
+- `accountingSettingsRoutePatch`
 
-`dashboardStrictSalaryRatesPatch` et `payrollCpProvisionPatch` ont deja ete integres.
+Resultat : Vercel READY confirme par Nicolas apres execution Codex.
+
+## Dependances importantes encore valables
+
+### Import historique
+
+Les imports budget, realise et cout matiere avaient deja plusieurs validations terrain partielles. Ils doivent etre retestes apres consolidation technique, mais ne doivent pas etre modifies sans nouveau constat precis.
+
+Le personnel historique reste le point fragile : la derniere semaine ne remontait pas correctement dans certaines versions. Il ne faut pas l'integrer ou le corriger aveuglement.
+
+### Accueil
+
+Les comportements lies a la periode, aux KPI et a la bulle S/C doivent etre retestes dans l'application apres consolidation.
+
+### Limonade / vue complete
+
+Thillois n'a pas d'activite limonade. La consolidation ne doit pas reintroduire d'affichage limonade dans la vue complete Thillois.
+
+### Salaires/personnel
+
+Les taux salariaux stricts et la provision CP cadre sont deja des comportements valides. Ne pas les modifier sans demande explicite.
 
 ## Prochaine etape concrete
 
-Reprendre avec `docs/ROADMAP_PATCHES_VITE.md`.
+La priorite immediate n'est plus la suppression des patches Vite. Elle devient :
 
-Prochaine vague recommandee : vague 5.
-
-Patches prevus :
-
-- `dashboardLimonadeSplitPatch`
-- `dashboardHeaderVisualPatch`
-
-Avant modification :
-
-1. Lire les deux fichiers de patch actuels.
-2. Verifier le code actuel de `src/Dashboard.tsx` apres les vagues 1 a 4.
-3. Verifier que le comportement Thillois sans limonade reste preserve.
-4. Integrer un patch a la fois.
-5. Retirer l'import/appel dans `vite.config.ts`.
-6. Supprimer le script seulement apres build vert.
-7. Mettre a jour `docs/ROADMAP_PATCHES_VITE.md`, `docs/AUDIT_PATCHES_VITE.md` et `docs/POINT_AVANCEMENT.md`.
+1. Verifier manuellement les zones metier apres consolidation.
+2. Puis poursuivre le decoupage progressif de `src/Dashboard.tsx` selon `docs/DASHBOARD_REFACTOR.md`.
 
 ## Ce qu'il ne faut pas faire
 
-- Ne pas supprimer tous les patches d'un coup.
+- Ne pas rajouter de patch Vite pour contourner une difficulte.
 - Ne pas refaire `Dashboard.tsx` completement.
 - Ne pas melanger nettoyage technique et nouvelle fonctionnalite metier.
 - Ne pas integrer le personnel historique tant que le bug de derniere semaine n'est pas compris.
 - Ne pas modifier les imports valides pendant une correction personnel.
 - Ne pas considerer un build Vercel comme une validation metier suffisante.
 
-## Tests minimum apres chaque vague
+## Tests minimum apres consolidation
 
 - Build Vercel OK.
 - Accueil OK.
 - Saisie quotidienne OK.
 - Vue Analyse OK.
 - Vue Complete OK.
-- Import caisse PDF OK si zone touchee.
-- Import historique janvier OK si zone historique touchee.
-- Import historique fevrier OK si zone historique touchee.
+- Import caisse PDF OK.
+- Import historique janvier OK.
+- Import historique fevrier OK.
+- Import cout matiere historique OK.
 - Aucune perte de donnees Supabase.
 
 ## Decision actuelle
 
-Priorite immediate : poursuivre la consolidation des patches restants selon `docs/ROADMAP_PATCHES_VITE.md`.
+Priorite immediate : validation metier rapide de l'application apres consolidation Vite, puis reprise du decoupage de `Dashboard.tsx`.
 
 Le bug personnel derniere semaine reste mis de cote. Il sera repris plus tard avec un diagnostic d'import, pas avec un nouveau patch aveugle.
