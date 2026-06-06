@@ -116,6 +116,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
 
   const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
   const formatDepartment = (value?: string) => value === 'cuisine' ? 'Cuisine' : value === 'salle' ? 'Salle' : '-';
+  const getPayrollProvisionMultiplier = (category: SalaryCategory) => category === 'cadre' ? 1.18 : 1.10;
 
   const getAverageForCategory = (monthIdx: number, category: SalaryCategory) => {
     const rows = getSalariesForMonth(monthIdx)[category];
@@ -125,7 +126,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     rows.forEach(row => {
       const coutGlobal = parseNum(row.coutGlobal);
       const heures = parseHourInputToDecimal(row.heures);
-      const provision = coutGlobal * 1.10;
+      const provision = coutGlobal * getPayrollProvisionMultiplier(category);
       const coutHoraire = heures > 0 ? provision / heures : 0;
 
       if (coutHoraire > 0) {
@@ -285,7 +286,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
       const coutGlobal = parseNum(row.coutGlobal);
       const heures = parseHourInputToDecimal(row.heures);
       
-      const provision = coutGlobal * 1.10;
+      const provision = coutGlobal * getPayrollProvisionMultiplier(category);
       const coutHoraire = heures > 0 ? provision / heures : 0;
 
       if (coutHoraire > 0) {

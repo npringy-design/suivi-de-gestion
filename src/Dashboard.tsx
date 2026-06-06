@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import DashboardAnalysisView from '@/DashboardAnalysisView';
 
 import { useData } from '@/contexts/DataContext';
 import { averagePayrollRate, buildPayrollImportFromText } from '@/personnelSalaryImport';
@@ -216,7 +217,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       // Update FRAIS DE PERSONNEL PROJECTION headers
       const updateHeader = (idx: number, category: string, label: string, department?: 'cuisine' | 'salle') => {
         const rows = salariesConfig[category] || [];
-        const avg = averagePayrollRate(rows, department);
+        const avg = averagePayrollRate(rows, department, category);
         const names = rows
           .filter((row: any) => !department || !row.department || row.department === department)
           .map((row: any) => String(row.nom || '').trim())
@@ -575,7 +576,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const getAvgRate = (category: string, department: 'cuisine' | 'salle') => {
           if (!salariesConfig) return 0;
           const rows = salariesConfig[category] || [];
-          return averagePayrollRate(rows, department);
+          return averagePayrollRate(rows, department, category);
         };
 
         const projRates = [
@@ -3380,7 +3381,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             </div>
           </div>
 
-          {tableViewMode !== 'SAISIE' && (
+          {tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && (
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(7, minmax(116px, 1fr))', gap: 8, padding: isMobile ? '0 0 12px' : '0 0 12px', overflowX: isMobile ? 'visible' : 'auto' }}>
               {[
                 { label: 'CA budget', value: formatKpiCurrency(summaryKpis.budgetCa), color: '#64748b', icon: '€' },
@@ -3445,7 +3446,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 );
               })}
             </div>
-            {tableViewMode !== 'SAISIE' && tabs.map(tab => {
+            {tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && tabs.map(tab => {
               const isActive = activeTab === tab.id;
               let icon = '📁';
               let accentBg = '#475569';
@@ -3493,6 +3494,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         <div id="dashboard-content-area" style={{ flex: 1, overflow: 'auto', padding: tableViewMode === 'SAISIE' ? (isMobile ? 12 : '16px 24px 28px') : (isMobile ? 12 : 32), display: 'flex', flexDirection: 'column' }}>
           {tableViewMode === 'SAISIE' ? (
             renderDailyEntryView()
+          ) : tableViewMode === 'ANALYSE' ? (
+            React.createElement(DashboardAnalysisView, { rows, calculatedData, salariesConfig: globalData[month]?.salariesConfig?.categories, isMobile })
           ) : (
           <div style={{ flex: 1, background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, overflow: 'auto' }}>

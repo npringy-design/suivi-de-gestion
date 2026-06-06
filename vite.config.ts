@@ -5,7 +5,6 @@ import {defineConfig, loadEnv} from 'vite';
 
 import { accountingSettingsRoutePatch } from './scripts/accountingSettingsRoutePatch';
 import { caisseImportRecoveryPatch } from './scripts/caisseImportRecoveryPatch';
-import { dashboardAnalysisModePatch } from './scripts/dashboardAnalysisModePatch';
 import { dashboardCaisseRecapPeriodePatch } from './scripts/dashboardCaisseRecapPeriodePatch';
 import { dashboardHeaderVisualPatch } from './scripts/dashboardHeaderVisualPatch';
 import { dashboardHistoricalBudgetExcelPatch } from './scripts/dashboardHistoricalBudgetExcelPatch';
@@ -20,20 +19,17 @@ import { dashboardRealiseCleanLayoutPatch } from './scripts/dashboardRealiseClea
 import { dataContextCloudSyncPatch } from './scripts/dataContextCloudSyncPatch';
 import { homeHeaderPeriodPatch } from './scripts/homeHeaderPeriodPatch';
 import { homePayrollBubblePatch } from './scripts/homePayrollBubblePatch';
-import { homeSmartPeriodSourcesPatch } from './scripts/homeSmartPeriodSourcesPatch';
 import { homeVisualPolishPatch } from './scripts/homeVisualPolishPatch';
-import { payrollCpProvisionPatch } from './scripts/payrollCpProvisionPatch';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   const defineValues = { ['process.env.' + 'GEMINI_API_KEY']: JSON.stringify(env.GEMINI_API_KEY) };
   const plugins = [
-    payrollCpProvisionPatch(), dashboardPayrollColumnPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(),
+    dashboardPayrollColumnPatch(), dashboardCaisseRecapPeriodePatch(), caisseImportRecoveryPatch(),
     dashboardLimonadeSplitPatch(), dashboardRealiseCleanLayoutPatch(), dashboardHistoricalBudgetExcelPatch(), dashboardHistoricalBudgetFocusedPatch(),
     dashboardHistoricalRealiseImportPatch(), dashboardHistoricalCostMatterImportPatch(), dashboardHistoricalCostMatterSafePatch(),
-    dashboardHistoricalPayrollImportPatch(), dashboardAnalysisModePatch(),
-    dashboardHeaderVisualPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(),
-    homePayrollBubblePatch(), homeVisualPolishPatch(), homeSmartPeriodSourcesPatch(), accountingSettingsRoutePatch(),
+    dashboardHistoricalPayrollImportPatch(), dashboardHeaderVisualPatch(), dataContextCloudSyncPatch(), homeHeaderPeriodPatch(),
+    homePayrollBubblePatch(), homeVisualPolishPatch(), accountingSettingsRoutePatch(),
     react(), tailwindcss()
   ];
   return {

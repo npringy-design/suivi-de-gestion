@@ -22,6 +22,9 @@ const PAYROLL_MONTHS = [
 type PersonnelCategory = (typeof PERSONNEL_CATEGORIES)[number];
 type SalariesCategories = Record<PersonnelCategory, SalarieRow[]>;
 
+export const getPayrollProvisionMultiplier = (category?: PersonnelCategory | string) =>
+  category === 'cadre' ? 1.18 : 1.10;
+
 export type PayrollMatch = {
   personnel: PersonnelInfo;
   heures: number;
@@ -238,7 +241,7 @@ export const buildPayrollImportFromText = (text: string, personnelInfos: Personn
       return;
     }
 
-    const coutHoraire = (cost * 1.1) / hours;
+    const coutHoraire = (cost * getPayrollProvisionMultiplier(personnel.category)) / hours;
     matches.push({ personnel, heures: hours, coutGlobal: cost, coutHoraire, sourceLine });
     collected[personnel.category].push({
       nom: personnel.nom,
@@ -257,13 +260,13 @@ export const buildPayrollImportFromText = (text: string, personnelInfos: Personn
   return { categories, matches, unmatched };
 };
 
-export const averagePayrollRate = (rows: SalarieRow[], department?: 'cuisine' | 'salle') => {
+export const averagePayrollRate = (rows: SalarieRow[], department?: 'cuisine' | 'salle', category?: PersonnelCategory | string) => {
   const rates = rows
     .filter(row => !department || !row.department || row.department === department)
     .map(row => {
       const heures = parseHourInputToDecimal(row.heures);
       const coutGlobal = parsePayrollNumber(row.coutGlobal);
-      return heures > 0 && coutGlobal > 0 ? (coutGlobal * 1.1) / heures : 0;
+      return heures > 0 && coutGlobal > 0 ? (coutGlobal * getPayrollProvisionMultiplier(category)) / heures : 0;
     })
     .filter(rate => rate > 0);
 

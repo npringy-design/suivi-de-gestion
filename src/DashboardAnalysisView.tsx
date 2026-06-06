@@ -96,7 +96,7 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
     const hasSalarySnapshot = Boolean(salariesConfig);
     const rateFor = (category: string, section: 'cuisine' | 'salle', fallback: number) => {
       if (!hasSalarySnapshot) return fallback;
-      return averagePayrollRate(salariesConfig?.[category] || [], section);
+      return averagePayrollRate(salariesConfig?.[category] || [], section, category);
     };
 
     const days = rows
