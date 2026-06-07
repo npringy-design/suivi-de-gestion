@@ -28,10 +28,10 @@ import {
   tabs,
   viewModes,
 } from '@/features/dashboard/dashboardStaticConfig';
-import type { TableViewMode } from '@/features/dashboard/dashboardStaticConfig';
 import { useDashboardDailyRecapState } from '@/features/dashboard/hooks/useDashboardDailyRecapState';
 import { useDashboardImportState } from '@/features/dashboard/hooks/useDashboardImportState';
 import { useDashboardPurchaseSuppliers } from '@/features/dashboard/hooks/useDashboardPurchaseSuppliers';
+import { useDashboardUiState } from '@/features/dashboard/hooks/useDashboardUiState';
 import {
   renderAutoValue as renderDashboardAutoValue,
   renderCashAutoValue as renderDashboardCashAutoValue,
@@ -196,7 +196,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   ];
 
   const [month, setMonth] = useState(initialMonth);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const {
     isImportModalOpen,
@@ -234,7 +233,20 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setDailyRecapGoogleRatings,
   } = useDashboardDailyRecapState();
   const { purchaseSupplierNames, setPurchaseSupplierNames, resetPurchaseSupplierNames } = useDashboardPurchaseSuppliers();
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const {
+    isSidebarOpen,
+    setIsSidebarOpen,
+    isDatePickerOpen,
+    setIsDatePickerOpen,
+    focusedCell,
+    setFocusedCell,
+    activeTab,
+    setActiveTab,
+    tableViewMode,
+    setTableViewMode,
+    dragState,
+    setDragState,
+  } = useDashboardUiState();
   const [selectedEntryDay, setSelectedEntryDay] = useState(() => {
     const now = new Date();
     return initialMonth === now.getMonth() && year === now.getFullYear() ? now.getDate() : 1;
@@ -339,11 +351,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   const cellData = globalData[month]?.dashboard || {};
-  const [focusedCell, setFocusedCell] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('PREVISIONS');
-  const [tableViewMode, setTableViewMode] = useState<TableViewMode>('SAISIE');
-  const [dragState, setDragState] = useState<null | { rIdx: number; cIdx: number; endRow: number; value: string }>(null);
-
   const updatePurchaseSupplierName = (col: number, value: string) => {
     setPurchaseSupplierNames(prev => ({
       ...prev,
