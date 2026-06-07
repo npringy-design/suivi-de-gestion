@@ -13,6 +13,7 @@ export type CanalSaisieConfig = {
   totalLabel?: string;
   ecartLabel: string;
   commentField?: string;
+  valueAlign?: 'right' | 'center';
 };
 
 type CanalSaisieProps = {
@@ -76,6 +77,7 @@ export default function CanalSaisie({
   const daysInMonth = getDaysInMonth(month, year);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const commentField = config.commentField || 'commentaire';
+  const valueAlignClass = config.valueAlign === 'center' ? 'text-center' : 'text-right';
 
   const formatCurrency = (num: number) => {
     if (num === 0) return '0,00 €';
@@ -164,7 +166,7 @@ export default function CanalSaisie({
                       <td className="px-6 py-3 text-center font-medium text-slate-600 sticky left-0 z-10 bg-white border-r border-slate-100">
                         {formatDate(day, month, year)}
                       </td>
-                      <td className="px-6 py-3 text-right font-semibold text-slate-700 bg-blue-50/30 border-r border-slate-100">
+                      <td className={`px-6 py-3 ${valueAlignClass} font-semibold text-slate-700 bg-blue-50/30 border-r border-slate-100`}>
                         {theorique !== 0 ? formatCurrency(theorique) : '-'}
                       </td>
                       <td className="px-3 py-2 border-r border-slate-100">
@@ -172,16 +174,16 @@ export default function CanalSaisie({
                           <CurrencyInput
                             value={dayData[config.realField] || ''}
                             onChange={(val) => onUpdate(day, config.realField, val)}
-                            className="text-slate-700 font-medium"
+                            className={`text-slate-700 font-medium ${valueAlignClass}`}
                           />
                         </div>
                       </td>
                       {config.totalLabel ? (
-                        <td className="px-6 py-3 text-right font-semibold text-slate-700 border-r border-slate-100">
+                        <td className={`px-6 py-3 ${valueAlignClass} font-semibold text-slate-700 border-r border-slate-100`}>
                           {reel !== 0 ? formatCurrency(reel) : '-'}
                         </td>
                       ) : null}
-                      <td className={`px-6 py-3 text-right font-bold border-r border-slate-100 ${ecartColor}`}>
+                      <td className={`px-6 py-3 ${valueAlignClass} font-bold border-r border-slate-100 ${ecartColor}`}>
                         {(theorique !== 0 || reel !== 0) ? formatCurrency(ecart) : '-'}
                       </td>
                       <td className="px-3 py-2">
@@ -200,12 +202,12 @@ export default function CanalSaisie({
               <tfoot className="bg-slate-800 text-white font-bold sticky bottom-0 z-20">
                 <tr>
                   <td className="px-6 py-4 text-center rounded-bl-2xl border-r border-slate-700 sticky left-0 z-30 bg-slate-800">TOTAL</td>
-                  <td className="px-6 py-4 text-right text-blue-200 border-r border-slate-700">{formatCurrency(sumTheorique)}</td>
-                  <td className="px-6 py-4 text-right text-amber-200 border-r border-slate-700">{formatCurrency(sumReel)}</td>
+                  <td className={`px-6 py-4 ${valueAlignClass} text-blue-200 border-r border-slate-700`}>{formatCurrency(sumTheorique)}</td>
+                  <td className={`px-6 py-4 ${valueAlignClass} text-amber-200 border-r border-slate-700`}>{formatCurrency(sumReel)}</td>
                   {config.totalLabel ? (
-                    <td className="px-6 py-4 text-right border-r border-slate-700">{formatCurrency(sumReel)}</td>
+                    <td className={`px-6 py-4 ${valueAlignClass} border-r border-slate-700`}>{formatCurrency(sumReel)}</td>
                   ) : null}
-                  <td className={`px-6 py-4 text-right border-r border-slate-700 ${sumEcart < -0.001 ? 'text-rose-400' : sumEcart > 0.001 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                  <td className={`px-6 py-4 ${valueAlignClass} border-r border-slate-700 ${sumEcart < -0.001 ? 'text-rose-400' : sumEcart > 0.001 ? 'text-emerald-400' : 'text-slate-400'}`}>
                     {formatCurrency(sumEcart)}
                   </td>
                   <td className="px-6 py-4 rounded-br-2xl"></td>
