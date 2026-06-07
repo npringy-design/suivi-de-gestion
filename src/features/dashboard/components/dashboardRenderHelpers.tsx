@@ -61,7 +61,7 @@ export const renderDailySingleRow = (
 );
 
 export const renderDailyTotalRow = (
-  items: Array<{ label: string; col: number }>,
+  items: ReadonlyArray<{ label: string; col: number }>,
   isMobile: boolean,
   renderDailyControl: RenderDailyControl
 ) => (
