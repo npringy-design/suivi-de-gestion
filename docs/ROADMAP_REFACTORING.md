@@ -59,7 +59,7 @@ Gain estime : -600 a -800 lignes.
 
 Regrouper les 29 `useState` par domaine et deplacer ceux qui appartiennent aux sous-composants extraits a l'etape 3 :
 - Etats caisse → `DashboardCaisseView` / `DashboardDailyEntry` : **en cours, etats de detail/validation caisse deplaces hors `Dashboard.tsx`.**
-- Etats import/upload → composants d'import correspondants
+- Etats import/upload → composants d'import correspondants : **en cours, etats import regroupes dans `useDashboardImportState`.**
 - Etats saisie quotidienne → `DashboardDailyEntry` : **en cours, props calendrier masquees retirees de la vue journaliere.**
 - Etats UI (tableViewMode, activeTab...) → rester dans Dashboard
 

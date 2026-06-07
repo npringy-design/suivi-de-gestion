@@ -29,6 +29,7 @@ import {
   viewModes,
 } from '@/features/dashboard/dashboardStaticConfig';
 import type { TableViewMode } from '@/features/dashboard/dashboardStaticConfig';
+import { useDashboardImportState } from '@/features/dashboard/hooks/useDashboardImportState';
 import {
   renderAutoValue as renderDashboardAutoValue,
   renderCashAutoValue as renderDashboardCashAutoValue,
@@ -195,15 +196,26 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const [month, setMonth] = useState(initialMonth);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [importStatus, setImportStatus] = useState('');
-  const [importPreview, setImportPreview] = useState<Array<{ label: string; value: string }>>([]);
-  const [caisseImportPreviews, setCaisseImportPreviews] = useState<CaisseImportPreview[]>([]);
-  const [invoiceImportStatus, setInvoiceImportStatus] = useState('');
-  const [invoiceImportPreviews, setInvoiceImportPreviews] = useState<InvoiceImportPreview[]>([]);
-  const [historicalBudgetStatus, setHistoricalBudgetStatus] = useState('');
-  const [historicalBudgetPreviews, setHistoricalBudgetPreviews] = useState<HistoricalBudgetPreview[]>([]);
-  const [salaryImportStatus, setSalaryImportStatus] = useState('');
+  const {
+    isImportModalOpen,
+    setIsImportModalOpen,
+    importStatus,
+    setImportStatus,
+    importPreview,
+    setImportPreview,
+    caisseImportPreviews,
+    setCaisseImportPreviews,
+    invoiceImportStatus,
+    setInvoiceImportStatus,
+    invoiceImportPreviews,
+    setInvoiceImportPreviews,
+    historicalBudgetStatus,
+    setHistoricalBudgetStatus,
+    historicalBudgetPreviews,
+    setHistoricalBudgetPreviews,
+    salaryImportStatus,
+    setSalaryImportStatus,
+  } = useDashboardImportState();
   const [dailyRecapStatus, setDailyRecapStatus] = useState('');
   const recapPreviewRef = useRef<HTMLDivElement>(null);
   const datePickerRef = useRef<HTMLDivElement>(null);
