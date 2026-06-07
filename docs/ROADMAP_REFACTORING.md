@@ -29,7 +29,7 @@ Actions :
 4. Vercel READY.
 
 ### Etape 2 — Composant generique canaux de saisie
-**Statut : en cours. Effort : 1-2 sessions. Risque : faible.**
+**Statut : termine. Effort : 1-2 sessions. Risque : faible.**
 
 8 fichiers sont des copies quasi-identiques : `Sunday.tsx`, `Deliveroo.tsx`, `Uber.tsx`, `ClickCollect.tsx`, `Especes.tsx`, `CbNepting.tsx`, `Conecs.tsx`, `AmexAncv.tsx`. ~1 540 lignes au total. Seuls le titre, les colonnes et la fonction `update*` changent.
 
@@ -37,7 +37,7 @@ Sous-etapes :
 
 **2a** : Creer `src/components/CanalSaisie.tsx` — composant generique parametre par `title`, `columns`, `getData`, `onUpdate`, `computeEcart`. Valider sur `Sunday.tsx` en premier. **Fait : composant cree et `Sunday.tsx` migre.**
 
-**2b** : Migrer les 7 autres canaux dans cet ordre : Deliveroo → Uber → ClickCollect → AmexAncv → Conecs → CbNepting → Especes. **En cours : `Deliveroo.tsx`, `Uber.tsx`, `ClickCollect.tsx`, `AmexAncv.tsx`, `Conecs.tsx` et `CbNepting.tsx` migres.**
+**2b** : Migrer les 7 autres canaux dans cet ordre : Deliveroo → Uber → ClickCollect → AmexAncv → Conecs → CbNepting → Especes. **Fait : tous les canaux sont migres.**
 
 Gain estime : -1 300 lignes.
 
