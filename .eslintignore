@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+api/
 .vscode/
 .git/
 *.config.js

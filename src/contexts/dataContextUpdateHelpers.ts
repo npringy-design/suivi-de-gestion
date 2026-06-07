@@ -47,6 +47,10 @@ export const updateDailyChannelData = <K extends DailyChannelKey>(
   const monthData = normalizeMonthData(prev[month]);
   const channelData = monthData[channelKey] as Record<number, DailyChannelValue<K>>;
   const dayData = channelData[day] || defaultDayData;
+  const nextDayData = {
+    ...(dayData as Record<string, unknown>),
+    [field]: value,
+  } as DailyChannelValue<K>;
 
   return {
     ...prev,
@@ -54,7 +58,7 @@ export const updateDailyChannelData = <K extends DailyChannelKey>(
       ...monthData,
       [channelKey]: {
         ...channelData,
-        [day]: { ...dayData, [field]: value },
+        [day]: nextDayData,
       },
     },
   };

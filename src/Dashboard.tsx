@@ -1298,7 +1298,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
     if (value instanceof Date) return 0;
     const cleaned = String(value ?? '')
-      .replace(/ /g, ' ')
+      .replace(/\u00a0/g, ' ')
       .replace(/s/g, '')
       .replace(',', '.')
       .replace(/[^0-9.-]/g, '');
@@ -1479,7 +1479,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       .trim();
     const compact = displayText.replace(/\s/g, '').replace(',', '.');
     const isNegative = /^-/.test(compact) || /-$/.test(compact) || /^\(.*\)$/.test(compact);
-    const numericText = compact.replace(/[()\-]/g, '').replace(/[^0-9.]/g, '');
+    const numericText = compact.replace(/[()-]/g, '').replace(/[^0-9.]/g, '');
     const displayNumber = Number(numericText) || 0;
     return isNegative ? -Math.abs(displayNumber) : displayNumber;
   };
@@ -1506,7 +1506,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     if (!cell) return '';
     const display = String(cell.w ?? '')
       .replace(/−|–|—/g, '-')
-      .replace(/ /g, ' ')
+      .replace(/\u00a0/g, ' ')
       .trim();
     const raw = cell.v;
 
@@ -1832,11 +1832,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const headerMatch = text.match(/TVA\s+TOTAL\s+HT\s+TVA\s+TTC/i);
     if (!headerMatch || headerMatch.index === undefined) return 0;
     const block = text.slice(headerMatch.index, headerMatch.index + 450);
-    const rateRegex = rate === '5,5' ? /TVA\s*5[,\.]5\s*%/i : rate === '10' ? /TVA\s*10\s*%/i : /TVA\s*20\s*%/i;
+    const rateRegex = rate === '5,5' ? /TVA\s*5[,.]5\s*%/i : rate === '10' ? /TVA\s*10\s*%/i : /TVA\s*20\s*%/i;
     const rateMatch = block.match(rateRegex);
     if (!rateMatch || rateMatch.index === undefined) return 0;
     const afterRate = block.slice(rateMatch.index + rateMatch[0].length);
-    const nextRow = afterRate.search(/TVA\s*(?:5[,\.]5|10|20)\s*%|\bTOTAL\b/i);
+    const nextRow = afterRate.search(/TVA\s*(?:5[,.]5|10|20)\s*%|\bTOTAL\b/i);
     const rowText = nextRow >= 0 ? afterRate.slice(0, nextRow) : afterRate.slice(0, 160);
     const amounts = extractCaisseNumbers(rowText);
     const ht = amounts[2] || amounts[0] || 0;
