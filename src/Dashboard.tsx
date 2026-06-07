@@ -40,6 +40,7 @@ import {
   renderPersonnelTable as renderDashboardPersonnelTable,
 } from '@/features/dashboard/components/dashboardRenderHelpers';
 import DashboardDatePicker from '@/features/dashboard/components/DashboardDatePicker';
+import DashboardCaisseView from '@/features/dashboard/components/DashboardCaisseView';
 // ─────────────────────────────────────────────────────────────────────────────
 import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -3637,7 +3638,31 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           )}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(660px, 1.35fr) minmax(420px, .9fr)', gap: 10, alignItems: 'start' }}>
             {renderDailySection('Réel caisse', 'Saisie réelle des encaissements', (
-              renderRealCaisseTable()
+              <DashboardCaisseView
+                selectedDayRow={selectedDayRow}
+                selectedDayRowIndex={selectedDayRowIndex}
+                globalData={globalData}
+                month={month}
+                isMobile={isMobile}
+                expandedCashDetail={expandedCashDetail}
+                setExpandedCashDetail={setExpandedCashDetail}
+                setCashValidationDraft={setCashValidationDraft}
+                setIsCashValidationModalOpen={setIsCashValidationModalOpen}
+                cashInputClass={cashInputClass}
+                DebouncedInput={DebouncedInput}
+                parseCaisseNumber={parseCaisseNumber}
+                renderCashAutoValue={renderCashAutoValue}
+                updateNepting={updateNepting}
+                updateEspeces={updateEspeces}
+                updateAmexAncv={updateAmexAncv}
+                updateConecs={updateConecs}
+                updateAncvPapiers={updateAncvPapiers}
+                updateSaisieTR={updateSaisieTR}
+                updateSunday={updateSunday}
+                updateUber={updateUber}
+                updateDeliveroo={updateDeliveroo}
+                updateClickCollect={updateClickCollect}
+              />
             ), '#0f766e')}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
