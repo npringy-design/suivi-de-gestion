@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
 import type { DashboardColumn, DashboardRow } from '@/features/dashboard/dashboardTypes';
@@ -27,12 +27,6 @@ type DashboardDailyEntryProps = {
   dynamicColumns: DashboardColumn[];
   dailyRecapStatus: string;
   globalData: Record<number, any>;
-  expandedCashDetail: CashDetailId | null;
-  setExpandedCashDetail: (value: CashDetailId | null) => void;
-  isCashValidationModalOpen: boolean;
-  setIsCashValidationModalOpen: (value: boolean) => void;
-  cashValidationDraft: string;
-  setCashValidationDraft: (value: string) => void;
   cashInputClass: string;
   DebouncedInput: DebouncedInputComponent;
   parseCaisseNumber: (value: string) => number;
@@ -77,12 +71,6 @@ export default function DashboardDailyEntry({
   dynamicColumns,
   dailyRecapStatus,
   globalData,
-  expandedCashDetail,
-  setExpandedCashDetail,
-  isCashValidationModalOpen,
-  setIsCashValidationModalOpen,
-  cashValidationDraft,
-  setCashValidationDraft,
   cashInputClass,
   DebouncedInput,
   parseCaisseNumber,
@@ -110,6 +98,10 @@ export default function DashboardDailyEntry({
   updateDeliveroo,
   updateClickCollect,
 }: DashboardDailyEntryProps) {
+  const [expandedCashDetail, setExpandedCashDetail] = useState<CashDetailId | null>(null);
+  const [isCashValidationModalOpen, setIsCashValidationModalOpen] = useState(false);
+  const [cashValidationDraft, setCashValidationDraft] = useState('');
+
   if (!selectedDayRow) return null;
 
   const achatFields = Array.from({ length: 13 }, (_, idx) => 45 + idx).map(col => renderDailyField(dynamicColumns[col]?.[2] || `Achat ${col}`, col));

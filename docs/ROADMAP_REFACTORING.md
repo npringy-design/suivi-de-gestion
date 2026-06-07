@@ -55,10 +55,10 @@ Destinations : `DashboardDatePicker.tsx`, `DashboardCaisseView.tsx`, `DashboardR
 Gain estime : -600 a -800 lignes.
 
 ### Etape 4 — Decouper les etats de Dashboard
-**Statut : a faire apres etape 3. Effort : 3-4 sessions. Risque : eleve.**
+**Statut : en cours. Effort : 3-4 sessions. Risque : eleve.**
 
 Regrouper les 29 `useState` par domaine et deplacer ceux qui appartiennent aux sous-composants extraits a l'etape 3 :
-- Etats caisse → `DashboardCaisseView`
+- Etats caisse → `DashboardCaisseView` / `DashboardDailyEntry` : **en cours, etats de detail/validation caisse deplaces hors `Dashboard.tsx`.**
 - Etats import/upload → composants d'import correspondants
 - Etats saisie quotidienne → `DashboardDailyEntry`
 - Etats UI (tableViewMode, activeTab...) → rester dans Dashboard
