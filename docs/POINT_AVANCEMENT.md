@@ -23,7 +23,7 @@ Document detaille : `docs/ROADMAP_REFACTORING.md`.
 
 ## Priorite technique actuelle — refactoring structurel
 
-Statut : etape 5 demarree apres reprise de l'etape 4.
+Statut : etape 6 demarree apres validation de l'etape 5.
 
 Document detaille : `docs/ROADMAP_REFACTORING.md`.
 
@@ -33,8 +33,8 @@ Etapes dans l'ordre recommande :
 2. Creer un composant generique `CanalSaisie.tsx` pour remplacer les 8 composants de saisie quasi-identiques (Sunday, Deliveroo, Uber, etc.).
 3. Extraire les fonctions `render*` de `Dashboard.tsx` en composants separes.
 4. Decouper les etats de `Dashboard.tsx` par domaine.
-5. Assainir le `DataContext.tsx` (localStorage directs, fonctions update dupliquees) — **en cours**.
-6. Unifier les valeurs monetaires (152 `parseFloat`, stockage en string).
+5. Assainir le `DataContext.tsx` (localStorage directs, fonctions update dupliquees) — **termine**.
+6. Unifier les valeurs monetaires (152 `parseFloat`, stockage en string) — **demarre**.
 
 Contexte Dashboard important :
 
@@ -48,12 +48,12 @@ Dernieres actions refactoring du 07/06/2026 :
 - Creation de `src/lib/browserStorage.ts` pour centraliser les appels navigateur `localStorage`.
 - Migration de `src/features/dashboard/hooks/useDashboardPurchaseSuppliers.ts` vers ce wrapper.
 - Migration de `src/accountingConfig.ts` vers ce wrapper.
-- Creation de `src/contexts/dataContextUpdateHelpers.ts` pour preparer la factorisation des mises a jour quotidiennes et mensuelles du `DataContext`.
+- Creation et branchement de `src/contexts/dataContextUpdateHelpers.ts` pour factoriser les mises a jour quotidiennes et mensuelles simples du `DataContext`.
 - Les acces restants detectes sont volontaires ou a traiter separement : `src/contexts/DataContext.tsx` pour le cache central et `src/services/supabaseAuth.ts` pour la session auth.
-- Commit code/doc le plus recent : `85c5ca8`.
-- Vercel etait encore `pending` au moment du controle GitHub. A recontroler avant de considerer l'etape validee.
+- Etape 5 validee : voir `docs/ETAPE_5_TERMINEE.md`.
+- Etape 6 demarree : voir `docs/ETAPE_6_MONNAIE.md`.
 
-Prochaine action conseillee : brancher `dataContextUpdateHelpers.ts` dans `DataContext.tsx` par petits lots, en commencant par `updateSunday`, `updateUber`, `updateDeliveroo` et `updateClickCollect`, puis verifier Vercel avant de continuer.
+Prochaine action conseillee : continuer progressivement l'etape 6 sur les fichiers avec conversions monetaires locales, sans changer les formules metier.
 
 ## Consolidation patches Vite — terminee
 

@@ -70,15 +70,15 @@ Regrouper les 29 `useState` par domaine et deplacer ceux qui appartiennent aux s
 Objectif : Dashboard reduit a ~2 000 lignes, role d'orchestrateur.
 
 ### Etape 5 — Assainir le DataContext
-**Statut : en cours. Effort : 1-2 sessions. Risque : moyen.**
+**Statut : termine. Effort : 1-2 sessions. Risque : moyen.**
 
-**5a** : Centraliser les 23 `localStorage` directs hors DataContext. Identifier chaque cle, verifier si la donnee a un equivalent dans le contexte, supprimer les acces directs. **En cours : creation de `src/lib/browserStorage.ts`, migration de `useDashboardPurchaseSuppliers.ts` et `src/accountingConfig.ts` vers ce wrapper. Les acces restants detectes sont volontaires ou a traiter separement : `DataContext.tsx` (cache central) et `src/services/supabaseAuth.ts` (session auth).**
+**5a** : Centraliser les 23 `localStorage` directs hors DataContext. Identifier chaque cle, verifier si la donnee a un equivalent dans le contexte, supprimer les acces directs. **Fait : creation de `src/lib/browserStorage.ts`, migration de `useDashboardPurchaseSuppliers.ts` et `src/accountingConfig.ts` vers ce wrapper. Les acces restants detectes sont volontaires : `DataContext.tsx` (cache central) et `src/services/supabaseAuth.ts` (session auth).**
 
-**5b** : Factoriser les fonctions `update*` de canaux de saisie identiques. **En cours : `src/contexts/dataContextUpdateHelpers.ts` contient `normalizeMonthData`, `updateDailyChannelData` et `updateMonthlyStringRecordData`; les 8 canaux (`Nepting`, `Especes`, `Conecs`, `Sunday`, `Uber`, `AmexAncv`, `Deliveroo`, `ClickCollect`) sont branches via `makeDailyChannelUpdater` dans `DataContext.tsx`.**
-Gain estime : -120 lignes une fois le branchement complet valide.
+**5b** : Factoriser les fonctions `update*` de canaux de saisie identiques. **Fait : `src/contexts/dataContextUpdateHelpers.ts` contient `normalizeMonthData`, `updateDailyChannelData` et `updateMonthlyStringRecordData`; les 8 canaux (`Nepting`, `Especes`, `Conecs`, `Sunday`, `Uber`, `AmexAncv`, `Deliveroo`, `ClickCollect`) sont branches via `makeDailyChannelUpdater` dans `DataContext.tsx`.**
+Gain estime : -120 lignes.
 
 ### Etape 6 — Unifier les valeurs monetaires
-**Statut : a faire apres etape 5. Effort : 4-5 sessions. Risque : eleve.**
+**Statut : demarree. Effort : 4-5 sessions. Risque : eleve.**
 
 152 occurrences de `parseFloat`. Objectif : stocker les montants en `number` dans le DataContext, parser a l'entree (saisie utilisateur), formatter a la sortie (affichage).
 

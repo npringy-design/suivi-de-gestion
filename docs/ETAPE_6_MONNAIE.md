@@ -12,6 +12,7 @@ Commits principaux :
 - `dfe6e6f` : utilisation du helper dans `src/components/CanalSaisie.tsx`.
 - `0dc65ac` : utilisation du helper dans `src/VisuTRPapiers.tsx`.
 - `e985856` : utilisation du helper dans `src/AncvPapiers.tsx`.
+- Lot en cours : utilisation du helper dans `src/BilanSynthese.tsx`.
 
 Vercel : success sur `e985856`.
 

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 
 import { useData, DayDataSaisieTR } from '@/contexts/DataContext';
+import { normalizeMonthData } from '@/contexts/dataContextUpdateHelpers';
+import { formatCurrencyFr, formatNullableCurrencyFr, parseMoneyValue, sanitizeMoneyInput } from '@/lib/money';
 
 interface BilanSyntheseProps {
   month: number;
@@ -17,6 +19,8 @@ const formatDate = (day: number, month: number, year: number) => {
   return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
+const getDayData = <T,>(rows: Record<number, T>, day: number): Partial<T> => rows[day] || {};
+
 const NAV = '#1e293b';
 
 const CurrencyInput = ({ value, onChange }: { value: string, onChange: (val: string) => void }) => {
@@ -24,10 +28,7 @@ const CurrencyInput = ({ value, onChange }: { value: string, onChange: (val: str
 
   let displayValue = value;
   if (!isFocused && value) {
-    const num = parseFloat(value.replace(',', '.'));
-    if (!isNaN(num)) {
-      displayValue = new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
-    }
+    displayValue = formatCurrencyFr(value);
   }
 
   return (
@@ -36,8 +37,7 @@ const CurrencyInput = ({ value, onChange }: { value: string, onChange: (val: str
       className={`w-full h-full p-2 bg-transparent outline-none text-center transition-colors ${isFocused ? 'bg-white ring-2 ring-inset ring-blue-400' : ''}`}
       value={displayValue}
       onChange={(e) => {
-        const val = e.target.value.replace(/[^0-9.,-]/g, '');
-        onChange(val);
+        onChange(sanitizeMoneyInput(e.target.value));
       }}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
@@ -53,7 +53,7 @@ export default function BilanSynthese({ month, year, onBack }: BilanSyntheseProp
   const daysInMonth = getDaysInMonth(month, year);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  const monthData = globalData[month] || {};
+  const monthData = normalizeMonthData(globalData[month]);
   const theoriqueData = monthData.theorique || {};
   const neptingData = monthData.nepting || {};
   const especesData = monthData.especes || {};
@@ -67,15 +67,8 @@ export default function BilanSynthese({ month, year, onBack }: BilanSyntheseProp
   const clickCollectData = monthData.clickCollect || {};
   const bilanData = monthData.bilanSynthese || {};
 
-  const parseVal = (val: string | undefined) => {
-    const parsed = parseFloat((val || '').replace(',', '.'));
-    return isNaN(parsed) ? 0 : parsed;
-  };
-
-  const formatCurrency = (num: number) => {
-    if (num === 0) return '-';
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
-  };
+  const parseVal = parseMoneyValue;
+  const formatCurrency = formatNullableCurrencyFr;
 
   const getDeltaColorClass = (val: number) => {
     if (val > 0) return 'bg-emerald-500 text-white font-bold';
@@ -166,16 +159,16 @@ export default function BilanSynthese({ month, year, onBack }: BilanSyntheseProp
 
   days.forEach(day => {
     const dayBilan = bilanData[day] || { ttc_5_5: '', ttc_10: '', ttc_20: '' };
-    const tTheorique = theoriqueData[day] || {};
-    const tNepting = neptingData[day] || {};
-    const tEspeces = especesData[day] || {};
-    const tConecs = conecsData[day] || {};
-    const tAncv = ancvPapiersData[day] || {};
-    const tSunday = sundayData[day] || {};
-    const tUber = uberData[day] || {};
-    const tAmex = amexAncvData[day] || {};
-    const tDeliveroo = deliverooData[day] || {};
-    const tClickCollect = clickCollectData[day] || {};
+    const tTheorique = getDayData(theoriqueData, day);
+    const tNepting = getDayData(neptingData, day);
+    const tEspeces = getDayData(especesData, day);
+    const tConecs = getDayData(conecsData, day);
+    const tAncv = getDayData(ancvPapiersData, day);
+    const tSunday = getDayData(sundayData, day);
+    const tUber = getDayData(uberData, day);
+    const tAmex = getDayData(amexAncvData, day);
+    const tDeliveroo = getDayData(deliverooData, day);
+    const tClickCollect = getDayData(clickCollectData, day);
 
     const ttc55 = parseVal(dayBilan.ttc_5_5);
     const ttc10 = parseVal(dayBilan.ttc_10);
@@ -428,16 +421,16 @@ export default function BilanSynthese({ month, year, onBack }: BilanSyntheseProp
             <tbody className="divide-y divide-slate-100">
             {days.map((day) => {
               const dayBilan = bilanData[day] || { ttc_5_5: '', ttc_10: '', ttc_20: '' };
-              const tTheorique = theoriqueData[day] || {};
-              const tNepting = neptingData[day] || {};
-              const tEspeces = especesData[day] || {};
-              const tConecs = conecsData[day] || {};
-              const tAncv = ancvPapiersData[day] || {};
-              const tSunday = sundayData[day] || {};
-              const tUber = uberData[day] || {};
-              const tAmex = amexAncvData[day] || {};
-              const tDeliveroo = deliverooData[day] || {};
-              const tClickCollect = clickCollectData[day] || {};
+              const tTheorique = getDayData(theoriqueData, day);
+              const tNepting = getDayData(neptingData, day);
+              const tEspeces = getDayData(especesData, day);
+              const tConecs = getDayData(conecsData, day);
+              const tAncv = getDayData(ancvPapiersData, day);
+              const tSunday = getDayData(sundayData, day);
+              const tUber = getDayData(uberData, day);
+              const tAmex = getDayData(amexAncvData, day);
+              const tDeliveroo = getDayData(deliverooData, day);
+              const tClickCollect = getDayData(clickCollectData, day);
 
               // Input values
               const ttc55 = parseVal(dayBilan.ttc_5_5);
