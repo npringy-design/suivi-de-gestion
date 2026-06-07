@@ -42,7 +42,7 @@ Sous-etapes :
 Gain estime : -1 300 lignes.
 
 ### Etape 3 — Extraire les render* de Dashboard
-**Statut : en cours. Effort : 2-3 sessions. Risque : moyen.**
+**Statut : termine. Effort : 2-3 sessions. Risque : moyen.**
 
 **3a — helpers simples** (sans etat, sans hooks) :
 Extraire vers `src/features/dashboard/components/` :
@@ -55,12 +55,12 @@ Destinations : `DashboardDatePicker.tsx`, `DashboardCaisseView.tsx`, `DashboardR
 Gain estime : -600 a -800 lignes.
 
 ### Etape 4 — Decouper les etats de Dashboard
-**Statut : en cours. Effort : 3-4 sessions. Risque : eleve.**
+**Statut : termine cote code d'apres reprise du 07/06/2026, a confirmer visuellement sur Vercel. Effort : 3-4 sessions. Risque : eleve.**
 
 Regrouper les 29 `useState` par domaine et deplacer ceux qui appartiennent aux sous-composants extraits a l'etape 3 :
-- Etats caisse → `DashboardCaisseView` / `DashboardDailyEntry` : **en cours, etats de detail/validation caisse deplaces hors `Dashboard.tsx`.**
-- Etats import/upload → composants d'import correspondants : **en cours, etats import regroupes dans `useDashboardImportState`, reset import centralise dans le hook.**
-- Etats saisie quotidienne → `DashboardDailyEntry` : **en cours, props calendrier masquees retirees de la vue journaliere, etats recap mail regroupes dans `useDashboardDailyRecapState`.**
+- Etats caisse → `DashboardCaisseView` / `DashboardDailyEntry` : **fait, etats de detail/validation caisse deplaces hors `Dashboard.tsx`.**
+- Etats import/upload → composants d'import correspondants : **fait, etats import regroupes dans `useDashboardImportState`, reset import centralise dans le hook.**
+- Etats saisie quotidienne → `DashboardDailyEntry` : **fait, props calendrier masquees retirees de la vue journaliere, etats recap mail regroupes dans `useDashboardDailyRecapState`.**
 - Etats UI (tableViewMode, activeTab...) → rester dans Dashboard : **regroupes dans `useDashboardUiState`.**
 - Etat responsive mobile → `useDashboardResponsiveState` : **fait.**
 - Etats periode/jour selectionne → `useDashboardPeriodState` : **fait.**
@@ -69,15 +69,15 @@ Regrouper les 29 `useState` par domaine et deplacer ceux qui appartiennent aux s
 Objectif : Dashboard reduit a ~2 000 lignes, role d'orchestrateur.
 
 ### Etape 5 — Assainir le DataContext
-**Statut : a faire. Effort : 1-2 sessions. Risque : moyen.**
+**Statut : en cours. Effort : 1-2 sessions. Risque : moyen.**
 
-**5a** : Centraliser les 23 `localStorage` directs hors DataContext. Identifier chaque cle, verifier si la donnee a un equivalent dans le contexte, supprimer les acces directs.
+**5a** : Centraliser les 23 `localStorage` directs hors DataContext. Identifier chaque cle, verifier si la donnee a un equivalent dans le contexte, supprimer les acces directs. **En cours : creation de `src/lib/browserStorage.ts`, migration de `useDashboardPurchaseSuppliers.ts` et `src/accountingConfig.ts` vers ce wrapper. Les acces restants detectes sont volontaires ou a traiter separement : `DataContext.tsx` (cache central) et `src/services/supabaseAuth.ts` (session auth).**
 
-**5b** : Factoriser les 8 fonctions `update*` de canaux de saisie identiques (updateSunday, updateDeliveroo, etc.) avec une factory interne `makeChannelUpdater(channelKey)`.
+**5b** : Factoriser les 8 fonctions `update*` de canaux de saisie identiques (updateSunday, updateDeliveroo, etc.) avec une factory interne `makeChannelUpdater(channelKey)`. **A faire.**
 Gain estime : -120 lignes.
 
 ### Etape 6 — Unifier les valeurs monetaires
-**Statut : a faire apres etape 2. Effort : 4-5 sessions. Risque : eleve.**
+**Statut : a faire apres etape 5. Effort : 4-5 sessions. Risque : eleve.**
 
 152 occurrences de `parseFloat`. Objectif : stocker les montants en `number` dans le DataContext, parser a l'entree (saisie utilisateur), formatter a la sortie (affichage).
 
