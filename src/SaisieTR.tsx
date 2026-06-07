@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { useData, DayDataSaisieTR, TrEntry } from '@/contexts/DataContext';
+import { formatCurrencyFr, parseMoneyValue, sanitizeMoneyInput } from '@/lib/money';
 
 interface SaisieTRProps {
   month: number;
@@ -19,24 +20,14 @@ const formatDate = (day: number, month: number, year: number) => {
 
 const CurrencyInput = ({ value, onChange, className = "" }: { value: string, onChange: (val: string) => void, className?: string }) => {
   const [isFocused, setIsFocused] = useState(false);
-
-  let displayValue = value;
-  if (!isFocused && value) {
-    const num = parseFloat(value.replace(',', '.'));
-    if (!isNaN(num)) {
-      displayValue = new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + ' €';
-    }
-  }
+  const displayValue = !isFocused && value ? formatCurrencyFr(value) : value;
 
   return (
     <input
       type="text"
       className={`w-full h-full p-2 bg-transparent outline-none text-right transition-colors focus:bg-white focus:ring-2 focus:ring-blue-400 rounded-md ${className}`}
       value={displayValue}
-      onChange={(e) => {
-        const val = e.target.value.replace(/[^0-9.,]/g, '');
-        onChange(val);
-      }}
+      onChange={(e) => onChange(sanitizeMoneyInput(e.target.value))}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
     />
@@ -94,15 +85,8 @@ export default function SaisieTR({ month, year, onBack }: SaisieTRProps) {
     updateSaisieTR(month, day, provider, index, field, value);
   };
 
-  const formatCurrency = (num: number) => {
-    if (num === 0) return '0,00 €';
-    return new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + ' €';
-  };
-
-  const parseVal = (val: string) => {
-    const parsed = parseFloat((val || '').replace(',', '.'));
-    return isNaN(parsed) ? 0 : parsed;
-  };
+  const formatCurrency = formatCurrencyFr;
+  const parseVal = parseMoneyValue;
 
   const providers: (keyof DayDataSaisieTR)[] = ['edenred', 'pluxee', 'bimpli', 'up'];
 

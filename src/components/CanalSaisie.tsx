@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import type { DayDataTheorique } from '@/contexts/DataContext';
+import { formatCurrencyFr, formatNullableCurrencyFr, parseMoneyValue, sanitizeMoneyInput } from '@/lib/money';
 
 type CanalDayData = Record<string, string>;
 
@@ -42,23 +43,14 @@ const formatDate = (day: number, month: number, year: number) => {
 const CurrencyInput = ({ value, onChange, className = '' }: { value: string, onChange: (val: string) => void, className?: string }) => {
   const [isFocused, setIsFocused] = useState(false);
 
-  let displayValue = value;
-  if (!isFocused && value) {
-    const num = parseFloat(value.replace(',', '.'));
-    if (!isNaN(num)) {
-      displayValue = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
-    }
-  }
+  const displayValue = !isFocused && value ? formatCurrencyFr(value) : value;
 
   return (
     <input
       type="text"
       className={`w-full h-full p-2 bg-transparent outline-none text-right transition-colors focus:bg-white focus:ring-2 focus:ring-blue-400 rounded-md ${className}`}
       value={displayValue}
-      onChange={(e) => {
-        const val = e.target.value.replace(/[^0-9.,-]/g, '');
-        onChange(val);
-      }}
+      onChange={(e) => onChange(sanitizeMoneyInput(e.target.value))}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
     />
@@ -82,20 +74,9 @@ export default function CanalSaisie({
   const commentField = config.commentField || 'commentaire';
   const valueAlignClass = config.valueAlign === 'center' ? 'text-center' : 'text-right';
 
-  const formatCurrency = (num: number) => {
-    if (num === 0) return '0,00 €';
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
-  };
+  const getVal = (day: number, field: string) => parseMoneyValue(getData(day)?.[field]);
 
-  const getVal = (day: number, field: string) => {
-    const val = parseFloat((getData(day)?.[field] || '').replace(',', '.'));
-    return isNaN(val) ? 0 : val;
-  };
-
-  const getTheoriqueVal = (day: number, field: keyof DayDataTheorique) => {
-    const val = parseFloat((theoriqueData[day]?.[field] || '').replace(',', '.'));
-    return isNaN(val) ? 0 : val;
-  };
+  const getTheoriqueVal = (day: number, field: keyof DayDataTheorique) => parseMoneyValue(theoriqueData[day]?.[field]);
 
   const getColTotal = (field: string) => {
     return days.reduce((sum, day) => sum + getVal(day, field), 0);
@@ -178,7 +159,7 @@ export default function CanalSaisie({
                         {formatDate(day, month, year)}
                       </td>
                       <td className={`px-6 py-3 ${valueAlignClass} font-semibold text-slate-700 bg-blue-50/30 border-r border-slate-100`}>
-                        {theorique !== 0 ? formatCurrency(theorique) : '-'}
+                        {formatNullableCurrencyFr(theorique)}
                       </td>
                       <td className="px-3 py-2 border-r border-slate-100">
                         <div className="bg-amber-50/50 rounded-lg border border-amber-100/50 group-hover:border-amber-200 transition-colors">
@@ -202,16 +183,16 @@ export default function CanalSaisie({
                       ) : null}
                       {config.totalLabel ? (
                         <td className={`px-6 py-3 ${valueAlignClass} font-semibold text-slate-700 border-r border-slate-100`}>
-                          {reel !== 0 ? formatCurrency(reel) : '-'}
+                          {formatNullableCurrencyFr(reel)}
                         </td>
                       ) : null}
                       {config.secondaryTotalLabel ? (
                         <td className={`px-6 py-3 ${valueAlignClass} font-semibold text-slate-700 border-r border-slate-100`}>
-                          {secondaryReel !== 0 ? formatCurrency(secondaryReel) : '-'}
+                          {formatNullableCurrencyFr(secondaryReel)}
                         </td>
                       ) : null}
                       <td className={`px-6 py-3 ${valueAlignClass} font-bold border-r border-slate-100 ${ecartColor}`}>
-                        {(theorique !== 0 || reel !== 0) ? formatCurrency(ecart) : '-'}
+                        {(theorique !== 0 || reel !== 0) ? formatCurrencyFr(ecart) : '-'}
                       </td>
                       <td className="px-3 py-2">
                         <input
@@ -229,19 +210,19 @@ export default function CanalSaisie({
               <tfoot className="bg-slate-800 text-white font-bold sticky bottom-0 z-20">
                 <tr>
                   <td className="px-6 py-4 text-center rounded-bl-2xl border-r border-slate-700 sticky left-0 z-30 bg-slate-800">TOTAL</td>
-                  <td className={`px-6 py-4 ${valueAlignClass} text-blue-200 border-r border-slate-700`}>{formatCurrency(sumTheorique)}</td>
-                  <td className={`px-6 py-4 ${valueAlignClass} text-amber-200 border-r border-slate-700`}>{formatCurrency(sumReel)}</td>
+                  <td className={`px-6 py-4 ${valueAlignClass} text-blue-200 border-r border-slate-700`}>{formatCurrencyFr(sumTheorique)}</td>
+                  <td className={`px-6 py-4 ${valueAlignClass} text-amber-200 border-r border-slate-700`}>{formatCurrencyFr(sumReel)}</td>
                   {config.secondaryRealLabel ? (
-                    <td className={`px-6 py-4 ${valueAlignClass} text-amber-200 border-r border-slate-700`}>{formatCurrency(sumSecondaryReel)}</td>
+                    <td className={`px-6 py-4 ${valueAlignClass} text-amber-200 border-r border-slate-700`}>{formatCurrencyFr(sumSecondaryReel)}</td>
                   ) : null}
                   {config.totalLabel ? (
-                    <td className={`px-6 py-4 ${valueAlignClass} border-r border-slate-700`}>{formatCurrency(sumReel)}</td>
+                    <td className={`px-6 py-4 ${valueAlignClass} border-r border-slate-700`}>{formatCurrencyFr(sumReel)}</td>
                   ) : null}
                   {config.secondaryTotalLabel ? (
-                    <td className={`px-6 py-4 ${valueAlignClass} border-r border-slate-700`}>{formatCurrency(sumSecondaryReel)}</td>
+                    <td className={`px-6 py-4 ${valueAlignClass} border-r border-slate-700`}>{formatCurrencyFr(sumSecondaryReel)}</td>
                   ) : null}
                   <td className={`px-6 py-4 ${valueAlignClass} border-r border-slate-700 ${sumEcart < -0.001 ? 'text-rose-400' : sumEcart > 0.001 ? 'text-emerald-400' : 'text-slate-400'}`}>
-                    {formatCurrency(sumEcart)}
+                    {formatCurrencyFr(sumEcart)}
                   </td>
                   <td className="px-6 py-4 rounded-br-2xl"></td>
                 </tr>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { useData, DayDataAncvPapiers } from '@/contexts/DataContext';
+import { formatCurrencyFr, parseMoneyValue, sanitizeMoneyInput } from '@/lib/money';
 
 interface AncvPapiersProps {
   month: number;
@@ -19,24 +20,14 @@ const formatDate = (day: number, month: number, year: number) => {
 
 const CurrencyInput = ({ value, onChange, className = "" }: { value: string, onChange: (val: string) => void, className?: string }) => {
   const [isFocused, setIsFocused] = useState(false);
-
-  let displayValue = value;
-  if (!isFocused && value) {
-    const num = parseFloat(value.replace(',', '.'));
-    if (!isNaN(num)) {
-      displayValue = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
-    }
-  }
+  const displayValue = !isFocused && value ? formatCurrencyFr(value) : value;
 
   return (
     <input
       type="text"
       className={`w-full h-full p-2 bg-transparent outline-none text-center transition-colors focus:bg-white focus:ring-2 focus:ring-blue-400 rounded-md ${className}`}
       value={displayValue}
-      onChange={(e) => {
-        const val = e.target.value.replace(/[^0-9.,-]/g, '');
-        onChange(val);
-      }}
+      onChange={(e) => onChange(sanitizeMoneyInput(e.target.value))}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
     />
@@ -93,20 +84,11 @@ export default function AncvPapiers({ month, year, onBack }: AncvPapiersProps) {
     updateAncvPapiers(month, day, field, value);
   };
 
-  const formatCurrency = (num: number) => {
-    if (num === 0) return '0,00 €';
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
-  };
+  const formatCurrency = formatCurrencyFr;
 
-  const getVal = (day: number, field: keyof DayDataAncvPapiers) => {
-    const val = parseFloat((data[day]?.[field] || '').replace(',', '.'));
-    return isNaN(val) ? 0 : val;
-  };
+  const getVal = (day: number, field: keyof DayDataAncvPapiers) => parseMoneyValue(data[day]?.[field]);
 
-  const getTheoriqueVal = (day: number, field: 'ancv') => {
-    const val = parseFloat((theoriqueData[day]?.[field] || '').replace(',', '.'));
-    return isNaN(val) ? 0 : val;
-  };
+  const getTheoriqueVal = (day: number, field: 'ancv') => parseMoneyValue(theoriqueData[day]?.[field]);
 
   const getColTotal = (field: keyof DayDataAncvPapiers) => {
     return days.reduce((sum, day) => sum + getVal(day, field), 0);
