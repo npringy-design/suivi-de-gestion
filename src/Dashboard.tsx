@@ -217,6 +217,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setHistoricalBudgetPreviews,
     salaryImportStatus,
     setSalaryImportStatus,
+    resetDashboardImportState,
   } = useDashboardImportState();
   const recapPreviewRef = useRef<HTMLDivElement>(null);
   const datePickerRef = useRef<HTMLDivElement>(null);
@@ -356,10 +357,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
     resetLocalData();
     resetPurchaseSupplierNames();
-    setInvoiceImportPreviews([]);
-    setInvoiceImportStatus('');
-    setSalaryImportStatus('');
-    setCaisseImportPreviews([]);
+    resetDashboardImportState();
     setImportStatus('RAZ locale effectuee. Les donnees de test ont ete effacees.');
   };
 

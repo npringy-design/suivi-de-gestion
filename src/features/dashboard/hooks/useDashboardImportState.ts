@@ -17,6 +17,13 @@ export function useDashboardImportState() {
   const [historicalBudgetPreviews, setHistoricalBudgetPreviews] = useState<HistoricalBudgetPreview[]>([]);
   const [salaryImportStatus, setSalaryImportStatus] = useState('');
 
+  const resetDashboardImportState = () => {
+    setInvoiceImportPreviews([]);
+    setInvoiceImportStatus('');
+    setSalaryImportStatus('');
+    setCaisseImportPreviews([]);
+  };
+
   return {
     isImportModalOpen,
     setIsImportModalOpen,
@@ -36,5 +43,6 @@ export function useDashboardImportState() {
     setHistoricalBudgetPreviews,
     salaryImportStatus,
     setSalaryImportStatus,
+    resetDashboardImportState,
   };
 }
