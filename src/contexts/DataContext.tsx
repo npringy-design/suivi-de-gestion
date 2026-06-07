@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 
 import { fetchCloudAppBootstrap, fetchCloudMonth, isCloudSyncConfigured, saveCloudAppState, type CloudAppState } from '@/services/supabaseAppState';
+import { normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
 
 export type DayDataTheorique = {
   total_ca: string;
@@ -216,7 +217,7 @@ type DataContextType = {
   setSelectedYear: (year: number) => void;
   selectedMonth: number;
   setSelectedMonth: (month: number) => void;
-  data: Record<number, MonthData>; // key is month index (0-11)
+  data: Record<number, MonthData>;
   allData: Record<number, Record<number, MonthData>>;
   updateTheorique: (month: number, day: number, field: keyof DayDataTheorique, value: string) => void;
   updateNepting: (month: number, day: number, field: keyof DayDataNepting, value: string) => void;
@@ -250,30 +251,48 @@ type DataContextType = {
 
 const STORAGE_KEY_V2 = 'gestion_data_v2';
 const PERSONNEL_INFOS_STORAGE_KEY = 'personnel_infos_v1';
+const CONFIG_2025_STORAGE_KEY = 'config2025_data_v1';
+const CUSTOM_EVENTS_STORAGE_KEY = 'custom_events_v1';
+
+const DEFAULT_THEORIQUE_DAY: DayDataTheorique = {
+  total_ca: '', cb: '', amex: '', tr_papier: '', tr_carte: '', ancv: '',
+  especes: '', click_collect: '', uber: '', deliveroo: '', sunday: '', commentaire: '',
+};
+const DEFAULT_NEPTING_DAY: DayDataNepting = { saisie_reel_nepting: '', pourboire_sunday: '', commentaire: '' };
+const DEFAULT_ESPECES_DAY: DayDataEspeces = { mis_au_coffre: '', pieces: '', commentaire: '' };
+const DEFAULT_CONECS_DAY: DayDataConecs = { conecs_reel_nepting: '', commentaire: '' };
+const DEFAULT_ANCV_PAPIERS_DAY: DayDataAncvPapiers = { nombre_ancv: '', montant_total: '', n_bordereaux: '', nbre_ancv_enveloppes: '', total_enveloppes_ancv: '', commentaire: '' };
+const DEFAULT_VISU_TR_PAPIERS_DAY: DayDataVisuTRPapiers = { n_bordereaux: '', nbre_tr_enveloppes: '', total_enveloppes_tr: '', commentaire: '' };
+const DEFAULT_REEL_DAY: DayDataSunday = { reel: '', commentaire: '' };
+const DEFAULT_AMEX_ANCV_DAY: DayDataAmexAncv = { reel_nepting: '', commentaire: '' };
+const DEFAULT_BILAN_DAY: DayDataBilanSynthese = { ttc_5_5: '', ttc_10: '', ttc_20: '' };
+
+const loadJson = <T,>(key: string, fallback: T): T => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) as T : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const saveJson = (key: string, value: unknown) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // localStorage peut etre indisponible ou plein.
+  }
+};
 
 const loadFromStorage = (): Record<number, Record<number, MonthData>> => {
-  try {
-    const savedV2 = localStorage.getItem(STORAGE_KEY_V2);
-    if (savedV2) return JSON.parse(savedV2);
-    
-    // Migrate v1
-    const savedV1 = localStorage.getItem('gestion_data_v1');
-    if (savedV1) {
-      return { 2026: JSON.parse(savedV1) };
-    }
-    return {};
-  } catch {
-    return {};
-  }
+  const savedV2 = loadJson<Record<number, Record<number, MonthData>> | null>(STORAGE_KEY_V2, null);
+  if (savedV2) return savedV2;
+
+  const savedV1 = loadJson<Record<number, MonthData> | null>('gestion_data_v1', null);
+  return savedV1 ? { 2026: savedV1 } : {};
 };
 
-const saveToStorage = (data: Record<number, Record<number, MonthData>>) => {
-  try {
-    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(data));
-  } catch {
-    // localStorage plein ou désactivé
-  }
-};
+const saveToStorage = (data: Record<number, Record<number, MonthData>>) => saveJson(STORAGE_KEY_V2, data);
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -281,40 +300,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [allData, setAllData] = useState<Record<number, Record<number, MonthData>>>(loadFromStorage);
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [config2025, setConfig2025] = useState<Config2025Data>(() => loadJson(CONFIG_2025_STORAGE_KEY, { mensuel: {}, hebdo: {} }));
+  const [customEvents, setCustomEvents] = useState<CustomEvent[]>(() => loadJson(CUSTOM_EVENTS_STORAGE_KEY, []));
+  const [personnelInfos, setPersonnelInfos] = useState<PersonnelInfo[]>(() => loadJson(PERSONNEL_INFOS_STORAGE_KEY, []));
+
   const data = allData[selectedYear] || {};
-
-  const updateDataForYear = useCallback((updater: (prevYearData: Record<number, MonthData>) => Record<number, MonthData>) => {
-    setAllData(prev => {
-      const newYearData = updater(prev[selectedYear] || {});
-      return { ...prev, [selectedYear]: newYearData };
-    });
-  }, [selectedYear]);
-  const [config2025, setConfig2025] = useState<Config2025Data>(() => {
-    try {
-      const saved = localStorage.getItem('config2025_data_v1');
-      return saved ? JSON.parse(saved) : { mensuel: {}, hebdo: {} };
-    } catch {
-      return { mensuel: {}, hebdo: {} };
-    }
-  });
-
-  const [customEvents, setCustomEvents] = useState<CustomEvent[]>(() => {
-    try {
-      const saved = localStorage.getItem('custom_events_v1');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [personnelInfos, setPersonnelInfos] = useState<PersonnelInfo[]>(() => {
-    try {
-      const saved = localStorage.getItem(PERSONNEL_INFOS_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
 
   const cloudLoadedRef = useRef(!isCloudSyncConfigured);
   const cloudApplyingRef = useRef(false);
@@ -322,6 +312,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const loadedCloudMonthKeysRef = useRef<Set<string>>(new Set());
   const initialCloudYearRef = useRef(selectedYear);
   const initialCloudMonthRef = useRef(selectedMonth);
+
+  const updateDataForYear = useCallback((updater: (prevYearData: Record<number, MonthData>) => Record<number, MonthData>) => {
+    setAllData(prev => ({
+      ...prev,
+      [selectedYear]: updater(prev[selectedYear] || {}),
+    }));
+  }, [selectedYear]);
 
   const cloudMonthKey = useCallback((year: number, month: number) => year + ':' + month, []);
 
@@ -400,8 +397,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       ...prev,
       [year]: {
         ...(prev[year] || {}),
-        [month]: monthData as MonthData
-      }
+        [month]: monthData as MonthData,
+      },
     }));
   }, [cloudMonthKey]);
 
@@ -410,27 +407,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [allData]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('config2025_data_v1', JSON.stringify(config2025));
-    } catch {
-      // localStorage can be unavailable in restricted browser contexts.
-    }
+    saveJson(CONFIG_2025_STORAGE_KEY, config2025);
   }, [config2025]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('custom_events_v1', JSON.stringify(customEvents));
-    } catch {
-      // localStorage can be unavailable in restricted browser contexts.
-    }
+    saveJson(CUSTOM_EVENTS_STORAGE_KEY, customEvents);
   }, [customEvents]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(PERSONNEL_INFOS_STORAGE_KEY, JSON.stringify(personnelInfos));
-    } catch {
-      // localStorage can be unavailable in restricted browser contexts.
-    }
+    saveJson(PERSONNEL_INFOS_STORAGE_KEY, personnelInfos);
   }, [personnelInfos]);
 
   useEffect(() => {
@@ -545,294 +530,143 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setPersonnelInfos(rows);
   }, []);
 
+  const makeDailyChannelUpdater = useCallback(<K extends DailyChannelKey>(
+    channelKey: K,
+    defaultDayData: DailyChannelValue<K>,
+  ) => (month: number, day: number, field: keyof DailyChannelValue<K>, value: string) => {
+    updateDataForYear(prev => updateDailyChannelData(prev, month, day, channelKey, defaultDayData, field, value));
+  }, [updateDataForYear]);
+
   const updateTheorique = useCallback((month: number, day: number, field: keyof DayDataTheorique, value: string) => {
     updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {} };
-      const dayData = monthData.theorique[day] || {
-        total_ca: '', cb: '', amex: '', tr_papier: '', tr_carte: '', ancv: '', 
-        especes: '', click_collect: '', uber: '', deliveroo: '', sunday: '', commentaire: ''
-      };
+      const monthData = normalizeMonthData(prev[month]);
+      const dayData = monthData.theorique[day] || DEFAULT_THEORIQUE_DAY;
       return {
         ...prev,
         [month]: {
           ...monthData,
           theorique: {
             ...monthData.theorique,
-            [day]: { ...dayData, [field]: value }
-          }
-        }
+            [day]: { ...dayData, [field]: value },
+          },
+        },
       };
     });
-  }, []);
+  }, [updateDataForYear]);
 
-  const updateNepting = useCallback((month: number, day: number, field: keyof DayDataNepting, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {} };
-      const dayData = monthData.nepting[day] || {
-        saisie_reel_nepting: '', pourboire_sunday: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          nepting: {
-            ...monthData.nepting,
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateEspeces = useCallback((month: number, day: number, field: keyof DayDataEspeces, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {} };
-      const dayData = monthData.especes?.[day] || {
-        mis_au_coffre: '', pieces: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          especes: {
-            ...(monthData.especes || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateConecs = useCallback((month: number, day: number, field: keyof DayDataConecs, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {} };
-      const dayData = monthData.conecs?.[day] || {
-        conecs_reel_nepting: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          conecs: {
-            ...(monthData.conecs || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
+  const updateNepting = useMemo(() => makeDailyChannelUpdater('nepting', DEFAULT_NEPTING_DAY), [makeDailyChannelUpdater]);
+  const updateEspeces = useMemo(() => makeDailyChannelUpdater('especes', DEFAULT_ESPECES_DAY), [makeDailyChannelUpdater]);
+  const updateConecs = useMemo(() => makeDailyChannelUpdater('conecs', DEFAULT_CONECS_DAY), [makeDailyChannelUpdater]);
+  const updateSunday = useMemo(() => makeDailyChannelUpdater('sunday', DEFAULT_REEL_DAY), [makeDailyChannelUpdater]);
+  const updateUber = useMemo(() => makeDailyChannelUpdater('uber', DEFAULT_REEL_DAY), [makeDailyChannelUpdater]);
+  const updateAmexAncv = useMemo(() => makeDailyChannelUpdater('amexAncv', DEFAULT_AMEX_ANCV_DAY), [makeDailyChannelUpdater]);
+  const updateDeliveroo = useMemo(() => makeDailyChannelUpdater('deliveroo', DEFAULT_REEL_DAY), [makeDailyChannelUpdater]);
+  const updateClickCollect = useMemo(() => makeDailyChannelUpdater('clickCollect', DEFAULT_REEL_DAY), [makeDailyChannelUpdater]);
 
   const updateAncvPapiers = useCallback((month: number, day: number, field: keyof DayDataAncvPapiers, value: string) => {
     updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {} };
-      const dayData = monthData.ancvPapiers?.[day] || {
-        nombre_ancv: '', montant_total: '', n_bordereaux: '', nbre_ancv_enveloppes: '', total_enveloppes_ancv: '', commentaire: ''
-      };
+      const monthData = normalizeMonthData(prev[month]);
+      const dayData = monthData.ancvPapiers[day] || DEFAULT_ANCV_PAPIERS_DAY;
       return {
         ...prev,
         [month]: {
           ...monthData,
           ancvPapiers: {
-            ...(monthData.ancvPapiers || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
+            ...monthData.ancvPapiers,
+            [day]: { ...dayData, [field]: value },
+          },
+        },
       };
     });
-  }, []);
+  }, [updateDataForYear]);
 
   const updateSaisieTR = useCallback((month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string) => {
     updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {} };
-      const saisieTRData = monthData.saisieTR || {};
-      
+      const monthData = normalizeMonthData(prev[month]);
       const defaultEntries = Array(8).fill({ valeur: '', nombre: '' });
-      const dayData = saisieTRData[day] || {
+      const dayData = monthData.saisieTR[day] || {
         edenred: [...defaultEntries],
         pluxee: [...defaultEntries],
         bimpli: [...defaultEntries],
-        up: [...defaultEntries]
+        up: [...defaultEntries],
       };
-      
       const providerData = [...dayData[provider]];
       providerData[index] = { ...providerData[index], [field]: value };
-      
+
       return {
         ...prev,
         [month]: {
           ...monthData,
           saisieTR: {
-            ...saisieTRData,
+            ...monthData.saisieTR,
             [day]: {
               ...dayData,
-              [provider]: providerData
-            }
-          }
-        }
+              [provider]: providerData,
+            },
+          },
+        },
       };
     });
-  }, []);
+  }, [updateDataForYear]);
 
   const updateVisuTRPapiers = useCallback((month: number, day: number, field: keyof DayDataVisuTRPapiers, value: string) => {
     updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {} };
-      const dayData = monthData.visuTRPapiers?.[day] || {
-        n_bordereaux: '', nbre_tr_enveloppes: '', total_enveloppes_tr: '', commentaire: ''
-      };
+      const monthData = normalizeMonthData(prev[month]);
+      const dayData = monthData.visuTRPapiers[day] || DEFAULT_VISU_TR_PAPIERS_DAY;
       return {
         ...prev,
         [month]: {
           ...monthData,
           visuTRPapiers: {
-            ...(monthData.visuTRPapiers || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
+            ...monthData.visuTRPapiers,
+            [day]: { ...dayData, [field]: value },
+          },
+        },
       };
     });
-  }, []);
-
-  const updateSunday = useCallback((month: number, day: number, field: keyof DayDataSunday, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {} };
-      const dayData = monthData.sunday?.[day] || {
-        reel: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          sunday: {
-            ...(monthData.sunday || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateUber = useCallback((month: number, day: number, field: keyof DayDataUber, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {} };
-      const dayData = monthData.uber?.[day] || {
-        reel: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          uber: {
-            ...(monthData.uber || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateAmexAncv = useCallback((month: number, day: number, field: keyof DayDataAmexAncv, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {} };
-      const dayData = monthData.amexAncv?.[day] || {
-        reel_nepting: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          amexAncv: {
-            ...(monthData.amexAncv || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateDeliveroo = useCallback((month: number, day: number, field: keyof DayDataDeliveroo, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {} };
-      const dayData = monthData.deliveroo?.[day] || {
-        reel: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          deliveroo: {
-            ...(monthData.deliveroo || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateClickCollect = useCallback((month: number, day: number, field: keyof DayDataClickCollect, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {} };
-      const dayData = monthData.clickCollect?.[day] || {
-        reel: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          clickCollect: {
-            ...(monthData.clickCollect || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
+  }, [updateDataForYear]);
 
   const updateSalariesConfig = useCallback((month: number, configData: MonthDataSalariesConfig) => {
     updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {} };
+      const monthData = normalizeMonthData(prev[month]);
       return {
         ...prev,
         [month]: {
           ...monthData,
-          salariesConfig: configData
-        }
+          salariesConfig: configData,
+        },
       };
     });
-  }, []);
+  }, [updateDataForYear]);
 
   const updateBilanSynthese = useCallback((month: number, day: number, field: keyof DayDataBilanSynthese, value: string) => {
     updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {} };
-      const dayData = monthData.bilanSynthese?.[day] || {
-        ttc_5_5: '', ttc_10: '', ttc_20: ''
-      };
+      const monthData = normalizeMonthData(prev[month]);
+      const dayData = monthData.bilanSynthese[day] || DEFAULT_BILAN_DAY;
       return {
         ...prev,
         [month]: {
           ...monthData,
           bilanSynthese: {
-            ...(monthData.bilanSynthese || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
+            ...monthData.bilanSynthese,
+            [day]: { ...dayData, [field]: value },
+          },
+        },
       };
     });
-  }, []);
+  }, [updateDataForYear]);
 
   const updateDepensesPetiteCaisse = useCallback((month: number, field: string, value: string | number) => {
     updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {} };
-      
+      const monthData = normalizeMonthData(prev[month]);
       const defaultDepenses: MonthDataDepensesPetiteCaisse = {
         solde_debut_mois: '',
         achats: Array(30).fill({ date: '', fournisseur: '', description: '', ht: '', tva: '' }),
         alimentations: Array(5).fill({ date: '', montant: '' }),
         comptabilisation: { c606310: '', c606300: '', c606400: '', c626100: '', c627100: '', c44566: '', c758: '' },
-        comptage: { p100: '', p50: '', p20: '', p10: '', p5: '', p2: '', p1: '', p050: '', p020: '', p010: '', p005: '', p002: '', p001: '' }
+        comptage: { p100: '', p50: '', p20: '', p10: '', p5: '', p2: '', p1: '', p050: '', p020: '', p010: '', p005: '', p002: '', p001: '' },
       };
-
       const currentDepenses = monthData.depensesPetiteCaisse || defaultDepenses;
-
       let newDepenses = { ...currentDepenses };
 
       if (field.startsWith('achats[') || field.startsWith('alimentations[')) {
@@ -853,9 +687,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       } else if (field.includes('.')) {
         const [objName, key] = field.split('.');
         if (objName === 'comptabilisation' || objName === 'comptage') {
-          newDepenses[objName as 'comptabilisation' | 'comptage'] = { 
-            ...(currentDepenses[objName as 'comptabilisation' | 'comptage'] as Record<string, string | number>), 
-            [key]: value 
+          newDepenses[objName as 'comptabilisation' | 'comptage'] = {
+            ...(currentDepenses[objName as 'comptabilisation' | 'comptage'] as Record<string, string | number>),
+            [key]: value,
           } as MonthDataDepensesPetiteCaisse['comptabilisation'] & MonthDataDepensesPetiteCaisse['comptage'];
         }
       } else {
@@ -866,109 +700,51 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         ...prev,
         [month]: {
           ...monthData,
-          depensesPetiteCaisse: newDepenses
-        }
+          depensesPetiteCaisse: newDepenses,
+        },
       };
     });
-  }, []);
+  }, [updateDataForYear]);
 
   const updateDashboard = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {}, dashboard: {} };
-      const dashboardData = monthData.dashboard || {};
-      
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          dashboard: {
-            ...dashboardData,
-            [cellKey]: value
-          }
-        }
-      };
-    });
-  }, []);
+    updateDataForYear(prev => updateMonthlyStringRecordData(prev, month, 'dashboard', cellKey, value));
+  }, [updateDataForYear]);
 
   const updateEdgMensuel = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {}, dashboard: {}, edgMensuel: {} };
-      const edgData = monthData.edgMensuel || {};
-      
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          edgMensuel: {
-            ...edgData,
-            [cellKey]: value
-          }
-        }
-      };
-    });
-  }, []);
+    updateDataForYear(prev => updateMonthlyStringRecordData(prev, month, 'edgMensuel', cellKey, value));
+  }, [updateDataForYear]);
 
   const updateEdgMensuelRealise = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {}, dashboard: {}, edgMensuel: {}, edgMensuelRealise: {}, edgMensuelN1: {} };
-      const edgData = monthData.edgMensuelRealise || {};
-      
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          edgMensuelRealise: {
-            ...edgData,
-            [cellKey]: value
-          }
-        }
-      };
-    });
-  }, []);
+    updateDataForYear(prev => updateMonthlyStringRecordData(prev, month, 'edgMensuelRealise', cellKey, value));
+  }, [updateDataForYear]);
 
   const updateEdgMensuelN1 = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {}, dashboard: {}, edgMensuel: {}, edgMensuelRealise: {}, edgMensuelN1: {} };
-      const edgData = monthData.edgMensuelN1 || {};
-      
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          edgMensuelN1: {
-            ...edgData,
-            [cellKey]: value
-          }
-        }
-      };
-    });
-  }, []);
+    updateDataForYear(prev => updateMonthlyStringRecordData(prev, month, 'edgMensuelN1', cellKey, value));
+  }, [updateDataForYear]);
 
   const updateMiseEnPaiement = useCallback((month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | boolean) => {
     updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {}, dashboard: {}, edgMensuel: {}, edgMensuelRealise: {}, edgMensuelN1: {} };
-      
+      const monthData = normalizeMonthData(prev[month]);
       const defaultEntries = Array(10).fill({ fournisseur: '', numFacture: '', montantHT: '', montantTTC: '', dateEcheance: '', datePaiementPrevue: '', paiementEffectue: false });
       const currentMiseEnPaiement = monthData.miseEnPaiement || {
         period1: [...defaultEntries],
-        period2: [...defaultEntries]
+        period2: [...defaultEntries],
       };
-      
       const periodData = [...currentMiseEnPaiement[period]];
       periodData[index] = { ...periodData[index], [field]: value };
-      
+
       return {
         ...prev,
         [month]: {
           ...monthData,
           miseEnPaiement: {
             ...currentMiseEnPaiement,
-            [period]: periodData
-          }
-        }
+            [period]: periodData,
+          },
+        },
       };
     });
-  }, []);
+  }, [updateDataForYear]);
 
   const updateConfig2025 = useCallback((type: 'mensuel' | 'hebdo', index: number, field: string, value: string) => {
     setConfig2025(prev => ({
@@ -977,9 +753,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         ...prev[type],
         [index]: {
           ...(prev[type][index] || {}),
-          [field]: value
-        }
-      }
+          [field]: value,
+        },
+      },
     }));
   }, []);
 
@@ -987,11 +763,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     try {
       localStorage.removeItem(STORAGE_KEY_V2);
       localStorage.removeItem('gestion_data_v1');
-      localStorage.removeItem('config2025_data_v1');
-      localStorage.removeItem('custom_events_v1');
+      localStorage.removeItem(CONFIG_2025_STORAGE_KEY);
+      localStorage.removeItem(CUSTOM_EVENTS_STORAGE_KEY);
       localStorage.removeItem(PERSONNEL_INFOS_STORAGE_KEY);
     } catch {
-      // La remise à zéro reste possible en mémoire même si le stockage navigateur est indisponible.
+      // La remise a zero reste possible en memoire meme si le stockage navigateur est indisponible.
     }
     setAllData({});
     setConfig2025({ mensuel: {}, hebdo: {} });
@@ -999,8 +775,78 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setPersonnelInfos([]);
   }, []);
 
+  const value = useMemo<DataContextType>(() => ({
+    selectedYear,
+    setSelectedYear,
+    selectedMonth,
+    setSelectedMonth,
+    data,
+    allData,
+    updateTheorique,
+    updateNepting,
+    updateEspeces,
+    updateConecs,
+    updateAncvPapiers,
+    updateSaisieTR,
+    updateVisuTRPapiers,
+    updateSunday,
+    updateUber,
+    updateAmexAncv,
+    updateDeliveroo,
+    updateClickCollect,
+    updateBilanSynthese,
+    updateDepensesPetiteCaisse,
+    updateDashboard,
+    updateEdgMensuel,
+    updateEdgMensuelRealise,
+    updateEdgMensuelN1,
+    updateMiseEnPaiement,
+    updateSalariesConfig,
+    config2025,
+    updateConfig2025,
+    customEvents,
+    addCustomEvent,
+    removeCustomEvent,
+    personnelInfos,
+    updatePersonnelInfos,
+    resetLocalData,
+  }), [
+    selectedYear,
+    selectedMonth,
+    data,
+    allData,
+    updateTheorique,
+    updateNepting,
+    updateEspeces,
+    updateConecs,
+    updateAncvPapiers,
+    updateSaisieTR,
+    updateVisuTRPapiers,
+    updateSunday,
+    updateUber,
+    updateAmexAncv,
+    updateDeliveroo,
+    updateClickCollect,
+    updateBilanSynthese,
+    updateDepensesPetiteCaisse,
+    updateDashboard,
+    updateEdgMensuel,
+    updateEdgMensuelRealise,
+    updateEdgMensuelN1,
+    updateMiseEnPaiement,
+    updateSalariesConfig,
+    config2025,
+    updateConfig2025,
+    customEvents,
+    addCustomEvent,
+    removeCustomEvent,
+    personnelInfos,
+    updatePersonnelInfos,
+    resetLocalData,
+  ]);
+
   return (
-    <DataContext.Provider value={{ selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, data, allData, updateTheorique, updateNepting, updateEspeces, updateConecs, updateAncvPapiers, updateSaisieTR, updateVisuTRPapiers, updateSunday, updateUber, updateAmexAncv, updateDeliveroo, updateClickCollect, updateBilanSynthese, updateDepensesPetiteCaisse, updateDashboard, updateEdgMensuel, updateEdgMensuelRealise, updateEdgMensuelN1, updateMiseEnPaiement, updateSalariesConfig, config2025, updateConfig2025, customEvents, addCustomEvent, removeCustomEvent, personnelInfos, updatePersonnelInfos, resetLocalData }}>
+    <DataContext.Provider value={value}>
       {children}
     </DataContext.Provider>
   );
