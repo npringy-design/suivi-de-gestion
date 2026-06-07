@@ -11,19 +11,19 @@ Ce fichier est le point de reprise rapide du projet. Lire ensuite la documentati
 - Pousser directement les corrections terminees sauf demande contraire.
 - Verifier le build Vercel apres une modification code.
 
-## Etat general au 06/06/2026
+## Etat general au 07/06/2026
 
 **Chantier patches Vite : termine.**
 
 Toutes les vagues (1 a 11) sont integrees. `vite.config.ts` contient uniquement `react()` et `tailwindcss()`. Vercel READY sur le commit `7f186ed`. Le dossier `scripts/` ne contient plus que `dashboardRefactorStaticCodemod.ts` (codemod ponctuel deja execute, peut etre supprime).
 
-**Prochain chantier : refactoring structurel.**
+**Chantier en cours : refactoring structurel.**
 
 Document detaille : `docs/ROADMAP_REFACTORING.md`.
 
 ## Priorite technique actuelle — refactoring structurel
 
-Statut : pret a demarrer. Patches Vite termines, code stable.
+Statut : etape 5 demarree apres reprise de l'etape 4.
 
 Document detaille : `docs/ROADMAP_REFACTORING.md`.
 
@@ -33,15 +33,24 @@ Etapes dans l'ordre recommande :
 2. Creer un composant generique `CanalSaisie.tsx` pour remplacer les 8 composants de saisie quasi-identiques (Sunday, Deliveroo, Uber, etc.).
 3. Extraire les fonctions `render*` de `Dashboard.tsx` en composants separes.
 4. Decouper les etats de `Dashboard.tsx` par domaine.
-5. Assainir le `DataContext.tsx` (localStorage directs, fonctions update dupliquees).
+5. Assainir le `DataContext.tsx` (localStorage directs, fonctions update dupliquees) — **en cours**.
 6. Unifier les valeurs monetaires (152 `parseFloat`, stockage en string).
 
 Contexte Dashboard important :
 
-- `Dashboard.tsx` reste a 5 302 lignes apres integration des patches.
-- Il concentre trop de responsabilites : logique metier, rendu, calculs, imports PDF/Excel.
-- Ne pas ajouter de nouvelles fonctionnalites directement dans ce fichier avant d'avoir commence le decoupage.
+- `Dashboard.tsx` a ete allege par les extractions des etapes 3 et 4.
+- Il reste une zone sensible : logique metier, calculs, imports PDF/Excel et orchestration.
+- Ne pas ajouter de nouvelles fonctionnalites directement dans ce fichier sauf necessite metier.
 - La roadmap detaillee avec les prompts Codex est dans `docs/ROADMAP_REFACTORING.md`.
+
+Derniere action refactoring du 07/06/2026 :
+
+- Creation de `src/lib/browserStorage.ts` pour centraliser les appels navigateur `localStorage`.
+- Migration de `src/features/dashboard/hooks/useDashboardPurchaseSuppliers.ts` vers ce wrapper.
+- Migration de `src/accountingConfig.ts` vers ce wrapper.
+- Les acces restants detectes sont volontaires ou a traiter separement : `src/contexts/DataContext.tsx` pour le cache central et `src/services/supabaseAuth.ts` pour la session auth.
+- Commit code/doc : `6e8bcb6`.
+- Vercel etait encore `pending` au moment du controle GitHub. A recontroler avant de considerer l'etape validee.
 
 ## Consolidation patches Vite — terminee
 
