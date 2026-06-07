@@ -13,6 +13,7 @@ Commits principaux :
 - `0dc65ac` : utilisation du helper dans `src/VisuTRPapiers.tsx`.
 - `e985856` : utilisation du helper dans `src/AncvPapiers.tsx`.
 - Lot en cours : utilisation du helper dans `src/BilanSynthese.tsx`.
+- Lot en cours : utilisation du helper dans `src/RemiseTR.tsx`.
 
 Vercel : success sur `e985856`.
 

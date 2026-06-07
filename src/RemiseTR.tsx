@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { formatCurrencyFr, parseMoneyValue } from '@/lib/money';
 
 interface RemiseTRProps {
   month: number;
@@ -26,7 +27,7 @@ export default function RemiseTR({ month, year, onBack }: RemiseTRProps) {
       const brandRows = dayData[brand] || [];
       brandRows.forEach(row => {
         // In SaisieTR we store fields as { valeur: string, nombre: string }
-        const val = parseFloat((row.valeur || '').replace(',', '.'));
+        const val = parseMoneyValue(row.valeur);
         const nb = parseInt((row.nombre || '').toString(), 10);
         if (!isNaN(val) && val > 0 && !isNaN(nb) && nb > 0) {
           const key = val.toFixed(2);
@@ -36,7 +37,7 @@ export default function RemiseTR({ month, year, onBack }: RemiseTRProps) {
     });
     
     const result = Object.entries(aggregated).map(([valStr, nombre]) => {
-      const valeur = parseFloat(valStr);
+      const valeur = parseMoneyValue(valStr);
       return {
         valeur,
         nombre,
@@ -57,10 +58,6 @@ export default function RemiseTR({ month, year, onBack }: RemiseTRProps) {
 
   const grandTotalNombre = edenred.totalNombre + pluxee.totalNombre + bimpli.totalNombre + up.totalNombre;
   const grandTotalValeur = edenred.totalValeur + pluxee.totalValeur + bimpli.totalValeur + up.totalValeur;
-
-  const formatCurrency = (num: number) => {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
-  };
 
   const formatTotalValeur = (num: number) => {
     if (num === 0) return '';
@@ -96,9 +93,9 @@ export default function RemiseTR({ month, year, onBack }: RemiseTRProps) {
           </tr>
           {data.rows.map((row: any, idx: number) => (
             <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-              <td className="px-3 py-2 border-r border-slate-100 text-right font-medium text-slate-600">{formatCurrency(row.valeur)}</td>
+              <td className="px-3 py-2 border-r border-slate-100 text-right font-medium text-slate-600">{formatCurrencyFr(row.valeur)}</td>
               <td className="px-3 py-2 border-r border-slate-100 text-right font-medium text-slate-700">{row.nombre}</td>
-              <td className="px-3 py-2 text-right font-medium text-slate-700">{formatCurrency(row.total)}</td>
+              <td className="px-3 py-2 text-right font-medium text-slate-700">{formatCurrencyFr(row.total)}</td>
             </tr>
           ))}
         </tbody>
