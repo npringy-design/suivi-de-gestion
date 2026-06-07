@@ -73,8 +73,8 @@ Objectif : Dashboard reduit a ~2 000 lignes, role d'orchestrateur.
 
 **5a** : Centraliser les 23 `localStorage` directs hors DataContext. Identifier chaque cle, verifier si la donnee a un equivalent dans le contexte, supprimer les acces directs. **En cours : creation de `src/lib/browserStorage.ts`, migration de `useDashboardPurchaseSuppliers.ts` et `src/accountingConfig.ts` vers ce wrapper. Les acces restants detectes sont volontaires ou a traiter separement : `DataContext.tsx` (cache central) et `src/services/supabaseAuth.ts` (session auth).**
 
-**5b** : Factoriser les 8 fonctions `update*` de canaux de saisie identiques (updateSunday, updateDeliveroo, etc.) avec une factory interne `makeChannelUpdater(channelKey)`. **A faire.**
-Gain estime : -120 lignes.
+**5b** : Factoriser les fonctions `update*` de canaux de saisie identiques. **Demarre : creation de `src/contexts/dataContextUpdateHelpers.ts` avec `normalizeMonthData`, `updateDailyChannelData` et `updateMonthlyStringRecordData`. Le branchement dans `DataContext.tsx` reste a faire ensuite, par petits lots, apres validation build/Vercel du helper.**
+Gain estime : -120 lignes une fois le branchement effectue.
 
 ### Etape 6 — Unifier les valeurs monetaires
 **Statut : a faire apres etape 5. Effort : 4-5 sessions. Risque : eleve.**
