@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { useData, DayDataVisuTRPapiers, DayDataSaisieTR } from '@/contexts/DataContext';
+import { formatCurrencyFr, parseMoneyValue, sanitizeMoneyInput } from '@/lib/money';
 
 interface VisuTRPapiersProps {
   month: number;
@@ -15,16 +16,13 @@ const formatDate = (d: number, m: number, y: number) =>
 
 const CurrencyInput = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
   const [focused, setFocused] = useState(false);
-  let display = value;
-  if (!focused && value) {
-    const n = parseFloat(value.replace(',', '.'));
-    if (!isNaN(n)) display = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
-  }
+  const display = !focused && value ? new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseMoneyValue(value)) : value;
+
   return (
     <input type="text"
       className="w-full p-2 bg-transparent outline-none text-right text-slate-700 font-medium focus:bg-white focus:ring-2 focus:ring-blue-400 rounded-md transition-colors border border-transparent hover:border-slate-200"
       value={display}
-      onChange={e => onChange(e.target.value.replace(/[^0-9.,-]/g, ''))}
+      onChange={e => onChange(sanitizeMoneyInput(e.target.value))}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
     />
@@ -47,15 +45,15 @@ export default function VisuTRPapiers({ month, year, onBack }: VisuTRPapiersProp
   const theoriqueData = monthData.theorique || {};
   const saisieTRData = monthData.saisieTR || {};
 
-  const parseVal = (v: string) => { const n = parseFloat((v || '').replace(',', '.')); return isNaN(n) ? 0 : n; };
-  const fmt = (n: number) => n === 0 ? '0,00 €' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
+  const parseVal = parseMoneyValue;
+  const fmt = formatCurrencyFr;
 
   const getSaisie = (day: number) => {
     const d = saisieTRData[day];
     if (!d) return { nombre: 0, valeur: 0 };
     let nb = 0, val = 0;
     (['edenred', 'pluxee', 'bimpli', 'up'] as (keyof DayDataSaisieTR)[]).forEach(p => {
-      (d[p] || []).forEach((e: any) => { nb += parseVal(e.nombre); val += parseVal(e.valeur) * parseVal(e.nombre); });
+      (d[p] || []).forEach((e: { nombre: string; valeur: string }) => { nb += parseVal(e.nombre); val += parseVal(e.valeur) * parseVal(e.nombre); });
     });
     return { nombre: nb, valeur: val };
   };
