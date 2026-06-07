@@ -31,6 +31,7 @@ import {
 import { useDashboardDailyRecapState } from '@/features/dashboard/hooks/useDashboardDailyRecapState';
 import { useDashboardImportState } from '@/features/dashboard/hooks/useDashboardImportState';
 import { useDashboardPurchaseSuppliers } from '@/features/dashboard/hooks/useDashboardPurchaseSuppliers';
+import { useDashboardResponsiveState } from '@/features/dashboard/hooks/useDashboardResponsiveState';
 import { useDashboardUiState } from '@/features/dashboard/hooks/useDashboardUiState';
 import {
   renderAutoValue as renderDashboardAutoValue,
@@ -196,7 +197,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   ];
 
   const [month, setMonth] = useState(initialMonth);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const { isMobile } = useDashboardResponsiveState();
   const {
     isImportModalOpen,
     setIsImportModalOpen,
@@ -301,14 +302,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     });
     return cols;
   }, [C, globalData, month, purchaseSupplierNames]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   useEffect(() => {
     if (!isDatePickerOpen) return;

@@ -62,6 +62,7 @@ Regrouper les 29 `useState` par domaine et deplacer ceux qui appartiennent aux s
 - Etats import/upload → composants d'import correspondants : **en cours, etats import regroupes dans `useDashboardImportState`, reset import centralise dans le hook.**
 - Etats saisie quotidienne → `DashboardDailyEntry` : **en cours, props calendrier masquees retirees de la vue journaliere, etats recap mail regroupes dans `useDashboardDailyRecapState`.**
 - Etats UI (tableViewMode, activeTab...) → rester dans Dashboard : **regroupes dans `useDashboardUiState`.**
+- Etat responsive mobile → `useDashboardResponsiveState` : **fait.**
 - Etat noms fournisseurs achats → `useDashboardPurchaseSuppliers` : **fait, localStorage direct retire de `Dashboard.tsx`.**
 
 Objectif : Dashboard reduit a ~2 000 lignes, role d'orchestrateur.
