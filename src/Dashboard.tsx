@@ -29,6 +29,7 @@ import {
   viewModes,
 } from '@/features/dashboard/dashboardStaticConfig';
 import type { TableViewMode } from '@/features/dashboard/dashboardStaticConfig';
+import { useDashboardDailyRecapState } from '@/features/dashboard/hooks/useDashboardDailyRecapState';
 import { useDashboardImportState } from '@/features/dashboard/hooks/useDashboardImportState';
 import {
   renderAutoValue as renderDashboardAutoValue,
@@ -216,13 +217,20 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     salaryImportStatus,
     setSalaryImportStatus,
   } = useDashboardImportState();
-  const [dailyRecapStatus, setDailyRecapStatus] = useState('');
   const recapPreviewRef = useRef<HTMLDivElement>(null);
   const datePickerRef = useRef<HTMLDivElement>(null);
-  const [isDailyRecapModalOpen, setIsDailyRecapModalOpen] = useState(false);
-  const [dailyRecapManagers, setDailyRecapManagers] = useState({ midi: '', soir: '' });
-  const [dailyRecapServiceComments, setDailyRecapServiceComments] = useState({ midi: '', soir: '' });
-  const [dailyRecapGoogleRatings, setDailyRecapGoogleRatings] = useState<Record<number, string>>({ 1: '', 2: '', 3: '', 4: '', 5: '' });
+  const {
+    dailyRecapStatus,
+    setDailyRecapStatus,
+    isDailyRecapModalOpen,
+    setIsDailyRecapModalOpen,
+    dailyRecapManagers,
+    setDailyRecapManagers,
+    dailyRecapServiceComments,
+    setDailyRecapServiceComments,
+    dailyRecapGoogleRatings,
+    setDailyRecapGoogleRatings,
+  } = useDashboardDailyRecapState();
   const [purchaseSupplierNames, setPurchaseSupplierNames] = useState<Record<number, string>>(() => {
     try {
       const saved = localStorage.getItem('dashboard_purchase_supplier_names_v1');
