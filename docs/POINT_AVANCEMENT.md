@@ -43,14 +43,17 @@ Contexte Dashboard important :
 - Ne pas ajouter de nouvelles fonctionnalites directement dans ce fichier sauf necessite metier.
 - La roadmap detaillee avec les prompts Codex est dans `docs/ROADMAP_REFACTORING.md`.
 
-Derniere action refactoring du 07/06/2026 :
+Dernieres actions refactoring du 07/06/2026 :
 
 - Creation de `src/lib/browserStorage.ts` pour centraliser les appels navigateur `localStorage`.
 - Migration de `src/features/dashboard/hooks/useDashboardPurchaseSuppliers.ts` vers ce wrapper.
 - Migration de `src/accountingConfig.ts` vers ce wrapper.
+- Creation de `src/contexts/dataContextUpdateHelpers.ts` pour preparer la factorisation des mises a jour quotidiennes et mensuelles du `DataContext`.
 - Les acces restants detectes sont volontaires ou a traiter separement : `src/contexts/DataContext.tsx` pour le cache central et `src/services/supabaseAuth.ts` pour la session auth.
-- Commit code/doc : `6e8bcb6`.
+- Commit code/doc le plus recent : `85c5ca8`.
 - Vercel etait encore `pending` au moment du controle GitHub. A recontroler avant de considerer l'etape validee.
+
+Prochaine action conseillee : brancher `dataContextUpdateHelpers.ts` dans `DataContext.tsx` par petits lots, en commencant par `updateSunday`, `updateUber`, `updateDeliveroo` et `updateClickCollect`, puis verifier Vercel avant de continuer.
 
 ## Consolidation patches Vite — terminee
 
