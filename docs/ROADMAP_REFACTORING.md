@@ -50,7 +50,7 @@ Extraire vers `src/features/dashboard/components/` :
 Gain estime : -200 lignes.
 
 **3b — vues complexes** :
-Extraire dans cet ordre : `renderDatePicker` → `renderRealCaisseTable` → `renderDailyRealiseMatrix` → `renderDailyEntryView`. **En cours : `renderDatePicker` extrait dans `DashboardDatePicker.tsx`, rendu caisse bascule sur `DashboardCaisseView.tsx`.**
+Extraire dans cet ordre : `renderDatePicker` → `renderRealCaisseTable` → `renderDailyRealiseMatrix` → `renderDailyEntryView`. **En cours : `renderDatePicker` extrait dans `DashboardDatePicker.tsx`, rendu caisse bascule sur `DashboardCaisseView.tsx`, `renderDailyRealiseMatrix` extrait dans `DashboardRealiseMatrix.tsx`.**
 Destinations : `DashboardDatePicker.tsx`, `DashboardCaisseView.tsx`, `DashboardRealiseMatrix.tsx`, `DashboardDailyEntry.tsx`.
 Gain estime : -600 a -800 lignes.
 
