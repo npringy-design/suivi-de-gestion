@@ -1,3 +1,5 @@
+import { getBrowserStorageItem, setBrowserStorageItem } from '@/lib/browserStorage';
+
 export type AccountingCategory = 'Chiffre d’affaires' | 'TVA' | 'Paiement' | 'Écart' | 'Ajustement';
 
 export type AccountingCaisseKey = '' | 'ht55' | 'ht10' | 'ht20' | 'tva55' | 'tva10' | 'tva20' | 'totalTtc' | 'espReel' | 'cbReel' | 'amexReel' | 'crtReel' | 'cbTrReel' | 'ancvReel' | 'delivReel' | 'uberReel' | 'sundayReel' | 'ceReel' | 'pourboires' | 'bilanEcart' | 'ecartNegatif' | 'ecartPositif' | 'fondCaisse' | 'especesRemise';
@@ -85,7 +87,7 @@ export const normalizeAccountingMappings = (input: unknown): AccountingMappingRo
 
 export const loadAccountingMappings = (): AccountingMappingRow[] => {
   try {
-    const saved = localStorage.getItem(ACCOUNTING_STORAGE_KEY);
+    const saved = getBrowserStorageItem(ACCOUNTING_STORAGE_KEY);
     if (!saved) return DEFAULT_ACCOUNTING_MAPPINGS;
     return normalizeAccountingMappings(JSON.parse(saved));
   } catch {
@@ -94,9 +96,5 @@ export const loadAccountingMappings = (): AccountingMappingRow[] => {
 };
 
 export const saveAccountingMappings = (rows: AccountingMappingRow[]) => {
-  try {
-    localStorage.setItem(ACCOUNTING_STORAGE_KEY, JSON.stringify(rows));
-  } catch {
-    // LocalStorage peut être bloqué sans rendre l’écran inutilisable.
-  }
+  setBrowserStorageItem(ACCOUNTING_STORAGE_KEY, JSON.stringify(rows));
 };
