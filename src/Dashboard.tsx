@@ -31,6 +31,7 @@ import {
 import type { TableViewMode } from '@/features/dashboard/dashboardStaticConfig';
 import { useDashboardDailyRecapState } from '@/features/dashboard/hooks/useDashboardDailyRecapState';
 import { useDashboardImportState } from '@/features/dashboard/hooks/useDashboardImportState';
+import { useDashboardPurchaseSuppliers } from '@/features/dashboard/hooks/useDashboardPurchaseSuppliers';
 import {
   renderAutoValue as renderDashboardAutoValue,
   renderCashAutoValue as renderDashboardCashAutoValue,
@@ -231,14 +232,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     dailyRecapGoogleRatings,
     setDailyRecapGoogleRatings,
   } = useDashboardDailyRecapState();
-  const [purchaseSupplierNames, setPurchaseSupplierNames] = useState<Record<number, string>>(() => {
-    try {
-      const saved = localStorage.getItem('dashboard_purchase_supplier_names_v1');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
+  const { purchaseSupplierNames, setPurchaseSupplierNames, resetPurchaseSupplierNames } = useDashboardPurchaseSuppliers();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [selectedEntryDay, setSelectedEntryDay] = useState(() => {
     const now = new Date();
@@ -294,14 +288,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     });
     return cols;
   }, [C, globalData, month, purchaseSupplierNames]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('dashboard_purchase_supplier_names_v1', JSON.stringify(purchaseSupplierNames));
-    } catch {
-      // Les noms de fournisseurs restent modifiables même si le stockage navigateur est indisponible.
-    }
-  }, [purchaseSupplierNames]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -369,12 +355,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     if (!confirmed) return;
 
     resetLocalData();
-    setPurchaseSupplierNames({});
-    try {
-      localStorage.removeItem('dashboard_purchase_supplier_names_v1');
-    } catch {
-      // La RAZ des données métier a déjà été appliquée en mémoire.
-    }
+    resetPurchaseSupplierNames();
     setInvoiceImportPreviews([]);
     setInvoiceImportStatus('');
     setSalaryImportStatus('');
