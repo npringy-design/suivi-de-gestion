@@ -40,7 +40,6 @@ import {
   renderPersonnelTable as renderDashboardPersonnelTable,
 } from '@/features/dashboard/components/dashboardRenderHelpers';
 import DashboardDatePicker from '@/features/dashboard/components/DashboardDatePicker';
-import DashboardCaisseView from '@/features/dashboard/components/DashboardCaisseView';
 import DashboardRealiseMatrix from '@/features/dashboard/components/DashboardRealiseMatrix';
 import DashboardDailyEntry from '@/features/dashboard/components/DashboardDailyEntry';
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3316,12 +3315,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       selectedMonthLabel={selectedMonthLabel}
       isMobile={isMobile}
       month={month}
-      year={year}
-      monthSelectOptions={monthSelectOptions}
-      yearSelectOptions={yearSelectOptions}
-      datePickerCells={datePickerCells}
-      selectedEntryDay={selectedEntryDay}
-      todayMarker={todayMarker}
       dynamicColumns={dynamicColumns}
       dailyRecapStatus={dailyRecapStatus}
       globalData={globalData}
@@ -3338,9 +3331,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       renderPersonnelTable={renderPersonnelTable}
       dailyPersonnelRows={dailyPersonnelRows}
       dailyPersonnelTotals={dailyPersonnelTotals}
-      selectMonth={selectMonth}
-      setSelectedYear={setSelectedYear}
-      setSelectedEntryDay={setSelectedEntryDay}
       updateNepting={updateNepting}
       updateEspeces={updateEspeces}
       updateAmexAncv={updateAmexAncv}

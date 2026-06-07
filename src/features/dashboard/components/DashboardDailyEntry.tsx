@@ -5,9 +5,7 @@ import type { DashboardColumn, DashboardRow } from '@/features/dashboard/dashboa
 import DashboardCaisseView from '@/features/dashboard/components/DashboardCaisseView';
 
 type DailyControlOptions = { readOnly?: boolean; text?: boolean };
-type MonthOption = { label: string; value: number };
 type CashDetailId = 'ancv' | 'tr';
-type TodayMarker = { year: number; month: number; day: number };
 
 type DebouncedInputComponent = React.ComponentType<any>;
 
@@ -18,12 +16,6 @@ type DashboardDailyEntryProps = {
   selectedMonthLabel: string;
   isMobile: boolean;
   month: number;
-  year: number;
-  monthSelectOptions: MonthOption[];
-  yearSelectOptions: number[];
-  datePickerCells: Array<DashboardRow | null>;
-  selectedEntryDay: number;
-  todayMarker: TodayMarker;
   dynamicColumns: DashboardColumn[];
   dailyRecapStatus: string;
   globalData: Record<number, any>;
@@ -40,9 +32,6 @@ type DashboardDailyEntryProps = {
   renderPersonnelTable: (rows: React.ReactNode) => React.ReactNode;
   dailyPersonnelRows: ReadonlyArray<readonly [string, number, number]>;
   dailyPersonnelTotals: ReadonlyArray<{ label: string; col: number }>;
-  selectMonth: (month: number) => void;
-  setSelectedYear: (year: number) => void;
-  setSelectedEntryDay: (day: number) => void;
   updateNepting: (month: number, day: number, field: any, value: string) => void;
   updateEspeces: (month: number, day: number, field: any, value: string) => void;
   updateAmexAncv: (month: number, day: number, field: any, value: string) => void;
@@ -62,12 +51,6 @@ export default function DashboardDailyEntry({
   selectedMonthLabel,
   isMobile,
   month,
-  year,
-  monthSelectOptions,
-  yearSelectOptions,
-  datePickerCells,
-  selectedEntryDay,
-  todayMarker,
   dynamicColumns,
   dailyRecapStatus,
   globalData,
@@ -84,9 +67,6 @@ export default function DashboardDailyEntry({
   renderPersonnelTable,
   dailyPersonnelRows,
   dailyPersonnelTotals,
-  selectMonth,
-  setSelectedYear,
-  setSelectedEntryDay,
   updateNepting,
   updateEspeces,
   updateAmexAncv,
@@ -108,56 +88,6 @@ export default function DashboardDailyEntry({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: '100%', minWidth: 0, maxWidth: 1480, width: '100%', margin: '0 auto' }}>
-      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: isMobile ? 12 : 16, display: 'none', gridTemplateColumns: isMobile ? '1fr' : '280px 1fr', gap: isMobile ? 12 : 18, alignItems: 'start' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 96px', gap: 10 }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Mois</span>
-            <select
-              value={month}
-              onChange={event => selectMonth(Number(event.target.value))}
-              style={{ height: 38, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff', textTransform: 'capitalize' }}
-            >
-              {monthSelectOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>Année</span>
-            <select
-              value={year}
-              onChange={event => setSelectedYear(Number(event.target.value))}
-              style={{ height: 38, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff' }}
-            >
-              {yearSelectOptions.map(option => <option key={option} value={option}>{option}</option>)}
-            </select>
-          </label>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(34px, 1fr))', gap: 6 }}>
-          {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
-            <div key={day} style={{ textAlign: 'center', fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>{day}</div>
-          ))}
-          {datePickerCells.map((row, index) => {
-            if (!row) return <div key={`empty-${index}`} style={{ minHeight: 34 }} />;
-            const isSelected = row.dayIndex === selectedEntryDay;
-            const isToday = row.dateObj
-              && row.dateObj.getFullYear() === todayMarker.year
-              && row.dateObj.getMonth() === todayMarker.month
-              && row.dateObj.getDate() === todayMarker.day;
-
-            return (
-              <button
-                key={`${row.dayIndex}-${index}`}
-                type="button"
-                onClick={() => row.dayIndex && setSelectedEntryDay(row.dayIndex)}
-                style={{ height: 34, border: `1px solid ${isSelected ? '#0f172a' : '#e2e8f0'}`, borderRadius: 8, background: isSelected ? '#0f172a' : isToday ? '#eff6ff' : '#fff', color: isSelected ? '#fff' : isToday ? '#1d4ed8' : '#334155', cursor: 'pointer', fontSize: 13, fontWeight: 900 }}
-              >
-                {row.dayIndex}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
         <div style={{ background: '#050b18', color: '#fff', borderRadius: 10, padding: isMobile ? 16 : '18px 20px', marginTop: isMobile ? 4 : 24, display: 'none', justifyContent: 'space-between', gap: 12, alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row' }}>
           <div>
