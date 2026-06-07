@@ -37,7 +37,7 @@ Sous-etapes :
 
 **2a** : Creer `src/components/CanalSaisie.tsx` — composant generique parametre par `title`, `columns`, `getData`, `onUpdate`, `computeEcart`. Valider sur `Sunday.tsx` en premier. **Fait : composant cree et `Sunday.tsx` migre.**
 
-**2b** : Migrer les 7 autres canaux dans cet ordre : Deliveroo → Uber → ClickCollect → AmexAncv → Conecs → CbNepting → Especes. **En cours : `Deliveroo.tsx` migre.**
+**2b** : Migrer les 7 autres canaux dans cet ordre : Deliveroo → Uber → ClickCollect → AmexAncv → Conecs → CbNepting → Especes. **En cours : `Deliveroo.tsx` et `Uber.tsx` migres.**
 
 Gain estime : -1 300 lignes.
 
