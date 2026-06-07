@@ -42,11 +42,11 @@ Sous-etapes :
 Gain estime : -1 300 lignes.
 
 ### Etape 3 — Extraire les render* de Dashboard
-**Statut : a faire. Effort : 2-3 sessions. Risque : moyen.**
+**Statut : en cours. Effort : 2-3 sessions. Risque : moyen.**
 
 **3a — helpers simples** (sans etat, sans hooks) :
 Extraire vers `src/features/dashboard/components/` :
-`renderAutoValue`, `renderCashAutoValue`, `renderDailyServiceRow`, `renderDailySingleRow`, `renderDailyTotalRow`, `renderDailySection`, `renderPersonnelRow`, `renderPersonnelTable`.
+`renderAutoValue`, `renderCashAutoValue`, `renderDailyServiceRow`, `renderDailySingleRow`, `renderDailyTotalRow`, `renderDailySection`, `renderPersonnelRow`, `renderPersonnelTable`. **Fait : helpers extraits dans `dashboardRenderHelpers.tsx`.**
 Gain estime : -200 lignes.
 
 **3b — vues complexes** :
