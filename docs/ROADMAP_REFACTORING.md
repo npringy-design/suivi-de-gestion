@@ -18,7 +18,7 @@ Chaque etape laisse l'application dans un etat deployable. Vercel vert avant de 
 ## Etapes
 
 ### Etape 1 — Supprimer la cle Gemini
-**Statut : a faire. Effort : 30 minutes. Risque : zero.**
+**Statut : termine. Effort : 30 minutes. Risque : zero.**
 
 La cle API Gemini est injectee dans le bundle via `vite.config.ts` mais la fonctionnalite qui l'utilisait a ete supprimee. Elle est visible dans le JS de production sans servir a rien.
 
@@ -42,7 +42,7 @@ Sous-etapes :
 Gain estime : -1 300 lignes.
 
 ### Etape 3 — Extraire les render* de Dashboard
-**Statut : en cours. Effort : 2-3 sessions. Risque : moyen.**
+**Statut : termine. Effort : 2-3 sessions. Risque : moyen.**
 
 **3a — helpers simples** (sans etat, sans hooks) :
 Extraire vers `src/features/dashboard/components/` :
@@ -55,25 +55,26 @@ Destinations : `DashboardDatePicker.tsx`, `DashboardCaisseView.tsx`, `DashboardR
 Gain estime : -600 a -800 lignes.
 
 ### Etape 4 — Decouper les etats de Dashboard
-**Statut : en cours. Effort : 3-4 sessions. Risque : eleve.**
+**Statut : termine. Effort : 3-4 sessions. Risque : eleve.**
 
 Regrouper les 29 `useState` par domaine et deplacer ceux qui appartiennent aux sous-composants extraits a l'etape 3 :
-- Etats caisse → `DashboardCaisseView` / `DashboardDailyEntry` : **en cours, etats de detail/validation caisse deplaces hors `Dashboard.tsx`.**
-- Etats import/upload → composants d'import correspondants : **en cours, etats import regroupes dans `useDashboardImportState`, reset import centralise dans le hook.**
-- Etats saisie quotidienne → `DashboardDailyEntry` : **en cours, props calendrier masquees retirees de la vue journaliere, etats recap mail regroupes dans `useDashboardDailyRecapState`.**
+- Etats caisse → `DashboardCaisseView` / `DashboardDailyEntry` : **fait, etats de detail/validation caisse deplaces hors `Dashboard.tsx`.**
+- Etats import/upload → composants d'import correspondants : **fait, etats import regroupes dans `useDashboardImportState`, reset import centralise dans le hook.**
+- Etats saisie quotidienne → `DashboardDailyEntry` : **fait, props calendrier masquees retirees de la vue journaliere, etats recap mail regroupes dans `useDashboardDailyRecapState`.**
 - Etats UI (tableViewMode, activeTab...) → rester dans Dashboard : **regroupes dans `useDashboardUiState`.**
 - Etat responsive mobile → `useDashboardResponsiveState` : **fait.**
 - Etats periode/jour selectionne → `useDashboardPeriodState` : **fait.**
 - Etat noms fournisseurs achats → `useDashboardPurchaseSuppliers` : **fait, localStorage direct retire de `Dashboard.tsx`.**
+- Etat interne du champ temporise → `DebouncedInput` : **fait, plus de `useState` direct dans `Dashboard.tsx`.**
 
 Objectif : Dashboard reduit a ~2 000 lignes, role d'orchestrateur.
 
 ### Etape 5 — Assainir le DataContext
-**Statut : a faire. Effort : 1-2 sessions. Risque : moyen.**
+**Statut : en cours. Effort : 1-2 sessions. Risque : moyen.**
 
 **5a** : Centraliser les 23 `localStorage` directs hors DataContext. Identifier chaque cle, verifier si la donnee a un equivalent dans le contexte, supprimer les acces directs.
 
-**5b** : Factoriser les 8 fonctions `update*` de canaux de saisie identiques (updateSunday, updateDeliveroo, etc.) avec une factory interne `makeChannelUpdater(channelKey)`.
+**5b** : Factoriser les 8 fonctions `update*` de canaux de saisie identiques (updateSunday, updateDeliveroo, etc.) avec une factory interne `makeChannelUpdater(channelKey)`. **Fait : factory ajoutee dans `DataContext.tsx`, 8 canaux factorises (`Nepting`, `Especes`, `Conecs`, `Sunday`, `Uber`, `AmexAncv`, `Deliveroo`, `ClickCollect`).**
 Gain estime : -120 lignes.
 
 ### Etape 6 — Unifier les valeurs monetaires

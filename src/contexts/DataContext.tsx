@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 
 import { fetchCloudAppBootstrap, fetchCloudMonth, isCloudSyncConfigured, saveCloudAppState, type CloudAppState } from '@/services/supabaseAppState';
 
@@ -210,6 +210,19 @@ export type MonthData = {
   miseEnPaiement?: MonthDataMiseEnPaiement;
   salariesConfig?: MonthDataSalariesConfig;
 };
+
+type ChannelDayDataByKey = {
+  nepting: DayDataNepting;
+  especes: DayDataEspeces;
+  conecs: DayDataConecs;
+  sunday: DayDataSunday;
+  uber: DayDataUber;
+  amexAncv: DayDataAmexAncv;
+  deliveroo: DayDataDeliveroo;
+  clickCollect: DayDataClickCollect;
+};
+
+type ChannelDayDataKey = keyof ChannelDayDataByKey;
 
 type DataContextType = {
   selectedYear: number;
@@ -565,63 +578,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const updateNepting = useCallback((month: number, day: number, field: keyof DayDataNepting, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {} };
-      const dayData = monthData.nepting[day] || {
-        saisie_reel_nepting: '', pourboire_sunday: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          nepting: {
-            ...monthData.nepting,
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateEspeces = useCallback((month: number, day: number, field: keyof DayDataEspeces, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {} };
-      const dayData = monthData.especes?.[day] || {
-        mis_au_coffre: '', pieces: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          especes: {
-            ...(monthData.especes || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateConecs = useCallback((month: number, day: number, field: keyof DayDataConecs, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {} };
-      const dayData = monthData.conecs?.[day] || {
-        conecs_reel_nepting: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          conecs: {
-            ...(monthData.conecs || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
   const updateAncvPapiers = useCallback((month: number, day: number, field: keyof DayDataAncvPapiers, value: string) => {
     updateDataForYear(prev => {
       const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {} };
@@ -692,100 +648,35 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const updateSunday = useCallback((month: number, day: number, field: keyof DayDataSunday, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {} };
-      const dayData = monthData.sunday?.[day] || {
-        reel: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          sunday: {
-            ...(monthData.sunday || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateUber = useCallback((month: number, day: number, field: keyof DayDataUber, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {} };
-      const dayData = monthData.uber?.[day] || {
-        reel: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          uber: {
-            ...(monthData.uber || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateAmexAncv = useCallback((month: number, day: number, field: keyof DayDataAmexAncv, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {} };
-      const dayData = monthData.amexAncv?.[day] || {
-        reel_nepting: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          amexAncv: {
-            ...(monthData.amexAncv || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateDeliveroo = useCallback((month: number, day: number, field: keyof DayDataDeliveroo, value: string) => {
-    updateDataForYear(prev => {
-      const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {} };
-      const dayData = monthData.deliveroo?.[day] || {
-        reel: '', commentaire: ''
-      };
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          deliveroo: {
-            ...(monthData.deliveroo || {}),
-            [day]: { ...dayData, [field]: value }
-          }
-        }
-      };
-    });
-  }, []);
-
-  const updateClickCollect = useCallback((month: number, day: number, field: keyof DayDataClickCollect, value: string) => {
+  const makeChannelUpdater = useCallback(<K extends ChannelDayDataKey,>(
+    channelKey: K,
+    defaultDayData: ChannelDayDataByKey[K]
+  ) => (month: number, day: number, field: keyof ChannelDayDataByKey[K], value: string) => {
     updateDataForYear(prev => {
       const monthData = prev[month] || { theorique: {}, nepting: {}, especes: {}, conecs: {}, ancvPapiers: {}, saisieTR: {}, visuTRPapiers: {}, sunday: {}, uber: {}, amexAncv: {}, deliveroo: {}, clickCollect: {}, bilanSynthese: {} };
-      const dayData = monthData.clickCollect?.[day] || {
-        reel: '', commentaire: ''
-      };
+      const channelData = (monthData[channelKey] || {}) as Record<number, ChannelDayDataByKey[K]>;
+      const dayData = channelData[day] || defaultDayData;
       return {
         ...prev,
         [month]: {
           ...monthData,
-          clickCollect: {
-            ...(monthData.clickCollect || {}),
+          [channelKey]: {
+            ...channelData,
             [day]: { ...dayData, [field]: value }
           }
         }
       };
     });
-  }, []);
+  }, [updateDataForYear]);
+
+  const updateNepting = useMemo(() => makeChannelUpdater('nepting', { saisie_reel_nepting: '', pourboire_sunday: '', commentaire: '' }), [makeChannelUpdater]);
+  const updateEspeces = useMemo(() => makeChannelUpdater('especes', { mis_au_coffre: '', pieces: '', commentaire: '' }), [makeChannelUpdater]);
+  const updateConecs = useMemo(() => makeChannelUpdater('conecs', { conecs_reel_nepting: '', commentaire: '' }), [makeChannelUpdater]);
+  const updateSunday = useMemo(() => makeChannelUpdater('sunday', { reel: '', commentaire: '' }), [makeChannelUpdater]);
+  const updateUber = useMemo(() => makeChannelUpdater('uber', { reel: '', commentaire: '' }), [makeChannelUpdater]);
+  const updateAmexAncv = useMemo(() => makeChannelUpdater('amexAncv', { reel_nepting: '', commentaire: '' }), [makeChannelUpdater]);
+  const updateDeliveroo = useMemo(() => makeChannelUpdater('deliveroo', { reel: '', commentaire: '' }), [makeChannelUpdater]);
+  const updateClickCollect = useMemo(() => makeChannelUpdater('clickCollect', { reel: '', commentaire: '' }), [makeChannelUpdater]);
 
   const updateSalariesConfig = useCallback((month: number, configData: MonthDataSalariesConfig) => {
     updateDataForYear(prev => {
