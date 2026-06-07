@@ -30,6 +30,7 @@ import {
 } from '@/features/dashboard/dashboardStaticConfig';
 import { useDashboardDailyRecapState } from '@/features/dashboard/hooks/useDashboardDailyRecapState';
 import { useDashboardImportState } from '@/features/dashboard/hooks/useDashboardImportState';
+import { useDashboardPeriodState } from '@/features/dashboard/hooks/useDashboardPeriodState';
 import { useDashboardPurchaseSuppliers } from '@/features/dashboard/hooks/useDashboardPurchaseSuppliers';
 import { useDashboardResponsiveState } from '@/features/dashboard/hooks/useDashboardResponsiveState';
 import { useDashboardUiState } from '@/features/dashboard/hooks/useDashboardUiState';
@@ -196,7 +197,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     { start: `${year}-07-03`, end: `${year}-08-30` }, // Grandes Vacances
   ];
 
-  const [month, setMonth] = useState(initialMonth);
+  const {
+    month,
+    setMonth,
+    selectedEntryDay,
+    setSelectedEntryDay,
+    selectMonth,
+  } = useDashboardPeriodState({ initialMonth, year, setSelectedMonth });
   const { isMobile } = useDashboardResponsiveState();
   const {
     isImportModalOpen,
@@ -248,11 +255,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     dragState,
     setDragState,
   } = useDashboardUiState();
-  const [selectedEntryDay, setSelectedEntryDay] = useState(() => {
-    const now = new Date();
-    return initialMonth === now.getMonth() && year === now.getFullYear() ? now.getDate() : 1;
-  });
-
   const dynamicColumns = useMemo(() => {
     const cols = [...C];
     const salariesConfig = globalData[month]?.salariesConfig?.categories;
@@ -429,13 +431,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     generatedRows.push({ type: 'fg_box4_total', label: '' });
     generatedRows.push({ type: 'month_total', label: 'TOTAL' });
     return generatedRows;
-  }, [month, year]);
-
-  useEffect(() => {
-    const now = new Date();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const defaultDay = month === now.getMonth() && year === now.getFullYear() ? now.getDate() : 1;
-    setSelectedEntryDay(prev => Math.min(prev || defaultDay, daysInMonth));
   }, [month, year]);
 
   const getFgBoxLayout = (rIdx: number, N: number) => {
@@ -1231,11 +1226,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     ...dayRows.map(({ row }) => row),
   ];
   while (datePickerCells.length % 7 !== 0) datePickerCells.push(null);
-
-  const selectMonth = (nextMonth: number) => {
-    setMonth(nextMonth);
-    setSelectedMonth(nextMonth);
-  };
 
   const parseCaisseNumber = (value: string) => Number(value.replace(/\s/g, '').replace(',', '.')) || 0;
   const formatImportedNumber = (value: number, decimals = 2) => value !== 0 ? value.toFixed(decimals) : '';
