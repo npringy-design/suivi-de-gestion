@@ -10,6 +10,7 @@ export type CanalSaisieConfig = {
   theoriqueField: keyof DayDataTheorique;
   realLabel: string;
   realField: string;
+  totalLabel?: string;
   ecartLabel: string;
   commentField?: string;
 };
@@ -143,6 +144,9 @@ export default function CanalSaisie({
                   <th className="px-6 py-4 font-bold text-center w-32 border-r border-slate-200 sticky left-0 z-30 bg-slate-100">Date</th>
                   <th className="px-6 py-4 font-bold text-center w-48 bg-blue-50/50 border-r border-slate-200 text-blue-700">{config.theoriqueLabel}</th>
                   <th className="px-6 py-4 font-bold text-center w-48 bg-amber-50/50 border-r border-slate-200 text-amber-700">{config.realLabel}</th>
+                  {config.totalLabel ? (
+                    <th className="px-6 py-4 font-bold text-center w-48 border-r border-slate-200">{config.totalLabel}</th>
+                  ) : null}
                   <th className="px-6 py-4 font-bold text-center w-48 border-r border-slate-200">{config.ecartLabel}</th>
                   <th className="px-6 py-4 font-bold min-w-[300px]">Commentaire</th>
                 </tr>
@@ -172,6 +176,11 @@ export default function CanalSaisie({
                           />
                         </div>
                       </td>
+                      {config.totalLabel ? (
+                        <td className="px-6 py-3 text-right font-semibold text-slate-700 border-r border-slate-100">
+                          {reel !== 0 ? formatCurrency(reel) : '-'}
+                        </td>
+                      ) : null}
                       <td className={`px-6 py-3 text-right font-bold border-r border-slate-100 ${ecartColor}`}>
                         {(theorique !== 0 || reel !== 0) ? formatCurrency(ecart) : '-'}
                       </td>
@@ -193,6 +202,9 @@ export default function CanalSaisie({
                   <td className="px-6 py-4 text-center rounded-bl-2xl border-r border-slate-700 sticky left-0 z-30 bg-slate-800">TOTAL</td>
                   <td className="px-6 py-4 text-right text-blue-200 border-r border-slate-700">{formatCurrency(sumTheorique)}</td>
                   <td className="px-6 py-4 text-right text-amber-200 border-r border-slate-700">{formatCurrency(sumReel)}</td>
+                  {config.totalLabel ? (
+                    <td className="px-6 py-4 text-right border-r border-slate-700">{formatCurrency(sumReel)}</td>
+                  ) : null}
                   <td className={`px-6 py-4 text-right border-r border-slate-700 ${sumEcart < -0.001 ? 'text-rose-400' : sumEcart > 0.001 ? 'text-emerald-400' : 'text-slate-400'}`}>
                     {formatCurrency(sumEcart)}
                   </td>
