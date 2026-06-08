@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 
 import { useData, type AchatEntry, type AlimentationEntry } from '@/contexts/DataContext';
+import { parseMoneyValue } from '@/lib/money';
 
 const CurrencyInput = ({ value, onChange, className }: { value: string, onChange: (val: string) => void, className?: string }) => {
   const [isFocused, setIsFocused] = useState(false);
   let displayValue = value;
   if (!isFocused && value) {
-    const num = parseFloat(value.replace(',', '.'));
+    const num = parseMoneyValue(value);
     if (!isNaN(num)) {
       displayValue = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
     }
@@ -61,8 +62,6 @@ export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPe
     comptabilisation: { c606310: '', c606300: '', c606400: '', c626100: '', c627100: '', c44566: '', c758: '' },
     comptage: { p100: '', p50: '', p20: '', p10: '', p5: '', p2: '', p1: '', p050: '', p020: '', p010: '', p005: '', p002: '', p001: '' }
   };
-
-  const parseVal = (val: string | undefined) => { const p = parseFloat((val || '').replace(',', '.')); return isNaN(p) ? 0 : p; };
   const fmt = (num: number) => num === 0 ? '-   €' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
   const handleAchatChange = (i: number, f: string, v: string) => updateDepensesPetiteCaisse(month, `achats[${i}].${f}`, v);
@@ -71,29 +70,29 @@ export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPe
   const handleComptageChange = (f: string, v: string) => updateDepensesPetiteCaisse(month, `comptage.${f}`, v);
 
   const calculateSoldeDebut = (m: number): number => {
-    let solde = parseVal(data[0]?.depensesPetiteCaisse?.solde_debut_mois);
+    let solde = parseMoneyValue(data[0]?.depensesPetiteCaisse?.solde_debut_mois);
     for (let i = 0; i < m; i++) {
       const mData = data[i]?.depensesPetiteCaisse;
       if (!mData) continue;
-      let tTtc = 0; mData.achats.forEach((a: AchatEntry) => tTtc += parseVal(a.ht) + parseVal(a.tva));
-      let tAlim = 0; mData.alimentations.forEach((a: AlimentationEntry) => tAlim += parseVal(a.montant));
+      let tTtc = 0; mData.achats.forEach((a: AchatEntry) => tTtc += parseMoneyValue(a.ht) + parseMoneyValue(a.tva));
+      let tAlim = 0; mData.alimentations.forEach((a: AlimentationEntry) => tAlim += parseMoneyValue(a.montant));
       let sReel = 0;
       const cv = { p100:100,p50:50,p20:20,p10:10,p5:5,p2:2,p1:1,p050:0.5,p020:0.2,p010:0.1,p005:0.05,p002:0.02,p001:0.01 };
-      Object.entries(cv).forEach(([k,v]) => { sReel += parseVal(mData.comptage[k as keyof typeof mData.comptage]) * v; });
+      Object.entries(cv).forEach(([k,v]) => { sReel += parseMoneyValue(mData.comptage[k as keyof typeof mData.comptage]) * v; });
       if (sReel > 0) solde = sReel; else solde = solde + tAlim - tTtc;
     }
     return solde;
   };
 
   let totalHt = 0, totalTva = 0, totalTtc = 0;
-  monthData.achats.forEach((a: AchatEntry) => { const ht=parseVal(a.ht),tva=parseVal(a.tva); totalHt+=ht; totalTva+=tva; totalTtc+=ht+tva; });
+  monthData.achats.forEach((a: AchatEntry) => { const ht=parseMoneyValue(a.ht),tva=parseMoneyValue(a.tva); totalHt+=ht; totalTva+=tva; totalTtc+=ht+tva; });
   let totalAlimentation = 0;
-  monthData.alimentations.forEach((a: AlimentationEntry) => { totalAlimentation += parseVal(a.montant); });
-  const soldeDebut = month === 0 ? parseVal(monthData.solde_debut_mois) : calculateSoldeDebut(month);
+  monthData.alimentations.forEach((a: AlimentationEntry) => { totalAlimentation += parseMoneyValue(a.montant); });
+  const soldeDebut = month === 0 ? parseMoneyValue(monthData.solde_debut_mois) : calculateSoldeDebut(month);
   const soldeTheo = soldeDebut + totalAlimentation - totalTtc;
   const coinValues = { p100:100,p50:50,p20:20,p10:10,p5:5,p2:2,p1:1,p050:0.5,p020:0.2,p010:0.1,p005:0.05,p002:0.02,p001:0.01 };
   let soldeReel = 0;
-  Object.entries(coinValues).forEach(([key,value]) => { soldeReel += parseVal(monthData.comptage[key as keyof typeof monthData.comptage]) * value; });
+  Object.entries(coinValues).forEach(([key,value]) => { soldeReel += parseMoneyValue(monthData.comptage[key as keyof typeof monthData.comptage]) * value; });
   const ecart = soldeReel - soldeTheo;
 
   return (
@@ -153,7 +152,7 @@ export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPe
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {monthData.achats.map((achat: AchatEntry, i: number) => {
-                    const ht = parseVal(achat.ht), tva = parseVal(achat.tva), ttc = ht + tva;
+                    const ht = parseMoneyValue(achat.ht), tva = parseMoneyValue(achat.tva), ttc = ht + tva;
                     return (
                       <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
                         <td className="px-1 py-0.5 border-r border-slate-100">
@@ -302,7 +301,7 @@ export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPe
                     { label: '0,02 €',   key: 'p002', val: 0.02 },
                     { label: '0,01 €',   key: 'p001', val: 0.01 },
                   ].map((item) => {
-                    const count = parseVal(monthData.comptage[item.key as keyof typeof monthData.comptage]);
+                    const count = parseMoneyValue(monthData.comptage[item.key as keyof typeof monthData.comptage]);
                     const total = count * item.val;
                     return (
                       <tr key={item.key} className="hover:bg-slate-50/50 transition-colors group">

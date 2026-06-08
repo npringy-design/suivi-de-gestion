@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Menu, X, ChevronLeft } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
+import { parseMoneyValue } from '@/lib/money';
 
 import { getDashboardRowIndices } from './utils';
 
@@ -13,10 +14,6 @@ interface EdgMensuelProps {
   onBack: () => void;
 }
 
-const n = (v?: string | number) => {
-  if (typeof v === 'number') return v;
-  return parseFloat((v || '0').toString().replace(',', '.')) || 0;
-};
 
 const fe = (v: number) => v === 0 ? '0' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v);
 const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v.toFixed(2)}%` : '';
@@ -47,12 +44,12 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
     const indices = getDashboardRowIndices(month, YEAR);
     let total = 0;
     Object.values(indices).forEach(rIdx => {
-      total += n(md[`${rIdx}-24`]);
+      total += parseMoneyValue(md[`${rIdx}-24`]);
     });
     return total;
   }, [data, month]);
 
-  const caTotalHtBudget = n(edgData['ca_total_ht']);
+  const caTotalHtBudget = parseMoneyValue(edgData['ca_total_ht']);
 
   const handleChangeBudget = (key: string, value: string) => {
     const cleanValue = value.replace(/[^0-9.,-]/g, '').replace(',', '.');
@@ -64,8 +61,8 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
     updateEdgMensuelRealise(month, key, cleanValue);
   };
 
-  const valB = (key: string) => n(edgData[key]);
-  const valR = (key: string) => n(edgRealiseData[key]);
+  const valB = (key: string) => parseMoneyValue(edgData[key]);
+  const valR = (key: string) => parseMoneyValue(edgRealiseData[key]);
 
   // Calculations BUDGET
   const coutMatiereB = valB('achats_food') + valB('consommables') + valB('variation_stock') + valB('repas_salaries');

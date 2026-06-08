@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { parseMoneyValue } from '@/lib/money';
 
 import { getDashboardRowIndices } from './utils';
 
@@ -11,10 +12,6 @@ interface RealiseEdgAnneeFiscaleProps {
   hideHeader?: boolean;
 }
 
-const n = (v?: string | number) => {
-  if (typeof v === 'number') return v;
-  return parseFloat((v || '0').toString().replace(',', '.')) || 0;
-};
 
 const fe = (v: number) => v === 0 ? '0' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v);
 const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v.toFixed(2)}%` : '';
@@ -30,7 +27,7 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
     const indices = getDashboardRowIndices(m, year);
     let total = 0;
     Object.values(indices).forEach(rIdx => {
-      total += n(md[`${rIdx}-24`]);
+      total += parseMoneyValue(md[`${rIdx}-24`]);
     });
     return total;
   };
@@ -40,7 +37,7 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
 
   const getValR = (m: number, key: string) => {
     const year = m >= 6 ? YEAR - 1 : YEAR;
-    return n(allData[year]?.[m]?.edgMensuelRealise?.[key]);
+    return parseMoneyValue(allData[year]?.[m]?.edgMensuelRealise?.[key]);
   };
 
   const getRowData = (key: string) => {

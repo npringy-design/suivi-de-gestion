@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowLeft, Download, FileText, Settings } from 'lucide-r
 import { useNavigate } from 'react-router-dom';
 
 import { loadAccountingMappings } from '@/accountingConfig';
+import { parseMoneyValue } from '@/lib/money';
 import { useData, type DayDataSaisieTR, type MonthData } from '@/contexts/DataContext';
 import { buildDailyEntries, checkBalance, type AccountingEntry, type BalanceCheck, type DayTotals } from '@/utils/buildDailyEntries';
 
@@ -13,11 +14,6 @@ type DayTotalsWithInfo = DayTotals & { sourceInfo: string };
 const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const years = [2024, 2025, 2026];
 
-const parseVal = (value: unknown) => {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-  return parseFloat(String(value || '').replace(',', '.').replace(/[^0-9,.-]/g, '')) || 0;
-};
-
 const roundMoney = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
 const formatDate = (day: number, month: number, year: number) => new Date(year, month, day).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const formatMoney = (value: number) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
@@ -26,7 +22,7 @@ const formatCsvMoney = (value: number | null) => value === null ? '' : formatMon
 const getSaisieTRTotal = (dayData?: DayDataSaisieTR) => {
   if (!dayData) return 0;
   const providers: Array<keyof DayDataSaisieTR> = ['edenred', 'pluxee', 'bimpli', 'up'];
-  return providers.reduce((sum, provider) => sum + (dayData[provider] || []).reduce((lineSum, entry) => lineSum + parseVal(entry.valeur) * parseVal(entry.nombre), 0), 0);
+  return providers.reduce((sum, provider) => sum + (dayData[provider] || []).reduce((lineSum, entry) => lineSum + parseMoneyValue(entry.valeur) * parseMoneyValue(entry.nombre), 0), 0);
 };
 
 const computeDayTotals = (day: number, monthData: MonthData): DayTotalsWithInfo => {
@@ -42,10 +38,10 @@ const computeDayTotals = (day: number, monthData: MonthData): DayTotalsWithInfo 
   const deliveroo = monthData.deliveroo?.[day] || {};
   const clickCollect = monthData.clickCollect?.[day] || {};
 
-  const ttc55 = parseVal(bilan.ttc_5_5);
-  const ttc10Raw = parseVal(bilan.ttc_10);
-  const ttc20 = parseVal(bilan.ttc_20);
-  const importedTotalTtc = parseVal(theorique.total_ca);
+  const ttc55 = parseMoneyValue(bilan.ttc_5_5);
+  const ttc10Raw = parseMoneyValue(bilan.ttc_10);
+  const ttc20 = parseMoneyValue(bilan.ttc_20);
+  const importedTotalTtc = parseMoneyValue(theorique.total_ca);
   const hasTvaDetail = Math.abs(ttc55) > 0.004 || Math.abs(ttc10Raw) > 0.004 || Math.abs(ttc20) > 0.004;
   const ttc10 = hasTvaDetail ? ttc10Raw : importedTotalTtc;
   const ht55 = ttc55 / 1.055;
@@ -56,19 +52,19 @@ const computeDayTotals = (day: number, monthData: MonthData): DayTotalsWithInfo 
   const tva20 = ttc20 - ht20;
   const totalTtc = hasTvaDetail ? ttc55 + ttc10 + ttc20 : importedTotalTtc;
 
-  const espReel = parseVal(especes.mis_au_coffre) + parseVal(especes.pieces) || parseVal(theorique.especes);
-  const cbReel = parseVal(nepting.saisie_reel_nepting) || parseVal(theorique.cb);
-  const amexReel = parseVal(amex.reel_nepting) || parseVal(theorique.amex);
-  const crtReel = getSaisieTRTotal(monthData.saisieTR?.[day]) || parseVal(theorique.tr_papier);
-  const cbTrReel = parseVal(conecs.conecs_reel_nepting) || parseVal(theorique.tr_carte);
-  const ancvReel = parseVal(ancv.montant_total) || parseVal(theorique.ancv);
-  const delivReel = parseVal(deliveroo.reel) || parseVal(theorique.deliveroo);
-  const uberReel = parseVal(uber.reel) || parseVal(theorique.uber);
-  const sundayReel = parseVal(sunday.reel) || parseVal(theorique.sunday);
-  const ceReel = parseVal(clickCollect.reel) || parseVal(theorique.click_collect);
-  const pourboires = parseVal(nepting.pourboire_sunday);
+  const espReel = parseMoneyValue(especes.mis_au_coffre) + parseMoneyValue(especes.pieces) || parseMoneyValue(theorique.especes);
+  const cbReel = parseMoneyValue(nepting.saisie_reel_nepting) || parseMoneyValue(theorique.cb);
+  const amexReel = parseMoneyValue(amex.reel_nepting) || parseMoneyValue(theorique.amex);
+  const crtReel = getSaisieTRTotal(monthData.saisieTR?.[day]) || parseMoneyValue(theorique.tr_papier);
+  const cbTrReel = parseMoneyValue(conecs.conecs_reel_nepting) || parseMoneyValue(theorique.tr_carte);
+  const ancvReel = parseMoneyValue(ancv.montant_total) || parseMoneyValue(theorique.ancv);
+  const delivReel = parseMoneyValue(deliveroo.reel) || parseMoneyValue(theorique.deliveroo);
+  const uberReel = parseMoneyValue(uber.reel) || parseMoneyValue(theorique.uber);
+  const sundayReel = parseMoneyValue(sunday.reel) || parseMoneyValue(theorique.sunday);
+  const ceReel = parseMoneyValue(clickCollect.reel) || parseMoneyValue(theorique.click_collect);
+  const pourboires = parseMoneyValue(nepting.pourboire_sunday);
 
-  const bilanTheo = parseVal(theorique.especes) + parseVal(theorique.cb) + parseVal(theorique.amex) + parseVal(theorique.tr_carte) + parseVal(theorique.deliveroo) + parseVal(theorique.uber) + parseVal(theorique.sunday) + parseVal(theorique.click_collect) + parseVal(theorique.tr_papier) + parseVal(theorique.ancv);
+  const bilanTheo = parseMoneyValue(theorique.especes) + parseMoneyValue(theorique.cb) + parseMoneyValue(theorique.amex) + parseMoneyValue(theorique.tr_carte) + parseMoneyValue(theorique.deliveroo) + parseMoneyValue(theorique.uber) + parseMoneyValue(theorique.sunday) + parseMoneyValue(theorique.click_collect) + parseMoneyValue(theorique.tr_papier) + parseMoneyValue(theorique.ancv);
   const bilanReel = espReel + cbReel + amexReel + cbTrReel + delivReel + uberReel + sundayReel + ceReel + crtReel + ancvReel;
   const bilanEcart = roundMoney(bilanReel - bilanTheo - pourboires);
   const ecartNegatif = bilanEcart < 0 ? Math.abs(bilanEcart) : 0;

@@ -4,6 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import type { MonthDataSalariesConfig, SalarieRow } from '@/contexts/DataContext';
 import { createEmptyPayrollCategories, PERSONNEL_CATEGORIES } from '@/personnelSalaryImport';
 import { parseHourInputToDecimal } from '@/utils';
+import { parseMoneyValue } from '@/lib/money';
 
 const NAV = '#1e293b';
 
@@ -109,12 +110,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     });
   };
 
-  const parseNum = (v: string | number) => {
-    if (typeof v === 'number') return v;
-    return parseFloat((v || '0').replace(',', '.')) || 0;
-  };
-
-  const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
+const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
   const formatDepartment = (value?: string) => value === 'cuisine' ? 'Cuisine' : value === 'salle' ? 'Salle' : '-';
   const getPayrollProvisionMultiplier = (category: SalaryCategory) => category === 'cadre' ? 1.18 : 1.10;
 
@@ -124,7 +120,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     let validRowsCount = 0;
 
     rows.forEach(row => {
-      const coutGlobal = parseNum(row.coutGlobal);
+      const coutGlobal = parseMoneyValue(row.coutGlobal);
       const heures = parseHourInputToDecimal(row.heures);
       const provision = coutGlobal * getPayrollProvisionMultiplier(category);
       const coutHoraire = heures > 0 ? provision / heures : 0;
@@ -283,7 +279,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     let validRowsCount = 0;
 
     const rowsWithCalculations: SalarieRowWithCalculations[] = rows.map(row => {
-      const coutGlobal = parseNum(row.coutGlobal);
+      const coutGlobal = parseMoneyValue(row.coutGlobal);
       const heures = parseHourInputToDecimal(row.heures);
       
       const provision = coutGlobal * getPayrollProvisionMultiplier(category);

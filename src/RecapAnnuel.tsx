@@ -33,7 +33,6 @@ const BG_RES   = '#fef9e7';
 const BG_HATCH = '#e2e8f0';
 const BG_YELL  = '#fef08a';
 
-const n  = (v?: string) => parseFloat((v||'0').replace(',','.')) || 0;
 const fe = (v: number) => v === 0 ? '0,00 €' : new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(v);
 const fp = (v: number) => (isFinite(v)&&!isNaN(v)) ? `${v>=0?'+':''}${v.toFixed(2)}%` : '—';
 

@@ -4,6 +4,7 @@ import type { SalarieRow } from '@/contexts/DataContext';
 import type { DashboardRow } from '@/features/dashboard/dashboardTypes';
 import { averagePayrollRate } from '@/personnelSalaryImport';
 import { parseHourInputToDecimal } from '@/utils';
+import { parseMoneyValue } from '@/lib/money';
 
 type DashboardAnalysisViewProps = {
   rows: DashboardRow[];
@@ -42,11 +43,6 @@ const payrollColumns = [
   { category: 'apprenti', section: 'cuisine' as const, col: 85, fallback: 8.39 },
   { category: 'apprenti', section: 'salle' as const, col: 86, fallback: 8.39 },
 ];
-
-const parseValue = (value: unknown) => {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-  return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
-};
 
 const parseHour = (value: unknown) => {
   const converted = parseHourInputToDecimal(String(value || '0'));
@@ -104,14 +100,14 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
       .map((row, rowIndex) => {
         if (row.type !== 'day') return null;
         const key = (col: number) => `${rowIndex}-${col}`;
-        const caVae = parseValue(calculatedData[key(17)]);
-        const caMidi = parseValue(calculatedData[key(18)]);
-        const caSoir = parseValue(calculatedData[key(19)]);
-        const caLimo = parseValue(calculatedData[key(20)]);
-        const caTotal = parseValue(calculatedData[key(21)]) || caVae + caMidi + caSoir + caLimo;
+        const caVae = parseMoneyValue(calculatedData[key(17)]);
+        const caMidi = parseMoneyValue(calculatedData[key(18)]);
+        const caSoir = parseMoneyValue(calculatedData[key(19)]);
+        const caLimo = parseMoneyValue(calculatedData[key(20)]);
+        const caTotal = parseMoneyValue(calculatedData[key(21)]) || caVae + caMidi + caSoir + caLimo;
         const caRestaurant = caMidi + caSoir;
-        const couverts = parseValue(calculatedData[key(29)]) || parseValue(calculatedData[key(25)]) + parseValue(calculatedData[key(27)]);
-        const tmRestaurant = parseValue(calculatedData[key(30)]) || (couverts > 0 ? caRestaurant / couverts : 0);
+        const couverts = parseMoneyValue(calculatedData[key(29)]) || parseMoneyValue(calculatedData[key(25)]) + parseMoneyValue(calculatedData[key(27)]);
+        const tmRestaurant = parseMoneyValue(calculatedData[key(30)]) || (couverts > 0 ? caRestaurant / couverts : 0);
 
         let heuresCuisine = 0;
         let heuresSalle = 0;
@@ -130,9 +126,9 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
           }
         });
 
-        const coutTotalFromComplete = parseValue(calculatedData[key(87)]);
+        const coutTotalFromComplete = parseMoneyValue(calculatedData[key(87)]);
         const coutTotal = coutTotalFromComplete > 0 ? coutTotalFromComplete : coutCuisine + coutSalle;
-        const scTotal = parseValue(calculatedData[key(89)]) || ratio(coutTotal, caTotal) || 0;
+        const scTotal = parseMoneyValue(calculatedData[key(89)]) || ratio(coutTotal, caTotal) || 0;
         const label = row.dateObj
           ? row.dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' })
           : row.label;

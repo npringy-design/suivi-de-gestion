@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Menu, X } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
+import { parseMoneyValue } from '@/lib/money';
 
 interface MiseEnPaiementProps {
   month: number;
@@ -40,10 +41,6 @@ const getPeriodLabels = (monthIndex: number) => {
   };
 };
 
-const n = (v?: string | number) => {
-  if (typeof v === 'number') return v;
-  return parseFloat((v || '0').toString().replace(',', '.')) || 0;
-};
 
 const fe = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
 
@@ -75,7 +72,7 @@ export default function MiseEnPaiement({ month, setMonth, onBack }: MiseEnPaieme
 
   const renderPeriod = (period: 'period1' | 'period2', labelInfo: { echeance: string, paiement: string }) => {
     const rows = monthData[period];
-    const totalTTC = rows.reduce((sum, row) => sum + n(row.montantTTC), 0);
+    const totalTTC = rows.reduce((sum, row) => sum + parseMoneyValue(row.montantTTC), 0);
 
     return (
       <div style={{ marginBottom: 32 }}>

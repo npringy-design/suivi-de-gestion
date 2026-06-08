@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { parseMoneyValue } from '@/lib/money';
 
 import { getDashboardRowIndices } from './utils';
 
@@ -11,10 +12,6 @@ interface VsN1Props {
   hideHeader?: boolean;
 }
 
-const n = (v?: string | number) => {
-  if (typeof v === 'number') return v;
-  return parseFloat((v || '0').toString().replace(',', '.')) || 0;
-};
 
 const fe = (v: number) => v === 0 ? '0' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v);
 const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v.toFixed(2)}%` : '';
@@ -28,7 +25,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
     const indices = getDashboardRowIndices(m, YEAR);
     let total = 0;
     Object.values(indices).forEach(rIdx => {
-      total += n(md[`${rIdx}-24`]);
+      total += parseMoneyValue(md[`${rIdx}-24`]);
     });
     return total;
   };
@@ -36,8 +33,8 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [data]);
   const caTotal = caMonths.reduce((a, b) => a + b, 0);
 
-  const getValN1 = (m: number, key: string) => n(data[m]?.edgMensuelN1?.[key]);
-  const getValR = (m: number, key: string) => n(data[m]?.edgMensuelRealise?.[key]);
+  const getValN1 = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuelN1?.[key]);
+  const getValR = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuelRealise?.[key]);
 
   const getRowData = (key: string) => {
     const monthsN1 = Array.from({ length: 12 }, (_, i) => getValN1(i, key));
@@ -48,7 +45,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   };
 
   const getMonthCalculations = (m: number) => {
-    const caN1 = n(data[m]?.edgMensuelN1?.['ca_total_ht']);
+    const caN1 = parseMoneyValue(data[m]?.edgMensuelN1?.['ca_total_ht']);
     const caR = caMonths[m]; // Realise CA from dashboard
     
     const valN1 = (k: string) => getValN1(m, k);
@@ -118,7 +115,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
           const rVal = rowData.monthsR[m];
           const eVal = ecart(rVal, n1Val);
           
-          const caN1 = n(data[m]?.edgMensuelN1?.['ca_total_ht']);
+          const caN1 = parseMoneyValue(data[m]?.edgMensuelN1?.['ca_total_ht']);
           const caR = caMonths[m];
           
           const ratioN1 = caN1 ? (n1Val / caN1) * 100 : 0;
@@ -213,7 +210,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
           const rVal = mCalc.realise[calcKey];
           const eVal = ecart(rVal, n1Val);
           
-          const caN1 = n(data[m]?.edgMensuelN1?.['ca_total_ht']);
+          const caN1 = parseMoneyValue(data[m]?.edgMensuelN1?.['ca_total_ht']);
           const caR = caMonths[m];
           
           const ratioN1 = caN1 ? (n1Val / caN1) * 100 : 0;

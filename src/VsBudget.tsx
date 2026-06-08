@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { parseMoneyValue } from '@/lib/money';
 
 import { getDashboardRowIndices } from './utils';
 
@@ -9,10 +10,6 @@ interface VsBudgetProps {
   hideHeader?: boolean;
 }
 
-const n = (v?: string | number) => {
-  if (typeof v === 'number') return v;
-  return parseFloat((v || '0').toString().replace(',', '.')) || 0;
-};
 
 const fe = (v: number) => v === 0 ? '0' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v);
 const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v.toFixed(2)}%` : '';
@@ -27,7 +24,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
     const indices = getDashboardRowIndices(m, YEAR);
     let total = 0;
     Object.values(indices).forEach(rIdx => {
-      total += n(md[`${rIdx}-24`]);
+      total += parseMoneyValue(md[`${rIdx}-24`]);
     });
     return total;
   };
@@ -35,8 +32,8 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
   const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [data]);
   const caTotal = caMonths.reduce((a, b) => a + b, 0);
 
-  const getValB = (m: number, key: string) => n(data[m]?.edgMensuel?.[key]);
-  const getValR = (m: number, key: string) => n(data[m]?.edgMensuelRealise?.[key]);
+  const getValB = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuel?.[key]);
+  const getValR = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuelRealise?.[key]);
 
   const getRowData = (key: string) => {
     const monthsB = Array.from({ length: 12 }, (_, i) => getValB(i, key));
@@ -47,7 +44,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
   };
 
   const getMonthCalculations = (m: number) => {
-    const caB = n(data[m]?.edgMensuel?.['ca_total_ht']);
+    const caB = parseMoneyValue(data[m]?.edgMensuel?.['ca_total_ht']);
     const caR = caMonths[m]; // Realise CA from dashboard
     
     const valB = (k: string) => getValB(m, k);
@@ -114,7 +111,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
           const rVal = rowData.monthsR[m];
           const eVal = ecart(rVal, bVal);
           
-          const caB = n(data[m]?.edgMensuel?.['ca_total_ht']);
+          const caB = parseMoneyValue(data[m]?.edgMensuel?.['ca_total_ht']);
           const caR = caMonths[m];
           
           const ratioB = caB ? (bVal / caB) * 100 : 0;
@@ -195,7 +192,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
           const rVal = mCalc.realise[calcKey];
           const eVal = ecart(rVal, bVal);
           
-          const caB = n(data[m]?.edgMensuel?.['ca_total_ht']);
+          const caB = parseMoneyValue(data[m]?.edgMensuel?.['ca_total_ht']);
           const caR = caMonths[m];
           
           const ratioB = caB ? (bVal / caB) * 100 : 0;

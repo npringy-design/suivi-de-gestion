@@ -11,7 +11,6 @@ const GREEN = '#10b981';
 
 const WEEKS = Array.from({ length: 52 }, (_, i) => `S${i + 1}`);
 
-const n = (v?: string) => parseFloat((v || '0').replace(',', '.')) || 0;
 const fe = (v: number) => v === 0 ? '0,00 €' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
 const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '—';
 
