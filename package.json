@@ -18,8 +18,6 @@
     "verify:dashboard-refactor": "npm run test:dashboard-model && npm run lint:ts && npm run build"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.14",
-    "@vitejs/plugin-react": "^5.0.4",
     "dom-to-image-more": "^3.7.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.0",
@@ -29,10 +27,10 @@
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.14.2",
     "recharts": "^3.8.0",
-    "vite": "^6.2.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.14",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -42,6 +40,7 @@
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "@vitejs/plugin-react": "^5.0.4",
     "@vitest/ui": "^4.1.5",
     "autoprefixer": "^10.4.21",
     "eslint": "^8.57.1",
