@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef } from 'react';
+﻿import React, { useMemo, useEffect, useRef } from 'react';
 import DashboardAnalysisView from '@/DashboardAnalysisView';
 
 import { useData } from '@/contexts/DataContext';
@@ -6,7 +6,7 @@ import { averagePayrollRate } from '@/personnelSalaryImport';
 import { parseMoneyValue } from '@/lib/money';
 
 import { ChevronLeft, Download, Upload, FileDown, Trash2, X, Clipboard } from 'lucide-react';
-// ── Modèle Dashboard extrait (types, colonnes, configuration statique) ────────
+// â”€â”€ ModÃ¨le Dashboard extrait (types, colonnes, configuration statique) â”€â”€â”€â”€â”€â”€â”€â”€
 import type {
   DashboardColumn,
   DashboardRow,
@@ -30,6 +30,7 @@ import { useDashboardPurchaseSuppliers } from '@/features/dashboard/hooks/useDas
 import { useDashboardResponsiveState } from '@/features/dashboard/hooks/useDashboardResponsiveState';
 import { useDashboardUiState } from '@/features/dashboard/hooks/useDashboardUiState';
 import { useDashboardImportHandlers } from '@/features/dashboard/hooks/useDashboardImportHandlers';
+import { useDashboardDailyRecapHandlers } from '@/features/dashboard/hooks/useDashboardDailyRecapHandlers';
 import {
   formatKpiCurrency,
   formatKpiNumber,
@@ -57,7 +58,7 @@ import DashboardDatePicker from '@/features/dashboard/components/DashboardDatePi
 import DebouncedInput from '@/features/dashboard/components/DebouncedInput';
 import DashboardRealiseMatrix from '@/features/dashboard/components/DashboardRealiseMatrix';
 import DashboardDailyEntry from '@/features/dashboard/components/DashboardDailyEntry';
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import jsPDF from 'jspdf';
@@ -125,21 +126,21 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const publicHolidays = [
     `${year}-01-01`, // Jour de l'An
-    formatDateStr(addDays(easter, 1)), // Lundi de Pâques
-    `${year}-05-01`, // Fête du Travail
+    formatDateStr(addDays(easter, 1)), // Lundi de PÃ¢ques
+    `${year}-05-01`, // FÃªte du Travail
     `${year}-05-08`, // Victoire 1945
     formatDateStr(addDays(easter, 39)), // Ascension
-    formatDateStr(addDays(easter, 50)), // Lundi de Pentecôte
-    `${year}-07-14`, // Fête Nationale
+    formatDateStr(addDays(easter, 50)), // Lundi de PentecÃ´te
+    `${year}-07-14`, // FÃªte Nationale
     `${year}-08-15`, // Assomption
     `${year}-11-01`, // La Toussaint
     `${year}-11-11`, // Armistice 1918
-    `${year}-12-25`, // Noël
+    `${year}-12-25`, // NoÃ«l
   ];
 
   const schoolHolidays = [
     { start: `${year - 1}-10-17`, end: `${year - 1}-11-02` }, // Toussaint
-    { start: `${year - 1}-12-19`, end: `${year}-01-04` }, // Noël
+    { start: `${year - 1}-12-19`, end: `${year}-01-04` }, // NoÃ«l
     { start: `${year}-02-20`, end: `${year}-03-08` }, // Hiver Zone C
     { start: `${year}-04-17`, end: `${year}-05-03` }, // Printemps Zone C
     { start: `${year}-05-13`, end: `${year}-05-17` }, // Pont Ascension
@@ -217,7 +218,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           .map((row: any) => String(row.nom || '').trim())
           .filter(Boolean);
         const namesStr = '';
-        const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
+        const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} â‚¬` : '';
         cols[idx] = [...cols[idx]];
         cols[idx][1] = idx >= 77 ? 'FRAIS PERSONNEL REALISE' : 'PROJECTION S/C';
         cols[idx][2] = `${label}${namesStr}${avgStr}`;
@@ -360,7 +361,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const fgBoxNames = [
     ['ENTRETIEN ET REPARATION', 'ECOLAB / DIVERSEY', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)'],
     ['PETIT MATERIEL ET VAISSELLE', 'HACCP DIVERS', 'AUTRES FRAIS'],
-    ['TENUE DU PERSONNEL', 'MATERIEL DE BUREAU', 'ENERGIE (Gaz / Electricité / Charbon)'],
+    ['TENUE DU PERSONNEL', 'MATERIEL DE BUREAU', 'ENERGIE (Gaz / ElectricitÃ© / Charbon)'],
     ['ANNIMATION', 'FRAIS DE TRANSPORT', 'DIVERS']
   ];
 
@@ -446,7 +447,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           data[`${rIdx}-127`] = cumulCvtsBudgetComplet.toFixed(0);
         }
 
-        // REALISE CA HT — 17=VAE,18=MIDI,19=SOIR,20=LIMO,21=TOTAL,22=ECART,23=CUMUL
+        // REALISE CA HT â€” 17=VAE,18=MIDI,19=SOIR,20=LIMO,21=TOTAL,22=ECART,23=CUMUL
         const realiseVae  = parseMoneyValue(data[`${rIdx}-17`]);
         const realiseMidi = parseMoneyValue(data[`${rIdx}-18`]);
         const realiseSoir = parseMoneyValue(data[`${rIdx}-19`]);
@@ -466,7 +467,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           cumulRealiseCA += realiseTotalJour;
           data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
         }
-        // COUVERTS REALISE — 25=NB MIDI,26=MOY,27=NB SOIR,28=MOY,29=TOTAL,30=CUMUL,31=ECART nb vs budget
+        // COUVERTS REALISE â€” 25=NB MIDI,26=MOY,27=NB SOIR,28=MOY,29=TOTAL,30=CUMUL,31=ECART nb vs budget
         const nbCvtsMidi = parseMoneyValue(data[`${rIdx}-25`]);
         const nbCvtsSoir = parseMoneyValue(data[`${rIdx}-27`]);
         if (nbCvtsMidi > 0 && realiseMidi > 0) data[`${rIdx}-26`] = (realiseMidi / nbCvtsMidi).toFixed(2);
@@ -488,7 +489,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           const budgetCvtsJour = parseMoneyValue(data[`${rIdx}-10`]);
           if (budgetCvtsJour > 0) data[`${rIdx}-33`] = (totalCvtsJour - budgetCvtsJour).toFixed(0);
         }
-        // COUVERTS LIMONADE — detail midi/soir + total historique
+        // COUVERTS LIMONADE â€” detail midi/soir + total historique
         const nbCvtsLimoMidiDetail = parseMoneyValue(data[`${rIdx}-112`]);
         const nbCvtsLimoSoirDetail = parseMoneyValue(data[`${rIdx}-114`]);
         const nbCvtsLimoDetailTotal = nbCvtsLimoMidiDetail + nbCvtsLimoSoirDetail;
@@ -668,7 +669,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         if (cvtsLimoW > 0) data[`${rIdx}-15`] = (caLimoW / cvtsLimoW).toString();
 
         const realiseCAW = parseMoneyValue(data[`${rIdx}-21`]);
-        // Moyennes semaine couverts réalisé
+        // Moyennes semaine couverts rÃ©alisÃ©
         const nbMidiW = parseMoneyValue(data[`${rIdx}-25`]);
         const nbSoirW = parseMoneyValue(data[`${rIdx}-27`]);
         const caMidiWr = parseMoneyValue(data[`${rIdx}-18`]);
@@ -770,7 +771,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const realiseCAM = parseMoneyValue(data[`${monthTotalIdx}-21`]);
       if (realiseCAM > 0) data[`${monthTotalIdx}-60`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
 
-      // Moyennes mois couverts réalisé
+      // Moyennes mois couverts rÃ©alisÃ©
       const nbMidiM = parseMoneyValue(data[`${monthTotalIdx}-25`]);
       const nbSoirM = parseMoneyValue(data[`${monthTotalIdx}-27`]);
       const caMidiMr = parseMoneyValue(data[`${monthTotalIdx}-18`]);
@@ -829,14 +830,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             const val = parseMoneyValue(data[`fg-data-${box}-${colGroup}-${dIdx}-3`]);
             boxTotal += val;
           }
-          data[`fg-total-${box}-${colGroup}`] = boxTotal.toFixed(2).replace('.', ',') + ' €';
+          data[`fg-total-${box}-${colGroup}`] = boxTotal.toFixed(2).replace('.', ',') + ' â‚¬';
           globalFgTotal += boxTotal;
         }
       }
       
       const fgTotalIdx = rows.findIndex(r => r.type === 'month_total');
       if (fgTotalIdx !== -1) {
-        data[`${fgTotalIdx}-fraisGenerauxTotal`] = globalFgTotal.toFixed(2).replace('.', ',') + ' €';
+        data[`${fgTotalIdx}-fraisGenerauxTotal`] = globalFgTotal.toFixed(2).replace('.', ',') + ' â‚¬';
       }
     }
 
@@ -1108,458 +1109,24 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     personnelInfos,
   });
 
-  const getDailyCellValue = (col: number) => selectedDayRowIndex >= 0 ? calculatedData[`${selectedDayRowIndex}-${col}`] || '' : '';
-  const getDailyDisplayValue = (col: number) => {
-    const value = getDailyCellValue(col);
-    return isPayrollInputColumn(col) ? formatPayrollHourVisualValue(value) : formatValue(value, dynamicColumns[col] || ['', '', '', ''], col);
-  };
+  const {
+    getDailyDisplayValue,
+    buildDailyRecapHtml,
+    openDailyRecapPreview,
+    handleValidateDailyRecapMail,
+  } = useDashboardDailyRecapHandlers({
+    selectedDayRowIndex,
+    selectedDayLabel,
+    calculatedData,
+    dynamicColumns,
+    dailyRecapManagers,
+    dailyRecapServiceComments,
+    dailyRecapGoogleRatings,
+    setDailyRecapStatus,
+    setIsDailyRecapModalOpen,
+  });
   const isDailyFieldFocused = (col: number) => focusedCell === `${selectedDayRowIndex}-${col}`;
 
-  const formatDailyRecapNumber = (value: number, decimals = 2) => new Intl.NumberFormat('fr-FR', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value);
-  const formatDailyRecapCurrency = (value: number, suffix = ' HT') => `${formatDailyRecapNumber(value)} €${suffix}`;
-  const formatDailyRecapTicket = (value: number) => `${formatDailyRecapNumber(value)} €`;
-  const formatDailyRecapInteger = (value: number) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(value);
-  const formatDailyRecapDelta = (value: number, decimals = 2) => `${value > 0 ? '+' : ''}${formatDailyRecapNumber(value, decimals)}`;
-  const formatDailyRecapPercent = (delta: number, budget: number) => (
-    budget > 0 ? ` (${formatDailyRecapDelta((delta / budget) * 100, 1)}%)` : ''
-  );
-  const dailyRecapDeltaClass = (value: number) => value < 0 ? 'negative' : value > 0 ? 'positive' : 'neutral';
-  const dailyRecapDeltaColor = (value: number) => value < 0 ? '#dc2626' : value > 0 ? '#15803d' : '#334155';
-  const dailyRecapDeltaHtml = (value: number, suffix = ' €') => `<strong style="color:${dailyRecapDeltaColor(value)}">${formatDailyRecapDelta(value)}${suffix}</strong>`;
-  const escapeDailyRecapHtml = (value: string) => value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-  const dailyRecapTextLine = (label: string, value: string) => `  ${label.padEnd(18, ' ')} : ${value}`;
-  const dailyRecapMetricHtml = (label: string, value: string) => (
-    `<div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:start;margin:3px 0"><span style="color:#475569">${label}</span><strong style="color:#0f172a">${value}</strong></div>`
-  );
-  const dailyRecapBudgetHtml = (label: string, value: number, suffix = ' €', percent = '') => (
-    `<div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:start;margin:3px 0"><span style="color:#475569">${label}</span><span>${dailyRecapDeltaHtml(value, suffix)}${percent}</span></div>`
-  );
-
-  const getDailyRecapService = (label: string, caCol: number, coversCol: number, tmCol: number, budgetCaCol: number, budgetCoversCol: number, budgetTmCol: number) => {
-    const ca = parseDashboardNumber(getDailyCellValue(caCol));
-    const covers = parseDashboardNumber(getDailyCellValue(coversCol));
-    const tm = parseDashboardNumber(getDailyCellValue(tmCol));
-    const budgetCa = parseDashboardNumber(getDailyCellValue(budgetCaCol));
-    const budgetCovers = parseDashboardNumber(getDailyCellValue(budgetCoversCol));
-    const budgetTm = parseDashboardNumber(getDailyCellValue(budgetTmCol));
-    return { label, ca, covers, tm, budgetCa, budgetCovers, budgetTm };
-  };
-
-  const buildDailyRecapServiceText = (
-    service: ReturnType<typeof getDailyRecapService>,
-    manager: string,
-    comment: string,
-  ) => {
-    const budgetLines = [
-      service.budgetCa > 0 ? dailyRecapTextLine('CA', `${formatDailyRecapDelta(service.ca - service.budgetCa)} €${formatDailyRecapPercent(service.ca - service.budgetCa, service.budgetCa)}`) : '',
-      service.budgetCovers > 0 && service.covers > 0 ? dailyRecapTextLine('Couverts', `${formatDailyRecapDelta(service.covers - service.budgetCovers, 0)}${formatDailyRecapPercent(service.covers - service.budgetCovers, service.budgetCovers)}`) : '',
-      service.budgetTm > 0 && service.tm > 0 ? dailyRecapTextLine('Ticket moyen', `${formatDailyRecapDelta(service.tm - service.budgetTm)} €${formatDailyRecapPercent(service.tm - service.budgetTm, service.budgetTm)}`) : '',
-    ].filter(Boolean);
-    const lines = [
-      `----- ${service.label.toUpperCase()} -----`,
-      manager.trim() ? `Responsable : ${manager.trim()}` : '',
-    ];
-    if (service.ca > 0 || service.covers > 0 || service.tm > 0) {
-      lines.push(
-        '',
-        'Réalisé',
-        dailyRecapTextLine('CA HT', formatDailyRecapCurrency(service.ca)),
-        ...(service.covers > 0 ? [dailyRecapTextLine('Couverts', formatDailyRecapInteger(service.covers))] : []),
-        ...(service.tm > 0 ? [dailyRecapTextLine('Ticket moyen', formatDailyRecapTicket(service.tm))] : []),
-      );
-    }
-    if (budgetLines.length > 0) lines.push('', 'Écart vs budget', ...budgetLines);
-    if (comment.trim()) lines.push('', `Commentaire : ${comment.trim()}`);
-    return lines.filter(line => line !== null && line !== undefined);
-  };
-
-  const buildDailyRecapServiceHtml = (
-    service: ReturnType<typeof getDailyRecapService>,
-    manager: string,
-    comment: string,
-  ) => {
-    const realisedRows = [
-      service.ca > 0 ? dailyRecapMetricHtml('CA HT', formatDailyRecapCurrency(service.ca)) : '',
-      service.covers > 0 ? dailyRecapMetricHtml('Couverts', formatDailyRecapInteger(service.covers)) : '',
-      service.tm > 0 ? dailyRecapMetricHtml('Ticket moyen', formatDailyRecapTicket(service.tm)) : '',
-    ].filter(Boolean).join('');
-    const budgetRows = [
-      service.budgetCa > 0 ? dailyRecapBudgetHtml('CA', service.ca - service.budgetCa, ' €', formatDailyRecapPercent(service.ca - service.budgetCa, service.budgetCa)) : '',
-      service.budgetCovers > 0 && service.covers > 0 ? dailyRecapBudgetHtml('Couverts', service.covers - service.budgetCovers, '', formatDailyRecapPercent(service.covers - service.budgetCovers, service.budgetCovers)) : '',
-      service.budgetTm > 0 && service.tm > 0 ? dailyRecapBudgetHtml('Ticket moyen', service.tm - service.budgetTm, ' €', formatDailyRecapPercent(service.tm - service.budgetTm, service.budgetTm)) : '',
-    ].filter(Boolean).join('');
-    if (service.ca > 0 || service.covers > 0 || service.tm > 0) {
-      return `<section style="margin:18px 0;padding:14px 16px;border:1px solid #dbe3ef;border-left:5px solid #0f766e;border-radius:10px;background:#ffffff">
-        <h3 style="margin:0 0 10px;font-size:16px;color:#0f172a;text-transform:uppercase">${service.label}</h3>
-        ${manager.trim() ? `<p style="margin:0 0 12px;color:#334155"><strong>Responsable :</strong> ${escapeDailyRecapHtml(manager.trim())}</p>` : ''}
-        <p style="margin:0 0 4px;font-weight:700;color:#0f766e">Réalisé</p>
-        <div style="margin:0 0 10px 0">${realisedRows}</div>
-        ${budgetRows ? `<p style="margin:10px 0 4px;font-weight:700;color:#64748b">Écart vs budget</p><div style="margin:0 0 10px 0">${budgetRows}</div>` : ''}
-        ${comment.trim() ? `<p style="margin:10px 0 0;padding:8px 10px;background:#f8fafc;border-radius:8px;color:#334155"><strong>Commentaire :</strong> ${escapeDailyRecapHtml(comment.trim())}</p>` : ''}
-      </section>`;
-    }
-    return '';
-  };
-
-  const buildDailyRecapReport = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => {
-    const totalCa = parseDashboardNumber(getDailyCellValue(21));
-    const budgetCa = parseDashboardNumber(getDailyCellValue(3));
-    const totalCovers = parseDashboardNumber(getDailyCellValue(29));
-    const budgetCovers = parseDashboardNumber(getDailyCellValue(10));
-    const ticketMoyen = parseDashboardNumber(getDailyCellValue(30));
-    const budgetTicketMoyen = parseDashboardNumber(getDailyCellValue(11));
-    const vae = parseDashboardNumber(getDailyCellValue(17));
-    const limonade = parseDashboardNumber(getDailyCellValue(20));
-    const limonadeCovers = parseDashboardNumber(getDailyCellValue(34));
-    const limonadeTm = parseDashboardNumber(getDailyCellValue(35));
-    const eventRestaurant = String(getDailyCellValue(37) || '').trim();
-    const eventNational = String(getDailyCellValue(38) || '').trim();
-    const midi = getDailyRecapService('Midi', 18, 25, 26, 0, 6, 7);
-    const soir = getDailyRecapService('Soir', 19, 27, 28, 1, 8, 9);
-    const googleRatings = [5, 4, 3, 2, 1]
-      .map(stars => ({ stars, value: Number(String(options.googleRatings?.[stars] || '').replace(',', '.')) || 0 }))
-      .filter(item => item.value > 0);
-
-    const jourBudgetLines = [
-      budgetCa > 0 ? dailyRecapTextLine('CA', `${formatDailyRecapDelta(totalCa - budgetCa)} €${formatDailyRecapPercent(totalCa - budgetCa, budgetCa)}`) : '',
-      budgetCovers > 0 ? dailyRecapTextLine('Couverts', `${formatDailyRecapDelta(totalCovers - budgetCovers, 0)}${formatDailyRecapPercent(totalCovers - budgetCovers, budgetCovers)}`) : '',
-      budgetTicketMoyen > 0 ? dailyRecapTextLine('Ticket moyen', `${formatDailyRecapDelta(ticketMoyen - budgetTicketMoyen)} €${formatDailyRecapPercent(ticketMoyen - budgetTicketMoyen, budgetTicketMoyen)}`) : '',
-    ].filter(Boolean);
-    const jourText = [
-      '----- JOURNÉE -----',
-      'Synthèse',
-      dailyRecapTextLine('CA HT', formatDailyRecapCurrency(totalCa)),
-      dailyRecapTextLine('Couverts', formatDailyRecapInteger(totalCovers)),
-      dailyRecapTextLine('Ticket moyen', formatDailyRecapTicket(ticketMoyen)),
-      vae > 0 ? dailyRecapTextLine('VAE', formatDailyRecapCurrency(vae)) : '',
-      limonade > 0 ? dailyRecapTextLine('Limonade', `${formatDailyRecapCurrency(limonade)}${limonadeCovers > 0 ? ` | ${formatDailyRecapInteger(limonadeCovers)} couverts` : ''}${limonadeTm > 0 ? ` | TM ${formatDailyRecapTicket(limonadeTm)}` : ''}`) : '',
-      ...(jourBudgetLines.length > 0 ? ['', 'Écart vs budget', ...jourBudgetLines] : []),
-    ].filter(Boolean);
-
-    const textSections = [
-      'Bonsoir,',
-      '',
-      `Voici le récap de clôture du ${selectedDayLabel}.`,
-      '',
-      ...buildDailyRecapServiceText(midi, options.managerMidi || '', options.commentMidi || ''),
-      '',
-      ...buildDailyRecapServiceText(soir, options.managerSoir || '', options.commentSoir || ''),
-      '',
-      ...jourText,
-      ...(eventRestaurant || eventNational ? ['', '----- ÉVÉNEMENTS -----', ...(eventRestaurant ? [dailyRecapTextLine('Restaurant', eventRestaurant)] : []), ...(eventNational ? [dailyRecapTextLine('National', eventNational)] : [])] : []),
-      ...(googleRatings.length > 0 ? ['', '----- NOTES GOOGLE -----', ...googleRatings.map(item => dailyRecapTextLine(`${item.stars} étoile${item.stars > 1 ? 's' : ''}`, formatDailyRecapInteger(item.value)))] : []),
-      '',
-      'Bonne soirée,',
-      '',
-      'Cordialement,',
-    ];
-
-    const jourHtmlRows = [
-      dailyRecapMetricHtml('CA HT', formatDailyRecapCurrency(totalCa)),
-      dailyRecapMetricHtml('Couverts', formatDailyRecapInteger(totalCovers)),
-      dailyRecapMetricHtml('Ticket moyen', formatDailyRecapTicket(ticketMoyen)),
-      vae > 0 ? dailyRecapMetricHtml('VAE', formatDailyRecapCurrency(vae)) : '',
-      limonade > 0 ? dailyRecapMetricHtml('Limonade', `${formatDailyRecapCurrency(limonade)}${limonadeCovers > 0 ? ` | ${formatDailyRecapInteger(limonadeCovers)} couverts` : ''}${limonadeTm > 0 ? ` | TM ${formatDailyRecapTicket(limonadeTm)}` : ''}`) : '',
-    ].filter(Boolean).join('');
-    const jourBudgetHtmlRows = [
-      budgetCa > 0 ? dailyRecapBudgetHtml('CA', totalCa - budgetCa, ' €', formatDailyRecapPercent(totalCa - budgetCa, budgetCa)) : '',
-      budgetCovers > 0 ? dailyRecapBudgetHtml('Couverts', totalCovers - budgetCovers, '', formatDailyRecapPercent(totalCovers - budgetCovers, budgetCovers)) : '',
-      budgetTicketMoyen > 0 ? dailyRecapBudgetHtml('Ticket moyen', ticketMoyen - budgetTicketMoyen, ' €', formatDailyRecapPercent(ticketMoyen - budgetTicketMoyen, budgetTicketMoyen)) : '',
-    ].filter(Boolean).join('');
-    const optionalHtml = [
-      eventRestaurant || eventNational ? `<section style="margin:18px 0;padding:14px 16px;border:1px solid #fde68a;border-left:5px solid #f59e0b;border-radius:10px;background:#fffbeb"><h3 style="margin:0 0 10px;font-size:16px;color:#92400e;text-transform:uppercase">Événements</h3>${eventRestaurant ? `<p style="margin:2px 0"><strong>Restaurant :</strong> ${escapeDailyRecapHtml(eventRestaurant)}</p>` : ''}${eventNational ? `<p style="margin:2px 0"><strong>National :</strong> ${escapeDailyRecapHtml(eventNational)}</p>` : ''}</section>` : '',
-      googleRatings.length > 0 ? `<section style="margin:18px 0;padding:14px 16px;border:1px solid #dbe3ef;border-left:5px solid #64748b;border-radius:10px;background:#ffffff"><h3 style="margin:0 0 10px;font-size:16px;color:#0f172a;text-transform:uppercase">Notes Google</h3><div>${googleRatings.map(item => dailyRecapMetricHtml(`${item.stars} étoile${item.stars > 1 ? 's' : ''}`, formatDailyRecapInteger(item.value))).join('')}</div></section>` : '',
-    ].filter(Boolean).join('');
-    const html = `<div style="font-family:Arial,sans-serif;color:#111827;line-height:1.45;max-width:720px">
-      <p style="margin:0 0 12px">Bonsoir,</p>
-      <div style="margin:0 0 18px;padding:14px 16px;border-radius:10px;background:#ecfeff;border:1px solid #a5f3fc">
-        <p style="margin:0;color:#0f766e;font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.04em">Récapitulatif de clôture</p>
-        <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:#0f172a">${escapeDailyRecapHtml(selectedDayLabel)}</p>
-      </div>
-      ${buildDailyRecapServiceHtml(midi, options.managerMidi || '', options.commentMidi || '')}
-      ${buildDailyRecapServiceHtml(soir, options.managerSoir || '', options.commentSoir || '')}
-      <section style="margin:18px 0;padding:14px 16px;border:1px solid #bfdbfe;border-left:5px solid #2563eb;border-radius:10px;background:#eff6ff">
-        <h3 style="margin:0 0 10px;font-size:16px;color:#1e3a8a;text-transform:uppercase">Journée</h3>
-        <p style="margin:0 0 4px;font-weight:700;color:#1d4ed8">Synthèse</p>
-        <div style="margin:0 0 10px 0">${jourHtmlRows}</div>
-        ${jourBudgetHtmlRows ? `<p style="margin:10px 0 4px;font-weight:700;color:#64748b">Écart vs budget</p><div style="margin:0 0 10px 0">${jourBudgetHtmlRows}</div>` : ''}
-      </section>
-      ${optionalHtml}
-      <p style="margin:18px 0 0">Bonne soirée,</p>
-      <p style="margin:12px 0 0">Cordialement,</p>
-    </div>`;
-
-    return { text: textSections.filter(line => line !== null && line !== undefined).join('\n'), html };
-  };
-
-  const buildDailyRecapText = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).text;
-  const buildDailyRecapHtml = (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> } = {}) => buildDailyRecapReport(options).html;
-  const buildOutlookComposeUrl = (subject: string, textBody?: string) => {
-    const baseUrl = 'https://outlook.office.com/mail/deeplink/compose';
-    const subjectParam = `subject=${encodeURIComponent(subject)}`;
-    if (!textBody) return `${baseUrl}?${subjectParam}`;
-
-    const url = `${baseUrl}?${subjectParam}&body=${encodeURIComponent(textBody)}`;
-    if (url.length < 8000) return url;
-
-    return `${baseUrl}?${subjectParam}`;
-  };
-  const copyDailyRecapImageToClipboard = async (
-    recapHtml: string,
-    ClipboardItemCtor: typeof ClipboardItem,
-  ) => {
-    const captureHost = document.createElement('div');
-    captureHost.style.position = 'fixed';
-    captureHost.style.left = '-10000px';
-    captureHost.style.top = '0';
-    captureHost.style.width = '780px';
-    captureHost.style.padding = '24px';
-    captureHost.style.background = '#ffffff';
-    captureHost.style.zIndex = '-1';
-    captureHost.innerHTML = recapHtml;
-    document.body.appendChild(captureHost);
-
-    try {
-      await document.fonts?.ready;
-      await new Promise(resolve => window.requestAnimationFrame(resolve));
-      const target = (captureHost.firstElementChild as HTMLElement | null) || captureHost;
-      target.style.width = '720px';
-      target.style.maxWidth = '720px';
-      target.style.background = '#ffffff';
-
-      const blob = await domtoimage.toBlob(target, {
-        bgcolor: '#ffffff',
-        quality: 1,
-        width: target.scrollWidth,
-        height: target.scrollHeight,
-        style: {
-          width: '720px',
-          maxWidth: '720px',
-          overflow: 'visible',
-        },
-      });
-
-      await navigator.clipboard.write([new ClipboardItemCtor({ 'image/png': blob })]);
-    } finally {
-      document.body.removeChild(captureHost);
-    }
-  };
-  const copyDailyRecapCanvasImageToClipboard = async (
-    options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> },
-    ClipboardItemCtor: typeof ClipboardItem,
-  ) => {
-    const totalCa = parseDashboardNumber(getDailyCellValue(21));
-    const budgetCa = parseDashboardNumber(getDailyCellValue(3));
-    const totalCovers = parseDashboardNumber(getDailyCellValue(29));
-    const budgetCovers = parseDashboardNumber(getDailyCellValue(10));
-    const ticketMoyen = parseDashboardNumber(getDailyCellValue(30));
-    const budgetTicketMoyen = parseDashboardNumber(getDailyCellValue(11));
-    const vae = parseDashboardNumber(getDailyCellValue(17));
-    const limonade = parseDashboardNumber(getDailyCellValue(20));
-    const midi = getDailyRecapService('Midi', 18, 25, 26, 0, 6, 7);
-    const soir = getDailyRecapService('Soir', 19, 27, 28, 1, 8, 9);
-    const googleRatings = [5, 4, 3, 2, 1]
-      .map(stars => ({ stars, value: Number(String(options.googleRatings?.[stars] || '').replace(',', '.')) || 0 }))
-      .filter(item => item.value > 0);
-
-    const width = 620;
-    const pad = 22;
-    const cardGap = 12;
-    const lineH = 20;
-    type CanvasRecapRow = { label: string; value: string; color?: string; header?: boolean };
-    const rows: CanvasRecapRow[] = [];
-    const sections: Array<{ title: string; accent: string; rows: CanvasRecapRow[]; manager?: string; comment?: string }> = [];
-    const deltaColor = (value: number) => value < 0 ? '#dc2626' : value > 0 ? '#15803d' : '#334155';
-    const deltaText = (value: number, suffix = '', budget = 0, decimals = 2) => `${formatDailyRecapDelta(value, decimals)}${suffix}${formatDailyRecapPercent(value, budget)}`;
-    const pushService = (service: ReturnType<typeof getDailyRecapService>, manager: string, comment: string, accent: string) => {
-      const serviceRows = [
-        { label: 'Réalisé', value: '', header: true },
-        { label: 'CA HT', value: formatDailyRecapCurrency(service.ca) },
-        ...(service.covers > 0 ? [{ label: 'Couverts', value: formatDailyRecapInteger(service.covers) }] : []),
-        ...(service.tm > 0 ? [{ label: 'Ticket moyen', value: formatDailyRecapTicket(service.tm) }] : []),
-        ...(service.budgetCa > 0 || (service.budgetCovers > 0 && service.covers > 0) || (service.budgetTm > 0 && service.tm > 0) ? [{ label: 'Écart vs budget', value: '', header: true }] : []),
-        ...(service.budgetCa > 0 ? [{ label: 'CA', value: deltaText(service.ca - service.budgetCa, ' €', service.budgetCa), color: deltaColor(service.ca - service.budgetCa) }] : []),
-        ...(service.budgetCovers > 0 && service.covers > 0 ? [{ label: 'Couverts', value: deltaText(service.covers - service.budgetCovers, '', service.budgetCovers, 0), color: deltaColor(service.covers - service.budgetCovers) }] : []),
-        ...(service.budgetTm > 0 && service.tm > 0 ? [{ label: 'Ticket moyen', value: deltaText(service.tm - service.budgetTm, ' €', service.budgetTm), color: deltaColor(service.tm - service.budgetTm) }] : []),
-      ];
-      sections.push({ title: service.label, accent, rows: serviceRows, manager: manager.trim(), comment: comment.trim() });
-    };
-    pushService(midi, options.managerMidi || '', options.commentMidi || '', '#0f766e');
-    pushService(soir, options.managerSoir || '', options.commentSoir || '', '#0f766e');
-    rows.push(
-      { label: 'Synthèse', value: '', header: true },
-      { label: 'CA HT', value: formatDailyRecapCurrency(totalCa) },
-      { label: 'Couverts', value: formatDailyRecapInteger(totalCovers) },
-      { label: 'Ticket moyen', value: formatDailyRecapTicket(ticketMoyen) },
-    );
-    if (vae > 0) rows.push({ label: 'VAE', value: formatDailyRecapCurrency(vae) });
-    if (limonade > 0) rows.push({ label: 'Limonade', value: formatDailyRecapCurrency(limonade) });
-    if (budgetCa > 0 || budgetCovers > 0 || budgetTicketMoyen > 0) rows.push({ label: 'Écart vs budget', value: '', header: true });
-    if (budgetCa > 0) rows.push({ label: 'CA', value: deltaText(totalCa - budgetCa, ' €', budgetCa), color: deltaColor(totalCa - budgetCa) });
-    if (budgetCovers > 0) rows.push({ label: 'Couverts', value: deltaText(totalCovers - budgetCovers, '', budgetCovers, 0), color: deltaColor(totalCovers - budgetCovers) });
-    if (budgetTicketMoyen > 0) rows.push({ label: 'Ticket moyen', value: deltaText(ticketMoyen - budgetTicketMoyen, ' €', budgetTicketMoyen), color: deltaColor(ticketMoyen - budgetTicketMoyen) });
-    sections.push({ title: 'Journée', accent: '#2563eb', rows });
-    if (googleRatings.length > 0) {
-      sections.push({
-        title: 'Notes Google',
-        accent: '#64748b',
-        rows: googleRatings.map(item => ({ label: `${item.stars} étoile${item.stars > 1 ? 's' : ''}`, value: formatDailyRecapInteger(item.value) })),
-      });
-    }
-
-    const cardHeight = (section: typeof sections[number]) => (
-      50 + section.rows.length * lineH + (section.manager ? 22 : 0) + (section.comment ? 30 : 0)
-    );
-    const contentHeight = 106 + sections.reduce((sum, section) => sum + cardHeight(section) + cardGap, 0) + 90;
-    const dpr = 1;
-    const canvas = document.createElement('canvas');
-    canvas.width = width * dpr;
-    canvas.height = contentHeight * dpr;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas indisponible');
-    ctx.scale(dpr, dpr);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, width, contentHeight);
-
-    const roundRect = (x: number, y: number, w: number, h: number, r: number) => {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    };
-    const drawText = (text: string, x: number, y: number, size = 13, weight = '400', color = '#111827') => {
-      ctx.font = `${weight} ${size}px Arial, sans-serif`;
-      ctx.fillStyle = color;
-      ctx.fillText(text, x, y);
-    };
-
-    drawText('Bonsoir,', pad, 30, 13, '400');
-    ctx.fillStyle = '#ecfeff';
-    roundRect(pad, 46, width - pad * 2, 48, 8);
-    ctx.fill();
-    ctx.strokeStyle = '#a5f3fc';
-    ctx.stroke();
-    drawText('Récapitulatif de clôture', pad + 14, 68, 10, '700', '#0f766e');
-    drawText(selectedDayLabel, pad + 14, 88, 15, '700', '#0f172a');
-
-    let y = 112;
-    sections.forEach(section => {
-      const h = cardHeight(section);
-      ctx.fillStyle = section.title === 'Journée' ? '#eff6ff' : '#ffffff';
-      roundRect(pad, y, width - pad * 2, h, 8);
-      ctx.fill();
-      ctx.strokeStyle = '#dbe3ef';
-      ctx.stroke();
-      ctx.fillStyle = section.accent;
-      roundRect(pad, y, 5, h, 5);
-      ctx.fill();
-      drawText(section.title.toUpperCase(), pad + 16, y + 24, 13, '700', '#0f172a');
-      let cy = y + 46;
-      if (section.manager) {
-        drawText(`Responsable : ${section.manager}`, pad + 16, cy, 12, '700', '#334155');
-        cy += 22;
-      }
-      section.rows.forEach(row => {
-        if (row.header) {
-          drawText(row.label, pad + 16, cy, 12, '700', section.accent === '#2563eb' ? '#1d4ed8' : section.accent);
-          cy += lineH;
-          return;
-        }
-        drawText(row.label, pad + 16, cy, 12, '400', '#475569');
-        drawText(row.value, pad + 185, cy, 12, '700', row.color || '#0f172a');
-        cy += lineH;
-      });
-      if (section.comment) {
-        drawText(`Commentaire : ${section.comment}`, pad + 16, cy + 8, 12, '700', '#334155');
-      }
-      y += h + cardGap;
-    });
-    drawText('Bonne soirée,', pad, y + 8, 13, '400');
-    drawText('Cordialement,', pad, y + 32, 13, '400');
-
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(nextBlob => nextBlob ? resolve(nextBlob) : reject(new Error('Image non générée')), 'image/png');
-    });
-    await navigator.clipboard.write([new ClipboardItemCtor({ 'image/png': blob })]);
-  };
-
-  const openDailyRecapPreview = () => {
-    setDailyRecapStatus('');
-    setIsDailyRecapModalOpen(true);
-  };
-
-  const handleValidateDailyRecapMail = async () => {
-    const subject = `Chiffres du jour - ${selectedDayLabel}`;
-    const recapOptions = {
-      managerMidi: dailyRecapManagers.midi,
-      managerSoir: dailyRecapManagers.soir,
-      commentMidi: dailyRecapServiceComments.midi,
-      commentSoir: dailyRecapServiceComments.soir,
-      googleRatings: dailyRecapGoogleRatings,
-    };
-    const { text: recapText, html: recapHtml } = buildDailyRecapReport(recapOptions);
-    const outlookUrl = buildOutlookComposeUrl(subject);
-    const ClipboardItemCtor = (window as Window & { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
-    const openOutlook = () => {
-      const opened = window.open(outlookUrl, '_blank');
-      if (!opened) window.location.href = outlookUrl;
-    };
-
-    if (typeof navigator.clipboard?.write === 'function' && ClipboardItemCtor) {
-      try {
-        await copyDailyRecapCanvasImageToClipboard(recapOptions, ClipboardItemCtor);
-        openOutlook();
-        setIsDailyRecapModalOpen(false);
-        setDailyRecapStatus('Image copiée. Dans Outlook, clique dans le corps du mail puis Ctrl+V.');
-        return;
-      } catch {
-        // Si la capture image echoue, on tente le fallback HTML juste apres.
-      }
-    }
-
-    try {
-      if (navigator.clipboard?.write && ClipboardItemCtor) {
-        await navigator.clipboard.write([new ClipboardItemCtor({
-          'text/html': new Blob([recapHtml], { type: 'text/html' }),
-          'text/plain': new Blob([recapText], { type: 'text/plain' }),
-        })]);
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(recapText);
-      } else {
-        const textArea = document.createElement('textarea');
-        textArea.value = recapText;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-9999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
-      openOutlook();
-      setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus('Récap copié. Colle-le dans le corps du mail Outlook avec Ctrl+V.');
-    } catch {
-      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(recapText)}`;
-      setIsDailyRecapModalOpen(false);
-      setDailyRecapStatus("Mail ouvert en mode texte. Si la messagerie ne s'ouvre pas, le navigateur a bloqué le raccourci.");
-    }
-  };
   const dailyInputClass = "w-full h-8 rounded-md border border-slate-400 bg-white px-2 text-right text-sm font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
   const dailyReadOnlyClass = "flex h-8 items-center justify-end gap-1 overflow-hidden rounded-md border border-slate-300 bg-slate-100/90 px-2 text-sm font-bold text-slate-700 shadow-inner";
   const cashInputClass = "w-full h-7 rounded-md border border-slate-400 bg-white px-2 text-right text-xs font-bold text-slate-950 outline-none transition-all hover:border-slate-600 focus:border-slate-700 focus:ring-2 focus:ring-slate-500/15";
@@ -1752,12 +1319,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const otherGroups = groups.filter(g => !['CA', 'RESTAURANTS', 'LIMONADE', 'REALISE', 'CA HT', 'COUVERTS', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(g.name));
 
   // Colour palette used consistently in the header/footer
-  const HEADER_BG     = '#1e293b';   // slate-800 — cohérent NAV
-  const ACCENT_GOLD   = '#f59e0b';   // amber-500 — cohérent RecapAnnuel
+  const HEADER_BG     = '#1e293b';   // slate-800 â€” cohÃ©rent NAV
+  const ACCENT_GOLD   = '#f59e0b';   // amber-500 â€” cohÃ©rent RecapAnnuel
   const ACCENT_GREEN  = '#10b981';   // emerald-500
   const SECTION_BLUE  = '#3b82f6';   // blue-500
-  const SECTION_YELLOW= '#fff2cc';   // jaune pâle budget
-  const SECTION_GREEN = '#e2efda';   // vert pâle gestion
+  const SECTION_YELLOW= '#fff2cc';   // jaune pÃ¢le budget
+  const SECTION_GREEN = '#e2efda';   // vert pÃ¢le gestion
 
   const thBase: React.CSSProperties = {
     position: 'sticky',
@@ -1841,7 +1408,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       pdf.save(`Rapport_${monthNames[month]}_${year}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Une erreur est survenue lors de la génération du PDF.');
+      alert('Une erreur est survenue lors de la gÃ©nÃ©ration du PDF.');
     }
   };
 
@@ -1909,12 +1476,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       { name: 'Entretien', value: fg(0,0) },
       { name: 'Ecolab', value: fg(0,1) },
       { name: 'Marketing', value: fg(0,2) },
-      { name: 'Petit matériel', value: fg(1,0) },
+      { name: 'Petit matÃ©riel', value: fg(1,0) },
       { name: 'HACCP', value: fg(1,1) },
       { name: 'Autres', value: fg(1,2) },
       { name: 'Tenue', value: fg(2,0) },
       { name: 'Bureau', value: fg(2,1) },
-      { name: 'Énergie', value: fg(2,2) },
+      { name: 'Ã‰nergie', value: fg(2,2) },
       { name: 'Animation', value: fg(3,0) },
       { name: 'Transport', value: fg(3,1) },
       { name: 'Divers', value: fg(3,2) }
@@ -1969,11 +1536,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             <ChevronLeft size={16} /> Retour Accueil
           </button>
           <h1 style={{ fontSize: 22, fontWeight: 800, margin: '24px 0 0 0', letterSpacing: '-0.02em', color: '#f8fafc' }}>Tableau de Bord</h1>
-          <div style={{ fontSize: 14, color: '#94a3b8', marginTop: 4, fontWeight: 500 }}>Année {year}</div>
+          <div style={{ fontSize: 14, color: '#94a3b8', marginTop: 4, fontWeight: 500 }}>AnnÃ©e {year}</div>
         </div>
         
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: 4, scrollbarWidth: 'none' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0 12px 12px 12px' }}>Sélection du mois</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0 12px 12px 12px' }}>SÃ©lection du mois</div>
           {monthNames.map((m, i) => (
             <button
               key={i}
@@ -2016,7 +1583,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     onClick={() => setIsDatePickerOpen(prev => !prev)}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(207,250,254,.14)', borderRadius: 14, cursor: 'pointer', color: '#fff', padding: isMobile ? '9px 11px' : '10px 14px', textAlign: 'left', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08)' }}
                   >
-                    <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journalière</span>
+                    <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journaliÃ¨re</span>
                     <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1, color: '#fef3c7' }}>{selectedDayLabel}</span>
                   </button>
                   {isDatePickerOpen && renderDatePicker()}
@@ -2028,7 +1595,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     onClick={() => setIsDatePickerOpen(prev => !prev)}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(207,250,254,.14)', borderRadius: 14, cursor: 'pointer', color: '#fff', padding: isMobile ? '9px 11px' : '10px 14px', textAlign: 'left', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08)' }}
                   >
-                    <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>{tableViewMode === 'ANALYSE' ? 'Vue analyse' : 'Vue complète'}</span>
+                    <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>{tableViewMode === 'ANALYSE' ? 'Vue analyse' : 'Vue complÃ¨te'}</span>
                     <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1, color: '#fef3c7' }}>{monthNames[month]} {year}</span>
                   </button>
                   {isDatePickerOpen && renderDatePicker()}
@@ -2040,8 +1607,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 <Upload size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Importer'}
               </button>
               {tableViewMode === 'SAISIE' && (
-                <button onClick={openDailyRecapPreview} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme} title={dailyRecapStatus || 'Préparer le récap mail du jour'}>
-                  <Clipboard size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Récap mail'}
+                <button onClick={openDailyRecapPreview} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme} title={dailyRecapStatus || 'PrÃ©parer le rÃ©cap mail du jour'}>
+                  <Clipboard size={isMobile ? 14 : 16} /> {isMobile ? '' : 'RÃ©cap mail'}
                 </button>
               )}
               <button onClick={handleExportPDF} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
@@ -2068,12 +1635,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           {false && tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && (
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(7, minmax(116px, 1fr))', gap: 8, padding: isMobile ? '0 0 12px' : '0 0 12px', overflowX: isMobile ? 'visible' : 'auto' }}>
               {[
-                { label: 'CA budget', value: formatKpiCurrency(summaryKpis.budgetCa), color: '#64748b', icon: '€' },
-                { label: 'CA réalisé', value: formatKpiCurrency(summaryKpis.realiseCa), color: '#2563eb', icon: 'CA' },
-                { label: 'Écart CA', value: formatKpiCurrency(summaryKpis.ecartCa), color: summaryKpis.ecartCa >= 0 ? '#059669' : '#dc2626', icon: summaryKpis.ecartCa >= 0 ? '+' : '-' },
+                { label: 'CA budget', value: formatKpiCurrency(summaryKpis.budgetCa), color: '#64748b', icon: 'â‚¬' },
+                { label: 'CA rÃ©alisÃ©', value: formatKpiCurrency(summaryKpis.realiseCa), color: '#2563eb', icon: 'CA' },
+                { label: 'Ã‰cart CA', value: formatKpiCurrency(summaryKpis.ecartCa), color: summaryKpis.ecartCa >= 0 ? '#059669' : '#dc2626', icon: summaryKpis.ecartCa >= 0 ? '+' : '-' },
                 { label: 'Couverts', value: formatKpiNumber(summaryKpis.couverts), color: '#7c3aed', icon: 'CV' },
                 { label: 'Ticket moyen', value: formatKpiCurrency(summaryKpis.ticketMoyen), color: '#d97706', icon: 'TM' },
-                { label: 'Coût matière', value: formatKpiCurrency(summaryKpis.coutMatiere), color: '#16a34a', icon: 'CM' },
+                { label: 'CoÃ»t matiÃ¨re', value: formatKpiCurrency(summaryKpis.coutMatiere), color: '#16a34a', icon: 'CM' },
                 { label: 'Frais personnel', value: formatKpiCurrency(summaryKpis.fraisPersonnel), color: '#9333ea', icon: 'SC' },
               ].map(kpi => (
                 <div
@@ -2132,7 +1699,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             </div>
             {tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && tabs.map(tab => {
               const isActive = activeTab === tab.id;
-              let icon = '📁';
+              let icon = 'ðŸ“';
               let accentBg = '#475569';
               const accentColor = '#fff';
               
@@ -2185,25 +1752,25 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             <div style={{ flex: 1, overflow: 'auto' }}>
                 <table id="dashboard-table" style={{ borderCollapse: 'separate', borderSpacing: 0, width: 'max-content', minWidth: '100%' }}>
                 <thead>
-            {/* ── ROW 1 : super-sections ── */}
+            {/* â”€â”€ ROW 1 : super-sections â”€â”€ */}
             <tr style={{ height: 30 }}>
               <th rowSpan={4} style={{ ...thBase, background: '#1e293b', color: '#fff', minWidth: isMobile ? 120 : 160, left: 0, top: 0, zIndex: 60, borderRight: '2px solid #475569', borderBottom: '3px solid #374151', padding: isMobile ? '8px 6px' : '16px 12px', verticalAlign: 'middle' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, height: '100%' }}>
                   <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '0.15em', color: '#f8fafc' }}>DATE</span>
                   <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '100%', boxSizing: 'border-box' }}>
                     <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Buro Monte</span>
-                    <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 800, whiteSpace: 'nowrap' }}>CA N-1 : 159 802 €</span>
+                    <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 800, whiteSpace: 'nowrap' }}>CA N-1 : 159 802 â‚¬</span>
                   </div>
                 </div>
               </th>
               {previsionsColspan > 0 && (
                 <th colSpan={previsionsColspan} style={{ ...thBase, background: '#92400e', color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '3px solid #475569', borderBottom: '2px solid #94a3b8' }}>
-                  PRÉVISIONS
+                  PRÃ‰VISIONS
                 </th>
               )}
               {realiseColspan > 0 && (
                 <th colSpan={realiseColspan} style={{ ...thBase, background: '#1e40af', color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '3px solid #475569', borderBottom: '2px solid #94a3b8' }}>
-                  {activeTab === 'REALISE' && tableViewMode === 'COMPLET' ? 'RÉALISÉ' : 'RÉALISÉ & ÉVÉNEMENTS'}
+                  {activeTab === 'REALISE' && tableViewMode === 'COMPLET' ? 'RÃ‰ALISÃ‰' : 'RÃ‰ALISÃ‰ & Ã‰VÃ‰NEMENTS'}
                 </th>
               )}
               {otherGroups.reduce((a, g) => a + g.colspan, 0) > 0 && (
@@ -2213,7 +1780,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               )}
             </tr>
 
-            {/* ── ROW 2 : groupes ── */}
+            {/* â”€â”€ ROW 2 : groupes â”€â”€ */}
             <tr style={{ height: 30 }}>
               {groups.map((g, i) => {
                 const isEvt = g.name === 'EVENEMENTS RESTAURANTS' || g.name === 'EVENEMENTS NATIONAL';
@@ -2229,7 +1796,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               })}
             </tr>
 
-            {/* ── ROW 3 : sous-groupes ── */}
+            {/* â”€â”€ ROW 3 : sous-groupes â”€â”€ */}
             <tr style={{ height: 30 }}>
               {subGroups.map((sg, i) => {
                 const isEvt = sg.name === 'EVENEMENTS RESTAURANTS' || sg.name === 'EVENEMENTS NATIONAL';
@@ -2245,7 +1812,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               })}
             </tr>
 
-            {/* ── ROW 4 : colonnes ── */}
+            {/* â”€â”€ ROW 4 : colonnes â”€â”€ */}
             <tr style={{ height: 60 }}>
               {visibleColumns.map((c, i) => {
                 const isEvt = c[0] === 'EVENEMENTS RESTAURANTS' || c[0] === 'EVENEMENTS NATIONAL';
@@ -2299,7 +1866,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 && row.dateObj?.getMonth() === todayMarker.month
                 && row.dateObj?.getDate() === todayMarker.day;
 
-              // Ligne dédiée au total du box 4 FG — rendu spécial sans aucune bordure épaisse
+              // Ligne dÃ©diÃ©e au total du box 4 FG â€” rendu spÃ©cial sans aucune bordure Ã©paisse
               if (isFgBox4Total) {
                 if (activeTab !== 'FRAIS_GENERAUX') return null;
                 const fraisGenerauxStartIdx = visibleColumns.findIndex(col => col[0] === 'FRAIS GENERAUX');
@@ -2307,7 +1874,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 const monthTotalIdx = rows.findIndex(r => r.type === 'month_total');
                 return (
                   <tr key={`r-${rIdx}`}>
-                    {/* Cellule date sticky — vide, fond blanc, bordure fine */}
+                    {/* Cellule date sticky â€” vide, fond blanc, bordure fine */}
                     <td className="sticky left-0 z-30 bg-[#ffffff] border-r-[2px] border-r-slate-600 border-b border-b-slate-200 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.08)]"/>
                     {visibleColumns.map((c, cIdx) => {
                       const isFraisGeneraux = c[0] === 'FRAIS GENERAUX';
@@ -2318,11 +1885,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                         const bR = isMajorEnd ? 'border-r-[3px] border-r-slate-600' : isSectEnd ? 'border-r-[2px] border-r-slate-400' : 'border-r border-r-slate-200';
                         return <td key={`c-${rIdx}-${cIdx}`} className={`bg-white border-b border-b-slate-200 ${bR}`}/>;
                       }
-                      // Colonne FG : déléguer au getFgBoxLayout
+                      // Colonne FG : dÃ©lÃ©guer au getFgBoxLayout
                       const colGroup = Math.floor((cIdx - fraisGenerauxStartIdx) / 4);
                       const colIndexInGroup = (cIdx - fraisGenerauxStartIdx) % 4;
                       if (colIndexInGroup === 0) {
-                        const totalVal = calculatedData[`fg-total-3-${colGroup}`] || '0,00 €';
+                        const totalVal = calculatedData[`fg-total-3-${colGroup}`] || '0,00 â‚¬';
                         const bR = 'border-r-[2px] border-r-slate-500';
                         return (
                           <td key={`c-${rIdx}-${cIdx}`} colSpan={4}
@@ -2422,16 +1989,16 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                       if (isMonthTotal) {
                         const fgColSpan = fraisGenerauxEndIdx - fraisGenerauxStartIdx + 1;
                         if (cIdx === fraisGenerauxStartIdx) {
-                          const totalVal = calculatedData[`${rIdx}-fraisGenerauxTotal`] || '0,00 €';
+                          const totalVal = calculatedData[`${rIdx}-fraisGenerauxTotal`] || '0,00 â‚¬';
                           return (
                             <td key={`c-${rIdx}-${cIdx}`} colSpan={fgColSpan}
                               className="text-center font-black text-sm py-2 px-4 uppercase tracking-widest border-y-2 border-y-amber-500 border-r-[3px] border-r-slate-600"
                               style={{ background: ACCENT_GOLD, color: HEADER_BG }}>
-                              TOTAL FRAIS GÉNÉRAUX : {totalVal}
+                              TOTAL FRAIS GÃ‰NÃ‰RAUX : {totalVal}
                             </td>
                           );
                         }
-                        // Les colonnes FG suivantes sont absorbées par le colSpan ci-dessus
+                        // Les colonnes FG suivantes sont absorbÃ©es par le colSpan ci-dessus
                         return null;
                       }
 
@@ -2467,7 +2034,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
                         if (fgLayout.type === 'total') {
                           if (colIndexInGroup === 0) {
-                            const totalVal = calculatedData[`fg-total-${fgLayout.box}-${colGroup}`] || '0,00 €';
+                            const totalVal = calculatedData[`fg-total-${fgLayout.box}-${colGroup}`] || '0,00 â‚¬';
                             const bR = 'border-r-[2px] border-r-slate-400';
                             return (
                               <td key={`c-${rIdx}-${cIdx}`} colSpan={4}
@@ -2483,11 +2050,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                           return null;
                         }
 
-                        // data cell inside frais généraux
+                        // data cell inside frais gÃ©nÃ©raux
                         const fgCellKey = `fg-data-${fgLayout.box}-${colGroup}-${fgLayout.dataIdx}-${colIndexInGroup}`;
                         const fgVal = cellData[fgCellKey] || '';
                         const isFgFocused = focusedCell === fgCellKey;
-                        // Bordure droite : épaisse après la dernière colonne de chaque groupe (MONTANT HT), fine sinon
+                        // Bordure droite : Ã©paisse aprÃ¨s la derniÃ¨re colonne de chaque groupe (MONTANT HT), fine sinon
                         const fgCellBorder = `border-b border-b-slate-200 ${colIndexInGroup === 3 ? 'border-r-[2px] border-r-slate-400' : 'border-r border-r-slate-200'}`;
                         return (
                           <td key={`c-${rIdx}-${cIdx}`} className={`p-0 bg-white ${fgCellBorder} relative text-center`}>
@@ -2515,23 +2082,23 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                       }
                     }
 
-                    // ── RESULTATS MENSUEL HT ─────────────────────────────────────
+                    // â”€â”€ RESULTATS MENSUEL HT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                     if (c[0] === 'RESULTATS MENSUEL HT') {
                       const isLabelCol = c[2] === 'Indicateur';
                       const isValueCol = c[2] === 'Valeur';
                       const rightBorder = isValueCol ? 'border-r-[3px] border-r-slate-600' : 'border-r border-r-slate-300';
 
-                      // Structure complète : chaque rIdx mappe sur une ligne définie
+                      // Structure complÃ¨te : chaque rIdx mappe sur une ligne dÃ©finie
                       type RmRowType = { type: string; label?: string; key?: string; style?: string };
                       const rmDef: RmRowType[] = [
                         // CA (lignes 0-8)
                         { type: 'section', label: 'CA' },
-                        { type: 'data', label: 'CA HT RÉALISÉ',          key: 'ca_realise',    style: 'red' },
+                        { type: 'data', label: 'CA HT RÃ‰ALISÃ‰',          key: 'ca_realise',    style: 'red' },
                         { type: 'data', label: 'CA BUDGET',              key: 'ca_budget',     style: 'normal' },
                         { type: 'data', label: 'VAR % N-1',              key: 'var_n1',        style: 'normal' },
                         { type: 'spacer' },
-                        { type: 'data', label: 'DIFFÉRENCE N-1',         key: 'diff_n1',       style: 'normal' },
-                        { type: 'data', label: 'DIFFÉRENCE BUDGET',      key: 'diff_budget',   style: 'normal' },
+                        { type: 'data', label: 'DIFFÃ‰RENCE N-1',         key: 'diff_n1',       style: 'normal' },
+                        { type: 'data', label: 'DIFFÃ‰RENCE BUDGET',      key: 'diff_budget',   style: 'normal' },
                         { type: 'spacer' },
                         // COUVERTS (lignes 8-16)
                         { type: 'section', label: 'COUVERTS' },
@@ -2553,36 +2120,36 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                         { type: 'spacer' },
                         { type: 'data',   label: 'RATIO FOOD OBJECTIF',        key: 'ratio_obj',      style: 'normal' },
                         { type: 'data',   label: 'CONSOMMATION OBJECTIF',      key: 'conso_obj',      style: 'normal' },
-                        { type: 'data',   label: 'RATIO RÉEL',                 key: 'ratio_reel',     style: 'red' },
-                        { type: 'data',   label: 'MARGE RÉEL',                 key: 'marge_reel',     style: 'red' },
-                        { type: 'data',   label: 'CONSOMMATION RÉEL',          key: 'conso_reel',     style: 'red' },
-                        { type: 'data',   label: 'ÉCART RATIO VS OBJECTIF',    key: 'ecart_ratio',    style: 'normal' },
-                        { type: 'data',   label: 'ÉCART CONSOMMATION VS OBJECTIF', key: 'ecart_conso', style: 'normal' },
+                        { type: 'data',   label: 'RATIO RÃ‰EL',                 key: 'ratio_reel',     style: 'red' },
+                        { type: 'data',   label: 'MARGE RÃ‰EL',                 key: 'marge_reel',     style: 'red' },
+                        { type: 'data',   label: 'CONSOMMATION RÃ‰EL',          key: 'conso_reel',     style: 'red' },
+                        { type: 'data',   label: 'Ã‰CART RATIO VS OBJECTIF',    key: 'ecart_ratio',    style: 'normal' },
+                        { type: 'data',   label: 'Ã‰CART CONSOMMATION VS OBJECTIF', key: 'ecart_conso', style: 'normal' },
                         { type: 'spacer' },
                         // S/C (lignes 32-42)
                         { type: 'section', label: 'S/C' },
                         { type: 'data',   label: 'NB HEURES BUDGET',        key: 'nb_h_budget',  style: 'normal' },
                         { type: 'data',   label: 'S/C OBJECTIF',            key: 'sc_obj',       style: 'normal' },
-                        { type: 'data',   label: 'PRODUCTIVITÉ BUDGET',     key: 'prod_budget',  style: 'normal' },
+                        { type: 'data',   label: 'PRODUCTIVITÃ‰ BUDGET',     key: 'prod_budget',  style: 'normal' },
                         { type: 'spacer' },
-                        { type: 'data',   label: 'NB HEURE RÉEL',           key: 'nb_h_reel',    style: 'red' },
-                        { type: 'data',   label: 'ÉCART VS BUDGET',         key: 'ecart_h',      style: 'normal' },
-                        { type: 'data',   label: 'S/C RÉEL',                key: 'sc_reel',      style: 'normal' },
-                        { type: 'data',   label: 'ÉCART S/C VS BUDGET',     key: 'ecart_sc',     style: 'normal' },
-                        { type: 'data',   label: 'PROD RÉEL',               key: 'prod_reel',    style: 'red' },
+                        { type: 'data',   label: 'NB HEURE RÃ‰EL',           key: 'nb_h_reel',    style: 'red' },
+                        { type: 'data',   label: 'Ã‰CART VS BUDGET',         key: 'ecart_h',      style: 'normal' },
+                        { type: 'data',   label: 'S/C RÃ‰EL',                key: 'sc_reel',      style: 'normal' },
+                        { type: 'data',   label: 'Ã‰CART S/C VS BUDGET',     key: 'ecart_sc',     style: 'normal' },
+                        { type: 'data',   label: 'PROD RÃ‰EL',               key: 'prod_reel',    style: 'red' },
                         { type: 'spacer' },
-                        // FRAIS GÉNÉRAUX (lignes 43+)
-                        { type: 'section', label: 'FRAIS GÉNÉRAUX RÉALISÉ' },
-                        { type: 'data',   label: 'Entretien et réparations',   key: 'fg_0',  style: 'normal' },
-                        { type: 'data',   label: 'Petit matériel et vaisselle', key: 'fg_1', style: 'normal' },
+                        // FRAIS GÃ‰NÃ‰RAUX (lignes 43+)
+                        { type: 'section', label: 'FRAIS GÃ‰NÃ‰RAUX RÃ‰ALISÃ‰' },
+                        { type: 'data',   label: 'Entretien et rÃ©parations',   key: 'fg_0',  style: 'normal' },
+                        { type: 'data',   label: 'Petit matÃ©riel et vaisselle', key: 'fg_1', style: 'normal' },
                         { type: 'data',   label: 'Tenue du personnel',          key: 'fg_2', style: 'normal' },
                         { type: 'data',   label: 'Animation',                   key: 'fg_3', style: 'normal' },
                         { type: 'spacer' },
                         { type: 'data',   label: 'Ecolab / Diversey',           key: 'fg_4', style: 'normal' },
                         { type: 'data',   label: 'Marketing local',             key: 'fg_5', style: 'normal' },
                         { type: 'data',   label: 'HACCP Divers',                key: 'fg_6', style: 'normal' },
-                        { type: 'data',   label: 'Matériel de bureau',          key: 'fg_7', style: 'normal' },
-                        { type: 'data',   label: 'Énergie',                     key: 'fg_8', style: 'normal' },
+                        { type: 'data',   label: 'MatÃ©riel de bureau',          key: 'fg_7', style: 'normal' },
+                        { type: 'data',   label: 'Ã‰nergie',                     key: 'fg_8', style: 'normal' },
                         { type: 'data',   label: 'Frais de transport',          key: 'fg_9', style: 'normal' },
                         { type: 'data',   label: 'Autres frais',                key: 'fg_10', style: 'normal' },
                         { type: 'data',   label: 'Divers',                      key: 'fg_11', style: 'normal' },
@@ -2621,7 +2188,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                       const coutReel   = parseMoneyValue(calculatedData[`${mtIdx}-87`]);
 
                       const f = (n: number, dec = 2) => n.toFixed(dec).replace('.', ',');
-                      const eur = (n: number) => f(n) + ' €';
+                      const eur = (n: number) => f(n) + ' â‚¬';
 
                       const rmValues: Record<string, string> = {
                         ca_realise:    eur(caR),
@@ -2635,11 +2202,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                         cvts_limo:     cvtsLimo.toFixed(0),
                         moy_cvts_limo: wDays > 0 ? (cvtsLimo/wDays).toFixed(0) : '0',
                         tm_limo:       cvtsLimo > 0 ? eur(caLimo / cvtsLimo) : '',
-                        rm_stock_init: stockInit ? eur(stockInit) : '0,00 €',
+                        rm_stock_init: stockInit ? eur(stockInit) : '0,00 â‚¬',
                         rm_stock_final:stockFinal ? eur(stockFinal) : '',
                         var_stock:     f(varStock, 0),
-                        rm_achat_hm:   achatHM  ? eur(achatHM)  : '0,00 €',
-                        rm_achat_total:achatTotal ? eur(achatTotal) : '0,00 €',
+                        rm_achat_hm:   achatHM  ? eur(achatHM)  : '0,00 â‚¬',
+                        rm_achat_total:achatTotal ? eur(achatTotal) : '0,00 â‚¬',
                         ratio_obj:     ratioObj.toFixed(2) + '%',
                         conso_obj:     eur(consoObj),
                         ratio_reel:    f(ratioReel) + '%',
@@ -2770,7 +2337,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           <div style={{ background: '#fff', borderRadius: 16, width: 'min(980px, 100%)', maxWidth: 'calc(100vw - 36px)', maxHeight: 'calc(100vh - 36px)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.16), 0 10px 10px -5px rgba(0, 0, 0, 0.08)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '20px 24px 14px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <h3 style={{ fontSize: 18, fontWeight: 850, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Clipboard size={20} color="#0f766e" /> Préparer le mail de clôture
+                <Clipboard size={20} color="#0f766e" /> PrÃ©parer le mail de clÃ´ture
               </h3>
               <button onClick={() => setIsDailyRecapModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4, borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                 <X size={20} />
@@ -2779,7 +2346,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             <div style={{ padding: isMobile ? 14 : 20, overflow: 'auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(280px, .75fr) minmax(420px, 1.25fr)', gap: 16 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ padding: 12, border: '1px solid #dbeafe', borderRadius: 10, background: '#eff6ff', color: '#1e3a8a', fontSize: 12, lineHeight: 1.45, fontWeight: 750 }}>
-                  Vérifie le contenu avant ouverture du mail. Le texte sera aussi copié dans le presse-papiers.
+                  VÃ©rifie le contenu avant ouverture du mail. Le texte sera aussi copiÃ© dans le presse-papiers.
                 </div>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Responsable midi</span>
@@ -2796,7 +2363,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     value={dailyRecapServiceComments.midi}
                     onChange={event => setDailyRecapServiceComments(prev => ({ ...prev, midi: event.target.value }))}
                     style={{ minHeight: 70, resize: 'vertical', border: '1px solid #cbd5e1', borderRadius: 8, padding: 10, fontWeight: 700, color: '#0f172a', lineHeight: 1.45 }}
-                    placeholder="Commentaire spécifique au service midi..."
+                    placeholder="Commentaire spÃ©cifique au service midi..."
                   />
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -2814,7 +2381,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     value={dailyRecapServiceComments.soir}
                     onChange={event => setDailyRecapServiceComments(prev => ({ ...prev, soir: event.target.value }))}
                     style={{ minHeight: 70, resize: 'vertical', border: '1px solid #cbd5e1', borderRadius: 8, padding: 10, fontWeight: 700, color: '#0f172a', lineHeight: 1.45 }}
-                    placeholder="Commentaire spécifique au service soir..."
+                    placeholder="Commentaire spÃ©cifique au service soir..."
                   />
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -2837,7 +2404,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 </div>
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>Aperçu du mail</div>
+                <div style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>AperÃ§u du mail</div>
                 <div
                   ref={recapPreviewRef}
                   style={{ margin: 0, minHeight: 360, maxHeight: '55vh', overflow: 'auto', border: '1px solid #cbd5e1', borderRadius: 10, background: '#f8fafc', padding: 16, color: '#0f172a', fontSize: 14, lineHeight: 1.5, fontFamily: "'DM Sans', system-ui, sans-serif" }}
@@ -2871,7 +2438,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Upload size={20} color="#10b981" />
-                Importer des données
+                Importer des donnÃ©es
               </h3>
               <button onClick={() => setIsImportModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4, borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                 <X size={20} />
@@ -2928,7 +2495,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #f59e0b', borderRadius: 10, background: '#fffbeb' }}>
                   <span style={{ fontSize: 12, fontWeight: 900, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.04em' }}>Budget historique Excel</span>
                   <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                    Lit uniquement le mois affiché et importe les prévisions couverts + TM ainsi que le réalisé CA/couverts. Les totaux restent calculés par l'application.
+                    Lit uniquement le mois affichÃ© et importe les prÃ©visions couverts + TM ainsi que le rÃ©alisÃ© CA/couverts. Les totaux restent calculÃ©s par l'application.
                   </span>
                   <input
                     type="file"
@@ -2949,9 +2516,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 <div style={{ marginTop: 12, display: 'grid', gap: 10, padding: 12, border: '1px solid #fde68a', borderRadius: 10, background: '#fffbeb' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                     <div>
-                      <div style={{ fontSize: 12, fontWeight: 950, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.04em' }}>Prévisualisation budget historique</div>
+                      <div style={{ fontSize: 12, fontWeight: 950, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.04em' }}>PrÃ©visualisation budget historique</div>
                       <div style={{ marginTop: 3, fontSize: 12, color: '#64748b', fontWeight: 700 }}>
-                        {historicalBudgetPreviews.length} jours · CA recalculé estimé {formatImportedCurrencyLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.caTotal, 0))} · Couverts {formatImportedIntegerLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.couvertsTotal, 0))}
+                        {historicalBudgetPreviews.length} jours Â· CA recalculÃ© estimÃ© {formatImportedCurrencyLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.caTotal, 0))} Â· Couverts {formatImportedIntegerLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.couvertsTotal, 0))}
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -2970,7 +2537,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                         <div style={{ fontSize: 11, fontWeight: 800 }}>TM soir {formatImportedCurrencyLabel(item.tmSoir)}</div>
                       </div>
                     ))}
-                    {historicalBudgetPreviews.length > 40 && <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>+ {historicalBudgetPreviews.length - 40} lignes non affichees dans l'aperçu</div>}
+                    {historicalBudgetPreviews.length > 40 && <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>+ {historicalBudgetPreviews.length - 40} lignes non affichees dans l'aperÃ§u</div>}
                   </div>
                 </div>
               )}
@@ -3161,22 +2728,22 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 Si la date du PDF correspond au mois affiche, l'import remplit directement ce jour. Sinon il remplit le jour actuellement selectionne.
               </div>
               <p style={{ display: 'none', fontSize: 14, color: '#475569', lineHeight: 1.6, marginBottom: 24 }}>
-                Pour importer vos données, nous devons définir le format exact de votre fichier source. 
-                Veuillez nous indiquer comment vous souhaitez procéder :
+                Pour importer vos donnÃ©es, nous devons dÃ©finir le format exact de votre fichier source. 
+                Veuillez nous indiquer comment vous souhaitez procÃ©der :
               </p>
               
               <div style={{ display: 'none', flexDirection: 'column', gap: 16 }}>
                 <div style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
                   <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>Option A : Format CSV Standard</h4>
                   <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-                    Nous pouvons définir un template CSV (colonnes spécifiques) que vous remplirez et importerez ici.
+                    Nous pouvons dÃ©finir un template CSV (colonnes spÃ©cifiques) que vous remplirez et importerez ici.
                   </p>
                 </div>
                 
                 <div style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>Option B : Logiciel Spécifique</h4>
+                  <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>Option B : Logiciel SpÃ©cifique</h4>
                   <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-                    Si vous utilisez un logiciel de caisse ou de gestion (ex: Zelty, Lightspeed, etc.), nous pouvons créer un importateur sur-mesure pour leur format d'export.
+                    Si vous utilisez un logiciel de caisse ou de gestion (ex: Zelty, Lightspeed, etc.), nous pouvons crÃ©er un importateur sur-mesure pour leur format d'export.
                   </p>
                 </div>
               </div>
