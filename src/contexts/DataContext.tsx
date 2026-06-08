@@ -18,19 +18,19 @@ export type DayDataTheorique = {
   commentaire: string;
 };
 
-type DayDataNepting = {
+export type DayDataNepting = {
   saisie_reel_nepting: string;
   pourboire_sunday: string;
   commentaire: string;
 };
 
-type DayDataEspeces = {
+export type DayDataEspeces = {
   mis_au_coffre: string;
   pieces: string;
   commentaire: string;
 };
 
-type DayDataConecs = {
+export type DayDataConecs = {
   conecs_reel_nepting: string;
   commentaire: string;
 };

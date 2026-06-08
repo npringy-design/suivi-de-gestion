@@ -2,6 +2,19 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
 import type { DashboardColumn, DashboardRow } from '@/features/dashboard/dashboardTypes';
+import type {
+  DayDataNepting,
+  DayDataEspeces,
+  DayDataAmexAncv,
+  DayDataConecs,
+  DayDataAncvPapiers,
+  DayDataSaisieTR,
+  DayDataSunday,
+  DayDataUber,
+  DayDataDeliveroo,
+  DayDataClickCollect,
+  TrEntry,
+} from '@/contexts/DataContext';
 import DashboardCaisseView from '@/features/dashboard/components/DashboardCaisseView';
 
 type DailyControlOptions = { readOnly?: boolean; text?: boolean };
@@ -32,16 +45,16 @@ type DashboardDailyEntryProps = {
   renderPersonnelTable: (rows: React.ReactNode) => React.ReactNode;
   dailyPersonnelRows: ReadonlyArray<readonly [string, number, number]>;
   dailyPersonnelTotals: ReadonlyArray<{ label: string; col: number }>;
-  updateNepting: (month: number, day: number, field: any, value: string) => void;
-  updateEspeces: (month: number, day: number, field: any, value: string) => void;
-  updateAmexAncv: (month: number, day: number, field: any, value: string) => void;
-  updateConecs: (month: number, day: number, field: any, value: string) => void;
-  updateAncvPapiers: (month: number, day: number, field: any, value: string) => void;
-  updateSaisieTR: (month: number, day: number, provider: any, index: number, field: any, value: string) => void;
-  updateSunday: (month: number, day: number, field: any, value: string) => void;
-  updateUber: (month: number, day: number, field: any, value: string) => void;
-  updateDeliveroo: (month: number, day: number, field: any, value: string) => void;
-  updateClickCollect: (month: number, day: number, field: any, value: string) => void;
+  updateNepting: (month: number, day: number, field: keyof DayDataNepting, value: string) => void;
+  updateEspeces: (month: number, day: number, field: keyof DayDataEspeces, value: string) => void;
+  updateAmexAncv: (month: number, day: number, field: keyof DayDataAmexAncv, value: string) => void;
+  updateConecs: (month: number, day: number, field: keyof DayDataConecs, value: string) => void;
+  updateAncvPapiers: (month: number, day: number, field: keyof DayDataAncvPapiers, value: string) => void;
+  updateSaisieTR: (month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string) => void;
+  updateSunday: (month: number, day: number, field: keyof DayDataSunday, value: string) => void;
+  updateUber: (month: number, day: number, field: keyof DayDataUber, value: string) => void;
+  updateDeliveroo: (month: number, day: number, field: keyof DayDataDeliveroo, value: string) => void;
+  updateClickCollect: (month: number, day: number, field: keyof DayDataClickCollect, value: string) => void;
 };
 
 export default function DashboardDailyEntry({
