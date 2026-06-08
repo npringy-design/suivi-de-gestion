@@ -24,6 +24,10 @@ Document temporaire `docs/AUDIT_ET_ROADMAP.md` supprime apres completion des eta
 
 Important : `docs/ROADMAP_REFACTORING.md` reste l'historique du refactoring deja effectue. La nouvelle roadmap audit du 07/06/2026 est terminee cote code et documentee ci-dessous.
 
+**Chantier en cours : Etape 8 decomposition de `Dashboard.tsx`.**
+
+Objectif : reduire `Dashboard.tsx` sans modifier le comportement utilisateur. Regle absolue : deplacements purs, aucune modification de logique metier.
+
 ## Priorite technique actuelle â€” nouvelle roadmap audit
 
 Statut : nouvelle roadmap audit terminee cote code.
@@ -51,6 +55,7 @@ Dernieres actions documentaires du 08/06/2026 :
 - Etape 6 terminee : extraction des helpers d'import Excel/PDF de `Dashboard.tsx` vers `src/features/dashboard/importHelpers/` (`historicalBudgetImport.ts`, `payrollImport.ts`, `caisseImport.ts`), sans changement de logique metier.
 
 - Etape 7 terminee : migration des `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`, ajout d'un test cible sur `parseMoneyValue('1 234,56 €')`, et correction de `parseMoneyValue` pour le symbole euro reel. Verification TypeScript et lint OK. Test Vitest cible non lanceable dans cet environnement : erreur d'acces Windows avant execution du test.
+- Etape 8A terminee : creation de `src/features/dashboard/dashboardCalculations.ts` et extraction des helpers purs de date, paie, KPI, layout frais generaux et formatage de cellule depuis `Dashboard.tsx`. Verification TypeScript OK et lint complet OK. Build Vite non lanceable dans cet environnement : erreur d'acces Windows avant compilation de `vite.config.ts`. Commit non effectue : `git` indisponible dans l'environnement.
 
 ## Consolidation patches Vite â€” terminee
 

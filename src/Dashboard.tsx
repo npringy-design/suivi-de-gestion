@@ -5,7 +5,6 @@ import { useData } from '@/contexts/DataContext';
 import { averagePayrollRate, buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '@/personnelSalaryImport';
 import { parseRecapPeriodeCaisse } from '@/caisseRecapPeriodeParser';
 import { parseMoneyValue } from '@/lib/money';
-import { parseHourInputToDecimal } from '@/utils';
 
 import { ChevronLeft, Download, Upload, FileDown, Trash2, X, Clipboard } from 'lucide-react';
 // ── Modèle Dashboard extrait (types, colonnes, configuration statique) ────────
@@ -35,6 +34,18 @@ import { useDashboardPeriodState } from '@/features/dashboard/hooks/useDashboard
 import { useDashboardPurchaseSuppliers } from '@/features/dashboard/hooks/useDashboardPurchaseSuppliers';
 import { useDashboardResponsiveState } from '@/features/dashboard/hooks/useDashboardResponsiveState';
 import { useDashboardUiState } from '@/features/dashboard/hooks/useDashboardUiState';
+import {
+  formatKpiCurrency,
+  formatKpiNumber,
+  formatPayrollHourVisualValue,
+  formatValue,
+  getFgBoxLayout,
+  isDateInRange,
+  isExactDate,
+  isPayrollInputColumn,
+  parseDashboardNumber,
+  parsePayrollHourForCalculation,
+} from '@/features/dashboard/dashboardCalculations';
 import {
   renderAutoValue as renderDashboardAutoValue,
   renderCashAutoValue as renderDashboardCashAutoValue,
@@ -79,21 +90,6 @@ import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import jsPDF from 'jspdf';
 import domtoimage from 'dom-to-image-more';
-
-// Helper to check if a date is within a range
-const isDateInRange = (date: Date, startStr: string, endStr: string) => {
-  const start = new Date(startStr);
-  const end = new Date(endStr);
-  return date >= start && date <= end;
-};
-
-// Helper to check if a date is exactly a specific date
-const isExactDate = (date: Date, dateStr: string) => {
-  const target = new Date(dateStr);
-  return date.getFullYear() === target.getFullYear() && 
-         date.getMonth() === target.getMonth() && 
-         date.getDate() === target.getDate();
-};
 
 interface DashboardProps {
   initialMonth: number;
@@ -301,31 +297,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     };
   }, [isDatePickerOpen]);
 
-  const isPayrollInputColumn = (colIndex: number) => (colIndex >= 62 && colIndex <= 71) || (colIndex >= 77 && colIndex <= 86);
-
-  const parsePayrollHourForCalculation = (value: string | number | undefined) => {
-    if (value === undefined || value === null || value === '') return 0;
-    const converted = parseHourInputToDecimal(value);
-    return Number.isFinite(converted) && converted > 0 ? Math.round(converted * 100) / 100 : 0;
-  };
-
-  const formatPayrollHourDecimalValue = (value: string | number | undefined) => {
-    if (value === undefined || value === null || value === '') return '';
-    const converted = parsePayrollHourForCalculation(value);
-    return converted > 0 ? converted.toFixed(2).replace('.', ',') : String(value);
-  };
-
-  const formatPayrollHourVisualValue = (value: string | number | undefined) => {
-    if (value === undefined || value === null || value === '') return '';
-    const converted = parseHourInputToDecimal(value);
-    if (!Number.isFinite(converted) || converted <= 0) return String(value);
-    const hours = Math.floor(converted);
-    const minutesTotal = Math.round((converted - hours) * 60);
-    const normalizedHours = hours + Math.floor(minutesTotal / 60);
-    const normalizedMinutes = minutesTotal % 60;
-    return `${normalizedHours}h${String(normalizedMinutes).padStart(2, '0')}`;
-  };
-
   const cellData = globalData[month]?.dashboard || {};
   const updatePurchaseSupplierName = (col: number, value: string) => {
     setPurchaseSupplierNames(prev => ({
@@ -413,48 +384,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     generatedRows.push({ type: 'month_total', label: 'TOTAL' });
     return generatedRows;
   }, [month, year]);
-
-  const getFgBoxLayout = (rIdx: number, N: number) => {
-    const dataRowsTotal = N - 9;
-    const baseDataRows = Math.floor(dataRowsTotal / 4);
-    const remainder = dataRowsTotal % 4;
-    
-    const d1 = baseDataRows + (remainder > 0 ? 1 : 0);
-    const d2 = baseDataRows + (remainder > 1 ? 1 : 0);
-    const d3 = baseDataRows + (remainder > 2 ? 1 : 0);
-    const d4 = baseDataRows;
-
-    const b1Total = d1;
-    const b2Head = b1Total + 1;
-    const b2Sub = b2Head + 1;
-    const b2Total = b2Sub + d2 + 1;
-    const b3Head = b2Total + 1;
-    const b3Sub = b3Head + 1;
-    const b3Total = b3Sub + d3 + 1;
-    const b4Head = b3Total + 1;
-    const b4Sub = b4Head + 1;
-    const b4Total = N - 1;  // fg_box4_total row, juste avant month_total
-
-    if (rIdx < b1Total) return { type: 'data', box: 0, dataIdx: rIdx };
-    if (rIdx === b1Total) return { type: 'total', box: 0 };
-    
-    if (rIdx === b2Head) return { type: 'header', box: 1 };
-    if (rIdx === b2Sub) return { type: 'subheader', box: 1 };
-    if (rIdx < b2Total) return { type: 'data', box: 1, dataIdx: rIdx - b2Sub - 1 };
-    if (rIdx === b2Total) return { type: 'total', box: 1 };
-
-    if (rIdx === b3Head) return { type: 'header', box: 2 };
-    if (rIdx === b3Sub) return { type: 'subheader', box: 2 };
-    if (rIdx < b3Total) return { type: 'data', box: 2, dataIdx: rIdx - b3Sub - 1 };
-    if (rIdx === b3Total) return { type: 'total', box: 2 };
-
-    if (rIdx === b4Head) return { type: 'header', box: 3 };
-    if (rIdx === b4Sub) return { type: 'subheader', box: 3 };
-    if (rIdx < b4Total) return { type: 'data', box: 3, dataIdx: rIdx - b4Sub - 1 };
-    if (rIdx === b4Total) return { type: 'total', box: 3 };
-
-    return null;
-  };
 
   const fgBoxNames = [
     ['ENTRETIEN ET REPARATION', 'ECOLAB / DIVERSEY', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)'],
@@ -942,17 +871,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return data;
   }, [cellData, globalData[month]?.salariesConfig]);
 
-  const parseDashboardNumber = (value: string | number | undefined) => {
-    if (value === undefined || value === null || value === '') return 0;
-    return parseMoneyValue(value);
-  };
-
-  const formatKpiCurrency = (value: number) =>
-    value === 0 ? '-' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
-
-  const formatKpiNumber = (value: number) =>
-    value === 0 ? '-' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(value);
-
   const summaryKpis = useMemo(() => {
     const monthTotalIdx = rows.findIndex(r => r.type === 'month_total');
     if (monthTotalIdx === -1) {
@@ -990,40 +908,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       day: now.getDate(),
     };
   }, []);
-
-  const formatValue = (val: string | number | undefined, c: string[], colIndex?: number) => {
-    if (val === '' || val === undefined || val === null) return '';
-
-    if (typeof colIndex === 'number' && isPayrollInputColumn(colIndex)) {
-      return formatPayrollHourDecimalValue(val);
-    }
-    
-    // If the value already contains a percentage sign, return it as is
-    if (typeof val === 'string' && val.includes('%')) return val;
-
-    const num = parseMoneyValue(val);
-    if (isNaN(num)) return val;
-
-    const groupName = c[0];
-    const subGroupName = c[1];
-    const colName = c[2] || c[1];
-
-    // Check if it's a percentage column
-    const isPercentage = groupName !== 'COUT MATIERE' && (colName.includes('RATIO') || colName.includes('%') || subGroupName.includes('RATIO'));
-
-    // Check if it's a currency column
-    const isCurrency = !isPercentage && (colName.includes('CA') || colName.includes('HT') || colName.includes('PANIER') || colName.includes('MONTANT') || colName.includes('€') || colName.includes('COUT') ||
-                       subGroupName.includes('CA HT') || subGroupName.includes('ACHAT') || groupName.includes('COUT'));
-    
-    // Format number: no decimals if integer, otherwise 2 decimals
-    const formattedNum = Number.isInteger(num) ? num.toString() : num.toFixed(2).replace('.', ',');
-    
-    // Add + sign for positive gaps
-    const prefix = (colName.includes('ECART') && num > 0) ? '+' : '';
-    
-    if (isPercentage) return `${prefix}${formattedNum} %`;
-    return isCurrency ? `${prefix}${formattedNum} €` : `${prefix}${formattedNum}`;
-  };
 
   const visibleColumns = useMemo(() => {
     const baseVisibleColumns = dynamicColumns.map((c, index) => Object.assign([...c] as DashboardColumn, { originalIndex: index })).filter(c => {
