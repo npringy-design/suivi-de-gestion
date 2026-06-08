@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 
+import CurrencyInput from '@/components/CurrencyInput';
 import { useData, DayDataAncvPapiers } from '@/contexts/DataContext';
-import { formatCurrencyFr, parseMoneyValue, sanitizeMoneyInput } from '@/lib/money';
+import { formatCurrencyFr, parseMoneyValue } from '@/lib/money';
 
 interface AncvPapiersProps {
   month: number;
@@ -16,22 +17,6 @@ const getDaysInMonth = (month: number, year: number) => {
 const formatDate = (day: number, month: number, year: number) => {
   const date = new Date(year, month, day);
   return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
-
-const CurrencyInput = ({ value, onChange, className = "" }: { value: string, onChange: (val: string) => void, className?: string }) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const displayValue = !isFocused && value ? formatCurrencyFr(value) : value;
-
-  return (
-    <input
-      type="text"
-      className={`w-full h-full p-2 bg-transparent outline-none text-center transition-colors focus:bg-white focus:ring-2 focus:ring-blue-400 rounded-md ${className}`}
-      value={displayValue}
-      onChange={(e) => onChange(sanitizeMoneyInput(e.target.value))}
-      onFocus={() => setIsFocused(true)}
-      onBlur={() => setIsFocused(false)}
-    />
-  );
 };
 
 const NumberInput = ({ value, onChange, className = "" }: { value: string, onChange: (val: string) => void, className?: string }) => {
@@ -205,7 +190,7 @@ export default function AncvPapiers({ month, year, onBack }: AncvPapiersProps) {
                           <NumberInput 
                             value={dayData.nombre_ancv} 
                             onChange={(val) => handleDataChange(day, 'nombre_ancv', val)} 
-                            className="text-slate-700 font-medium"
+                            className="text-center text-slate-700 font-medium"
                           />
                         </div>
                       </td>
@@ -214,7 +199,7 @@ export default function AncvPapiers({ month, year, onBack }: AncvPapiersProps) {
                           <CurrencyInput 
                             value={dayData.montant_total} 
                             onChange={(val) => handleDataChange(day, 'montant_total', val)} 
-                            className="text-slate-700 font-medium"
+                            className="text-center text-slate-700 font-medium"
                           />
                         </div>
                       </td>

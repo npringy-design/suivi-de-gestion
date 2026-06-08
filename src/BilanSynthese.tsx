@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-
+import CurrencyInput from '@/components/CurrencyInput';
 import { useData, DayDataSaisieTR } from '@/contexts/DataContext';
 import { normalizeMonthData } from '@/contexts/dataContextUpdateHelpers';
-import { formatCurrencyFr, formatNullableCurrencyFr, parseMoneyValue, sanitizeMoneyInput } from '@/lib/money';
+import { formatCurrencyFr, formatNullableCurrencyFr, parseMoneyValue } from '@/lib/money';
 
 interface BilanSyntheseProps {
   month: number;
@@ -22,28 +21,6 @@ const formatDate = (day: number, month: number, year: number) => {
 const getDayData = <T,>(rows: Record<number, T>, day: number): Partial<T> => rows[day] || {};
 
 const NAV = '#1e293b';
-
-const CurrencyInput = ({ value, onChange }: { value: string, onChange: (val: string) => void }) => {
-  const [isFocused, setIsFocused] = useState(false);
-
-  let displayValue = value;
-  if (!isFocused && value) {
-    displayValue = formatCurrencyFr(value);
-  }
-
-  return (
-    <input
-      type="text"
-      className={`w-full h-full p-2 bg-transparent outline-none text-center transition-colors ${isFocused ? 'bg-white ring-2 ring-inset ring-blue-400' : ''}`}
-      value={displayValue}
-      onChange={(e) => {
-        onChange(sanitizeMoneyInput(e.target.value));
-      }}
-      onFocus={() => setIsFocused(true)}
-      onBlur={() => setIsFocused(false)}
-    />
-  );
-};
 
 export default function BilanSynthese({ month, year, onBack }: BilanSyntheseProps) {
 
@@ -513,15 +490,33 @@ export default function BilanSynthese({ month, year, onBack }: BilanSyntheseProp
                   <td className="border-r border-slate-200 p-2 text-center font-bold text-slate-700 bg-slate-50 sticky left-0 z-10">{formatDate(day, month, year)}</td>
                   <td className="border-r border-slate-200 p-2 text-center text-slate-600 font-medium">{totalHt !== 0 ? formatCurrency(totalHt) : '-'}</td>
                   <td className="border-r border-slate-200 p-0 bg-orange-50/30 min-w-[80px]">
-                    <CurrencyInput value={dayBilan.ttc_5_5} onChange={(val) => updateBilanSynthese(month, day, 'ttc_5_5', val)} />
+                    <CurrencyInput
+                      value={dayBilan.ttc_5_5}
+                      onChange={(val) => updateBilanSynthese(month, day, 'ttc_5_5', val)}
+                      className="text-center"
+                      focusClassName=""
+                      activeFocusClassName="bg-white ring-2 ring-inset ring-blue-400"
+                    />
                   </td>
                   <td className="border-r border-slate-200 p-2 text-center text-slate-600 font-medium">{ht55 !== 0 ? formatCurrency(ht55) : '-'}</td>
                   <td className="border-r border-slate-200 p-0 bg-orange-50/30 min-w-[80px]">
-                    <CurrencyInput value={dayBilan.ttc_10} onChange={(val) => updateBilanSynthese(month, day, 'ttc_10', val)} />
+                    <CurrencyInput
+                      value={dayBilan.ttc_10}
+                      onChange={(val) => updateBilanSynthese(month, day, 'ttc_10', val)}
+                      className="text-center"
+                      focusClassName=""
+                      activeFocusClassName="bg-white ring-2 ring-inset ring-blue-400"
+                    />
                   </td>
                   <td className="border-r border-slate-200 p-2 text-center text-slate-600 font-medium">{ht10 !== 0 ? formatCurrency(ht10) : '-'}</td>
                   <td className="border-r border-slate-200 p-0 bg-orange-50/30 min-w-[80px]">
-                    <CurrencyInput value={dayBilan.ttc_20} onChange={(val) => updateBilanSynthese(month, day, 'ttc_20', val)} />
+                    <CurrencyInput
+                      value={dayBilan.ttc_20}
+                      onChange={(val) => updateBilanSynthese(month, day, 'ttc_20', val)}
+                      className="text-center"
+                      focusClassName=""
+                      activeFocusClassName="bg-white ring-2 ring-inset ring-blue-400"
+                    />
                   </td>
                   <td className="border-r border-slate-200 p-2 text-center text-slate-600 font-medium">{ht20 !== 0 ? formatCurrency(ht20) : '-'}</td>
                   <td className="border-r border-slate-200 p-2 text-center text-slate-600 font-medium">{tva55 !== 0 ? formatCurrency(tva55) : '-'}</td>

@@ -1,4 +1,4 @@
-# Point d'avancement global
+﻿# Point d'avancement global
 
 Ce fichier est le point de reprise rapide du projet. Lire ensuite la documentation metier concernee dans `docs/`.
 
@@ -24,20 +24,19 @@ Document actif : `docs/AUDIT_ET_ROADMAP.md`.
 
 Important : `docs/ROADMAP_REFACTORING.md` reste l'historique du refactoring deja effectue. La roadmap active a utiliser maintenant est `docs/AUDIT_ET_ROADMAP.md`, issue du nouvel audit du 07/06/2026.
 
-## Priorite technique actuelle — nouvelle roadmap audit
+## Priorite technique actuelle â€” nouvelle roadmap audit
 
-Statut : etape 1 terminee, etape 2 a demarrer.
+Statut : etape 2 terminee, etape 3 a demarrer.
 
 Document detaille : `docs/AUDIT_ET_ROADMAP.md`.
 
 Etapes restantes dans l'ordre recommande :
 
-1. Unifier `CurrencyInput`.
-2. Fusionner `HomeWithAdminLink` dans `Home`.
-3. Corriger `supabaseAuth.ts` et reduire les `any`.
-4. Migrer les parsings monetaires de `Home.tsx` vers `parseMoneyValue`.
-5. Extraire les helpers d'import Excel de `Dashboard.tsx`.
-6. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
+1. Fusionner `HomeWithAdminLink` dans `Home`.
+2. Corriger `supabaseAuth.ts` et reduire les `any`.
+3. Migrer les parsings monetaires de `Home.tsx` vers `parseMoneyValue`.
+4. Extraire les helpers d'import Excel de `Dashboard.tsx`.
+5. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
 
 Regle de suivi obligatoire : apres chaque etape terminee, retirer l'etape de `docs/AUDIT_ET_ROADMAP.md`, puis documenter le travail reellement effectue dans ce fichier ou dans une documentation dediee. Ne pas laisser une etape terminee dans la roadmap active.
 
@@ -54,16 +53,16 @@ Dernieres actions documentaires du 08/06/2026 :
 - Ajout de la regle : une etape terminee sort de la roadmap et doit etre documentee.
 - Rappel que la roadmap doit etre supprimee une fois toutes les etapes terminees et documentees.
 - Etape 1 terminee : suppression du codemod Dashboard et de son workflow GitHub, retrait de `dotenv`, README aligne avec Supabase, `selectedYear` initialise sur l'annee courante.
+- Etape 2 terminee : creation de `src/components/CurrencyInput.tsx`, remplacement des copies locales dans `CanalSaisie`, `AncvPapiers` et `BilanSynthese`, avec conservation des variantes visuelles existantes.
+Prochaine action conseillee : demarrer l'etape 3 de `docs/AUDIT_ET_ROADMAP.md` (`HomeWithAdminLink` dans `Home`), sans attaquer les etapes suivantes dans le meme lot.
 
-Prochaine action conseillee : demarrer l'etape 2 de `docs/AUDIT_ET_ROADMAP.md` (`CurrencyInput` partage), sans attaquer les etapes suivantes dans le meme lot.
-
-## Consolidation patches Vite — terminee
+## Consolidation patches Vite â€” terminee
 
 Document de reference : `docs/ROADMAP_PATCHES_VITE.md`.
 
 Toutes les vagues sont dans l'historique. Aucun patch Vite actif dans `vite.config.ts`.
 
-## Ancienne roadmap refactoring — historique
+## Ancienne roadmap refactoring â€” historique
 
 Document de reference : `docs/ROADMAP_REFACTORING.md`.
 
@@ -153,7 +152,7 @@ Document detaille : `docs/SYNTHESE_CA.md`.
 
 Ce qui est en place : `/synthese` prend le mois courant, plus de fallback fixe sur mars, le mois choisi est maintenu tant que l'utilisateur reste dans la zone Synthese CA, le maintien passe par la route et non par le localStorage.
 
-## Suivi quotidien — import caisse
+## Suivi quotidien â€” import caisse
 
 Statut : valide.
 
@@ -161,7 +160,7 @@ Document detaille : `docs/IMPORT_CAISSE.md`.
 
 Rappel : l'import caisse lit le PDF, alimente les valeurs automatiques utiles et ne doit pas toucher aux commentaires, corrections ou saisies reelles manuelles.
 
-## Suivi quotidien — import historique Excel
+## Suivi quotidien â€” import historique Excel
 
 Statut au 06/06/2026 : import historique global partiellement valide. Chantier personnel historique mis de cote.
 
@@ -185,3 +184,4 @@ Contexte metier important sur le personnel :
 - Format global : `Cadre`, `Maitrise`, `NIV I-II`, `NIV III`, `Apprenti`.
 - Format detaille : `Cadre cuisine`, `Cadre salle`, `Maitrise cuisine`, `Maitrise salle`, etc.
 - Si format global : stocker comme personnel non ventile, ne pas inventer de repartition salle/cuisine.
+

@@ -1,155 +1,141 @@
-# Audit technique et roadmap refactoring — suivi-de-gestion
+﻿# Audit technique et roadmap refactoring â€” suivi-de-gestion
 
 **Date audit** : 07 juin 2026  
-**Commit audité** : `c86ed14`  
-**Base auditée** : 81 fichiers TS/TSX — 20 199 lignes de code
+**Commit auditÃ©** : `c86ed14`  
+**Base auditÃ©e** : 81 fichiers TS/TSX â€” 20 199 lignes de code
 
 Ce document est la roadmap active du chantier de refactoring structurel.
 
-## Règle obligatoire de suivi
+## RÃ¨gle obligatoire de suivi
 
-Ce fichier est temporaire et doit rester une liste d'étapes restantes, pas un historique.
+Ce fichier est temporaire et doit rester une liste d'Ã©tapes restantes, pas un historique.
 
-À chaque étape terminée :
+Ã€ chaque Ã©tape terminÃ©e :
 
-1. retirer l'étape terminée de la section **Roadmap active** de ce fichier ;
-2. documenter ce qui a réellement été fait dans `docs/POINT_AVANCEMENT.md` ;
-3. créer ou mettre à jour un document dédié si l'étape touche une zone métier ou technique sensible ;
-4. garder uniquement les étapes restantes dans ce fichier ;
-5. quand toutes les étapes sont terminées et documentées, supprimer `docs/AUDIT_ET_ROADMAP.md` du dépôt.
+1. retirer l'Ã©tape terminÃ©e de la section **Roadmap active** de ce fichier ;
+2. documenter ce qui a rÃ©ellement Ã©tÃ© fait dans `docs/POINT_AVANCEMENT.md` ;
+3. crÃ©er ou mettre Ã  jour un document dÃ©diÃ© si l'Ã©tape touche une zone mÃ©tier ou technique sensible ;
+4. garder uniquement les Ã©tapes restantes dans ce fichier ;
+5. quand toutes les Ã©tapes sont terminÃ©es et documentÃ©es, supprimer `docs/AUDIT_ET_ROADMAP.md` du dÃ©pÃ´t.
 
-Ne pas laisser une étape marquée « terminée » dans cette roadmap. Une étape faite doit sortir de la roadmap et entrer dans la documentation stable.
+Ne pas laisser une Ã©tape marquÃ©e Â« terminÃ©e Â» dans cette roadmap. Une Ã©tape faite doit sortir de la roadmap et entrer dans la documentation stable.
 
-## État solide à préserver
+## Ã‰tat solide Ã  prÃ©server
 
-Ne pas casser ni refondre sans raison ces éléments déjà propres :
+Ne pas casser ni refondre sans raison ces Ã©lÃ©ments dÃ©jÃ  propres :
 
 - `vite.config.ts` : seulement `react()` + `tailwindcss()`, plus aucun plugin patch.
 - `DataContext.tsx` : factorisation via `makeDailyChannelUpdater` et helpers `dataContextUpdateHelpers.ts`.
-- `src/lib/money.ts` : `parseMoneyValue`, `formatCurrencyFr`, `sanitizeMoneyInput` centralisés.
+- `src/lib/money.ts` : `parseMoneyValue`, `formatCurrencyFr`, `sanitizeMoneyInput` centralisÃ©s.
 - `src/lib/browserStorage.ts` : wrapper propre autour de `localStorage`.
-- `src/lib/suiviPermissions.ts` : rôles isolés et lisibles.
-- Canaux de saisie `Sunday`, `Uber`, `Deliveroo`, `ClickCollect`, `AmexAncv`, `CbNepting`, `Especes`, `Conecs` : branchés sur `CanalSaisie`.
-- `CanalSaisie.tsx` : composant générique validé.
+- `src/lib/suiviPermissions.ts` : rÃ´les isolÃ©s et lisibles.
+- Canaux de saisie `Sunday`, `Uber`, `Deliveroo`, `ClickCollect`, `AmexAncv`, `CbNepting`, `Especes`, `Conecs` : branchÃ©s sur `CanalSaisie`.
+- `CanalSaisie.tsx` : composant gÃ©nÃ©rique validÃ©.
 - Routing : `createHashRouter` avec lazy loading.
-- Supabase sync : segmentation, bannière d'erreur, debounce sauvegarde 900 ms.
-- `api/invoice-vision.js` : clé Gemini non exposée, endpoint désactivé en 410.
-- `.env.example` et `.gitignore` : variables documentées, `.env*` exclus.
-- Tests existants : base à préserver et compléter.
+- Supabase sync : segmentation, banniÃ¨re d'erreur, debounce sauvegarde 900 ms.
+- `api/invoice-vision.js` : clÃ© Gemini non exposÃ©e, endpoint dÃ©sactivÃ© en 410.
+- `.env.example` et `.gitignore` : variables documentÃ©es, `.env*` exclus.
+- Tests existants : base Ã  prÃ©server et complÃ©ter.
 
-## Problèmes identifiés
+## ProblÃ¨mes identifiÃ©s
 
 ### Critique
 
-1. `Dashboard.tsx` reste trop gros et dangereux : calculs financiers avec nombreux `parseFloat`, fonctions imbriquées longues, gros `useMemo`, helpers d'import Excel mélangés au JSX.
-2. `Home.tsx` duplique trois parsings monétaires locaux au lieu d'utiliser `parseMoneyValue`.
-3. `AncvPapiers.tsx` et `BilanSynthese.tsx` réimplémentent localement `CurrencyInput`.
+1. `Dashboard.tsx` reste trop gros et dangereux : calculs financiers avec nombreux `parseFloat`, fonctions imbriquÃ©es longues, gros `useMemo`, helpers d'import Excel mÃ©langÃ©s au JSX.
+2. `Home.tsx` duplique trois parsings monÃ©taires locaux au lieu d'utiliser `parseMoneyValue`.
 
 ### Majeur
 
 1. `HomeWithAdminLink.tsx` est un wrapper devenu inutile autour de `Home`.
-2. Il reste des `any` à réduire dans `DashboardAnalysisView.tsx`, `Dashboard.tsx`, `DepensesPetiteCaisse.tsx`, `RemiseTR.tsx`.
+2. Il reste des `any` Ã  rÃ©duire dans `DashboardAnalysisView.tsx`, `Dashboard.tsx`, `DepensesPetiteCaisse.tsx`, `RemiseTR.tsx`.
 3. `supabaseAuth.ts` utilise encore directement `window.localStorage` au lieu de `browserStorage`.
 
 ### Mineur
 
-1. `utils/buildDailyEntries.ts` doit être vérifié : doublon potentiel avec `getDashboardRowIndices`.
+1. `utils/buildDailyEntries.ts` doit Ãªtre vÃ©rifiÃ© : doublon potentiel avec `getDashboardRowIndices`.
 2. `personnelSalaryImport.ts` manque de couverture de tests sur les cas limites.
-3. `README.md` doit rester aligné avec l'application réelle et les variables d'environnement actives.
+3. `README.md` doit rester alignÃ© avec l'application rÃ©elle et les variables d'environnement actives.
 
 ## Roadmap active
 
-Les étapes doivent être faites dans cet ordre, une par une, avec modification ciblée et validation avant de passer à la suivante.
+Les Ã©tapes doivent Ãªtre faites dans cet ordre, une par une, avec modification ciblÃ©e et validation avant de passer Ã  la suivante.
 
-### Étape 2 — Unifier `CurrencyInput`
-
-**Risque** : faible  
-**Objectif** : avoir un seul composant `CurrencyInput` partagé.
-
-Actions :
-
-1. Créer `src/components/CurrencyInput.tsx` depuis le composant de `CanalSaisie.tsx`.
-2. Remplacer les `CurrencyInput` locaux dans `AncvPapiers.tsx` et `BilanSynthese.tsx`.
-3. Mettre à jour `CanalSaisie.tsx` pour importer le composant partagé.
-
-Validation : comportement visuel identique sur les trois écrans.
-
-### Étape 3 — Fusionner `HomeWithAdminLink` dans `Home`
+### Ã‰tape 3 â€” Fusionner `HomeWithAdminLink` dans `Home`
 
 **Risque** : faible  
 **Objectif** : supprimer la couche wrapper inutile.
 
 Actions :
 
-1. Copier dans `Home.tsx` la vérification d'accès admin actuellement portée par `HomeWithAdminLink.tsx`.
+1. Copier dans `Home.tsx` la vÃ©rification d'accÃ¨s admin actuellement portÃ©e par `HomeWithAdminLink.tsx`.
 2. Ajouter directement le bouton `Utilisateurs` conditionnel dans `Home.tsx`.
-3. Mettre à jour `router.tsx` pour charger `Home` directement.
+3. Mettre Ã  jour `router.tsx` pour charger `Home` directement.
 4. Supprimer `HomeWithAdminLink.tsx`.
 
 Validation : bouton `Utilisateurs` toujours visible pour les admins, absent pour les utilisateurs standards.
 
-### Étape 4 — Corriger `supabaseAuth.ts` et réduire les `any`
+### Ã‰tape 4 â€” Corriger `supabaseAuth.ts` et rÃ©duire les `any`
 
 **Risque** : faible  
-**Objectif** : cohérence des patterns et typage plus sûr.
+**Objectif** : cohÃ©rence des patterns et typage plus sÃ»r.
 
 Actions :
 
-1. Remplacer les accès `window.localStorage` de `supabaseAuth.ts` par les helpers de `src/lib/browserStorage.ts`.
-2. Typer les itérations de `DepensesPetiteCaisse.tsx` avec `AchatEntry` et `AlimentationEntry`.
+1. Remplacer les accÃ¨s `window.localStorage` de `supabaseAuth.ts` par les helpers de `src/lib/browserStorage.ts`.
+2. Typer les itÃ©rations de `DepensesPetiteCaisse.tsx` avec `AchatEntry` et `AlimentationEntry`.
 3. Remplacer `Array<any>` dans `DashboardAnalysisView.tsx` par le bon type, probablement `DashboardRow[]`.
 4. Typer `renderBrandTable` et les `.map((row: any, ...))` dans `RemiseTR.tsx`.
 
 Validation : `npm run lint:ts` sans nouvelle erreur.
 
-### Étape 5 — Migrer les parsings monétaires de `Home.tsx`
+### Ã‰tape 5 â€” Migrer les parsings monÃ©taires de `Home.tsx`
 
 **Risque** : moyen  
-**Objectif** : utiliser une seule fonction de parsing monétaire.
+**Objectif** : utiliser une seule fonction de parsing monÃ©taire.
 
 Actions :
 
-1. Supprimer les trois lambdas locales de parsing monétaire dans `Home.tsx`.
-2. Remplacer par `parseMoneyValue` importé depuis `@/lib/money`.
+1. Supprimer les trois lambdas locales de parsing monÃ©taire dans `Home.tsx`.
+2. Remplacer par `parseMoneyValue` importÃ© depuis `@/lib/money`.
 3. Supprimer la fonction locale `n()` si elle duplique `parseMoneyValue`.
-4. Comparer les KPI avant/après sur un mois avec données réelles.
+4. Comparer les KPI avant/aprÃ¨s sur un mois avec donnÃ©es rÃ©elles.
 
-Validation : KPI Home identiques avant/après.
+Validation : KPI Home identiques avant/aprÃ¨s.
 
-### Étape 6 — Extraire les helpers d'import Excel de `Dashboard.tsx`
+### Ã‰tape 6 â€” Extraire les helpers d'import Excel de `Dashboard.tsx`
 
-**Risque** : moyen-élevé  
-**Objectif** : isoler la logique d'import et alléger `Dashboard.tsx`.
+**Risque** : moyen-Ã©levÃ©  
+**Objectif** : isoler la logique d'import et allÃ©ger `Dashboard.tsx`.
 
 Actions :
 
-1. Créer `src/features/dashboard/importHelpers/historicalBudgetImport.ts` pour les helpers `parseHistoricalBudget*`, `getHistoricalBudget*`, `rowHasHistorical*`, `normalizeHistorical*`, `findHistorical*`.
-2. Créer `src/features/dashboard/importHelpers/caisseImport.ts` pour `findCaisseAmounts`, `findCaisseAmount`, `findCaisseTheoriqueAmount`, `extractCaisseNumbers`, `findCaisseTtcByRate`.
-3. Créer `src/features/dashboard/importHelpers/payrollImport.ts` pour `parseHistoricalPayroll*`, `findHistoricalPayroll*`, `getHistoricalPayroll*`, `sumHistoricalPayroll*`, `historicalPayrollHourToDecimal`.
-4. Mettre à jour les imports dans `Dashboard.tsx` sans changer la logique métier.
+1. CrÃ©er `src/features/dashboard/importHelpers/historicalBudgetImport.ts` pour les helpers `parseHistoricalBudget*`, `getHistoricalBudget*`, `rowHasHistorical*`, `normalizeHistorical*`, `findHistorical*`.
+2. CrÃ©er `src/features/dashboard/importHelpers/caisseImport.ts` pour `findCaisseAmounts`, `findCaisseAmount`, `findCaisseTheoriqueAmount`, `extractCaisseNumbers`, `findCaisseTtcByRate`.
+3. CrÃ©er `src/features/dashboard/importHelpers/payrollImport.ts` pour `parseHistoricalPayroll*`, `findHistoricalPayroll*`, `getHistoricalPayroll*`, `sumHistoricalPayroll*`, `historicalPayrollHourToDecimal`.
+4. Mettre Ã  jour les imports dans `Dashboard.tsx` sans changer la logique mÃ©tier.
 
 Validation : import budget historique, caisse et paie toujours fonctionnels.
 
-### Étape 7 — Migrer les `parseFloat` de `Dashboard.tsx`
+### Ã‰tape 7 â€” Migrer les `parseFloat` de `Dashboard.tsx`
 
-**Risque** : élevé  
-**Objectif** : éviter les calculs silencieusement faux sur valeurs vides ou formats français.
+**Risque** : Ã©levÃ©  
+**Objectif** : Ã©viter les calculs silencieusement faux sur valeurs vides ou formats franÃ§ais.
 
 Actions :
 
 1. Dans `calculatedData`, remplacer progressivement `parseFloat(data[... ] || '0')` par `parseMoneyValue(data[...])`.
-2. Vérifier ligne par ligne que les formules attendent bien une valeur monétaire.
+2. VÃ©rifier ligne par ligne que les formules attendent bien une valeur monÃ©taire.
 3. Ajouter un test dans `dashboardModel.test.ts` sur cellules vides et valeurs avec virgule, par exemple `"1 234,56"`.
-4. Comparer les totaux de colonnes et KPI avant/après sur données réelles.
+4. Comparer les totaux de colonnes et KPI avant/aprÃ¨s sur donnÃ©es rÃ©elles.
 
 Validation : tests OK et totaux identiques.
 
 ## Hors scope de cette roadmap
 
-À ne pas mélanger avec ce chantier :
+Ã€ ne pas mÃ©langer avec ce chantier :
 
-- Décomposition du JSX de `Dashboard.tsx` en sous-composants visuels.
-- Migration globale du modèle de données de `string` vers `number` pour `MonthData`.
+- DÃ©composition du JSX de `Dashboard.tsx` en sous-composants visuels.
+- Migration globale du modÃ¨le de donnÃ©es de `string` vers `number` pour `MonthData`.
 - Multi-tenant / multi-restaurant.
 
-Ces sujets doivent avoir une roadmap dédiée s'ils sont repris plus tard.
+Ces sujets doivent avoir une roadmap dÃ©diÃ©e s'ils sont repris plus tard.
