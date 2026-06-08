@@ -1,11 +1,10 @@
-﻿import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import DashboardAnalysisView from '@/DashboardAnalysisView';
 
 import { useData } from '@/contexts/DataContext';
 import { averagePayrollRate } from '@/personnelSalaryImport';
 import { parseMoneyValue } from '@/lib/money';
 
-import { ChevronLeft, Download, Upload, FileDown, Trash2, X, Clipboard } from 'lucide-react';
 // â”€â”€ ModÃ¨le Dashboard extrait (types, colonnes, configuration statique) â”€â”€â”€â”€â”€â”€â”€â”€
 import type {
   DashboardColumn,
@@ -20,8 +19,6 @@ import {
   days,
   editableCols,
   monthNames,
-  tabs,
-  viewModes,
 } from '@/features/dashboard/dashboardStaticConfig';
 import { useDashboardDailyRecapState } from '@/features/dashboard/hooks/useDashboardDailyRecapState';
 import { useDashboardImportState } from '@/features/dashboard/hooks/useDashboardImportState';
@@ -32,8 +29,6 @@ import { useDashboardUiState } from '@/features/dashboard/hooks/useDashboardUiSt
 import { useDashboardImportHandlers } from '@/features/dashboard/hooks/useDashboardImportHandlers';
 import { useDashboardDailyRecapHandlers } from '@/features/dashboard/hooks/useDashboardDailyRecapHandlers';
 import {
-  formatKpiCurrency,
-  formatKpiNumber,
   formatPayrollHourVisualValue,
   formatValue,
   getFgBoxLayout,
@@ -58,6 +53,10 @@ import DashboardDatePicker from '@/features/dashboard/components/DashboardDatePi
 import DebouncedInput from '@/features/dashboard/components/DebouncedInput';
 import DashboardRealiseMatrix from '@/features/dashboard/components/DashboardRealiseMatrix';
 import DashboardDailyEntry from '@/features/dashboard/components/DashboardDailyEntry';
+import DashboardSidebar from '@/features/dashboard/components/DashboardSidebar';
+import DashboardHeader from '@/features/dashboard/components/DashboardHeader';
+import DashboardDailyRecapModal from '@/features/dashboard/components/DashboardDailyRecapModal';
+import DashboardImportModal from '@/features/dashboard/components/DashboardImportModal';
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -1516,230 +1515,48 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       {dragState && <style>{`* { cursor: crosshair !important; user-select: none; }`}</style>}
       {/* Left Sidebar for Months */}
-      <aside style={{ 
-        width: isSidebarOpen ? 260 : 0,
-        minWidth: isSidebarOpen ? 260 : 0,
-        background: sidebarTheme, 
-        color: '#fff', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        flexShrink: 0, 
-        boxShadow: isSidebarOpen ? '4px 0 15px rgba(0,0,0,0.05)' : 'none',
-        zIndex: 100,
-        position: isMobile ? 'absolute' : 'relative',
-        height: '100%',
-        overflow: 'hidden',
-        transition: 'width 0.3s ease, min-width 0.3s ease'
-      }}>
-        <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: 0, transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}>
-            <ChevronLeft size={16} /> Retour Accueil
-          </button>
-          <h1 style={{ fontSize: 22, fontWeight: 800, margin: '24px 0 0 0', letterSpacing: '-0.02em', color: '#f8fafc' }}>Tableau de Bord</h1>
-          <div style={{ fontSize: 14, color: '#94a3b8', marginTop: 4, fontWeight: 500 }}>AnnÃ©e {year}</div>
-        </div>
-        
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: 4, scrollbarWidth: 'none' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0 12px 12px 12px' }}>SÃ©lection du mois</div>
-          {monthNames.map((m, i) => (
-            <button
-              key={i}
-              onClick={() => setMonth(i)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 16px',
-                background: month === i ? '#3b82f6' : 'transparent',
-                color: month === i ? '#fff' : '#cbd5e1',
-                border: 'none', borderRadius: 8, cursor: 'pointer',
-                fontSize: 14, fontWeight: month === i ? 700 : 500,
-                textTransform: 'capitalize', transition: 'all 0.2s',
-                textAlign: 'left',
-                boxShadow: month === i ? '0 4px 6px -1px rgba(59, 130, 246, 0.3)' : 'none'
-              }}
-              onMouseEnter={e => { if (month !== i) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#fff'; } }}
-              onMouseLeave={e => { if (month !== i) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; } }}
-            >
-              {m}
-              {month === i && <ChevronLeft size={16} style={{ transform: 'rotate(180deg)' }} />}
-            </button>
-          ))}
-        </div>
-      </aside>
+      <DashboardSidebar
+        isMobile={isMobile}
+        isSidebarOpen={isSidebarOpen}
+        sidebarTheme={sidebarTheme}
+        year={year}
+        month={month}
+        monthNames={monthNames}
+        onBack={onBack}
+        setMonth={setMonth}
+      />
 
       {/* Main Content Area */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8fafc' }}>
         
         {/* Top Header for Sections */}
-        <header style={{ background: sidebarThemeWide, borderBottom: '1px solid rgba(125, 211, 252, .24)', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90, position: 'relative', boxShadow: '0 14px 32px rgba(15, 23, 42, .20), inset 0 -1px 0 rgba(255,255,255,.06)' }}>
-          <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', minHeight: isMobile ? 86 : 78, padding: isMobile ? '12px 0' : '14px 0 10px', display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 16, flexDirection: isMobile ? 'column' : 'row' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
-              <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#cbd5e1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 800, padding: 0, flexShrink: 0 }}>
-                <ChevronLeft size={16} /> Retour Accueil
-              </button>
-              {tableViewMode === 'SAISIE' ? (
-                <div ref={datePickerRef} style={{ position: 'relative' }}>
-                  <button
-                    type="button"
-                    onClick={() => setIsDatePickerOpen(prev => !prev)}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(207,250,254,.14)', borderRadius: 14, cursor: 'pointer', color: '#fff', padding: isMobile ? '9px 11px' : '10px 14px', textAlign: 'left', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08)' }}
-                  >
-                    <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journaliÃ¨re</span>
-                    <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1, color: '#fef3c7' }}>{selectedDayLabel}</span>
-                  </button>
-                  {isDatePickerOpen && renderDatePicker()}
-                </div>
-              ) : (
-                <div ref={datePickerRef} style={{ position: 'relative' }}>
-                  <button
-                    type="button"
-                    onClick={() => setIsDatePickerOpen(prev => !prev)}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(207,250,254,.14)', borderRadius: 14, cursor: 'pointer', color: '#fff', padding: isMobile ? '9px 11px' : '10px 14px', textAlign: 'left', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08)' }}
-                  >
-                    <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>{tableViewMode === 'ANALYSE' ? 'Vue analyse' : 'Vue complÃ¨te'}</span>
-                    <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1, color: '#fef3c7' }}>{monthNames[month]} {year}</span>
-                  </button>
-                  {isDatePickerOpen && renderDatePicker()}
-                </div>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignSelf: tableViewMode === 'SAISIE' && isMobile ? 'stretch' : 'auto', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button onClick={() => setIsImportModalOpen(true)} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
-                <Upload size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Importer'}
-              </button>
-              {tableViewMode === 'SAISIE' && (
-                <button onClick={openDailyRecapPreview} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme} title={dailyRecapStatus || 'PrÃ©parer le rÃ©cap mail du jour'}>
-                  <Clipboard size={isMobile ? 14 : 16} /> {isMobile ? '' : 'RÃ©cap mail'}
-                </button>
-              )}
-              <button onClick={handleExportPDF} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
-                <FileDown size={isMobile ? 14 : 16} /> {isMobile ? '' : 'PDF'}
-              </button>
-              <button onClick={handleExport} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
-                <Download size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Excel'}
-              </button>
-              {tableViewMode === 'SAISIE' && (
-                <button
-                  type="button"
-                  onClick={handleTemporaryResetLocalData}
-                  style={{ ...actionTileStyle, background: '#7f1d1d', borderColor: 'rgba(254, 202, 202, .35)', color: '#fee2e2' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#991b1b'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#7f1d1d'}
-                  title="RAZ provisoire des donnees locales"
-                >
-                  <Trash2 size={isMobile ? 14 : 16} /> {isMobile ? '' : 'RAZ'}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {false && tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && (
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(7, minmax(116px, 1fr))', gap: 8, padding: isMobile ? '0 0 12px' : '0 0 12px', overflowX: isMobile ? 'visible' : 'auto' }}>
-              {[
-                { label: 'CA budget', value: formatKpiCurrency(summaryKpis.budgetCa), color: '#64748b', icon: 'â‚¬' },
-                { label: 'CA rÃ©alisÃ©', value: formatKpiCurrency(summaryKpis.realiseCa), color: '#2563eb', icon: 'CA' },
-                { label: 'Ã‰cart CA', value: formatKpiCurrency(summaryKpis.ecartCa), color: summaryKpis.ecartCa >= 0 ? '#059669' : '#dc2626', icon: summaryKpis.ecartCa >= 0 ? '+' : '-' },
-                { label: 'Couverts', value: formatKpiNumber(summaryKpis.couverts), color: '#7c3aed', icon: 'CV' },
-                { label: 'Ticket moyen', value: formatKpiCurrency(summaryKpis.ticketMoyen), color: '#d97706', icon: 'TM' },
-                { label: 'CoÃ»t matiÃ¨re', value: formatKpiCurrency(summaryKpis.coutMatiere), color: '#16a34a', icon: 'CM' },
-                { label: 'Frais personnel', value: formatKpiCurrency(summaryKpis.fraisPersonnel), color: '#9333ea', icon: 'SC' },
-              ].map(kpi => (
-                <div
-                  key={kpi.label}
-                  style={{
-                    minWidth: 0,
-                    border: '1px solid #e2e8f0',
-                    background: '#f8fafc',
-                    borderRadius: 10,
-                    padding: isMobile ? '8px 10px' : '9px 11px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 9,
-                  }}
-                >
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: `${kpi.color}14`, color: kpi.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>
-                    {kpi.icon}
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.label}</div>
-                    <div style={{ fontSize: isMobile ? 13 : 14, color: '#0f172a', fontWeight: 900, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.value}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Section Tabs */}
-          <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: isMobile ? '0 0 12px' : '0 0 14px', display: 'flex', gap: 8, background: 'transparent', borderBottom: 'none', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 4, border: '1px solid rgba(255,255,255,.18)', borderRadius: 10, background: 'rgba(255,255,255,.10)', flexShrink: 0 }}>
-              <span style={{ padding: '0 6px', fontSize: 10, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>Vue</span>
-              {viewModes.map(mode => {
-                const isModeActive = tableViewMode === mode.id;
-                return (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    onClick={() => setTableViewMode(mode.id)}
-                    style={{
-                      border: 'none',
-                      borderRadius: 7,
-                      background: isModeActive ? '#fff' : 'transparent',
-                      color: isModeActive ? '#0f172a' : '#cbd5e1',
-                      cursor: 'pointer',
-                      fontSize: 11,
-                      fontWeight: 800,
-                      padding: '6px 9px',
-                      whiteSpace: 'nowrap',
-                      transition: 'all .15s',
-                    }}
-                  >
-                    {mode.label}
-                  </button>
-                );
-              })}
-            </div>
-            {tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && tabs.map(tab => {
-              const isActive = activeTab === tab.id;
-              let icon = 'ðŸ“';
-              let accentBg = '#475569';
-              const accentColor = '#fff';
-              
-              switch (tab.id) {
-                case 'PREVISIONS': icon = 'PR'; accentBg = '#92400e'; break;
-                case 'REALISE': icon = 'RE'; accentBg = '#1e40af'; break;
-                case 'COUT_MATIERE': icon = 'CM'; accentBg = '#166534'; break;
-                case 'PERSONNEL': icon = 'FP'; accentBg = '#6b21a8'; break;
-                case 'FRAIS_GENERAUX': icon = 'FG'; accentBg = '#b45309'; break;
-                case 'RESULTATS': icon = 'RM'; accentBg = '#be123c'; break;
-              }
-
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '9px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
-                    background: isActive ? accentBg : 'rgba(255,255,255,.10)',
-                    border: `1.5px solid ${isActive ? accentBg : 'rgba(255,255,255,.18)'}`,
-                    boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'inset 0 1px 0 rgba(255,255,255,.08)',
-                    transition: 'all .15s',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  <span style={{ width: 22, height: 22, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.14)', color: isActive ? '#fff' : '#cbd5e1', fontSize: 9, fontWeight: 900 }}>{icon}</span>
-                  <span style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? accentColor : '#e2e8f0', letterSpacing: '.02em', lineHeight: 1.3 }}>{tab.label}</span>
-                  </span>
-                  {isActive && (
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 2 }}>
-                      <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </header>
+        <DashboardHeader
+          isMobile={isMobile}
+          onBack={onBack}
+          sidebarThemeWide={sidebarThemeWide}
+          weatherTheme={weatherTheme}
+          weatherThemeHover={weatherThemeHover}
+          actionTileStyle={actionTileStyle}
+          tableViewMode={tableViewMode}
+          setTableViewMode={setTableViewMode}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          monthNames={monthNames}
+          month={month}
+          year={year}
+          selectedDayLabel={selectedDayLabel}
+          isDatePickerOpen={isDatePickerOpen}
+          setIsDatePickerOpen={setIsDatePickerOpen}
+          datePickerRef={datePickerRef}
+          renderDatePicker={renderDatePicker}
+          summaryKpis={summaryKpis}
+          setIsImportModalOpen={setIsImportModalOpen}
+          openDailyRecapPreview={openDailyRecapPreview}
+          dailyRecapStatus={dailyRecapStatus}
+          handleExportPDF={handleExportPDF}
+          handleExport={handleExport}
+          handleTemporaryResetLocalData={handleTemporaryResetLocalData}
+        />
 
         {/* Table Area */}
         <div id="dashboard-content-area" style={{ flex: 1, overflow: 'auto', padding: tableViewMode === 'SAISIE' ? (isMobile ? 12 : '16px 24px 28px') : (isMobile ? 12 : 32), display: 'flex', flexDirection: 'column' }}>
@@ -2333,428 +2150,48 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
       {/* Daily Recap Mail Modal */}
       {isDailyRecapModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 105, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 10 : 18 }}>
-          <div style={{ background: '#fff', borderRadius: 16, width: 'min(980px, 100%)', maxWidth: 'calc(100vw - 36px)', maxHeight: 'calc(100vh - 36px)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.16), 0 10px 10px -5px rgba(0, 0, 0, 0.08)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '20px 24px 14px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 850, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Clipboard size={20} color="#0f766e" /> PrÃ©parer le mail de clÃ´ture
-              </h3>
-              <button onClick={() => setIsDailyRecapModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4, borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                <X size={20} />
-              </button>
-            </div>
-            <div style={{ padding: isMobile ? 14 : 20, overflow: 'auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(280px, .75fr) minmax(420px, 1.25fr)', gap: 16 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ padding: 12, border: '1px solid #dbeafe', borderRadius: 10, background: '#eff6ff', color: '#1e3a8a', fontSize: 12, lineHeight: 1.45, fontWeight: 750 }}>
-                  VÃ©rifie le contenu avant ouverture du mail. Le texte sera aussi copiÃ© dans le presse-papiers.
-                </div>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Responsable midi</span>
-                  <input
-                    value={dailyRecapManagers.midi}
-                    onChange={event => setDailyRecapManagers(prev => ({ ...prev, midi: event.target.value }))}
-                    style={{ height: 38, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
-                    placeholder="Nom du responsable"
-                  />
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Commentaire midi</span>
-                  <textarea
-                    value={dailyRecapServiceComments.midi}
-                    onChange={event => setDailyRecapServiceComments(prev => ({ ...prev, midi: event.target.value }))}
-                    style={{ minHeight: 70, resize: 'vertical', border: '1px solid #cbd5e1', borderRadius: 8, padding: 10, fontWeight: 700, color: '#0f172a', lineHeight: 1.45 }}
-                    placeholder="Commentaire spÃ©cifique au service midi..."
-                  />
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Responsable soir</span>
-                  <input
-                    value={dailyRecapManagers.soir}
-                    onChange={event => setDailyRecapManagers(prev => ({ ...prev, soir: event.target.value }))}
-                    style={{ height: 38, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
-                    placeholder="Nom du responsable"
-                  />
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Commentaire soir</span>
-                  <textarea
-                    value={dailyRecapServiceComments.soir}
-                    onChange={event => setDailyRecapServiceComments(prev => ({ ...prev, soir: event.target.value }))}
-                    style={{ minHeight: 70, resize: 'vertical', border: '1px solid #cbd5e1', borderRadius: 8, padding: 10, fontWeight: 700, color: '#0f172a', lineHeight: 1.45 }}
-                    placeholder="Commentaire spÃ©cifique au service soir..."
-                  />
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Notes Google du jour</span>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
-                    {[1, 2, 3, 4, 5].map(stars => (
-                      <label key={stars} style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-                        <span style={{ fontSize: 10, fontWeight: 900, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>{stars}*</span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={dailyRecapGoogleRatings[stars] || ''}
-                          onChange={event => setDailyRecapGoogleRatings(prev => ({ ...prev, [stars]: event.target.value.replace(/[^0-9]/g, '') }))}
-                          style={{ height: 34, minWidth: 0, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 6px', fontWeight: 850, color: '#0f172a', textAlign: 'center' }}
-                          placeholder="0"
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>AperÃ§u du mail</div>
-                <div
-                  ref={recapPreviewRef}
-                  style={{ margin: 0, minHeight: 360, maxHeight: '55vh', overflow: 'auto', border: '1px solid #cbd5e1', borderRadius: 10, background: '#f8fafc', padding: 16, color: '#0f172a', fontSize: 14, lineHeight: 1.5, fontFamily: "'DM Sans', system-ui, sans-serif" }}
-                  dangerouslySetInnerHTML={{
-                    __html: buildDailyRecapHtml({
-                      managerMidi: dailyRecapManagers.midi,
-                      managerSoir: dailyRecapManagers.soir,
-                      commentMidi: dailyRecapServiceComments.midi,
-                      commentSoir: dailyRecapServiceComments.soir,
-                      googleRatings: dailyRecapGoogleRatings,
-                    }),
-                  }}
-                />
-              </div>
-            </div>
-            <div style={{ padding: '14px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button type="button" onClick={() => setIsDailyRecapModalOpen(false)} style={{ height: 38, padding: '0 14px', background: '#fff', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 13, fontWeight: 850, cursor: 'pointer' }}>
-                Annuler
-              </button>
-              <button type="button" onClick={handleValidateDailyRecapMail} style={{ height: 38, padding: '0 16px', background: '#0f766e', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 900, cursor: 'pointer' }}>
-                Valider et ouvrir le mail
-              </button>
-            </div>
-          </div>
-        </div>
+        <DashboardDailyRecapModal
+          isMobile={isMobile}
+          setIsDailyRecapModalOpen={setIsDailyRecapModalOpen}
+          recapPreviewRef={recapPreviewRef}
+          dailyRecapManagers={dailyRecapManagers}
+          setDailyRecapManagers={setDailyRecapManagers}
+          dailyRecapServiceComments={dailyRecapServiceComments}
+          setDailyRecapServiceComments={setDailyRecapServiceComments}
+          dailyRecapGoogleRatings={dailyRecapGoogleRatings}
+          setDailyRecapGoogleRatings={setDailyRecapGoogleRatings}
+          buildDailyRecapHtml={buildDailyRecapHtml}
+          handleValidateDailyRecapMail={handleValidateDailyRecapMail}
+        />
       )}
       {/* Import Modal */}
       {isImportModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 10 : 18 }}>
-          <div style={{ background: '#fff', borderRadius: 16, width: 'min(1120px, 100%)', maxWidth: 'calc(100vw - 36px)', maxHeight: 'calc(100vh - 36px)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Upload size={20} color="#10b981" />
-                Importer des donnÃ©es
-              </h3>
-              <button onClick={() => setIsImportModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4, borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                <X size={20} />
-              </button>
-            </div>
-            <div style={{ padding: isMobile ? 14 : 20, overflow: 'auto' }}>
-              <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, margin: '0 0 14px' }}>
-                Importez une feuille de caisse PDF. Seule la partie realise du suivi quotidien sera remplie :
-                VAE, CA midi, CA soir et couverts.
-              </p>
-
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(240px, 1fr))', gap: 12 }}>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #93c5fd', borderRadius: 10, background: '#eff6ff' }}>
-                  <span style={{ fontSize: 12, fontWeight: 900, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '.04em' }}>Feuille de caisse</span>
-                  <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                    Lecture locale de plusieurs feuilles possible, avec validation une par une avant application.
-                  </span>
-                  <input
-                    type="file"
-                    accept=".pdf,.txt,text/plain,application/pdf"
-                    onChange={handleDailyRealiseImport}
-                    multiple
-                    style={{ fontSize: 13, color: '#0f172a' }}
-                  />
-                </label>
-
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #86efac', borderRadius: 10, background: '#f0fdf4' }}>
-                  <span style={{ fontSize: 12, fontWeight: 900, color: '#166534', textTransform: 'uppercase', letterSpacing: '.04em' }}>Facture fournisseur</span>
-                  <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                    Lecture locale : fournisseur, date et montant HT. Les fichiers ne sont pas conserves.
-                  </span>
-                  <input
-                    type="file"
-                    accept=".pdf,.txt,text/plain,application/pdf"
-                    onChange={handleInvoiceImport}
-                    multiple
-                    style={{ fontSize: 13, color: '#0f172a' }}
-                  />
-                </label>
-
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #c084fc', borderRadius: 10, background: '#faf5ff' }}>
-                  <span style={{ fontSize: 12, fontWeight: 900, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '.04em' }}>PDF salaires</span>
-                  <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                    Lit les noms, heures et couts globaux puis met a jour les taux par statut et section.
-                  </span>
-                  <input
-                    type="file"
-                    accept=".pdf,.txt,text/plain,application/pdf"
-                    onChange={handleSalaryPayrollImport}
-                    style={{ fontSize: 13, color: '#0f172a' }}
-                  />
-                </label>
-
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #f59e0b', borderRadius: 10, background: '#fffbeb' }}>
-                  <span style={{ fontSize: 12, fontWeight: 900, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.04em' }}>Budget historique Excel</span>
-                  <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                    Lit uniquement le mois affichÃ© et importe les prÃ©visions couverts + TM ainsi que le rÃ©alisÃ© CA/couverts. Les totaux restent calculÃ©s par l'application.
-                  </span>
-                  <input
-                    type="file"
-                    accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                    onChange={handleHistoricalBudgetExcelImport}
-                    style={{ fontSize: 13, color: '#0f172a' }}
-                  />
-                </label>
-              </div>
-
-              {historicalBudgetStatus && (
-                <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: historicalBudgetStatus.startsWith('Erreur') ? '#fef2f2' : '#fffbeb', border: '1px solid ' + (historicalBudgetStatus.startsWith('Erreur') ? '#fecaca' : '#fde68a'), color: historicalBudgetStatus.startsWith('Erreur') ? '#991b1b' : '#92400e', fontSize: 13, fontWeight: 800 }}>
-                  {historicalBudgetStatus}
-                </div>
-              )}
-
-              {historicalBudgetPreviews.length > 0 && (
-                <div style={{ marginTop: 12, display: 'grid', gap: 10, padding: 12, border: '1px solid #fde68a', borderRadius: 10, background: '#fffbeb' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 950, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.04em' }}>PrÃ©visualisation budget historique</div>
-                      <div style={{ marginTop: 3, fontSize: 12, color: '#64748b', fontWeight: 700 }}>
-                        {historicalBudgetPreviews.length} jours Â· CA recalculÃ© estimÃ© {formatImportedCurrencyLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.caTotal, 0))} Â· Couverts {formatImportedIntegerLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.couvertsTotal, 0))}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button type="button" onClick={() => setHistoricalBudgetPreviews([])} style={{ height: 34, border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', color: '#334155', fontSize: 12, fontWeight: 900, cursor: 'pointer', padding: '0 12px' }}>Annuler</button>
-                      <button type="button" onClick={applyHistoricalBudgetExcelImport} style={{ height: 34, border: 'none', borderRadius: 8, background: '#b45309', color: '#fff', fontSize: 12, fontWeight: 950, cursor: 'pointer', padding: '0 14px' }}>Valider l'import</button>
-                    </div>
-                  </div>
-                  <div style={{ maxHeight: 220, overflow: 'auto', display: 'grid', gap: 6 }}>
-                    {historicalBudgetPreviews.slice(0, 40).map(item => (
-                      <div key={item.id} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '120px 90px repeat(4, minmax(86px, 1fr))', gap: 8, alignItems: 'center', padding: '8px 10px', border: '1px solid #fde68a', borderRadius: 8, background: '#fff' }}>
-                        <div style={{ fontSize: 12, fontWeight: 900, color: '#0f172a' }}>{monthNames[item.month]} {item.day}</div>
-                        <div style={{ fontSize: 11, fontWeight: 850, color: '#92400e' }}>{item.sheetName}</div>
-                        <div style={{ fontSize: 11, fontWeight: 800 }}>Cts midi {formatImportedIntegerLabel(item.couvertsMidi)}</div>
-                        <div style={{ fontSize: 11, fontWeight: 800 }}>TM midi {formatImportedCurrencyLabel(item.tmMidi)}</div>
-                        <div style={{ fontSize: 11, fontWeight: 800 }}>Cts soir {formatImportedIntegerLabel(item.couvertsSoir)}</div>
-                        <div style={{ fontSize: 11, fontWeight: 800 }}>TM soir {formatImportedCurrencyLabel(item.tmSoir)}</div>
-                      </div>
-                    ))}
-                    {historicalBudgetPreviews.length > 40 && <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>+ {historicalBudgetPreviews.length - 40} lignes non affichees dans l'aperÃ§u</div>}
-                  </div>
-                </div>
-              )}
-
-              {salaryImportStatus && (
-                <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: salaryImportStatus.startsWith('Erreur') ? '#fef2f2' : '#faf5ff', border: `1px solid ${salaryImportStatus.startsWith('Erreur') ? '#fecaca' : '#e9d5ff'}`, color: salaryImportStatus.startsWith('Erreur') ? '#991b1b' : '#6b21a8', fontSize: 13, fontWeight: 800 }}>
-                  {salaryImportStatus}
-                </div>
-              )}
-
-              {invoiceImportStatus && (
-                <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: invoiceImportStatus.startsWith('Erreur') ? '#fef2f2' : invoiceImportStatus.includes('verifier') ? '#fffbeb' : '#f0fdf4', border: `1px solid ${invoiceImportStatus.startsWith('Erreur') ? '#fecaca' : invoiceImportStatus.includes('verifier') ? '#fbbf24' : '#bbf7d0'}`, color: invoiceImportStatus.startsWith('Erreur') ? '#991b1b' : invoiceImportStatus.includes('verifier') ? '#92400e' : '#166534', fontSize: 13, fontWeight: 800 }}>
-                  {invoiceImportStatus}
-                </div>
-              )}
-
-              {invoiceImportPreviews.length > 0 && (
-                <div style={{ marginTop: 12, display: 'grid', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
-                  {invoiceImportPreviews.map(item => {
-                    const isVerified = item.confidence === 'verified';
-                    return (
-                      <div
-                        key={item.id}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: isMobile ? 'minmax(140px, 1fr) minmax(140px, 1fr) 116px 104px minmax(150px, 1fr) 112px' : 'minmax(180px, 1.15fr) minmax(150px, 1fr) 130px 110px minmax(190px, 1fr) 112px',
-                          gap: 8,
-                          alignItems: 'end',
-                          minWidth: isMobile ? 840 : 980,
-                          padding: 10,
-                          border: `1px solid ${isVerified ? '#86efac' : '#fbbf24'}`,
-                          borderRadius: 8,
-                          background: isVerified ? '#f0fdf4' : '#fffbeb',
-                        }}
-                      >
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-                            <span style={{ padding: '2px 7px', borderRadius: 999, background: isVerified ? '#dcfce7' : '#fef3c7', color: isVerified ? '#166534' : '#92400e', fontSize: 10, fontWeight: 900, textTransform: 'uppercase' }}>
-                              {isVerified ? 'OK' : 'A verifier'}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 12, fontWeight: 900, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.fileName}>{item.fileName}</div>
-                          <div style={{ marginTop: 2, fontSize: 11, color: isVerified ? '#166534' : '#92400e', fontWeight: 700 }}>{item.status}</div>
-                        </div>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Fournisseur</span>
-                          <input
-                            value={item.supplier}
-                            onChange={event => updateInvoiceImportPreview(item.id, { supplier: event.target.value })}
-                            style={{ height: 34, minWidth: 0, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
-                          />
-                        </label>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Date</span>
-                          <input
-                            type="date"
-                            value={item.invoiceDate}
-                            onChange={event => updateInvoiceImportPreview(item.id, { invoiceDate: event.target.value })}
-                            style={{ height: 34, minWidth: 0, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
-                          />
-                        </label>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>HT</span>
-                          <input
-                            value={item.amountHt}
-                            onChange={event => updateInvoiceImportPreview(item.id, { amountHt: event.target.value.replace(/[^0-9.,-]/g, '').replace(',', '.') })}
-                            style={{ height: 34, minWidth: 0, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 900, color: '#0f172a', textAlign: 'right' }}
-                          />
-                        </label>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Colonne cible</span>
-                          <select
-                            value={item.targetCol}
-                            onChange={event => updateInvoiceImportPreview(item.id, { targetCol: Number(event.target.value) })}
-                            style={{ height: 34, minWidth: 0, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a', background: '#fff' }}
-                          >
-                            {Array.from({ length: 13 }, (_, idx) => 45 + idx).map(col => (
-                              <option key={col} value={col}>{dynamicColumns[col]?.[2] || `Achat ${col}`}</option>
-                            ))}
-                          </select>
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => applyInvoiceImport(item)}
-                          style={{ height: 36, border: 'none', borderRadius: 8, background: isVerified ? '#166534' : '#b45309', color: '#fff', fontSize: 13, fontWeight: 900, cursor: 'pointer' }}
-                        >
-                          Valider
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              {caisseImportPreviews.length > 0 && (
-                <div style={{ marginTop: 12, display: 'grid', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
-                  {caisseImportPreviews.map(item => {
-                    const isVerified = item.confidence === 'verified';
-                    const theoriqueTotal = item.parsed.theoriqueValues.cb
-                      + item.parsed.theoriqueValues.especes
-                      + item.parsed.theoriqueValues.amex
-                      + item.parsed.theoriqueValues.tr_carte
-                      + item.parsed.theoriqueValues.ancv
-                      + item.parsed.theoriqueValues.tr_papier
-                      + item.parsed.theoriqueValues.sunday
-                      + item.parsed.theoriqueValues.uber
-                      + item.parsed.theoriqueValues.deliveroo
-                      + item.parsed.theoriqueValues.click_collect;
-
-                    return (
-                      <div
-                        key={item.id}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: isMobile ? 'minmax(150px, 1fr) 130px minmax(250px, 1.2fr) 112px' : 'minmax(190px, 1fr) 138px minmax(420px, 1.5fr) 112px',
-                          gap: 8,
-                          alignItems: 'end',
-                          minWidth: isMobile ? 760 : 960,
-                          padding: 10,
-                          border: `1px solid ${isVerified ? '#93c5fd' : '#fbbf24'}`,
-                          borderRadius: 8,
-                          background: isVerified ? '#eff6ff' : '#fffbeb',
-                        }}
-                      >
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-                            <span style={{ padding: '2px 7px', borderRadius: 999, background: isVerified ? '#dbeafe' : '#fef3c7', color: isVerified ? '#1d4ed8' : '#92400e', fontSize: 10, fontWeight: 900, textTransform: 'uppercase' }}>
-                              {isVerified ? 'OK' : 'A verifier'}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 12, fontWeight: 900, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.fileName}>{item.fileName}</div>
-                          <div style={{ marginTop: 2, fontSize: 11, color: isVerified ? '#1d4ed8' : '#92400e', fontWeight: 700 }}>{item.status}</div>
-                        </div>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                          <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Date</span>
-                          <input
-                            type="date"
-                            value={item.businessDate}
-                            onChange={event => updateCaisseImportPreview(item.id, { businessDate: event.target.value })}
-                            style={{ height: 34, minWidth: 0, border: '1px solid #cbd5e1', borderRadius: 8, padding: '0 10px', fontWeight: 800, color: '#0f172a' }}
-                          />
-                        </label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-                          {[
-                            { label: 'VAE HT', value: formatImportedCurrencyLabel(item.parsed.values[17]) },
-                            { label: 'CA midi', value: formatImportedCurrencyLabel(item.parsed.values[18]) },
-                            { label: 'CA soir', value: formatImportedCurrencyLabel(item.parsed.values[19]) },
-                            { label: 'Cts midi', value: formatImportedIntegerLabel(item.parsed.values[25]) },
-                            { label: 'Cts soir', value: formatImportedIntegerLabel(item.parsed.values[27]) },
-                            { label: 'Theo caisse', value: formatImportedCurrencyLabel(theoriqueTotal) },
-                          ].map(metric => (
-                            <div key={`${item.id}-${metric.label}`} style={{ padding: '8px 10px', border: '1px solid #dbe5ec', borderRadius: 8, background: '#fff' }}>
-                              <div style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>{metric.label}</div>
-                              <div style={{ marginTop: 4, fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{metric.value}</div>
-                            </div>
-                          ))}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => applyCaisseImport(item)}
-                          style={{ height: 36, border: 'none', borderRadius: 8, background: isVerified ? '#1d4ed8' : '#b45309', color: '#fff', fontSize: 13, fontWeight: 900, cursor: 'pointer' }}
-                        >
-                          Valider
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {importStatus && (
-                <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: importStatus.startsWith('Erreur') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${importStatus.startsWith('Erreur') ? '#fecaca' : '#bbf7d0'}`, color: importStatus.startsWith('Erreur') ? '#991b1b' : '#166534', fontSize: 13, fontWeight: 800 }}>
-                  {importStatus}
-                </div>
-              )}
-
-              {importPreview.length > 0 && (
-                <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-                  {importPreview.map(item => (
-                    <div key={item.label} style={{ padding: 10, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
-                      <div style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>{item.label}</div>
-                      <div style={{ marginTop: 4, fontSize: 14, fontWeight: 950, color: '#0f172a' }}>{item.value}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div style={{ marginTop: 16, marginBottom: 18, padding: 12, borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: 12, lineHeight: 1.5, color: '#64748b' }}>
-                Si la date du PDF correspond au mois affiche, l'import remplit directement ce jour. Sinon il remplit le jour actuellement selectionne.
-              </div>
-              <p style={{ display: 'none', fontSize: 14, color: '#475569', lineHeight: 1.6, marginBottom: 24 }}>
-                Pour importer vos donnÃ©es, nous devons dÃ©finir le format exact de votre fichier source. 
-                Veuillez nous indiquer comment vous souhaitez procÃ©der :
-              </p>
-              
-              <div style={{ display: 'none', flexDirection: 'column', gap: 16 }}>
-                <div style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>Option A : Format CSV Standard</h4>
-                  <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-                    Nous pouvons dÃ©finir un template CSV (colonnes spÃ©cifiques) que vous remplirez et importerez ici.
-                  </p>
-                </div>
-                
-                <div style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>Option B : Logiciel SpÃ©cifique</h4>
-                  <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-                    Si vous utilisez un logiciel de caisse ou de gestion (ex: Zelty, Lightspeed, etc.), nous pouvons crÃ©er un importateur sur-mesure pour leur format d'export.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div style={{ padding: '16px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={() => setIsImportModalOpen(false)} style={{ padding: '8px 16px', background: '#1e293b', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
+        <DashboardImportModal
+          isMobile={isMobile}
+          setIsImportModalOpen={setIsImportModalOpen}
+          monthNames={monthNames}
+          dynamicColumns={dynamicColumns}
+          formatImportedIntegerLabel={formatImportedIntegerLabel}
+          formatImportedCurrencyLabel={formatImportedCurrencyLabel}
+          handleDailyRealiseImport={handleDailyRealiseImport}
+          caisseImportPreviews={caisseImportPreviews}
+          updateCaisseImportPreview={updateCaisseImportPreview}
+          applyCaisseImport={applyCaisseImport}
+          handleInvoiceImport={handleInvoiceImport}
+          invoiceImportStatus={invoiceImportStatus}
+          invoiceImportPreviews={invoiceImportPreviews}
+          updateInvoiceImportPreview={updateInvoiceImportPreview}
+          applyInvoiceImport={applyInvoiceImport}
+          handleSalaryPayrollImport={handleSalaryPayrollImport}
+          salaryImportStatus={salaryImportStatus}
+          handleHistoricalBudgetExcelImport={handleHistoricalBudgetExcelImport}
+          historicalBudgetStatus={historicalBudgetStatus}
+          historicalBudgetPreviews={historicalBudgetPreviews}
+          setHistoricalBudgetPreviews={setHistoricalBudgetPreviews}
+          applyHistoricalBudgetExcelImport={applyHistoricalBudgetExcelImport}
+          importStatus={importStatus}
+          importPreview={importPreview}
+        />
       )}
     </div>
   );
