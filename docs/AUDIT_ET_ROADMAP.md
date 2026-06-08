@@ -47,7 +47,6 @@ Ne pas casser ni refondre sans raison ces Ã©lÃ©ments dÃ©jÃ  propres :
 ### Majeur
 
 2. Il reste des `any` Ã  rÃ©duire dans `DashboardAnalysisView.tsx`, `Dashboard.tsx`, `DepensesPetiteCaisse.tsx`, `RemiseTR.tsx`.
-3. `supabaseAuth.ts` utilise encore directement `window.localStorage` au lieu de `browserStorage`.
 
 ### Mineur
 
@@ -58,20 +57,6 @@ Ne pas casser ni refondre sans raison ces Ã©lÃ©ments dÃ©jÃ  propres :
 ## Roadmap active
 
 Les Ã©tapes doivent Ãªtre faites dans cet ordre, une par une, avec modification ciblÃ©e et validation avant de passer Ã  la suivante.
-
-### Ã‰tape 4 â€” Corriger `supabaseAuth.ts` et rÃ©duire les `any`
-
-**Risque** : faible  
-**Objectif** : cohÃ©rence des patterns et typage plus sÃ»r.
-
-Actions :
-
-1. Remplacer les accÃ¨s `window.localStorage` de `supabaseAuth.ts` par les helpers de `src/lib/browserStorage.ts`.
-2. Typer les itÃ©rations de `DepensesPetiteCaisse.tsx` avec `AchatEntry` et `AlimentationEntry`.
-3. Remplacer `Array<any>` dans `DashboardAnalysisView.tsx` par le bon type, probablement `DashboardRow[]`.
-4. Typer `renderBrandTable` et les `.map((row: any, ...))` dans `RemiseTR.tsx`.
-
-Validation : `npm run lint:ts` sans nouvelle erreur.
 
 ### Ã‰tape 5 â€” Migrer les parsings monÃ©taires de `Home.tsx`
 

@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 
 import type { SalarieRow } from '@/contexts/DataContext';
+import type { DashboardRow } from '@/features/dashboard/dashboardTypes';
 import { averagePayrollRate } from '@/personnelSalaryImport';
 import { parseHourInputToDecimal } from '@/utils';
 
 type DashboardAnalysisViewProps = {
-  rows: Array<any>;
+  rows: DashboardRow[];
   calculatedData: Record<string, string>;
   salariesConfig?: Record<string, SalarieRow[]>;
   isMobile: boolean;

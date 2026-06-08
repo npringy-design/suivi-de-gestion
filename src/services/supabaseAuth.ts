@@ -1,3 +1,9 @@
+import {
+  getBrowserStorageItem,
+  removeBrowserStorageItem,
+  setBrowserStorageItem,
+} from '@/lib/browserStorage';
+
 export type SupabaseAuthUser = {
   id: string;
   email?: string;
@@ -120,7 +126,7 @@ const ensureSuiviGestionAccess = async (session: SupabaseAuthSession): Promise<v
 };
 
 export const getStoredAuthSession = (): SupabaseAuthSession | null => {
-  const rawSession = window.localStorage.getItem(authStorageKey);
+  const rawSession = getBrowserStorageItem(authStorageKey);
 
   if (!rawSession) {
     return null;
@@ -129,22 +135,22 @@ export const getStoredAuthSession = (): SupabaseAuthSession | null => {
   try {
     const parsed = JSON.parse(rawSession) as SupabaseAuthSession;
     if (!parsed.access_token || !parsed.refresh_token || !parsed.expires_at) {
-      window.localStorage.removeItem(authStorageKey);
+      removeBrowserStorageItem(authStorageKey);
       return null;
     }
     return parsed;
   } catch {
-    window.localStorage.removeItem(authStorageKey);
+    removeBrowserStorageItem(authStorageKey);
     return null;
   }
 };
 
 export const storeAuthSession = (session: SupabaseAuthSession) => {
-  window.localStorage.setItem(authStorageKey, JSON.stringify(session));
+  setBrowserStorageItem(authStorageKey, JSON.stringify(session));
 };
 
 export const clearStoredAuthSession = () => {
-  window.localStorage.removeItem(authStorageKey);
+  removeBrowserStorageItem(authStorageKey);
 };
 
 export const signInWithPassword = async (email: string, password: string): Promise<SupabaseAuthSession> => {

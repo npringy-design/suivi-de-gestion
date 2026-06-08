@@ -16,6 +16,18 @@ const months = [
 
 const NAV = '#1e293b';
 
+type BrandRow = {
+  valeur: number;
+  nombre: number;
+  total: number;
+};
+
+type BrandData = {
+  rows: BrandRow[];
+  totalNombre: number;
+  totalValeur: number;
+};
+
 export default function RemiseTR({ month, year, onBack }: RemiseTRProps) {
   const { data: globalData } = useData();
 
@@ -68,7 +80,7 @@ export default function RemiseTR({ month, year, onBack }: RemiseTRProps) {
     }).format(num);
   };
 
-  const renderBrandTable = (title: string, data: any, headerBg: string, textColor: string) => (
+  const renderBrandTable = (title: string, data: BrandData, headerBg: string, textColor: string) => (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden min-w-[240px]">
       <div className={`${headerBg} ${textColor} px-4 py-3 font-bold text-center text-sm uppercase tracking-wide border-b border-slate-200`}>
         {title}
@@ -91,7 +103,7 @@ export default function RemiseTR({ month, year, onBack }: RemiseTRProps) {
               {formatTotalValeur(data.totalValeur)}
             </td>
           </tr>
-          {data.rows.map((row: any, idx: number) => (
+          {data.rows.map((row, idx) => (
             <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
               <td className="px-3 py-2 border-r border-slate-100 text-right font-medium text-slate-600">{formatCurrencyFr(row.valeur)}</td>
               <td className="px-3 py-2 border-r border-slate-100 text-right font-medium text-slate-700">{row.nombre}</td>
