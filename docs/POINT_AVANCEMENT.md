@@ -18,30 +18,24 @@ Ce fichier est le point de reprise rapide du projet. Lire ensuite la documentati
 
 Toutes les vagues (1 a 11) sont integrees. `vite.config.ts` contient uniquement `react()` et `tailwindcss()`. Vercel READY sur le commit `7f186ed`. Le codemod ponctuel `dashboardRefactorStaticCodemod.ts` a ete supprime dans l'etape 1 de la nouvelle roadmap.
 
-**Chantier en cours : refactoring structurel post-audit.**
+**Chantier refactoring structurel post-audit : termine cote code.**
 
-Document actif : `docs/AUDIT_ET_ROADMAP.md`.
+Document temporaire `docs/AUDIT_ET_ROADMAP.md` supprime apres completion des etapes.
 
-Important : `docs/ROADMAP_REFACTORING.md` reste l'historique du refactoring deja effectue. La roadmap active a utiliser maintenant est `docs/AUDIT_ET_ROADMAP.md`, issue du nouvel audit du 07/06/2026.
+Important : `docs/ROADMAP_REFACTORING.md` reste l'historique du refactoring deja effectue. La nouvelle roadmap audit du 07/06/2026 est terminee cote code et documentee ci-dessous.
 
 ## Priorite technique actuelle â€” nouvelle roadmap audit
 
-Statut : etape 6 terminee, etape 7 a demarrer.
+Statut : nouvelle roadmap audit terminee cote code.
 
-Document detaille : `docs/AUDIT_ET_ROADMAP.md`.
-
-Etapes restantes dans l'ordre recommande :
-
-1. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
-
-Regle de suivi obligatoire : apres chaque etape terminee, retirer l'etape de `docs/AUDIT_ET_ROADMAP.md`, puis documenter le travail reellement effectue dans ce fichier ou dans une documentation dediee. Ne pas laisser une etape terminee dans la roadmap active.
+Regle appliquee : les etapes terminees ont ete documentees ici, puis `docs/AUDIT_ET_ROADMAP.md` a ete supprime.
 
 Contexte Dashboard important :
 
-- `Dashboard.tsx` a deja ete allege par les extractions des etapes 3 et 4.
-- Il reste une zone sensible : logique metier, calculs, imports PDF/Excel et orchestration.
+- `Dashboard.tsx` a ete allege par les extractions de composants, hooks et helpers d'import.
+- Il reste une zone sensible : logique metier, calculs et orchestration.
 - Ne pas ajouter de nouvelles fonctionnalites directement dans ce fichier sauf necessite metier.
-- Les prochaines extractions doivent rester strictement ciblees et ne pas modifier les formules metier.
+- Toute reprise future doit rester strictement ciblee et ne pas modifier les formules metier sans validation.
 
 Dernieres actions documentaires du 08/06/2026 :
 
@@ -56,7 +50,7 @@ Dernieres actions documentaires du 08/06/2026 :
 
 - Etape 6 terminee : extraction des helpers d'import Excel/PDF de `Dashboard.tsx` vers `src/features/dashboard/importHelpers/` (`historicalBudgetImport.ts`, `payrollImport.ts`, `caisseImport.ts`), sans changement de logique metier.
 
-Prochaine action conseillee : demarrer l'etape 7 de `docs/AUDIT_ET_ROADMAP.md` (`parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`), sans attaquer de sujet hors roadmap.
+- Etape 7 terminee : migration des `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`, ajout d'un test cible sur `parseMoneyValue('1 234,56 €')`, et correction de `parseMoneyValue` pour le symbole euro reel. Verification TypeScript et lint OK. Test Vitest cible non lanceable dans cet environnement : erreur d'acces Windows avant execution du test.
 
 ## Consolidation patches Vite â€” terminee
 
@@ -186,4 +180,5 @@ Contexte metier important sur le personnel :
 - Format global : `Cadre`, `Maitrise`, `NIV I-II`, `NIV III`, `Apprenti`.
 - Format detaille : `Cadre cuisine`, `Cadre salle`, `Maitrise cuisine`, `Maitrise salle`, etc.
 - Si format global : stocker comme personnel non ventile, ne pas inventer de repartition salle/cuisine.
+
 

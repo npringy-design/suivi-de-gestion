@@ -4,6 +4,7 @@ import DashboardAnalysisView from '@/DashboardAnalysisView';
 import { useData } from '@/contexts/DataContext';
 import { averagePayrollRate, buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '@/personnelSalaryImport';
 import { parseRecapPeriodeCaisse } from '@/caisseRecapPeriodeParser';
+import { parseMoneyValue } from '@/lib/money';
 import { parseHourInputToDecimal } from '@/utils';
 
 import { ChevronLeft, Download, Upload, FileDown, Trash2, X, Clipboard } from 'lucide-react';
@@ -497,12 +498,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         });
 
         // Read inputs
-        const cvtsMidi = parseFloat(data[`${rIdx}-6`] || '0');
-        const moyMidi = parseFloat(data[`${rIdx}-7`] || '0');
-        const cvtsSoir = parseFloat(data[`${rIdx}-8`] || '0');
-        const moySoir = parseFloat(data[`${rIdx}-9`] || '0');
-        const cvtsLimo = parseFloat(data[`${rIdx}-14`] || '0');
-        const moyLimo = parseFloat(data[`${rIdx}-15`] || '0');
+        const cvtsMidi = parseMoneyValue(data[`${rIdx}-6`]);
+        const moyMidi = parseMoneyValue(data[`${rIdx}-7`]);
+        const cvtsSoir = parseMoneyValue(data[`${rIdx}-8`]);
+        const moySoir = parseMoneyValue(data[`${rIdx}-9`]);
+        const cvtsLimo = parseMoneyValue(data[`${rIdx}-14`]);
+        const moyLimo = parseMoneyValue(data[`${rIdx}-15`]);
 
         // Calculate CA
         const caMidi = cvtsMidi * moyMidi;
@@ -513,9 +514,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         if (caSoir > 0) data[`${rIdx}-1`] = caSoir.toFixed(2);
         if (caLimo > 0) data[`${rIdx}-2`] = caLimo.toFixed(2);
 
-        const budgetMidi = parseFloat(data[`${rIdx}-0`] || '0');
-        const budgetSoir = parseFloat(data[`${rIdx}-1`] || '0');
-        const budgetLimo = parseFloat(data[`${rIdx}-2`] || '0');
+        const budgetMidi = parseMoneyValue(data[`${rIdx}-0`]);
+        const budgetSoir = parseMoneyValue(data[`${rIdx}-1`]);
+        const budgetLimo = parseMoneyValue(data[`${rIdx}-2`]);
 
         const budgetRestaurantTotal = budgetMidi + budgetSoir;
         if (budgetRestaurantTotal > 0 || data[`${rIdx}-0`] || data[`${rIdx}-1`]) data[`${rIdx}-125`] = budgetRestaurantTotal.toFixed(2);
@@ -545,13 +546,13 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         }
 
         // REALISE CA HT — 17=VAE,18=MIDI,19=SOIR,20=LIMO,21=TOTAL,22=ECART,23=CUMUL
-        const realiseVae  = parseFloat(data[`${rIdx}-17`] || '0');
-        const realiseMidi = parseFloat(data[`${rIdx}-18`] || '0');
-        const realiseSoir = parseFloat(data[`${rIdx}-19`] || '0');
-        const realiseLimoMidiDetail = parseFloat(data[`${rIdx}-110`] || '0');
-        const realiseLimoSoirDetail = parseFloat(data[`${rIdx}-111`] || '0');
+        const realiseVae  = parseMoneyValue(data[`${rIdx}-17`]);
+        const realiseMidi = parseMoneyValue(data[`${rIdx}-18`]);
+        const realiseSoir = parseMoneyValue(data[`${rIdx}-19`]);
+        const realiseLimoMidiDetail = parseMoneyValue(data[`${rIdx}-110`]);
+        const realiseLimoSoirDetail = parseMoneyValue(data[`${rIdx}-111`]);
         const realiseLimoDetailTotal = realiseLimoMidiDetail + realiseLimoSoirDetail;
-        const realiseLimo = realiseLimoDetailTotal > 0 ? realiseLimoDetailTotal : parseFloat(data[`${rIdx}-20`] || '0');
+        const realiseLimo = realiseLimoDetailTotal > 0 ? realiseLimoDetailTotal : parseMoneyValue(data[`${rIdx}-20`]);
         if (realiseLimoDetailTotal > 0) data[`${rIdx}-20`] = realiseLimoDetailTotal.toFixed(2);
         const realiseRestaurantTotal = realiseMidi + realiseSoir;
         if (realiseRestaurantTotal > 0 || data[`${rIdx}-18`] || data[`${rIdx}-19`]) data[`${rIdx}-116`] = realiseRestaurantTotal.toFixed(2);
@@ -565,8 +566,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
         }
         // COUVERTS REALISE — 25=NB MIDI,26=MOY,27=NB SOIR,28=MOY,29=TOTAL,30=CUMUL,31=ECART nb vs budget
-        const nbCvtsMidi = parseFloat(data[`${rIdx}-25`] || '0');
-        const nbCvtsSoir = parseFloat(data[`${rIdx}-27`] || '0');
+        const nbCvtsMidi = parseMoneyValue(data[`${rIdx}-25`]);
+        const nbCvtsSoir = parseMoneyValue(data[`${rIdx}-27`]);
         if (nbCvtsMidi > 0 && realiseMidi > 0) data[`${rIdx}-26`] = (realiseMidi / nbCvtsMidi).toFixed(2);
         if (nbCvtsSoir > 0 && realiseSoir > 0) data[`${rIdx}-28`] = (realiseSoir / nbCvtsSoir).toFixed(2);
         const totalCvtsJour = nbCvtsMidi + nbCvtsSoir;
@@ -576,21 +577,21 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           const moyJour = (realiseMidi + realiseSoir) / totalCvtsJour;
           data[`${rIdx}-30`] = moyJour.toFixed(2);
           
-          const budgetMoyJour = parseFloat(data[`${rIdx}-11`] || '0');
+          const budgetMoyJour = parseMoneyValue(data[`${rIdx}-11`]);
           if (budgetMoyJour > 0) {
             data[`${rIdx}-31`] = (moyJour - budgetMoyJour).toFixed(2);
           }
 
           cumulCvtsRealise += totalCvtsJour;
           data[`${rIdx}-32`] = cumulCvtsRealise.toFixed(0);
-          const budgetCvtsJour = parseFloat(data[`${rIdx}-10`] || '0');
+          const budgetCvtsJour = parseMoneyValue(data[`${rIdx}-10`]);
           if (budgetCvtsJour > 0) data[`${rIdx}-33`] = (totalCvtsJour - budgetCvtsJour).toFixed(0);
         }
         // COUVERTS LIMONADE — detail midi/soir + total historique
-        const nbCvtsLimoMidiDetail = parseFloat(data[`${rIdx}-112`] || '0');
-        const nbCvtsLimoSoirDetail = parseFloat(data[`${rIdx}-114`] || '0');
+        const nbCvtsLimoMidiDetail = parseMoneyValue(data[`${rIdx}-112`]);
+        const nbCvtsLimoSoirDetail = parseMoneyValue(data[`${rIdx}-114`]);
         const nbCvtsLimoDetailTotal = nbCvtsLimoMidiDetail + nbCvtsLimoSoirDetail;
-        const nbCvtsLimo = nbCvtsLimoDetailTotal > 0 ? nbCvtsLimoDetailTotal : parseFloat(data[`${rIdx}-34`] || '0');
+        const nbCvtsLimo = nbCvtsLimoDetailTotal > 0 ? nbCvtsLimoDetailTotal : parseMoneyValue(data[`${rIdx}-34`]);
         if (nbCvtsLimoDetailTotal > 0) data[`${rIdx}-34`] = nbCvtsLimoDetailTotal.toFixed(0);
         if (nbCvtsLimoMidiDetail > 0 && realiseLimoMidiDetail > 0) data[`${rIdx}-113`] = (realiseLimoMidiDetail / nbCvtsLimoMidiDetail).toFixed(2);
         if (nbCvtsLimoSoirDetail > 0 && realiseLimoSoirDetail > 0) data[`${rIdx}-115`] = (realiseLimoSoirDetail / nbCvtsLimoSoirDetail).toFixed(2);
@@ -603,7 +604,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         if (totalCvtsJourComplet > 0) {
           data[`${rIdx}-120`] = totalCvtsJourComplet.toFixed(0);
           data[`${rIdx}-121`] = (cumulCvtsRealise + cumulCvtsLimo).toFixed(0);
-          const budgetCvtsJourComplet = parseFloat(data[`${rIdx}-10`] || '0') + parseFloat(data[`${rIdx}-14`] || '0');
+          const budgetCvtsJourComplet = parseMoneyValue(data[`${rIdx}-10`]) + parseMoneyValue(data[`${rIdx}-14`]);
           if (budgetCvtsJourComplet > 0) {
             const ecartCvtsComplet = totalCvtsJourComplet - budgetCvtsJourComplet;
             data[`${rIdx}-33`] = ecartCvtsComplet.toFixed(0);
@@ -616,7 +617,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let hasCoutMatiereData = false;
         for (let i = 45; i <= 57; i++) {
           if (data[`${rIdx}-${i}`]) {
-            coutMatiereTotalJour += parseFloat(data[`${rIdx}-${i}`] || '0');
+            coutMatiereTotalJour += parseMoneyValue(data[`${rIdx}-${i}`]);
             hasCoutMatiereData = true;
           }
         }
@@ -736,7 +737,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           let hasData = false;
           weekDays.forEach(day => {
             const rawVal = data[`${day.originalIdx}-${cIdx}`] || '';
-            const val = isPayrollInputColumn(cIdx) ? parsePayrollHourForCalculation(rawVal) : parseFloat(rawVal || '0');
+            const val = isPayrollInputColumn(cIdx) ? parsePayrollHourForCalculation(rawVal) : parseMoneyValue(rawVal);
             if (!isNaN(val) && rawVal) {
               colSum += val;
               hasData = true;
@@ -749,31 +750,31 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         });
 
         // Calculate averages for week
-        const caMidiW = parseFloat(data[`${rIdx}-0`] || '0');
-        const cvtsMidiW = parseFloat(data[`${rIdx}-6`] || '0');
+        const caMidiW = parseMoneyValue(data[`${rIdx}-0`]);
+        const cvtsMidiW = parseMoneyValue(data[`${rIdx}-6`]);
         if (cvtsMidiW > 0) data[`${rIdx}-7`] = (caMidiW / cvtsMidiW).toString();
 
-        const caSoirW = parseFloat(data[`${rIdx}-1`] || '0');
-        const cvtsSoirW = parseFloat(data[`${rIdx}-8`] || '0');
+        const caSoirW = parseMoneyValue(data[`${rIdx}-1`]);
+        const cvtsSoirW = parseMoneyValue(data[`${rIdx}-8`]);
         if (cvtsSoirW > 0) data[`${rIdx}-9`] = (caSoirW / cvtsSoirW).toString();
 
         const caJourW = caMidiW + caSoirW;
         const cvtsJourW = cvtsMidiW + cvtsSoirW;
         if (cvtsJourW > 0) data[`${rIdx}-11`] = (caJourW / cvtsJourW).toString();
 
-        const caLimoW = parseFloat(data[`${rIdx}-2`] || '0');
-        const cvtsLimoW = parseFloat(data[`${rIdx}-14`] || '0');
+        const caLimoW = parseMoneyValue(data[`${rIdx}-2`]);
+        const cvtsLimoW = parseMoneyValue(data[`${rIdx}-14`]);
         if (cvtsLimoW > 0) data[`${rIdx}-15`] = (caLimoW / cvtsLimoW).toString();
 
-        const realiseCAW = parseFloat(data[`${rIdx}-21`] || '0');
+        const realiseCAW = parseMoneyValue(data[`${rIdx}-21`]);
         // Moyennes semaine couverts réalisé
-        const nbMidiW = parseFloat(data[`${rIdx}-25`] || '0');
-        const nbSoirW = parseFloat(data[`${rIdx}-27`] || '0');
-        const caMidiWr = parseFloat(data[`${rIdx}-18`] || '0');
-        const caSoirWr = parseFloat(data[`${rIdx}-19`] || '0');
+        const nbMidiW = parseMoneyValue(data[`${rIdx}-25`]);
+        const nbSoirW = parseMoneyValue(data[`${rIdx}-27`]);
+        const caMidiWr = parseMoneyValue(data[`${rIdx}-18`]);
+        const caSoirWr = parseMoneyValue(data[`${rIdx}-19`]);
         if (nbMidiW > 0 && caMidiWr > 0) data[`${rIdx}-26`] = (caMidiWr / nbMidiW).toFixed(2);
         if (nbSoirW > 0 && caSoirWr > 0) data[`${rIdx}-28`] = (caSoirWr / nbSoirW).toFixed(2);
-        const budgetCaW = parseFloat(data[`${rIdx}-3`] || '0');
+        const budgetCaW = parseMoneyValue(data[`${rIdx}-3`]);
         if (budgetCaW > 0 || realiseCAW > 0) {
           const ecartCaBudgetW = realiseCAW - budgetCaW;
           data[`${rIdx}-22`] = ecartCaBudgetW.toFixed(2);
@@ -784,28 +785,28 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           const moyJourRealiseW = (caMidiWr + caSoirWr) / totalCvtsRealiseW;
           data[`${rIdx}-29`] = totalCvtsRealiseW.toFixed(0);
           data[`${rIdx}-30`] = moyJourRealiseW.toFixed(2);
-          const budgetMoyJourW = parseFloat(data[`${rIdx}-11`] || '0');
+          const budgetMoyJourW = parseMoneyValue(data[`${rIdx}-11`]);
           if (budgetMoyJourW > 0) data[`${rIdx}-31`] = (moyJourRealiseW - budgetMoyJourW).toFixed(2);
           const lastWeekDay = weekDays[weekDays.length - 1];
           if (lastWeekDay) data[`${rIdx}-32`] = data[`${lastWeekDay.originalIdx}-32`] || totalCvtsRealiseW.toFixed(0);
-          const budgetCvtsW = parseFloat(data[`${rIdx}-10`] || '0') + parseFloat(data[`${rIdx}-14`] || '0');
-          const ecartCvtsW = parseFloat(data[`${rIdx}-33`] || '0');
+          const budgetCvtsW = parseMoneyValue(data[`${rIdx}-10`]) + parseMoneyValue(data[`${rIdx}-14`]);
+          const ecartCvtsW = parseMoneyValue(data[`${rIdx}-33`]);
           if (budgetCvtsW > 0) data[`${rIdx}-122`] = ((ecartCvtsW / budgetCvtsW) * 100).toFixed(2);
         }
         // Cout matiere semaine
-        const coutMatiereW = parseFloat(data[`${rIdx}-58`] || '0');
+        const coutMatiereW = parseMoneyValue(data[`${rIdx}-58`]);
         if (realiseCAW > 0) data[`${rIdx}-60`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
 
-        const totalHeuresProjW = parseFloat(data[`${rIdx}-61`] || '0');
-        const coutGlobalProjW = parseFloat(data[`${rIdx}-72`] || '0');
+        const totalHeuresProjW = parseMoneyValue(data[`${rIdx}-61`]);
+        const coutGlobalProjW = parseMoneyValue(data[`${rIdx}-72`]);
         if (totalHeuresProjW > 0) data[`${rIdx}-73`] = (realiseCAW / totalHeuresProjW).toFixed(2);
         if (realiseCAW > 0) {
           data[`${rIdx}-74`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
           data[`${rIdx}-75`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        const totalHeuresRealW = parseFloat(data[`${rIdx}-76`] || '0');
-        const coutGlobalRealW = parseFloat(data[`${rIdx}-87`] || '0');
+        const totalHeuresRealW = parseMoneyValue(data[`${rIdx}-76`]);
+        const coutGlobalRealW = parseMoneyValue(data[`${rIdx}-87`]);
         if (totalHeuresRealW > 0) data[`${rIdx}-88`] = (realiseCAW / totalHeuresRealW).toFixed(2);
         if (realiseCAW > 0) {
           data[`${rIdx}-89`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
@@ -835,7 +836,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         let colSum = 0;
         let hasData = false;
         allDays.forEach(day => {
-          const val = parseFloat(data[`${day.originalIdx}-${cIdx}`] || '0');
+          const val = parseMoneyValue(data[`${day.originalIdx}-${cIdx}`]);
           if (!isNaN(val) && data[`${day.originalIdx}-${cIdx}`]) {
             colSum += val;
             hasData = true;
@@ -848,34 +849,34 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       });
 
       // Calculate averages for month
-      const caMidiM = parseFloat(data[`${monthTotalIdx}-0`] || '0');
-      const cvtsMidiM = parseFloat(data[`${monthTotalIdx}-6`] || '0');
+      const caMidiM = parseMoneyValue(data[`${monthTotalIdx}-0`]);
+      const cvtsMidiM = parseMoneyValue(data[`${monthTotalIdx}-6`]);
       if (cvtsMidiM > 0) data[`${monthTotalIdx}-7`] = (caMidiM / cvtsMidiM).toString();
 
-      const caSoirM = parseFloat(data[`${monthTotalIdx}-1`] || '0');
-      const cvtsSoirM = parseFloat(data[`${monthTotalIdx}-8`] || '0');
+      const caSoirM = parseMoneyValue(data[`${monthTotalIdx}-1`]);
+      const cvtsSoirM = parseMoneyValue(data[`${monthTotalIdx}-8`]);
       if (cvtsSoirM > 0) data[`${monthTotalIdx}-9`] = (caSoirM / cvtsSoirM).toString();
 
       const caJourM = caMidiM + caSoirM;
       const cvtsJourM = cvtsMidiM + cvtsSoirM;
       if (cvtsJourM > 0) data[`${monthTotalIdx}-11`] = (caJourM / cvtsJourM).toString();
 
-      const caLimoM = parseFloat(data[`${monthTotalIdx}-2`] || '0');
-      const cvtsLimoM = parseFloat(data[`${monthTotalIdx}-14`] || '0');
+      const caLimoM = parseMoneyValue(data[`${monthTotalIdx}-2`]);
+      const cvtsLimoM = parseMoneyValue(data[`${monthTotalIdx}-14`]);
       if (cvtsLimoM > 0) data[`${monthTotalIdx}-15`] = (caLimoM / cvtsLimoM).toString();
 
-      const coutMatiereM = parseFloat(data[`${monthTotalIdx}-58`] || '0');
-      const realiseCAM = parseFloat(data[`${monthTotalIdx}-21`] || '0');
+      const coutMatiereM = parseMoneyValue(data[`${monthTotalIdx}-58`]);
+      const realiseCAM = parseMoneyValue(data[`${monthTotalIdx}-21`]);
       if (realiseCAM > 0) data[`${monthTotalIdx}-60`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
 
       // Moyennes mois couverts réalisé
-      const nbMidiM = parseFloat(data[`${monthTotalIdx}-25`] || '0');
-      const nbSoirM = parseFloat(data[`${monthTotalIdx}-27`] || '0');
-      const caMidiMr = parseFloat(data[`${monthTotalIdx}-18`] || '0');
-      const caSoirMr = parseFloat(data[`${monthTotalIdx}-19`] || '0');
+      const nbMidiM = parseMoneyValue(data[`${monthTotalIdx}-25`]);
+      const nbSoirM = parseMoneyValue(data[`${monthTotalIdx}-27`]);
+      const caMidiMr = parseMoneyValue(data[`${monthTotalIdx}-18`]);
+      const caSoirMr = parseMoneyValue(data[`${monthTotalIdx}-19`]);
       if (nbMidiM > 0 && caMidiMr > 0) data[`${monthTotalIdx}-26`] = (caMidiMr / nbMidiM).toFixed(2);
       if (nbSoirM > 0 && caSoirMr > 0) data[`${monthTotalIdx}-28`] = (caSoirMr / nbSoirM).toFixed(2);
-      const budgetCaM = parseFloat(data[`${monthTotalIdx}-3`] || '0');
+      const budgetCaM = parseMoneyValue(data[`${monthTotalIdx}-3`]);
       if (budgetCaM > 0 || realiseCAM > 0) {
         const ecartCaBudgetM = realiseCAM - budgetCaM;
         data[`${monthTotalIdx}-22`] = ecartCaBudgetM.toFixed(2);
@@ -887,23 +888,23 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         data[`${monthTotalIdx}-29`] = totalCvtsM.toFixed(0);
         data[`${monthTotalIdx}-30`] = moyJourRealiseM.toFixed(2);
         data[`${monthTotalIdx}-32`] = totalCvtsM.toFixed(0);
-        const budgetMoyJourM = parseFloat(data[`${monthTotalIdx}-11`] || '0');
+        const budgetMoyJourM = parseMoneyValue(data[`${monthTotalIdx}-11`]);
         if (budgetMoyJourM > 0) data[`${monthTotalIdx}-31`] = (moyJourRealiseM - budgetMoyJourM).toFixed(2);
-        const budgetCvtsM = parseFloat(data[`${monthTotalIdx}-10`] || '0') + parseFloat(data[`${monthTotalIdx}-14`] || '0');
-        const ecartCvtsM = parseFloat(data[`${monthTotalIdx}-33`] || '0');
+        const budgetCvtsM = parseMoneyValue(data[`${monthTotalIdx}-10`]) + parseMoneyValue(data[`${monthTotalIdx}-14`]);
+        const ecartCvtsM = parseMoneyValue(data[`${monthTotalIdx}-33`]);
         if (budgetCvtsM > 0) data[`${monthTotalIdx}-122`] = ((ecartCvtsM / budgetCvtsM) * 100).toFixed(2);
       }
 
-      const totalHeuresProjM = parseFloat(data[`${monthTotalIdx}-61`] || '0');
-      const coutGlobalProjM = parseFloat(data[`${monthTotalIdx}-72`] || '0');
+      const totalHeuresProjM = parseMoneyValue(data[`${monthTotalIdx}-61`]);
+      const coutGlobalProjM = parseMoneyValue(data[`${monthTotalIdx}-72`]);
       if (totalHeuresProjM > 0) data[`${monthTotalIdx}-73`] = (realiseCAM / totalHeuresProjM).toFixed(2);
       if (realiseCAM > 0) {
         data[`${monthTotalIdx}-74`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
         data[`${monthTotalIdx}-75`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      const totalHeuresRealM = parseFloat(data[`${monthTotalIdx}-76`] || '0');
-      const coutGlobalRealM = parseFloat(data[`${monthTotalIdx}-87`] || '0');
+      const totalHeuresRealM = parseMoneyValue(data[`${monthTotalIdx}-76`]);
+      const coutGlobalRealM = parseMoneyValue(data[`${monthTotalIdx}-87`]);
       if (totalHeuresRealM > 0) data[`${monthTotalIdx}-88`] = (realiseCAM / totalHeuresRealM).toFixed(2);
       if (realiseCAM > 0) {
         data[`${monthTotalIdx}-89`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
@@ -924,7 +925,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           let boxTotal = 0;
           // Max possible data rows is around 10
           for (let dIdx = 0; dIdx < 10; dIdx++) {
-            const val = parseFloat(data[`fg-data-${box}-${colGroup}-${dIdx}-3`] || '0');
+            const val = parseMoneyValue(data[`fg-data-${box}-${colGroup}-${dIdx}-3`]);
             boxTotal += val;
           }
           data[`fg-total-${box}-${colGroup}`] = boxTotal.toFixed(2).replace('.', ',') + ' €';
@@ -943,7 +944,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const parseDashboardNumber = (value: string | number | undefined) => {
     if (value === undefined || value === null || value === '') return 0;
-    return parseFloat(String(value).replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
+    return parseMoneyValue(value);
   };
 
   const formatKpiCurrency = (value: number) =>
@@ -1000,7 +1001,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     // If the value already contains a percentage sign, return it as is
     if (typeof val === 'string' && val.includes('%')) return val;
 
-    const num = parseFloat(String(val));
+    const num = parseMoneyValue(val);
     if (isNaN(num)) return val;
 
     const groupName = c[0];
@@ -3040,14 +3041,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return rows.filter(r => r.type === 'day').map((r, i) => {
       return {
         name: r.dayIndex?.toString() || '',
-        CA_Realise: parseFloat(calculatedData[`${i}-24`] || '0'),
-        CA_Budget: parseFloat(calculatedData[`${i}-3`] || '0')
+        CA_Realise: parseMoneyValue(calculatedData[`${i}-24`]),
+        CA_Budget: parseMoneyValue(calculatedData[`${i}-3`])
       };
     });
   }, [rows, calculatedData]);
 
   const chartDataFG = useMemo(() => {
-    const fg = (b: number, g: number) => parseFloat((calculatedData[`fg-total-${b}-${g}`] || '0').replace(',', '.').replace(/[^0-9.-]/g, ''));
+    const fg = (b: number, g: number) => parseMoneyValue(calculatedData[`fg-total-${b}-${g}`]);
     
     return [
       { name: 'Entretien', value: fg(0,0) },
@@ -3551,7 +3552,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                     let textColorClass = isMonthTotal ? 'text-amber-900' : 'text-slate-800';
                     const isVarianceCol = c[1].includes('ECART') || c[2].includes('ECART') || [22, 31, 33, 117, 122].includes(originalCIdx);
                     if ((c[2] === 'ECART AU\nBUDGET\nJOUR' || isVarianceCol) && val !== '') {
-                      const numVal = parseFloat(String(val).replace(',', '.'));
+                      const numVal = parseMoneyValue(val);
                       if (numVal > 0) {
                         textColorClass = 'text-emerald-800 font-bold';
                         if (!isHatched && !isTotalRow && !isMonthTotal) cellBg = 'bg-emerald-50';
@@ -3741,28 +3742,28 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                       const mtIdx = rows.findIndex(r => r.type === 'month_total');
                       const CA_BUDGET = 107967;
                       const CA_N1 = 159802;
-                      const fg = (b: number, g: number) => parseFloat((calculatedData[`fg-total-${b}-${g}`] || '0,00 €').replace(',','.').replace(' €',''));
-                      const caR  = parseFloat(calculatedData[`${mtIdx}-24`] || '0');
-                      const cvtsMidi = parseFloat(calculatedData[`${mtIdx}-6`]  || '0');
-                      const cvtsSoir = parseFloat(calculatedData[`${mtIdx}-8`]  || '0');
+                      const fg = (b: number, g: number) => parseMoneyValue(calculatedData[`fg-total-${b}-${g}`]);
+                      const caR  = parseMoneyValue(calculatedData[`${mtIdx}-24`]);
+                      const cvtsMidi = parseMoneyValue(calculatedData[`${mtIdx}-6`]);
+                      const cvtsSoir = parseMoneyValue(calculatedData[`${mtIdx}-8`]);
                       const cvtsResto = cvtsMidi + cvtsSoir;
-                      const cvtsLimo  = parseFloat(calculatedData[`${mtIdx}-14`] || '0');
-                      const caLimo    = parseFloat(calculatedData[`${mtIdx}-2`]  || '0');
+                      const cvtsLimo  = parseMoneyValue(calculatedData[`${mtIdx}-14`]);
+                      const caLimo    = parseMoneyValue(calculatedData[`${mtIdx}-2`]);
                       const wDays = rows.filter(r => r.type === 'day' && !r.isWeekend).length;
-                      const stockInit  = parseFloat(cellData['rm_stock_init']  || '0');
-                      const stockFinal = parseFloat(cellData['rm_stock_final'] || '0');
+                      const stockInit  = parseMoneyValue(cellData['rm_stock_init']);
+                      const stockFinal = parseMoneyValue(cellData['rm_stock_final']);
                       const varStock   = stockFinal - stockInit;
-                      const achatHM    = parseFloat(cellData['rm_achat_hm']    || '0');
-                      const achatTotal = parseFloat(cellData['rm_achat_total'] || '0');
+                      const achatHM    = parseMoneyValue(cellData['rm_achat_hm']);
+                      const achatTotal = parseMoneyValue(cellData['rm_achat_total']);
                       const ratioObj   = 24.50;
                       const consoObj   = caR * (ratioObj / 100);
                       const consoReel  = achatTotal + varStock;
                       const ratioReel  = caR > 0 ? (consoReel / caR) * 100 : 0;
                       const margeReel  = caR - consoReel;
-                      const nbHBudget  = parseFloat(calculatedData[`${mtIdx}-61`] || '0');
-                      const coutProj   = parseFloat(calculatedData[`${mtIdx}-72`] || '0');
-                      const nbHReel    = parseFloat(calculatedData[`${mtIdx}-76`] || '0');
-                      const coutReel   = parseFloat(calculatedData[`${mtIdx}-87`] || '0');
+                      const nbHBudget  = parseMoneyValue(calculatedData[`${mtIdx}-61`]);
+                      const coutProj   = parseMoneyValue(calculatedData[`${mtIdx}-72`]);
+                      const nbHReel    = parseMoneyValue(calculatedData[`${mtIdx}-76`]);
+                      const coutReel   = parseMoneyValue(calculatedData[`${mtIdx}-87`]);
 
                       const f = (n: number, dec = 2) => n.toFixed(dec).replace('.', ',');
                       const eur = (n: number) => f(n) + ' €';
@@ -3842,7 +3843,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                             <DebouncedInput
                               dataRow={rIdx}
                               dataCol={cIdx}
-                              value={focusedCell === rmRow.key ? (cellData[rmRow.key!] || '') : (cellData[rmRow.key!] ? eur(parseFloat(cellData[rmRow.key!])) : '')}
+                              value={focusedCell === rmRow.key ? (cellData[rmRow.key!] || '') : (cellData[rmRow.key!] ? eur(parseMoneyValue(cellData[rmRow.key!])) : '')}
                               onChange={value => updateDashboard(month, rmRow.key!, String(value).replace(/[^0-9.,]/g,'').replace(',','.'))}
                               onFocus={() => setFocusedCell(rmRow.key!)}
                               onBlur={() => setFocusedCell(null)}

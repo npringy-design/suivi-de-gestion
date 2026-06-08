@@ -1,4 +1,4 @@
-export type MoneyInputValue = string | number | null | undefined;
+﻿export type MoneyInputValue = string | number | null | undefined;
 
 export const parseMoneyValue = (value: MoneyInputValue): number => {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
@@ -9,6 +9,7 @@ export const parseMoneyValue = (value: MoneyInputValue): number => {
   const normalizedValue = rawValue
     .replace(/\s/g, '')
     .replace(/€/g, '')
+    .replace(/â‚¬/g, '')
     .replace(',', '.');
 
   const parsedValue = Number(normalizedValue);
@@ -24,3 +25,4 @@ export const formatNullableCurrencyFr = (value: MoneyInputValue, emptyValue = '-
   const parsedValue = parseMoneyValue(value);
   return parsedValue !== 0 ? formatCurrencyFr(parsedValue) : emptyValue;
 };
+

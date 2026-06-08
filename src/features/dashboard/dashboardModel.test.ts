@@ -17,6 +17,7 @@ import {
   parseDashboardNumber,
   parsePercentLikeValue,
 } from './dashboardFormatters';
+import { parseMoneyValue } from '@/lib/money';
 import {
   getDashboardCellVarianceTone,
   isDashboardEventColumn,
@@ -69,6 +70,7 @@ describe('dashboard shared model', () => {
   it('formats and parses dashboard numbers safely', () => {
     expect(parseDashboardNumber('1 234,56')).toBe(1234.56);
     expect(parseDashboardNumber('')).toBe(0);
+    expect(parseMoneyValue('1 234,56 €')).toBe(1234.56);
     expect(formatDashboardNumber(12.3)).toBe('12,30');
     expect(formatDashboardCurrency(12.3)).toBe('12,30 €');
     expect(formatDashboardPercent(12.3)).toBe('12,30%');
