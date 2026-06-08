@@ -10,56 +10,64 @@ Ce fichier est le point de reprise rapide du projet. Lire ensuite la documentati
 - Documenter les changements importants dans `docs/`.
 - Pousser directement les corrections terminees sauf demande contraire.
 - Verifier le build Vercel apres une modification code.
+- Roadmap active : chaque etape terminee doit etre retiree de `docs/AUDIT_ET_ROADMAP.md`, puis documentee ici ou dans un document dedie. Quand toutes les etapes sont terminees et documentees, supprimer `docs/AUDIT_ET_ROADMAP.md`.
 
-## Etat general au 07/06/2026
+## Etat general au 08/06/2026
 
 **Chantier patches Vite : termine.**
 
-Toutes les vagues (1 a 11) sont integrees. `vite.config.ts` contient uniquement `react()` et `tailwindcss()`. Vercel READY sur le commit `7f186ed`. Le dossier `scripts/` ne contient plus que `dashboardRefactorStaticCodemod.ts` (codemod ponctuel deja execute, peut etre supprime).
+Toutes les vagues (1 a 11) sont integrees. `vite.config.ts` contient uniquement `react()` et `tailwindcss()`. Vercel READY sur le commit `7f186ed`. Le dossier `scripts/` ne contient plus que `dashboardRefactorStaticCodemod.ts` (codemod ponctuel deja execute, peut etre supprime dans l'etape 1 de la nouvelle roadmap).
 
-**Chantier en cours : refactoring structurel.**
+**Chantier en cours : refactoring structurel post-audit.**
 
-Document detaille : `docs/ROADMAP_REFACTORING.md`.
+Document actif : `docs/AUDIT_ET_ROADMAP.md`.
 
-## Priorite technique actuelle — refactoring structurel
+Important : `docs/ROADMAP_REFACTORING.md` reste l'historique du refactoring deja effectue. La roadmap active a utiliser maintenant est `docs/AUDIT_ET_ROADMAP.md`, issue du nouvel audit du 07/06/2026.
 
-Statut : etape 6 demarree apres validation de l'etape 5.
+## Priorite technique actuelle — nouvelle roadmap audit
 
-Document detaille : `docs/ROADMAP_REFACTORING.md`.
+Statut : roadmap integree dans la documentation. Aucune etape technique de cette nouvelle roadmap n'a encore ete executee dans ce commit documentaire.
 
-Etapes dans l'ordre recommande :
+Document detaille : `docs/AUDIT_ET_ROADMAP.md`.
 
-1. Supprimer la cle Gemini de `vite.config.ts` (fonctionnalite supprimee, cle encore injectee dans le bundle).
-2. Creer un composant generique `CanalSaisie.tsx` pour remplacer les 8 composants de saisie quasi-identiques (Sunday, Deliveroo, Uber, etc.).
-3. Extraire les fonctions `render*` de `Dashboard.tsx` en composants separes.
-4. Decouper les etats de `Dashboard.tsx` par domaine.
-5. Assainir le `DataContext.tsx` (localStorage directs, fonctions update dupliquees) — **termine**.
-6. Unifier les valeurs monetaires (152 `parseFloat`, stockage en string) — **demarre**.
+Etapes restantes dans l'ordre recommande :
+
+1. Nettoyage repo et annee courante.
+2. Unifier `CurrencyInput`.
+3. Fusionner `HomeWithAdminLink` dans `Home`.
+4. Corriger `supabaseAuth.ts` et reduire les `any`.
+5. Migrer les parsings monetaires de `Home.tsx` vers `parseMoneyValue`.
+6. Extraire les helpers d'import Excel de `Dashboard.tsx`.
+7. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
+
+Regle de suivi obligatoire : apres chaque etape terminee, retirer l'etape de `docs/AUDIT_ET_ROADMAP.md`, puis documenter le travail reellement effectue dans ce fichier ou dans une documentation dediee. Ne pas laisser une etape terminee dans la roadmap active.
 
 Contexte Dashboard important :
 
-- `Dashboard.tsx` a ete allege par les extractions des etapes 3 et 4.
+- `Dashboard.tsx` a deja ete allege par les extractions des etapes 3 et 4.
 - Il reste une zone sensible : logique metier, calculs, imports PDF/Excel et orchestration.
 - Ne pas ajouter de nouvelles fonctionnalites directement dans ce fichier sauf necessite metier.
-- La roadmap detaillee avec les prompts Codex est dans `docs/ROADMAP_REFACTORING.md`.
+- Les prochaines extractions doivent rester strictement ciblees et ne pas modifier les formules metier.
 
-Dernieres actions refactoring du 07/06/2026 :
+Dernieres actions documentaires du 08/06/2026 :
 
-- Creation de `src/lib/browserStorage.ts` pour centraliser les appels navigateur `localStorage`.
-- Migration de `src/features/dashboard/hooks/useDashboardPurchaseSuppliers.ts` vers ce wrapper.
-- Migration de `src/accountingConfig.ts` vers ce wrapper.
-- Creation et branchement de `src/contexts/dataContextUpdateHelpers.ts` pour factoriser les mises a jour quotidiennes et mensuelles simples du `DataContext`.
-- Les acces restants detectes sont volontaires ou a traiter separement : `src/contexts/DataContext.tsx` pour le cache central et `src/services/supabaseAuth.ts` pour la session auth.
-- Etape 5 validee : voir `docs/ETAPE_5_TERMINEE.md`.
-- Etape 6 demarree : voir `docs/ETAPE_6_MONNAIE.md`.
+- Creation de `docs/AUDIT_ET_ROADMAP.md` avec le nouvel audit et la roadmap active.
+- Ajout de la regle : une etape terminee sort de la roadmap et doit etre documentee.
+- Rappel que la roadmap doit etre supprimee une fois toutes les etapes terminees et documentees.
 
-Prochaine action conseillee : continuer progressivement l'etape 6 sur les fichiers avec conversions monetaires locales, sans changer les formules metier.
+Prochaine action conseillee : demarrer l'etape 1 de `docs/AUDIT_ET_ROADMAP.md`, sans attaquer les etapes suivantes dans le meme lot.
 
 ## Consolidation patches Vite — terminee
 
 Document de reference : `docs/ROADMAP_PATCHES_VITE.md`.
 
 Toutes les vagues sont dans l'historique. Aucun patch Vite actif dans `vite.config.ts`.
+
+## Ancienne roadmap refactoring — historique
+
+Document de reference : `docs/ROADMAP_REFACTORING.md`.
+
+Cette roadmap de consolidation a deja servi au chantier precedent : suppression Gemini, factorisation canaux, extractions Dashboard, hooks Dashboard, DataContext, debut unification monnaie. Elle ne doit plus etre utilisee comme roadmap active sauf pour comprendre l'historique.
 
 ## Authentification
 
