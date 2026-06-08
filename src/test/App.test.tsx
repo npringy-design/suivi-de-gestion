@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+﻿import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 
@@ -34,8 +34,8 @@ describe('App flow', () => {
       </DataProvider>,
     );
 
-    expect(await screen.findByRole('heading', { name: /Au Bureau/i })).toBeInTheDocument();
-    const syntheseButton = screen.getByRole('button', { name: /Synthèse CA/i });
+    expect(await screen.findByRole('heading', { name: /Hippopotamus/i })).toBeInTheDocument();
+    const syntheseButton = screen.getByRole('button', { name: /Synth.se CA/i });
     fireEvent.click(syntheseButton);
     expect(screen.getByTestId('location')).toHaveTextContent('/synthese');
   }, 15000);

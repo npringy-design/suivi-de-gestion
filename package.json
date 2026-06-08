@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint:ts": "tsc --noEmit",
-    "lint:eslint": "eslint . --ext .ts,.tsx",
+    "lint:eslint": "eslint . --ext .ts,.tsx --quiet",
     "lint": "npm run lint:ts && npm run lint:eslint",
     "test": "vitest",
     "test:ui": "vitest --ui",
