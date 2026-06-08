@@ -56,6 +56,7 @@ Dernieres actions documentaires du 08/06/2026 :
 
 - Etape 7 terminee : migration des `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`, ajout d'un test cible sur `parseMoneyValue('1 234,56 €')`, et correction de `parseMoneyValue` pour le symbole euro reel. Verification TypeScript et lint OK. Test Vitest cible non lanceable dans cet environnement : erreur d'acces Windows avant execution du test.
 - Etape 8A terminee : creation de `src/features/dashboard/dashboardCalculations.ts` et extraction des helpers purs de date, paie, KPI, layout frais generaux et formatage de cellule depuis `Dashboard.tsx`. Verification TypeScript OK et lint complet OK. Build Vite non lanceable dans cet environnement : erreur d'acces Windows avant compilation de `vite.config.ts`. Commit non effectue : `git` indisponible dans l'environnement.
+- Etape 8B terminee : creation de `src/features/dashboard/hooks/useDashboardImportHandlers.ts` et extraction des handlers d'import budget historique, caisse, factures et salaires depuis `Dashboard.tsx`, sans modification volontaire de logique metier. `Dashboard.tsx` descend a 2991 lignes. Verification TypeScript OK et lint cible OK. Build Vite toujours non lanceable dans cet environnement : erreur d'acces Windows avant compilation de `vite.config.ts`.
 
 ## Consolidation patches Vite â€” terminee
 
