@@ -2,17 +2,6 @@ import React from 'react';
 import { ChevronLeft, Clipboard, Download, FileDown, Trash2, Upload } from 'lucide-react';
 
 import { tabs, viewModes } from '@/features/dashboard/dashboardStaticConfig';
-import { formatKpiCurrency, formatKpiNumber } from '@/features/dashboard/dashboardCalculations';
-
-export type SummaryKpis = {
-  budgetCa: number;
-  realiseCa: number;
-  ecartCa: number;
-  couverts: number;
-  ticketMoyen: number;
-  coutMatiere: number;
-  fraisPersonnel: number;
-};
 
 export type DashboardHeaderProps = {
   isMobile: boolean;
@@ -33,7 +22,6 @@ export type DashboardHeaderProps = {
   setIsDatePickerOpen: React.Dispatch<React.SetStateAction<boolean>>;
   datePickerRef: React.RefObject<HTMLDivElement>;
   renderDatePicker: () => React.ReactNode;
-  summaryKpis: SummaryKpis;
   setIsImportModalOpen: (open: boolean) => void;
   openDailyRecapPreview: () => void;
   dailyRecapStatus: string;
@@ -61,7 +49,6 @@ export default function DashboardHeader({
   setIsDatePickerOpen,
   datePickerRef,
   renderDatePicker,
-  summaryKpis,
   setIsImportModalOpen,
   openDailyRecapPreview,
   dailyRecapStatus,
@@ -131,42 +118,6 @@ export default function DashboardHeader({
           )}
         </div>
       </div>
-
-      {false && tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && (
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(7, minmax(116px, 1fr))', gap: 8, padding: isMobile ? '0 0 12px' : '0 0 12px', overflowX: isMobile ? 'visible' : 'auto' }}>
-          {[
-            { label: 'CA budget', value: formatKpiCurrency(summaryKpis.budgetCa), color: '#64748b', icon: '€' },
-            { label: 'CA réalisé', value: formatKpiCurrency(summaryKpis.realiseCa), color: '#2563eb', icon: 'CA' },
-            { label: 'Écart CA', value: formatKpiCurrency(summaryKpis.ecartCa), color: summaryKpis.ecartCa >= 0 ? '#059669' : '#dc2626', icon: summaryKpis.ecartCa >= 0 ? '+' : '-' },
-            { label: 'Couverts', value: formatKpiNumber(summaryKpis.couverts), color: '#7c3aed', icon: 'CV' },
-            { label: 'Ticket moyen', value: formatKpiCurrency(summaryKpis.ticketMoyen), color: '#d97706', icon: 'TM' },
-            { label: 'Coût matière', value: formatKpiCurrency(summaryKpis.coutMatiere), color: '#16a34a', icon: 'CM' },
-            { label: 'Frais personnel', value: formatKpiCurrency(summaryKpis.fraisPersonnel), color: '#9333ea', icon: 'SC' },
-          ].map(kpi => (
-            <div
-              key={kpi.label}
-              style={{
-                minWidth: 0,
-                border: '1px solid #e2e8f0',
-                background: '#f8fafc',
-                borderRadius: 10,
-                padding: isMobile ? '8px 10px' : '9px 11px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 9,
-              }}
-            >
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: `${kpi.color}14`, color: kpi.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>
-                {kpi.icon}
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.label}</div>
-                <div style={{ fontSize: isMobile ? 13 : 14, color: '#0f172a', fontWeight: 900, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.value}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Section Tabs */}
       <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: isMobile ? '0 0 12px' : '0 0 14px', display: 'flex', gap: 8, background: 'transparent', borderBottom: 'none', alignItems: 'center', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>

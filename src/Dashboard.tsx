@@ -35,7 +35,6 @@ import {
   isDateInRange,
   isExactDate,
   isPayrollInputColumn,
-  parseDashboardNumber,
   parsePayrollHourForCalculation,
 } from '@/features/dashboard/dashboardCalculations';
 import {
@@ -843,35 +842,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return data;
   }, [cellData, globalData[month]?.salariesConfig]);
 
-  const summaryKpis = useMemo(() => {
-    const monthTotalIdx = rows.findIndex(r => r.type === 'month_total');
-    if (monthTotalIdx === -1) {
-      return {
-        budgetCa: 0,
-        realiseCa: 0,
-        ecartCa: 0,
-        couverts: 0,
-        ticketMoyen: 0,
-        coutMatiere: 0,
-        fraisPersonnel: 0,
-      };
-    }
-
-    const budgetCa = parseDashboardNumber(calculatedData[`${monthTotalIdx}-3`]);
-    const realiseCa = parseDashboardNumber(calculatedData[`${monthTotalIdx}-21`]);
-    const ecartCa = realiseCa - budgetCa;
-
-    return {
-      budgetCa,
-      realiseCa,
-      ecartCa,
-      couverts: parseDashboardNumber(calculatedData[`${monthTotalIdx}-29`]),
-      ticketMoyen: parseDashboardNumber(calculatedData[`${monthTotalIdx}-30`]),
-      coutMatiere: parseDashboardNumber(calculatedData[`${monthTotalIdx}-58`]),
-      fraisPersonnel: parseDashboardNumber(calculatedData[`${monthTotalIdx}-87`]),
-    };
-  }, [calculatedData, rows]);
-
   const todayMarker = useMemo(() => {
     const now = new Date();
     return {
@@ -1549,7 +1519,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           setIsDatePickerOpen={setIsDatePickerOpen}
           datePickerRef={datePickerRef}
           renderDatePicker={renderDatePicker}
-          summaryKpis={summaryKpis}
           setIsImportModalOpen={setIsImportModalOpen}
           openDailyRecapPreview={openDailyRecapPreview}
           dailyRecapStatus={dailyRecapStatus}
