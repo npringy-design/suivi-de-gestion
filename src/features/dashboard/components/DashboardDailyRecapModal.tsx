@@ -4,7 +4,7 @@ import { Clipboard, X } from 'lucide-react';
 export type DashboardDailyRecapModalProps = {
   isMobile: boolean;
   setIsDailyRecapModalOpen: (open: boolean) => void;
-  recapPreviewRef: React.RefObject<HTMLDivElement>;
+  recapPreviewRef: React.RefObject<HTMLDivElement | null>;
   dailyRecapManagers: { midi: string; soir: string };
   setDailyRecapManagers: React.Dispatch<React.SetStateAction<{ midi: string; soir: string }>>;
   dailyRecapServiceComments: { midi: string; soir: string };

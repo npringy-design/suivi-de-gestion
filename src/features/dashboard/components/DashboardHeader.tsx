@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronLeft, Clipboard, Download, FileDown, Trash2, Upload } from 'lucide-react';
 
-import { tabs, viewModes } from '@/features/dashboard/dashboardStaticConfig';
+import { tabs, viewModes, type TableViewMode } from '@/features/dashboard/dashboardStaticConfig';
 
 export type DashboardHeaderProps = {
   isMobile: boolean;
@@ -10,8 +10,8 @@ export type DashboardHeaderProps = {
   weatherTheme: string;
   weatherThemeHover: string;
   actionTileStyle: React.CSSProperties;
-  tableViewMode: string;
-  setTableViewMode: (mode: string) => void;
+  tableViewMode: TableViewMode;
+  setTableViewMode: React.Dispatch<React.SetStateAction<TableViewMode>>;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   monthNames: string[];
@@ -20,7 +20,7 @@ export type DashboardHeaderProps = {
   selectedDayLabel: string;
   isDatePickerOpen: boolean;
   setIsDatePickerOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  datePickerRef: React.RefObject<HTMLDivElement>;
+  datePickerRef: React.RefObject<HTMLDivElement | null>;
   renderDatePicker: () => React.ReactNode;
   setIsImportModalOpen: (open: boolean) => void;
   openDailyRecapPreview: () => void;
