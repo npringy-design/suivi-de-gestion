@@ -298,7 +298,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [allData, setAllData] = useState<Record<number, Record<number, MonthData>>>(loadFromStorage);
-  const [selectedYear, setSelectedYear] = useState(2026);
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [config2025, setConfig2025] = useState<Config2025Data>(() => loadJson(CONFIG_2025_STORAGE_KEY, { mensuel: {}, hebdo: {} }));
   const [customEvents, setCustomEvents] = useState<CustomEvent[]>(() => loadJson(CUSTOM_EVENTS_STORAGE_KEY, []));

@@ -1,10 +1,10 @@
 # Suivi de Gestion
 
-Application React + TypeScript pour le suivi financier et opérationnel d'un restaurant.
+Application React + TypeScript pour le suivi financier et operationnel du restaurant Hippopotamus Thillois.
 
 ## Objectif
 
-Ce projet fournit un tableau de bord métier pour suivre les ventes, les budgets, les salaires, les dépenses et les indicateurs de performance.
+Ce projet fournit un tableau de bord metier pour suivre les ventes, les budgets, les salaires, les depenses, les imports caisse/factures et les indicateurs de performance.
 
 ## Point de reprise
 
@@ -12,26 +12,35 @@ Avant toute modification, lire d'abord :
 
 - `docs/POINT_AVANCEMENT.md`
 
-Ce document indique ce qui est validé, provisoire ou en cours. Il sert de fil conducteur pour reprendre le projet sans casser une partie validée.
+Ce document indique ce qui est valide, provisoire ou en cours. Il sert de fil conducteur pour reprendre le projet sans casser une partie validee.
 
 ## Structure du projet
 
-- `src/main.tsx` : point d'entrée React.
-- `src/App.tsx` : enveloppe applicative globale (`DataProvider`, `RouterProvider`, fallback de chargement).
-- `src/router.tsx` : configuration des routes React Router v7 et chargement paresseux des pages.
-- `src/contexts/DataContext.tsx` : état global de l'application et persistance locale temporaire.
-- `src/types.ts` : définition des types métier.
-- `src/utils.ts` : fonctions utilitaires partagées.
-- `src/test/` : tests unitaires et d'intégration.
+- `src/main.tsx` : point d'entree React.
+- `src/App.tsx` : enveloppe applicative globale.
+- `src/router.tsx` : routes React Router v7.
+- `src/contexts/DataContext.tsx` : etat global de l'application, cache local et sauvegarde.
+- `src/services/supabaseAppState.ts` : sauvegarde centrale Supabase.
+- `src/services/supabaseAuth.ts` : authentification et verification des acces Suivi.
+- `src/types.ts` : types metier.
+- `src/utils.ts` : fonctions utilitaires partagees.
+- `src/test/` : tests unitaires et d'integration.
 
-## Documentation métier
+## Variables d'environnement
 
-- `docs/POINT_AVANCEMENT.md` : état d'avancement global et ordre de reprise.
-- `docs/IMPORT_CAISSE.md` : règles de fonctionnement pour l'import des feuilles de caisse.
-- `docs/IMPORT_FACTURES.md` : règles de fonctionnement pour l'import léger des factures fournisseurs.
-- `docs/RECAP_MAIL_JOUR.md` : règles du récap mail journalier validé.
-- `docs/RAZ_LOCALE_PROVISOIRE.md` : bouton temporaire de remise à zéro locale pendant les tests.
-- `docs/HEURES_PERSONNEL.md` : saisie des heures, référentiel personnel et import PDF salaires.
+Variables navigateur actives :
+
+```bash
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+VITE_SITE_ID=hippo_thillois
+```
+
+`VITE_SITE_ID` est optionnel et vaut `hippo_thillois` par defaut.
+
+Sans `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`, l'application reste utilisable avec le cache local, mais affiche une alerte de sauvegarde Supabase non configuree.
+
+Il n'y a pas de cle Gemini/AI Studio injectee cote navigateur.
 
 ## Installation
 
@@ -51,36 +60,33 @@ npm run test
 npm run test:coverage
 ```
 
-## Qualité
+## Qualite
 
-- `npm run lint:ts` : vérifie le typage TypeScript.
-- `npm run lint:eslint` : vérifie les règles de code React/TypeScript.
-- `npm run build` : vérifie le build de production.
-- `npm run test -- --run` : exécute les tests en mode non interactif.
-
-Avant livraison d'un changement code, vérifier au minimum :
-
-```bash
-npm.cmd run lint:ts
-npm.cmd run build
-```
+- `npm run lint:ts` : verifie le typage TypeScript.
+- `npm run lint:eslint` : verifie les erreurs ESLint React/TypeScript.
+- `npm run build` : verifie le build de production.
+- `npm run test -- --run` : execute les tests en mode non interactif.
 
 ## CI
 
-Le workflow GitHub Actions exécute automatiquement :
+Le workflow GitHub Actions execute automatiquement :
 
 - `npm ci`
 - `npm run lint`
 - `npm run build`
 - `npm run test -- --run`
 
+## Documentation
+
+- `docs/POINT_AVANCEMENT.md` : etat d'avancement global et ordre de reprise.
+- `docs/AUDIT_ET_ROADMAP.md` : roadmap active du refactoring post-audit.
+- `docs/ROADMAP_REFACTORING.md` : historique de l'ancienne roadmap de consolidation.
+- `docs/SUPABASE_SYNC.md` : sauvegarde Supabase.
+- `docs/AUTHENTIFICATION.md` : authentification et gestion utilisateurs.
+
 ## Notes de reprise
 
-- Le récap mail journalier est validé : ne pas modifier sa mise en forme sans nouvelle demande.
-- La RAZ locale est provisoire et sert uniquement pendant la phase de création/test.
-- La persistance est volontairement locale pour le moment.
-- La suite active du travail est la partie personnel, salaires, heures et coût horaire.
-
-## Architecture
-
-Voir `ARCHITECTURE.md` pour une description détaillée de l'architecture, du flux de données et des optimisations.
+- Supabase est la sauvegarde centrale ; le localStorage reste un cache technique.
+- Le recap mail journalier est valide : ne pas modifier sa mise en forme sans nouvelle demande.
+- La RAZ locale est provisoire et sert uniquement pendant la phase de creation/test.
+- La roadmap active est `docs/AUDIT_ET_ROADMAP.md`.

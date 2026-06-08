@@ -43,16 +43,13 @@ Ne pas casser ni refondre sans raison ces éléments déjà propres :
 
 1. `Dashboard.tsx` reste trop gros et dangereux : calculs financiers avec nombreux `parseFloat`, fonctions imbriquées longues, gros `useMemo`, helpers d'import Excel mélangés au JSX.
 2. `Home.tsx` duplique trois parsings monétaires locaux au lieu d'utiliser `parseMoneyValue`.
-3. `selectedYear` est figé à `2026` dans `DataContext.tsx`.
-4. `AncvPapiers.tsx` et `BilanSynthese.tsx` réimplémentent localement `CurrencyInput`.
+3. `AncvPapiers.tsx` et `BilanSynthese.tsx` réimplémentent localement `CurrencyInput`.
 
 ### Majeur
 
-1. `better-sqlite3`, `express`, `dotenv` sont en `dependencies` alors qu'ils ne sont pas importés depuis `src/`.
-2. `scripts/dashboardRefactorStaticCodemod.ts` est du code mort.
-3. `HomeWithAdminLink.tsx` est un wrapper devenu inutile autour de `Home`.
-4. Il reste des `any` à réduire dans `DashboardAnalysisView.tsx`, `Dashboard.tsx`, `DepensesPetiteCaisse.tsx`, `RemiseTR.tsx`.
-5. `supabaseAuth.ts` utilise encore directement `window.localStorage` au lieu de `browserStorage`.
+1. `HomeWithAdminLink.tsx` est un wrapper devenu inutile autour de `Home`.
+2. Il reste des `any` à réduire dans `DashboardAnalysisView.tsx`, `Dashboard.tsx`, `DepensesPetiteCaisse.tsx`, `RemiseTR.tsx`.
+3. `supabaseAuth.ts` utilise encore directement `window.localStorage` au lieu de `browserStorage`.
 
 ### Mineur
 
@@ -63,20 +60,6 @@ Ne pas casser ni refondre sans raison ces éléments déjà propres :
 ## Roadmap active
 
 Les étapes doivent être faites dans cet ordre, une par une, avec modification ciblée et validation avant de passer à la suivante.
-
-### Étape 1 — Nettoyage repo et année courante
-
-**Risque** : nul  
-**Objectif** : supprimer le code mort et corriger les métadonnées.
-
-Actions :
-
-1. Supprimer `scripts/dashboardRefactorStaticCodemod.ts` et le dossier `scripts/` si vide.
-2. Déplacer `better-sqlite3`, `express`, `dotenv` de `dependencies` vers `devDependencies`, ou les supprimer s'ils ne sont utilisés par aucun script npm.
-3. Vérifier et compléter `README.md` : app réelle, pas de référence AI Studio/Gemini client-side, variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SITE_ID`.
-4. Corriger `selectedYear` initial dans `DataContext.tsx` : `useState(() => new Date().getFullYear())`.
-
-Validation : `npm install`, `npm run lint:ts`, `npm run build`, Vercel READY.
 
 ### Étape 2 — Unifier `CurrencyInput`
 

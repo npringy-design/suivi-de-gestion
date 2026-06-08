@@ -16,7 +16,7 @@ Ce fichier est le point de reprise rapide du projet. Lire ensuite la documentati
 
 **Chantier patches Vite : termine.**
 
-Toutes les vagues (1 a 11) sont integrees. `vite.config.ts` contient uniquement `react()` et `tailwindcss()`. Vercel READY sur le commit `7f186ed`. Le dossier `scripts/` ne contient plus que `dashboardRefactorStaticCodemod.ts` (codemod ponctuel deja execute, peut etre supprime dans l'etape 1 de la nouvelle roadmap).
+Toutes les vagues (1 a 11) sont integrees. `vite.config.ts` contient uniquement `react()` et `tailwindcss()`. Vercel READY sur le commit `7f186ed`. Le codemod ponctuel `dashboardRefactorStaticCodemod.ts` a ete supprime dans l'etape 1 de la nouvelle roadmap.
 
 **Chantier en cours : refactoring structurel post-audit.**
 
@@ -26,19 +26,18 @@ Important : `docs/ROADMAP_REFACTORING.md` reste l'historique du refactoring deja
 
 ## Priorite technique actuelle — nouvelle roadmap audit
 
-Statut : roadmap integree dans la documentation. Aucune etape technique de cette nouvelle roadmap n'a encore ete executee dans ce commit documentaire.
+Statut : etape 1 terminee, etape 2 a demarrer.
 
 Document detaille : `docs/AUDIT_ET_ROADMAP.md`.
 
 Etapes restantes dans l'ordre recommande :
 
-1. Nettoyage repo et annee courante.
-2. Unifier `CurrencyInput`.
-3. Fusionner `HomeWithAdminLink` dans `Home`.
-4. Corriger `supabaseAuth.ts` et reduire les `any`.
-5. Migrer les parsings monetaires de `Home.tsx` vers `parseMoneyValue`.
-6. Extraire les helpers d'import Excel de `Dashboard.tsx`.
-7. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
+1. Unifier `CurrencyInput`.
+2. Fusionner `HomeWithAdminLink` dans `Home`.
+3. Corriger `supabaseAuth.ts` et reduire les `any`.
+4. Migrer les parsings monetaires de `Home.tsx` vers `parseMoneyValue`.
+5. Extraire les helpers d'import Excel de `Dashboard.tsx`.
+6. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
 
 Regle de suivi obligatoire : apres chaque etape terminee, retirer l'etape de `docs/AUDIT_ET_ROADMAP.md`, puis documenter le travail reellement effectue dans ce fichier ou dans une documentation dediee. Ne pas laisser une etape terminee dans la roadmap active.
 
@@ -54,8 +53,9 @@ Dernieres actions documentaires du 08/06/2026 :
 - Creation de `docs/AUDIT_ET_ROADMAP.md` avec le nouvel audit et la roadmap active.
 - Ajout de la regle : une etape terminee sort de la roadmap et doit etre documentee.
 - Rappel que la roadmap doit etre supprimee une fois toutes les etapes terminees et documentees.
+- Etape 1 terminee : suppression du codemod Dashboard et de son workflow GitHub, retrait de `dotenv`, README aligne avec Supabase, `selectedYear` initialise sur l'annee courante.
 
-Prochaine action conseillee : demarrer l'etape 1 de `docs/AUDIT_ET_ROADMAP.md`, sans attaquer les etapes suivantes dans le meme lot.
+Prochaine action conseillee : demarrer l'etape 2 de `docs/AUDIT_ET_ROADMAP.md` (`CurrencyInput` partage), sans attaquer les etapes suivantes dans le meme lot.
 
 ## Consolidation patches Vite — terminee
 
