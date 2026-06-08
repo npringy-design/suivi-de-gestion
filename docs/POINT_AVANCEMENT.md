@@ -26,15 +26,14 @@ Important : `docs/ROADMAP_REFACTORING.md` reste l'historique du refactoring deja
 
 ## Priorite technique actuelle â€” nouvelle roadmap audit
 
-Statut : etape 4 terminee, etape 5 a demarrer.
+Statut : etape 5 terminee, etape 6 a demarrer.
 
 Document detaille : `docs/AUDIT_ET_ROADMAP.md`.
 
 Etapes restantes dans l'ordre recommande :
 
-1. Migrer les parsings monetaires de `Home.tsx` vers `parseMoneyValue`.
-2. Extraire les helpers d'import Excel de `Dashboard.tsx`.
-3. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
+1. Extraire les helpers d'import Excel de `Dashboard.tsx`.
+2. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
 
 Regle de suivi obligatoire : apres chaque etape terminee, retirer l'etape de `docs/AUDIT_ET_ROADMAP.md`, puis documenter le travail reellement effectue dans ce fichier ou dans une documentation dediee. Ne pas laisser une etape terminee dans la roadmap active.
 
@@ -54,8 +53,9 @@ Dernieres actions documentaires du 08/06/2026 :
 - Etape 2 terminee : creation de `src/components/CurrencyInput.tsx`, remplacement des copies locales dans `CanalSaisie`, `AncvPapiers` et `BilanSynthese`, avec conservation des variantes visuelles existantes.
 - Etape 3 terminee : fusion de `HomeWithAdminLink` dans `Home`, route racine pointee directement vers `Home`, suppression du wrapper.
 - Etape 4 terminee : `supabaseAuth.ts` utilise `browserStorage`, typage cible dans `DepensesPetiteCaisse`, `DashboardAnalysisView` et `RemiseTR`, suppression des `any` listes dans la roadmap.
+- Etape 5 terminee : migration des parsings monetaires de `Home.tsx` vers `parseMoneyValue`, suppression de la fonction locale `n()` et des parsings locaux dupliques.
 
-Prochaine action conseillee : demarrer l'etape 5 de `docs/AUDIT_ET_ROADMAP.md` (parsings monetaires de `Home.tsx` vers `parseMoneyValue`), sans attaquer les etapes suivantes dans le meme lot.
+Prochaine action conseillee : demarrer l'etape 6 de `docs/AUDIT_ET_ROADMAP.md` (extraction ciblee des helpers d'import Excel de `Dashboard.tsx`), sans attaquer les etapes suivantes dans le meme lot.
 
 ## Consolidation patches Vite â€” terminee
 

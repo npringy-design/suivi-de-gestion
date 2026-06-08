@@ -42,11 +42,10 @@ Ne pas casser ni refondre sans raison ces Ã©lÃ©ments dÃ©jÃ  propres :
 ### Critique
 
 1. `Dashboard.tsx` reste trop gros et dangereux : calculs financiers avec nombreux `parseFloat`, fonctions imbriquÃ©es longues, gros `useMemo`, helpers d'import Excel mÃ©langÃ©s au JSX.
-2. `Home.tsx` duplique trois parsings monÃ©taires locaux au lieu d'utiliser `parseMoneyValue`.
 
 ### Majeur
 
-2. Il reste des `any` Ã  rÃ©duire dans `DashboardAnalysisView.tsx`, `Dashboard.tsx`, `DepensesPetiteCaisse.tsx`, `RemiseTR.tsx`.
+2. Il reste des `any` Ã  rÃ©duire dans `Dashboard.tsx`.
 
 ### Mineur
 
@@ -57,20 +56,6 @@ Ne pas casser ni refondre sans raison ces Ã©lÃ©ments dÃ©jÃ  propres :
 ## Roadmap active
 
 Les Ã©tapes doivent Ãªtre faites dans cet ordre, une par une, avec modification ciblÃ©e et validation avant de passer Ã  la suivante.
-
-### Ã‰tape 5 â€” Migrer les parsings monÃ©taires de `Home.tsx`
-
-**Risque** : moyen  
-**Objectif** : utiliser une seule fonction de parsing monÃ©taire.
-
-Actions :
-
-1. Supprimer les trois lambdas locales de parsing monÃ©taire dans `Home.tsx`.
-2. Remplacer par `parseMoneyValue` importÃ© depuis `@/lib/money`.
-3. Supprimer la fonction locale `n()` si elle duplique `parseMoneyValue`.
-4. Comparer les KPI avant/aprÃ¨s sur un mois avec donnÃ©es rÃ©elles.
-
-Validation : KPI Home identiques avant/aprÃ¨s.
 
 ### Ã‰tape 6 â€” Extraire les helpers d'import Excel de `Dashboard.tsx`
 

@@ -35,6 +35,7 @@ import {
 } from 'recharts';
 
 import { useData } from '@/contexts/DataContext';
+import { parseMoneyValue } from '@/lib/money';
 import { getValidAccessToken } from '@/services/supabaseAuth';
 import { getDashboardRowIndices } from './utils';
 
@@ -132,11 +133,6 @@ export function SummaryCard({ label, value, description, icon: Icon, accentClass
     </div>
   );
 }
-
-const n = (v?: string | number) => {
-  if (typeof v === 'number') return v;
-  return parseFloat((v || '0').toString().replace(',', '.')) || 0;
-};
 
 const fe = (v: number) =>
   new Intl.NumberFormat('fr-FR', {
@@ -544,10 +540,7 @@ export default function Home() {
   const kpis = useMemo(() => {
     const monthData = data?.[month];
     const dashboard = monthData?.dashboard || {};
-    const parseDashboardValue = (value: unknown) => {
-      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-      return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
-    };
+    const parseDashboardValue = parseMoneyValue;
     const dashboardValue = (rowIndex: number, colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const now = new Date();
@@ -643,10 +636,7 @@ export default function Home() {
     const isSelectedCurrentMonth = now.getFullYear() === year && now.getMonth() === month;
     const referenceDay = isSelectedCurrentMonth ? Math.min(now.getDate(), daysInMonth) : daysInMonth;
 
-    const parseValue = (value: unknown) => {
-      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-      return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
-    };
+    const parseValue = parseMoneyValue;
 
     const dayStats = (day: number) => {
       const rowIndex = dashboardRowIndices[day];
@@ -721,10 +711,7 @@ export default function Home() {
   const chartDataCA = useMemo(() => {
     const monthData = data?.[month];
     const dashboard = monthData?.dashboard || {};
-    const parseDashboardValue = (value: unknown) => {
-      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-      return parseFloat(String(value || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
-    };
+    const parseDashboardValue = parseMoneyValue;
     const dashboardValue = (rowIndex: number, colIndex: number) => parseDashboardValue(dashboard[String(rowIndex) + '-' + String(colIndex)]);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const rows = [];
@@ -752,12 +739,12 @@ export default function Home() {
     if (!row) return [];
 
     return [
-      { name: 'Salaires', value: n(row?.Frais_de_Personnel) },
-      { name: 'Fournitures', value: n(row?.Total_Fournitures) },
-      { name: 'Loyer', value: n(row?.Loyer_et_Charges) },
-      { name: 'Énergie', value: n(row?.Frais_Energie) },
-      { name: 'Assurances', value: n(row?.Assurances) },
-      { name: 'Autres', value: n(row?.Autres_FG) },
+      { name: 'Salaires', value: parseMoneyValue(row?.Frais_de_Personnel) },
+      { name: 'Fournitures', value: parseMoneyValue(row?.Total_Fournitures) },
+      { name: 'Loyer', value: parseMoneyValue(row?.Loyer_et_Charges) },
+      { name: 'Énergie', value: parseMoneyValue(row?.Frais_Energie) },
+      { name: 'Assurances', value: parseMoneyValue(row?.Assurances) },
+      { name: 'Autres', value: parseMoneyValue(row?.Autres_FG) },
     ].filter(item => item.value > 0);
   }, [data, moisIndex]);
 
