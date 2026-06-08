@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import DashboardAnalysisView from '@/DashboardAnalysisView';
 
-import { useData } from '@/contexts/DataContext';
+import { useData, type SalarieRow } from '@/contexts/DataContext';
 import { averagePayrollRate } from '@/personnelSalaryImport';
 import { parseMoneyValue } from '@/lib/money';
 
@@ -212,8 +212,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         const rows = salariesConfig[category] || [];
         const avg = averagePayrollRate(rows, department, category);
         const names = rows
-          .filter((row: any) => !department || !row.department || row.department === department)
-          .map((row: any) => String(row.nom || '').trim())
+          .filter((row: SalarieRow) => !department || !row.department || row.department === department)
+          .map((row: SalarieRow) => String(row.nom || '').trim())
           .filter(Boolean);
         const namesStr = '';
         const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
@@ -1859,7 +1859,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                               }}
                               onFocus={() => setFocusedCell(fgCellKey)}
                               onBlur={() => setFocusedCell(null)}
-                              onKeyDown={(e: any) => handleKeyDown(e, rIdx, cIdx)}
+                              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => handleKeyDown(e, rIdx, cIdx)}
                               className="w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center font-medium focus:bg-blue-50 focus:ring-1 focus:ring-indigo-400 focus:z-10 relative cursor-text text-[10px] text-slate-700 placeholder-slate-300 transition-all"
                               placeholder=""
                             />
@@ -2055,7 +2055,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                               onChange={value => updateDashboard(month, rmRow.key!, String(value).replace(/[^0-9.,]/g,'').replace(',','.'))}
                               onFocus={() => setFocusedCell(rmRow.key!)}
                               onBlur={() => setFocusedCell(null)}
-                              onKeyDown={(e: any) => handleKeyDown(e, rIdx, cIdx)}
+                              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => handleKeyDown(e, rIdx, cIdx)}
                               className="w-full bg-transparent outline-none text-center text-[10px] text-slate-700 focus:bg-blue-50 focus:ring-1 focus:ring-indigo-400 px-1 py-1"
                               placeholder=""
                             />
@@ -2086,7 +2086,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                               onChange={value => handleCellChange(rIdx, originalCIdx, String(value))}
                               onFocus={() => setFocusedCell(cellKey)}
                               onBlur={() => setFocusedCell(null)}
-                              onKeyDown={(e: any) => handleKeyDown(e, rIdx, cIdx)}
+                              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => handleKeyDown(e, rIdx, cIdx)}
                               className="w-full h-full min-h-[26px] bg-transparent outline-none px-1 text-center font-medium focus:bg-blue-50 focus:ring-1 focus:ring-indigo-400 focus:z-10 relative cursor-text text-[10px] text-slate-700 placeholder-slate-300 transition-all"
                               placeholder=""
                             />
