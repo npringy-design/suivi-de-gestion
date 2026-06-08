@@ -5,7 +5,7 @@ import { useData } from '@/contexts/DataContext';
 import { averagePayrollRate } from '@/personnelSalaryImport';
 import { parseMoneyValue } from '@/lib/money';
 
-// â”€â”€ ModÃ¨le Dashboard extrait (types, colonnes, configuration statique) â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modèle Dashboard extrait (types, colonnes, configuration statique) ────────
 import type {
   DashboardColumn,
   DashboardRow,
@@ -57,7 +57,7 @@ import DashboardSidebar from '@/features/dashboard/components/DashboardSidebar';
 import DashboardHeader from '@/features/dashboard/components/DashboardHeader';
 import DashboardDailyRecapModal from '@/features/dashboard/components/DashboardDailyRecapModal';
 import DashboardImportModal from '@/features/dashboard/components/DashboardImportModal';
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import jsPDF from 'jspdf';
@@ -125,21 +125,21 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   const publicHolidays = [
     `${year}-01-01`, // Jour de l'An
-    formatDateStr(addDays(easter, 1)), // Lundi de PÃ¢ques
-    `${year}-05-01`, // FÃªte du Travail
+    formatDateStr(addDays(easter, 1)), // Lundi de Pâques
+    `${year}-05-01`, // Fête du Travail
     `${year}-05-08`, // Victoire 1945
     formatDateStr(addDays(easter, 39)), // Ascension
-    formatDateStr(addDays(easter, 50)), // Lundi de PentecÃ´te
-    `${year}-07-14`, // FÃªte Nationale
+    formatDateStr(addDays(easter, 50)), // Lundi de Pentecôte
+    `${year}-07-14`, // Fête Nationale
     `${year}-08-15`, // Assomption
     `${year}-11-01`, // La Toussaint
     `${year}-11-11`, // Armistice 1918
-    `${year}-12-25`, // NoÃ«l
+    `${year}-12-25`, // Noël
   ];
 
   const schoolHolidays = [
     { start: `${year - 1}-10-17`, end: `${year - 1}-11-02` }, // Toussaint
-    { start: `${year - 1}-12-19`, end: `${year}-01-04` }, // NoÃ«l
+    { start: `${year - 1}-12-19`, end: `${year}-01-04` }, // Noël
     { start: `${year}-02-20`, end: `${year}-03-08` }, // Hiver Zone C
     { start: `${year}-04-17`, end: `${year}-05-03` }, // Printemps Zone C
     { start: `${year}-05-13`, end: `${year}-05-17` }, // Pont Ascension
@@ -217,7 +217,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           .map((row: any) => String(row.nom || '').trim())
           .filter(Boolean);
         const namesStr = '';
-        const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} â‚¬` : '';
+        const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
         cols[idx] = [...cols[idx]];
         cols[idx][1] = idx >= 77 ? 'FRAIS PERSONNEL REALISE' : 'PROJECTION S/C';
         cols[idx][2] = `${label}${namesStr}${avgStr}`;
@@ -360,7 +360,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const fgBoxNames = [
     ['ENTRETIEN ET REPARATION', 'ECOLAB / DIVERSEY', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)'],
     ['PETIT MATERIEL ET VAISSELLE', 'HACCP DIVERS', 'AUTRES FRAIS'],
-    ['TENUE DU PERSONNEL', 'MATERIEL DE BUREAU', 'ENERGIE (Gaz / ElectricitÃ© / Charbon)'],
+    ['TENUE DU PERSONNEL', 'MATERIEL DE BUREAU', 'ENERGIE (Gaz / Electricité / Charbon)'],
     ['ANNIMATION', 'FRAIS DE TRANSPORT', 'DIVERS']
   ];
 
@@ -446,7 +446,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           data[`${rIdx}-127`] = cumulCvtsBudgetComplet.toFixed(0);
         }
 
-        // REALISE CA HT â€” 17=VAE,18=MIDI,19=SOIR,20=LIMO,21=TOTAL,22=ECART,23=CUMUL
+        // REALISE CA HT — 17=VAE,18=MIDI,19=SOIR,20=LIMO,21=TOTAL,22=ECART,23=CUMUL
         const realiseVae  = parseMoneyValue(data[`${rIdx}-17`]);
         const realiseMidi = parseMoneyValue(data[`${rIdx}-18`]);
         const realiseSoir = parseMoneyValue(data[`${rIdx}-19`]);
@@ -466,7 +466,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           cumulRealiseCA += realiseTotalJour;
           data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
         }
-        // COUVERTS REALISE â€” 25=NB MIDI,26=MOY,27=NB SOIR,28=MOY,29=TOTAL,30=CUMUL,31=ECART nb vs budget
+        // COUVERTS REALISE — 25=NB MIDI,26=MOY,27=NB SOIR,28=MOY,29=TOTAL,30=CUMUL,31=ECART nb vs budget
         const nbCvtsMidi = parseMoneyValue(data[`${rIdx}-25`]);
         const nbCvtsSoir = parseMoneyValue(data[`${rIdx}-27`]);
         if (nbCvtsMidi > 0 && realiseMidi > 0) data[`${rIdx}-26`] = (realiseMidi / nbCvtsMidi).toFixed(2);
@@ -488,7 +488,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           const budgetCvtsJour = parseMoneyValue(data[`${rIdx}-10`]);
           if (budgetCvtsJour > 0) data[`${rIdx}-33`] = (totalCvtsJour - budgetCvtsJour).toFixed(0);
         }
-        // COUVERTS LIMONADE â€” detail midi/soir + total historique
+        // COUVERTS LIMONADE — detail midi/soir + total historique
         const nbCvtsLimoMidiDetail = parseMoneyValue(data[`${rIdx}-112`]);
         const nbCvtsLimoSoirDetail = parseMoneyValue(data[`${rIdx}-114`]);
         const nbCvtsLimoDetailTotal = nbCvtsLimoMidiDetail + nbCvtsLimoSoirDetail;
@@ -668,7 +668,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         if (cvtsLimoW > 0) data[`${rIdx}-15`] = (caLimoW / cvtsLimoW).toString();
 
         const realiseCAW = parseMoneyValue(data[`${rIdx}-21`]);
-        // Moyennes semaine couverts rÃ©alisÃ©
+        // Moyennes semaine couverts réalisé
         const nbMidiW = parseMoneyValue(data[`${rIdx}-25`]);
         const nbSoirW = parseMoneyValue(data[`${rIdx}-27`]);
         const caMidiWr = parseMoneyValue(data[`${rIdx}-18`]);
@@ -770,7 +770,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       const realiseCAM = parseMoneyValue(data[`${monthTotalIdx}-21`]);
       if (realiseCAM > 0) data[`${monthTotalIdx}-60`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
 
-      // Moyennes mois couverts rÃ©alisÃ©
+      // Moyennes mois couverts réalisé
       const nbMidiM = parseMoneyValue(data[`${monthTotalIdx}-25`]);
       const nbSoirM = parseMoneyValue(data[`${monthTotalIdx}-27`]);
       const caMidiMr = parseMoneyValue(data[`${monthTotalIdx}-18`]);
@@ -829,14 +829,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             const val = parseMoneyValue(data[`fg-data-${box}-${colGroup}-${dIdx}-3`]);
             boxTotal += val;
           }
-          data[`fg-total-${box}-${colGroup}`] = boxTotal.toFixed(2).replace('.', ',') + ' â‚¬';
+          data[`fg-total-${box}-${colGroup}`] = boxTotal.toFixed(2).replace('.', ',') + ' €';
           globalFgTotal += boxTotal;
         }
       }
       
       const fgTotalIdx = rows.findIndex(r => r.type === 'month_total');
       if (fgTotalIdx !== -1) {
-        data[`${fgTotalIdx}-fraisGenerauxTotal`] = globalFgTotal.toFixed(2).replace('.', ',') + ' â‚¬';
+        data[`${fgTotalIdx}-fraisGenerauxTotal`] = globalFgTotal.toFixed(2).replace('.', ',') + ' €';
       }
     }
 
@@ -1318,12 +1318,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const otherGroups = groups.filter(g => !['CA', 'RESTAURANTS', 'LIMONADE', 'REALISE', 'CA HT', 'COUVERTS', 'EVENEMENTS RESTAURANTS', 'EVENEMENTS NATIONAL'].includes(g.name));
 
   // Colour palette used consistently in the header/footer
-  const HEADER_BG     = '#1e293b';   // slate-800 â€” cohÃ©rent NAV
-  const ACCENT_GOLD   = '#f59e0b';   // amber-500 â€” cohÃ©rent RecapAnnuel
+  const HEADER_BG     = '#1e293b';   // slate-800 — cohérent NAV
+  const ACCENT_GOLD   = '#f59e0b';   // amber-500 — cohérent RecapAnnuel
   const ACCENT_GREEN  = '#10b981';   // emerald-500
   const SECTION_BLUE  = '#3b82f6';   // blue-500
-  const SECTION_YELLOW= '#fff2cc';   // jaune pÃ¢le budget
-  const SECTION_GREEN = '#e2efda';   // vert pÃ¢le gestion
+  const SECTION_YELLOW= '#fff2cc';   // jaune pâle budget
+  const SECTION_GREEN = '#e2efda';   // vert pâle gestion
 
   const thBase: React.CSSProperties = {
     position: 'sticky',
@@ -1407,7 +1407,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       pdf.save(`Rapport_${monthNames[month]}_${year}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Une erreur est survenue lors de la gÃ©nÃ©ration du PDF.');
+      alert('Une erreur est survenue lors de la génération du PDF.');
     }
   };
 
@@ -1475,12 +1475,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       { name: 'Entretien', value: fg(0,0) },
       { name: 'Ecolab', value: fg(0,1) },
       { name: 'Marketing', value: fg(0,2) },
-      { name: 'Petit matÃ©riel', value: fg(1,0) },
+      { name: 'Petit matériel', value: fg(1,0) },
       { name: 'HACCP', value: fg(1,1) },
       { name: 'Autres', value: fg(1,2) },
       { name: 'Tenue', value: fg(2,0) },
       { name: 'Bureau', value: fg(2,1) },
-      { name: 'Ã‰nergie', value: fg(2,2) },
+      { name: 'Énergie', value: fg(2,2) },
       { name: 'Animation', value: fg(3,0) },
       { name: 'Transport', value: fg(3,1) },
       { name: 'Divers', value: fg(3,2) }
@@ -1569,25 +1569,25 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
             <div style={{ flex: 1, overflow: 'auto' }}>
                 <table id="dashboard-table" style={{ borderCollapse: 'separate', borderSpacing: 0, width: 'max-content', minWidth: '100%' }}>
                 <thead>
-            {/* â”€â”€ ROW 1 : super-sections â”€â”€ */}
+            {/* ── ROW 1 : super-sections ── */}
             <tr style={{ height: 30 }}>
               <th rowSpan={4} style={{ ...thBase, background: '#1e293b', color: '#fff', minWidth: isMobile ? 120 : 160, left: 0, top: 0, zIndex: 60, borderRight: '2px solid #475569', borderBottom: '3px solid #374151', padding: isMobile ? '8px 6px' : '16px 12px', verticalAlign: 'middle' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, height: '100%' }}>
                   <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '0.15em', color: '#f8fafc' }}>DATE</span>
                   <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '100%', boxSizing: 'border-box' }}>
                     <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Buro Monte</span>
-                    <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 800, whiteSpace: 'nowrap' }}>CA N-1 : 159 802 â‚¬</span>
+                    <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 800, whiteSpace: 'nowrap' }}>CA N-1 : 159 802 €</span>
                   </div>
                 </div>
               </th>
               {previsionsColspan > 0 && (
                 <th colSpan={previsionsColspan} style={{ ...thBase, background: '#92400e', color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '3px solid #475569', borderBottom: '2px solid #94a3b8' }}>
-                  PRÃ‰VISIONS
+                  PRÉVISIONS
                 </th>
               )}
               {realiseColspan > 0 && (
                 <th colSpan={realiseColspan} style={{ ...thBase, background: '#1e40af', color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '3px solid #475569', borderBottom: '2px solid #94a3b8' }}>
-                  {activeTab === 'REALISE' && tableViewMode === 'COMPLET' ? 'RÃ‰ALISÃ‰' : 'RÃ‰ALISÃ‰ & Ã‰VÃ‰NEMENTS'}
+                  {activeTab === 'REALISE' && tableViewMode === 'COMPLET' ? 'RÉALISÉ' : 'RÉALISÉ & ÉVÉNEMENTS'}
                 </th>
               )}
               {otherGroups.reduce((a, g) => a + g.colspan, 0) > 0 && (
@@ -1597,7 +1597,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               )}
             </tr>
 
-            {/* â”€â”€ ROW 2 : groupes â”€â”€ */}
+            {/* ── ROW 2 : groupes ── */}
             <tr style={{ height: 30 }}>
               {groups.map((g, i) => {
                 const isEvt = g.name === 'EVENEMENTS RESTAURANTS' || g.name === 'EVENEMENTS NATIONAL';
@@ -1613,7 +1613,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               })}
             </tr>
 
-            {/* â”€â”€ ROW 3 : sous-groupes â”€â”€ */}
+            {/* ── ROW 3 : sous-groupes ── */}
             <tr style={{ height: 30 }}>
               {subGroups.map((sg, i) => {
                 const isEvt = sg.name === 'EVENEMENTS RESTAURANTS' || sg.name === 'EVENEMENTS NATIONAL';
@@ -1629,7 +1629,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
               })}
             </tr>
 
-            {/* â”€â”€ ROW 4 : colonnes â”€â”€ */}
+            {/* ── ROW 4 : colonnes ── */}
             <tr style={{ height: 60 }}>
               {visibleColumns.map((c, i) => {
                 const isEvt = c[0] === 'EVENEMENTS RESTAURANTS' || c[0] === 'EVENEMENTS NATIONAL';
@@ -1683,7 +1683,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 && row.dateObj?.getMonth() === todayMarker.month
                 && row.dateObj?.getDate() === todayMarker.day;
 
-              // Ligne dÃ©diÃ©e au total du box 4 FG â€” rendu spÃ©cial sans aucune bordure Ã©paisse
+              // Ligne dédiée au total du box 4 FG — rendu spécial sans aucune bordure épaisse
               if (isFgBox4Total) {
                 if (activeTab !== 'FRAIS_GENERAUX') return null;
                 const fraisGenerauxStartIdx = visibleColumns.findIndex(col => col[0] === 'FRAIS GENERAUX');
@@ -1691,7 +1691,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                 const monthTotalIdx = rows.findIndex(r => r.type === 'month_total');
                 return (
                   <tr key={`r-${rIdx}`}>
-                    {/* Cellule date sticky â€” vide, fond blanc, bordure fine */}
+                    {/* Cellule date sticky — vide, fond blanc, bordure fine */}
                     <td className="sticky left-0 z-30 bg-[#ffffff] border-r-[2px] border-r-slate-600 border-b border-b-slate-200 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.08)]"/>
                     {visibleColumns.map((c, cIdx) => {
                       const isFraisGeneraux = c[0] === 'FRAIS GENERAUX';
@@ -1702,11 +1702,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                         const bR = isMajorEnd ? 'border-r-[3px] border-r-slate-600' : isSectEnd ? 'border-r-[2px] border-r-slate-400' : 'border-r border-r-slate-200';
                         return <td key={`c-${rIdx}-${cIdx}`} className={`bg-white border-b border-b-slate-200 ${bR}`}/>;
                       }
-                      // Colonne FG : dÃ©lÃ©guer au getFgBoxLayout
+                      // Colonne FG : déléguer au getFgBoxLayout
                       const colGroup = Math.floor((cIdx - fraisGenerauxStartIdx) / 4);
                       const colIndexInGroup = (cIdx - fraisGenerauxStartIdx) % 4;
                       if (colIndexInGroup === 0) {
-                        const totalVal = calculatedData[`fg-total-3-${colGroup}`] || '0,00 â‚¬';
+                        const totalVal = calculatedData[`fg-total-3-${colGroup}`] || '0,00 €';
                         const bR = 'border-r-[2px] border-r-slate-500';
                         return (
                           <td key={`c-${rIdx}-${cIdx}`} colSpan={4}
@@ -1806,16 +1806,16 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                       if (isMonthTotal) {
                         const fgColSpan = fraisGenerauxEndIdx - fraisGenerauxStartIdx + 1;
                         if (cIdx === fraisGenerauxStartIdx) {
-                          const totalVal = calculatedData[`${rIdx}-fraisGenerauxTotal`] || '0,00 â‚¬';
+                          const totalVal = calculatedData[`${rIdx}-fraisGenerauxTotal`] || '0,00 €';
                           return (
                             <td key={`c-${rIdx}-${cIdx}`} colSpan={fgColSpan}
                               className="text-center font-black text-sm py-2 px-4 uppercase tracking-widest border-y-2 border-y-amber-500 border-r-[3px] border-r-slate-600"
                               style={{ background: ACCENT_GOLD, color: HEADER_BG }}>
-                              TOTAL FRAIS GÃ‰NÃ‰RAUX : {totalVal}
+                              TOTAL FRAIS GÉNÉRAUX : {totalVal}
                             </td>
                           );
                         }
-                        // Les colonnes FG suivantes sont absorbÃ©es par le colSpan ci-dessus
+                        // Les colonnes FG suivantes sont absorbées par le colSpan ci-dessus
                         return null;
                       }
 
@@ -1851,7 +1851,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
                         if (fgLayout.type === 'total') {
                           if (colIndexInGroup === 0) {
-                            const totalVal = calculatedData[`fg-total-${fgLayout.box}-${colGroup}`] || '0,00 â‚¬';
+                            const totalVal = calculatedData[`fg-total-${fgLayout.box}-${colGroup}`] || '0,00 €';
                             const bR = 'border-r-[2px] border-r-slate-400';
                             return (
                               <td key={`c-${rIdx}-${cIdx}`} colSpan={4}
@@ -1867,11 +1867,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                           return null;
                         }
 
-                        // data cell inside frais gÃ©nÃ©raux
+                        // data cell inside frais généraux
                         const fgCellKey = `fg-data-${fgLayout.box}-${colGroup}-${fgLayout.dataIdx}-${colIndexInGroup}`;
                         const fgVal = cellData[fgCellKey] || '';
                         const isFgFocused = focusedCell === fgCellKey;
-                        // Bordure droite : Ã©paisse aprÃ¨s la derniÃ¨re colonne de chaque groupe (MONTANT HT), fine sinon
+                        // Bordure droite : épaisse après la dernière colonne de chaque groupe (MONTANT HT), fine sinon
                         const fgCellBorder = `border-b border-b-slate-200 ${colIndexInGroup === 3 ? 'border-r-[2px] border-r-slate-400' : 'border-r border-r-slate-200'}`;
                         return (
                           <td key={`c-${rIdx}-${cIdx}`} className={`p-0 bg-white ${fgCellBorder} relative text-center`}>
@@ -1899,23 +1899,23 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                       }
                     }
 
-                    // â”€â”€ RESULTATS MENSUEL HT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                    // ── RESULTATS MENSUEL HT ─────────────────────────────────────
                     if (c[0] === 'RESULTATS MENSUEL HT') {
                       const isLabelCol = c[2] === 'Indicateur';
                       const isValueCol = c[2] === 'Valeur';
                       const rightBorder = isValueCol ? 'border-r-[3px] border-r-slate-600' : 'border-r border-r-slate-300';
 
-                      // Structure complÃ¨te : chaque rIdx mappe sur une ligne dÃ©finie
+                      // Structure complète : chaque rIdx mappe sur une ligne définie
                       type RmRowType = { type: string; label?: string; key?: string; style?: string };
                       const rmDef: RmRowType[] = [
                         // CA (lignes 0-8)
                         { type: 'section', label: 'CA' },
-                        { type: 'data', label: 'CA HT RÃ‰ALISÃ‰',          key: 'ca_realise',    style: 'red' },
+                        { type: 'data', label: 'CA HT RÉALISÉ',          key: 'ca_realise',    style: 'red' },
                         { type: 'data', label: 'CA BUDGET',              key: 'ca_budget',     style: 'normal' },
                         { type: 'data', label: 'VAR % N-1',              key: 'var_n1',        style: 'normal' },
                         { type: 'spacer' },
-                        { type: 'data', label: 'DIFFÃ‰RENCE N-1',         key: 'diff_n1',       style: 'normal' },
-                        { type: 'data', label: 'DIFFÃ‰RENCE BUDGET',      key: 'diff_budget',   style: 'normal' },
+                        { type: 'data', label: 'DIFFÉRENCE N-1',         key: 'diff_n1',       style: 'normal' },
+                        { type: 'data', label: 'DIFFÉRENCE BUDGET',      key: 'diff_budget',   style: 'normal' },
                         { type: 'spacer' },
                         // COUVERTS (lignes 8-16)
                         { type: 'section', label: 'COUVERTS' },
@@ -1937,36 +1937,36 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                         { type: 'spacer' },
                         { type: 'data',   label: 'RATIO FOOD OBJECTIF',        key: 'ratio_obj',      style: 'normal' },
                         { type: 'data',   label: 'CONSOMMATION OBJECTIF',      key: 'conso_obj',      style: 'normal' },
-                        { type: 'data',   label: 'RATIO RÃ‰EL',                 key: 'ratio_reel',     style: 'red' },
-                        { type: 'data',   label: 'MARGE RÃ‰EL',                 key: 'marge_reel',     style: 'red' },
-                        { type: 'data',   label: 'CONSOMMATION RÃ‰EL',          key: 'conso_reel',     style: 'red' },
-                        { type: 'data',   label: 'Ã‰CART RATIO VS OBJECTIF',    key: 'ecart_ratio',    style: 'normal' },
-                        { type: 'data',   label: 'Ã‰CART CONSOMMATION VS OBJECTIF', key: 'ecart_conso', style: 'normal' },
+                        { type: 'data',   label: 'RATIO RÉEL',                 key: 'ratio_reel',     style: 'red' },
+                        { type: 'data',   label: 'MARGE RÉEL',                 key: 'marge_reel',     style: 'red' },
+                        { type: 'data',   label: 'CONSOMMATION RÉEL',          key: 'conso_reel',     style: 'red' },
+                        { type: 'data',   label: 'ÉCART RATIO VS OBJECTIF',    key: 'ecart_ratio',    style: 'normal' },
+                        { type: 'data',   label: 'ÉCART CONSOMMATION VS OBJECTIF', key: 'ecart_conso', style: 'normal' },
                         { type: 'spacer' },
                         // S/C (lignes 32-42)
                         { type: 'section', label: 'S/C' },
                         { type: 'data',   label: 'NB HEURES BUDGET',        key: 'nb_h_budget',  style: 'normal' },
                         { type: 'data',   label: 'S/C OBJECTIF',            key: 'sc_obj',       style: 'normal' },
-                        { type: 'data',   label: 'PRODUCTIVITÃ‰ BUDGET',     key: 'prod_budget',  style: 'normal' },
+                        { type: 'data',   label: 'PRODUCTIVITÉ BUDGET',     key: 'prod_budget',  style: 'normal' },
                         { type: 'spacer' },
-                        { type: 'data',   label: 'NB HEURE RÃ‰EL',           key: 'nb_h_reel',    style: 'red' },
-                        { type: 'data',   label: 'Ã‰CART VS BUDGET',         key: 'ecart_h',      style: 'normal' },
-                        { type: 'data',   label: 'S/C RÃ‰EL',                key: 'sc_reel',      style: 'normal' },
-                        { type: 'data',   label: 'Ã‰CART S/C VS BUDGET',     key: 'ecart_sc',     style: 'normal' },
-                        { type: 'data',   label: 'PROD RÃ‰EL',               key: 'prod_reel',    style: 'red' },
+                        { type: 'data',   label: 'NB HEURE RÉEL',           key: 'nb_h_reel',    style: 'red' },
+                        { type: 'data',   label: 'ÉCART VS BUDGET',         key: 'ecart_h',      style: 'normal' },
+                        { type: 'data',   label: 'S/C RÉEL',                key: 'sc_reel',      style: 'normal' },
+                        { type: 'data',   label: 'ÉCART S/C VS BUDGET',     key: 'ecart_sc',     style: 'normal' },
+                        { type: 'data',   label: 'PROD RÉEL',               key: 'prod_reel',    style: 'red' },
                         { type: 'spacer' },
-                        // FRAIS GÃ‰NÃ‰RAUX (lignes 43+)
-                        { type: 'section', label: 'FRAIS GÃ‰NÃ‰RAUX RÃ‰ALISÃ‰' },
-                        { type: 'data',   label: 'Entretien et rÃ©parations',   key: 'fg_0',  style: 'normal' },
-                        { type: 'data',   label: 'Petit matÃ©riel et vaisselle', key: 'fg_1', style: 'normal' },
+                        // FRAIS GÉNÉRAUX (lignes 43+)
+                        { type: 'section', label: 'FRAIS GÉNÉRAUX RÉALISÉ' },
+                        { type: 'data',   label: 'Entretien et réparations',   key: 'fg_0',  style: 'normal' },
+                        { type: 'data',   label: 'Petit matériel et vaisselle', key: 'fg_1', style: 'normal' },
                         { type: 'data',   label: 'Tenue du personnel',          key: 'fg_2', style: 'normal' },
                         { type: 'data',   label: 'Animation',                   key: 'fg_3', style: 'normal' },
                         { type: 'spacer' },
                         { type: 'data',   label: 'Ecolab / Diversey',           key: 'fg_4', style: 'normal' },
                         { type: 'data',   label: 'Marketing local',             key: 'fg_5', style: 'normal' },
                         { type: 'data',   label: 'HACCP Divers',                key: 'fg_6', style: 'normal' },
-                        { type: 'data',   label: 'MatÃ©riel de bureau',          key: 'fg_7', style: 'normal' },
-                        { type: 'data',   label: 'Ã‰nergie',                     key: 'fg_8', style: 'normal' },
+                        { type: 'data',   label: 'Matériel de bureau',          key: 'fg_7', style: 'normal' },
+                        { type: 'data',   label: 'Énergie',                     key: 'fg_8', style: 'normal' },
                         { type: 'data',   label: 'Frais de transport',          key: 'fg_9', style: 'normal' },
                         { type: 'data',   label: 'Autres frais',                key: 'fg_10', style: 'normal' },
                         { type: 'data',   label: 'Divers',                      key: 'fg_11', style: 'normal' },
@@ -2005,7 +2005,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                       const coutReel   = parseMoneyValue(calculatedData[`${mtIdx}-87`]);
 
                       const f = (n: number, dec = 2) => n.toFixed(dec).replace('.', ',');
-                      const eur = (n: number) => f(n) + ' â‚¬';
+                      const eur = (n: number) => f(n) + ' €';
 
                       const rmValues: Record<string, string> = {
                         ca_realise:    eur(caR),
@@ -2019,11 +2019,11 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                         cvts_limo:     cvtsLimo.toFixed(0),
                         moy_cvts_limo: wDays > 0 ? (cvtsLimo/wDays).toFixed(0) : '0',
                         tm_limo:       cvtsLimo > 0 ? eur(caLimo / cvtsLimo) : '',
-                        rm_stock_init: stockInit ? eur(stockInit) : '0,00 â‚¬',
+                        rm_stock_init: stockInit ? eur(stockInit) : '0,00 €',
                         rm_stock_final:stockFinal ? eur(stockFinal) : '',
                         var_stock:     f(varStock, 0),
-                        rm_achat_hm:   achatHM  ? eur(achatHM)  : '0,00 â‚¬',
-                        rm_achat_total:achatTotal ? eur(achatTotal) : '0,00 â‚¬',
+                        rm_achat_hm:   achatHM  ? eur(achatHM)  : '0,00 €',
+                        rm_achat_total:achatTotal ? eur(achatTotal) : '0,00 €',
                         ratio_obj:     ratioObj.toFixed(2) + '%',
                         conso_obj:     eur(consoObj),
                         ratio_reel:    f(ratioReel) + '%',

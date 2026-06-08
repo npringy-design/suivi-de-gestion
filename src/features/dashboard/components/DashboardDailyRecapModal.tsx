@@ -33,7 +33,7 @@ export default function DashboardDailyRecapModal({
       <div style={{ background: '#fff', borderRadius: 16, width: 'min(980px, 100%)', maxWidth: 'calc(100vw - 36px)', maxHeight: 'calc(100vh - 36px)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.16), 0 10px 10px -5px rgba(0, 0, 0, 0.08)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '20px 24px 14px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <h3 style={{ fontSize: 18, fontWeight: 850, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Clipboard size={20} color="#0f766e" /> PrÃ©parer le mail de clÃ´ture
+            <Clipboard size={20} color="#0f766e" /> Préparer le mail de clôture
           </h3>
           <button onClick={() => setIsDailyRecapModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4, borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             <X size={20} />
@@ -42,7 +42,7 @@ export default function DashboardDailyRecapModal({
         <div style={{ padding: isMobile ? 14 : 20, overflow: 'auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(280px, .75fr) minmax(420px, 1.25fr)', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ padding: 12, border: '1px solid #dbeafe', borderRadius: 10, background: '#eff6ff', color: '#1e3a8a', fontSize: 12, lineHeight: 1.45, fontWeight: 750 }}>
-              VÃ©rifie le contenu avant ouverture du mail. Le texte sera aussi copiÃ© dans le presse-papiers.
+              Vérifie le contenu avant ouverture du mail. Le texte sera aussi copié dans le presse-papiers.
             </div>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Responsable midi</span>
@@ -59,7 +59,7 @@ export default function DashboardDailyRecapModal({
                 value={dailyRecapServiceComments.midi}
                 onChange={event => setDailyRecapServiceComments(prev => ({ ...prev, midi: event.target.value }))}
                 style={{ minHeight: 70, resize: 'vertical', border: '1px solid #cbd5e1', borderRadius: 8, padding: 10, fontWeight: 700, color: '#0f172a', lineHeight: 1.45 }}
-                placeholder="Commentaire spÃ©cifique au service midi..."
+                placeholder="Commentaire spécifique au service midi..."
               />
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -77,7 +77,7 @@ export default function DashboardDailyRecapModal({
                 value={dailyRecapServiceComments.soir}
                 onChange={event => setDailyRecapServiceComments(prev => ({ ...prev, soir: event.target.value }))}
                 style={{ minHeight: 70, resize: 'vertical', border: '1px solid #cbd5e1', borderRadius: 8, padding: 10, fontWeight: 700, color: '#0f172a', lineHeight: 1.45 }}
-                placeholder="Commentaire spÃ©cifique au service soir..."
+                placeholder="Commentaire spécifique au service soir..."
               />
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -100,7 +100,7 @@ export default function DashboardDailyRecapModal({
             </div>
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>AperÃ§u du mail</div>
+            <div style={{ fontSize: 11, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>Aperçu du mail</div>
             <div
               ref={recapPreviewRef}
               style={{ margin: 0, minHeight: 360, maxHeight: '55vh', overflow: 'auto', border: '1px solid #cbd5e1', borderRadius: 10, background: '#f8fafc', padding: 16, color: '#0f172a', fontSize: 14, lineHeight: 1.5, fontFamily: "'DM Sans', system-ui, sans-serif" }}

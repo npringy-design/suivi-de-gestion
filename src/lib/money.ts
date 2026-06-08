@@ -9,7 +9,7 @@ export const parseMoneyValue = (value: MoneyInputValue): number => {
   const normalizedValue = rawValue
     .replace(/\s/g, '')
     .replace(/€/g, '')
-    .replace(/â‚¬/g, '')
+    .replace(/€/g, '')
     .replace(',', '.');
 
   const parsedValue = Number(normalizedValue);

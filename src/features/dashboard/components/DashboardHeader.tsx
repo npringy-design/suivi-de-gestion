@@ -83,7 +83,7 @@ export default function DashboardHeader({
                 onClick={() => setIsDatePickerOpen(prev => !prev)}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(207,250,254,.14)', borderRadius: 14, cursor: 'pointer', color: '#fff', padding: isMobile ? '9px 11px' : '10px 14px', textAlign: 'left', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08)' }}
               >
-                <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journaliÃ¨re</span>
+                <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Saisie journalière</span>
                 <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1, color: '#fef3c7' }}>{selectedDayLabel}</span>
               </button>
               {isDatePickerOpen && renderDatePicker()}
@@ -95,7 +95,7 @@ export default function DashboardHeader({
                 onClick={() => setIsDatePickerOpen(prev => !prev)}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(207,250,254,.14)', borderRadius: 14, cursor: 'pointer', color: '#fff', padding: isMobile ? '9px 11px' : '10px 14px', textAlign: 'left', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08)' }}
               >
-                <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>{tableViewMode === 'ANALYSE' ? 'Vue analyse' : 'Vue complÃ¨te'}</span>
+                <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>{tableViewMode === 'ANALYSE' ? 'Vue analyse' : 'Vue complète'}</span>
                 <span style={{ fontSize: isMobile ? 21 : 25, fontWeight: 950, textTransform: 'capitalize', lineHeight: 1.1, color: '#fef3c7' }}>{monthNames[month]} {year}</span>
               </button>
               {isDatePickerOpen && renderDatePicker()}
@@ -107,8 +107,8 @@ export default function DashboardHeader({
             <Upload size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Importer'}
           </button>
           {tableViewMode === 'SAISIE' && (
-            <button onClick={openDailyRecapPreview} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme} title={dailyRecapStatus || 'PrÃ©parer le rÃ©cap mail du jour'}>
-              <Clipboard size={isMobile ? 14 : 16} /> {isMobile ? '' : 'RÃ©cap mail'}
+            <button onClick={openDailyRecapPreview} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme} title={dailyRecapStatus || 'Préparer le récap mail du jour'}>
+              <Clipboard size={isMobile ? 14 : 16} /> {isMobile ? '' : 'Récap mail'}
             </button>
           )}
           <button onClick={handleExportPDF} style={actionTileStyle} onMouseEnter={e => e.currentTarget.style.background = weatherThemeHover} onMouseLeave={e => e.currentTarget.style.background = weatherTheme}>
@@ -135,12 +135,12 @@ export default function DashboardHeader({
       {false && tableViewMode !== 'SAISIE' && tableViewMode !== 'ANALYSE' && (
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(7, minmax(116px, 1fr))', gap: 8, padding: isMobile ? '0 0 12px' : '0 0 12px', overflowX: isMobile ? 'visible' : 'auto' }}>
           {[
-            { label: 'CA budget', value: formatKpiCurrency(summaryKpis.budgetCa), color: '#64748b', icon: 'â‚¬' },
-            { label: 'CA rÃ©alisÃ©', value: formatKpiCurrency(summaryKpis.realiseCa), color: '#2563eb', icon: 'CA' },
-            { label: 'Ã‰cart CA', value: formatKpiCurrency(summaryKpis.ecartCa), color: summaryKpis.ecartCa >= 0 ? '#059669' : '#dc2626', icon: summaryKpis.ecartCa >= 0 ? '+' : '-' },
+            { label: 'CA budget', value: formatKpiCurrency(summaryKpis.budgetCa), color: '#64748b', icon: '€' },
+            { label: 'CA réalisé', value: formatKpiCurrency(summaryKpis.realiseCa), color: '#2563eb', icon: 'CA' },
+            { label: 'Écart CA', value: formatKpiCurrency(summaryKpis.ecartCa), color: summaryKpis.ecartCa >= 0 ? '#059669' : '#dc2626', icon: summaryKpis.ecartCa >= 0 ? '+' : '-' },
             { label: 'Couverts', value: formatKpiNumber(summaryKpis.couverts), color: '#7c3aed', icon: 'CV' },
             { label: 'Ticket moyen', value: formatKpiCurrency(summaryKpis.ticketMoyen), color: '#d97706', icon: 'TM' },
-            { label: 'CoÃ»t matiÃ¨re', value: formatKpiCurrency(summaryKpis.coutMatiere), color: '#16a34a', icon: 'CM' },
+            { label: 'Coût matière', value: formatKpiCurrency(summaryKpis.coutMatiere), color: '#16a34a', icon: 'CM' },
             { label: 'Frais personnel', value: formatKpiCurrency(summaryKpis.fraisPersonnel), color: '#9333ea', icon: 'SC' },
           ].map(kpi => (
             <div

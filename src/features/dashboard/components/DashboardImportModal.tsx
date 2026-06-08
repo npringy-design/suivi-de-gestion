@@ -78,7 +78,7 @@ export default function DashboardImportModal({
         <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Upload size={20} color="#10b981" />
-            Importer des donnÃ©es
+            Importer des données
           </h3>
           <button onClick={() => setIsImportModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4, borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             <X size={20} />
@@ -135,7 +135,7 @@ export default function DashboardImportModal({
             <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #f59e0b', borderRadius: 10, background: '#fffbeb' }}>
               <span style={{ fontSize: 12, fontWeight: 900, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.04em' }}>Budget historique Excel</span>
               <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                Lit uniquement le mois affichÃ© et importe les prÃ©visions couverts + TM ainsi que le rÃ©alisÃ© CA/couverts. Les totaux restent calculÃ©s par l'application.
+                Lit uniquement le mois affiché et importe les prévisions couverts + TM ainsi que le réalisé CA/couverts. Les totaux restent calculés par l'application.
               </span>
               <input
                 type="file"
@@ -156,9 +156,9 @@ export default function DashboardImportModal({
             <div style={{ marginTop: 12, display: 'grid', gap: 10, padding: 12, border: '1px solid #fde68a', borderRadius: 10, background: '#fffbeb' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 950, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.04em' }}>PrÃ©visualisation budget historique</div>
+                  <div style={{ fontSize: 12, fontWeight: 950, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.04em' }}>Prévisualisation budget historique</div>
                   <div style={{ marginTop: 3, fontSize: 12, color: '#64748b', fontWeight: 700 }}>
-                    {historicalBudgetPreviews.length} jours Â· CA recalculÃ© estimÃ© {formatImportedCurrencyLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.caTotal, 0))} Â· Couverts {formatImportedIntegerLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.couvertsTotal, 0))}
+                    {historicalBudgetPreviews.length} jours · CA recalculé estimé {formatImportedCurrencyLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.caTotal, 0))} · Couverts {formatImportedIntegerLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.couvertsTotal, 0))}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -177,7 +177,7 @@ export default function DashboardImportModal({
                     <div style={{ fontSize: 11, fontWeight: 800 }}>TM soir {formatImportedCurrencyLabel(item.tmSoir)}</div>
                   </div>
                 ))}
-                {historicalBudgetPreviews.length > 40 && <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>+ {historicalBudgetPreviews.length - 40} lignes non affichees dans l'aperÃ§u</div>}
+                {historicalBudgetPreviews.length > 40 && <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>+ {historicalBudgetPreviews.length - 40} lignes non affichees dans l'aperçu</div>}
               </div>
             </div>
           )}
@@ -368,22 +368,22 @@ export default function DashboardImportModal({
             Si la date du PDF correspond au mois affiche, l'import remplit directement ce jour. Sinon il remplit le jour actuellement selectionne.
           </div>
           <p style={{ display: 'none', fontSize: 14, color: '#475569', lineHeight: 1.6, marginBottom: 24 }}>
-            Pour importer vos donnÃ©es, nous devons dÃ©finir le format exact de votre fichier source.
-            Veuillez nous indiquer comment vous souhaitez procÃ©der :
+            Pour importer vos données, nous devons définir le format exact de votre fichier source.
+            Veuillez nous indiquer comment vous souhaitez procéder :
           </p>
 
           <div style={{ display: 'none', flexDirection: 'column', gap: 16 }}>
             <div style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
               <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>Option A : Format CSV Standard</h4>
               <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-                Nous pouvons dÃ©finir un template CSV (colonnes spÃ©cifiques) que vous remplirez et importerez ici.
+                Nous pouvons définir un template CSV (colonnes spécifiques) que vous remplirez et importerez ici.
               </p>
             </div>
 
             <div style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
-              <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>Option B : Logiciel SpÃ©cifique</h4>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>Option B : Logiciel Spécifique</h4>
               <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-                Si vous utilisez un logiciel de caisse ou de gestion (ex: Zelty, Lightspeed, etc.), nous pouvons crÃ©er un importateur sur-mesure pour leur format d'export.
+                Si vous utilisez un logiciel de caisse ou de gestion (ex: Zelty, Lightspeed, etc.), nous pouvons créer un importateur sur-mesure pour leur format d'export.
               </p>
             </div>
           </div>

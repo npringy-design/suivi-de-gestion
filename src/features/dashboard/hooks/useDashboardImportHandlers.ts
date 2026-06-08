@@ -489,7 +489,7 @@ export function useDashboardImportHandlers({
   const findInvoiceAmountHt = (text: string) => {
     const normalizedText = text
       .replace(/\u00a0/g, ' ')
-      .replace(/â‚¬/g, '€')
+      .replace(/€/g, '€')
       .replace(/\s+/g, ' ')
       .trim();
     const amountToken = '(-?\\d{1,3}(?:[\\s.]\\d{3})*(?:[,.]\\d{2})|-?\\d+[,.]\\d{2})';
@@ -615,7 +615,7 @@ export function useDashboardImportHandlers({
   );
   
   const parseInvoiceImport = (sourceText: string, fileName: string, id = createInvoiceImportId(fileName, 0)): InvoiceImportPreview => {
-    const text = sourceText.replace(/\u00a0/g, ' ').replace(/â‚¬/g, '€');
+    const text = sourceText.replace(/\u00a0/g, ' ').replace(/€/g, '€');
     const hasReadableInvoiceText = text.replace(/[^A-Za-z0-9]/g, '').length >= 80;
     const supplierMatch = hasReadableInvoiceText ? findInvoiceSupplier(text) : findInvoiceSupplierFromFileName(fileName);
     const amountHt = findInvoiceAmountHt(text);

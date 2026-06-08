@@ -43,11 +43,11 @@ export default function DashboardSidebar({
           <ChevronLeft size={16} /> Retour Accueil
         </button>
         <h1 style={{ fontSize: 22, fontWeight: 800, margin: '24px 0 0 0', letterSpacing: '-0.02em', color: '#f8fafc' }}>Tableau de Bord</h1>
-        <div style={{ fontSize: 14, color: '#94a3b8', marginTop: 4, fontWeight: 500 }}>AnnÃ©e {year}</div>
+        <div style={{ fontSize: 14, color: '#94a3b8', marginTop: 4, fontWeight: 500 }}>Année {year}</div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: 4, scrollbarWidth: 'none' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0 12px 12px 12px' }}>SÃ©lection du mois</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0 12px 12px 12px' }}>Sélection du mois</div>
         {monthNames.map((m, i) => (
           <button
             key={i}

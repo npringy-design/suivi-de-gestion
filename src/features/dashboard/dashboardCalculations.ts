@@ -105,11 +105,11 @@ export const formatValue = (val: string | number | undefined, c: string[], colIn
   const subGroupName = c[1];
   const colName = c[2] || c[1];
   const isPercentage = groupName !== 'COUT MATIERE' && (colName.includes('RATIO') || colName.includes('%') || subGroupName.includes('RATIO'));
-  const isCurrency = !isPercentage && (colName.includes('CA') || colName.includes('HT') || colName.includes('PANIER') || colName.includes('MONTANT') || colName.includes('â‚¬') || colName.includes('COUT')
+  const isCurrency = !isPercentage && (colName.includes('CA') || colName.includes('HT') || colName.includes('PANIER') || colName.includes('MONTANT') || colName.includes('€') || colName.includes('COUT')
     || subGroupName.includes('CA HT') || subGroupName.includes('ACHAT') || groupName.includes('COUT'));
   const formattedNum = Number.isInteger(num) ? num.toString() : num.toFixed(2).replace('.', ',');
   const prefix = (colName.includes('ECART') && num > 0) ? '+' : '';
 
   if (isPercentage) return `${prefix}${formattedNum} %`;
-  return isCurrency ? `${prefix}${formattedNum} â‚¬` : `${prefix}${formattedNum}`;
+  return isCurrency ? `${prefix}${formattedNum} €` : `${prefix}${formattedNum}`;
 };

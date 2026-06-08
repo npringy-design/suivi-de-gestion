@@ -184,7 +184,7 @@ export const parseHistoricalCostMatterCellNumber = (cell: XLSX.CellObject | unde
   if (rawNumber !== 0) return rawNumber;
 
   const displayText = String(cell.w ?? cell.v ?? '')
-    .replace(/âˆ’|â€“|â€”/g, '-')
+    .replace(/âˆ’|–|—/g, '-')
     .replace(/\u00a0/g, ' ')
     .trim();
   const compact = displayText.replace(/\s/g, '').replace(',', '.');
