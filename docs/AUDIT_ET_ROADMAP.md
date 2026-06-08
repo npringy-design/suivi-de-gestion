@@ -46,7 +46,6 @@ Ne pas casser ni refondre sans raison ces Ã©lÃ©ments dÃ©jÃ  propres :
 
 ### Majeur
 
-1. `HomeWithAdminLink.tsx` est un wrapper devenu inutile autour de `Home`.
 2. Il reste des `any` Ã  rÃ©duire dans `DashboardAnalysisView.tsx`, `Dashboard.tsx`, `DepensesPetiteCaisse.tsx`, `RemiseTR.tsx`.
 3. `supabaseAuth.ts` utilise encore directement `window.localStorage` au lieu de `browserStorage`.
 
@@ -59,20 +58,6 @@ Ne pas casser ni refondre sans raison ces Ã©lÃ©ments dÃ©jÃ  propres :
 ## Roadmap active
 
 Les Ã©tapes doivent Ãªtre faites dans cet ordre, une par une, avec modification ciblÃ©e et validation avant de passer Ã  la suivante.
-
-### Ã‰tape 3 â€” Fusionner `HomeWithAdminLink` dans `Home`
-
-**Risque** : faible  
-**Objectif** : supprimer la couche wrapper inutile.
-
-Actions :
-
-1. Copier dans `Home.tsx` la vÃ©rification d'accÃ¨s admin actuellement portÃ©e par `HomeWithAdminLink.tsx`.
-2. Ajouter directement le bouton `Utilisateurs` conditionnel dans `Home.tsx`.
-3. Mettre Ã  jour `router.tsx` pour charger `Home` directement.
-4. Supprimer `HomeWithAdminLink.tsx`.
-
-Validation : bouton `Utilisateurs` toujours visible pour les admins, absent pour les utilisateurs standards.
 
 ### Ã‰tape 4 â€” Corriger `supabaseAuth.ts` et rÃ©duire les `any`
 

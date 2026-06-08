@@ -26,17 +26,16 @@ Important : `docs/ROADMAP_REFACTORING.md` reste l'historique du refactoring deja
 
 ## Priorite technique actuelle â€” nouvelle roadmap audit
 
-Statut : etape 2 terminee, etape 3 a demarrer.
+Statut : etape 3 terminee, etape 4 a demarrer.
 
 Document detaille : `docs/AUDIT_ET_ROADMAP.md`.
 
 Etapes restantes dans l'ordre recommande :
 
-1. Fusionner `HomeWithAdminLink` dans `Home`.
-2. Corriger `supabaseAuth.ts` et reduire les `any`.
-3. Migrer les parsings monetaires de `Home.tsx` vers `parseMoneyValue`.
-4. Extraire les helpers d'import Excel de `Dashboard.tsx`.
-5. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
+1. Corriger `supabaseAuth.ts` et reduire les `any`.
+2. Migrer les parsings monetaires de `Home.tsx` vers `parseMoneyValue`.
+3. Extraire les helpers d'import Excel de Dashboard.tsx.
+4. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
 
 Regle de suivi obligatoire : apres chaque etape terminee, retirer l'etape de `docs/AUDIT_ET_ROADMAP.md`, puis documenter le travail reellement effectue dans ce fichier ou dans une documentation dediee. Ne pas laisser une etape terminee dans la roadmap active.
 
@@ -54,7 +53,8 @@ Dernieres actions documentaires du 08/06/2026 :
 - Rappel que la roadmap doit etre supprimee une fois toutes les etapes terminees et documentees.
 - Etape 1 terminee : suppression du codemod Dashboard et de son workflow GitHub, retrait de `dotenv`, README aligne avec Supabase, `selectedYear` initialise sur l'annee courante.
 - Etape 2 terminee : creation de `src/components/CurrencyInput.tsx`, remplacement des copies locales dans `CanalSaisie`, `AncvPapiers` et `BilanSynthese`, avec conservation des variantes visuelles existantes.
-Prochaine action conseillee : demarrer l'etape 3 de `docs/AUDIT_ET_ROADMAP.md` (`HomeWithAdminLink` dans `Home`), sans attaquer les etapes suivantes dans le meme lot.
+- Etape 3 terminee : fusion de `HomeWithAdminLink` dans `Home`, route racine pointee directement vers `Home`, suppression du wrapper.
+Prochaine action conseillee : demarrer l'etape 4 de `docs/AUDIT_ET_ROADMAP.md` (`supabaseAuth.ts` et reduction ciblee des `any`), sans attaquer les etapes suivantes dans le meme lot.
 
 ## Consolidation patches Vite â€” terminee
 
@@ -80,7 +80,7 @@ Ce qui est en place :
 - Les donnees ne sont chargees qu'apres connexion et validation de l'acces Suivi.
 - La verification d'acces utilise `src/services/supabaseAuth.ts` et `public.suivi_gestion_user_access`.
 - Page de gestion utilisateurs disponible sur `/#/utilisateurs`.
-- Acces utilisateurs ajoute sur l'accueil via `src/HomeWithAdminLink.tsx` et `src/router.tsx`.
+- Acces utilisateurs ajoute sur l'accueil via `src/Home.tsx` et `src/router.tsx`.
 - API serveur `api/suiviAccount.ts` pour lister, creer, modifier role et activer/desactiver les utilisateurs.
 - Table d'acces dediee `suivi_gestion_user_access`.
 - Roles finaux : `super_admin`, `global_admin`, `user`.
@@ -97,7 +97,7 @@ Fichiers importants auth :
 - `src/AuthGate.tsx`
 - `src/services/supabaseAuth.ts`
 - `src/UserManagementPage.tsx`
-- `src/HomeWithAdminLink.tsx`
+- `src/Home.tsx`
 - `src/lib/suiviPermissions.ts`
 - `api/suiviAccount.ts`
 - `supabase/AUTH_USERS_SETUP.sql`

@@ -18,6 +18,7 @@ import {
   CloudFog,
   X,
   Calendar,
+  Users,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -34,6 +35,7 @@ import {
 } from 'recharts';
 
 import { useData } from '@/contexts/DataContext';
+import { getValidAccessToken } from '@/services/supabaseAuth';
 import { getDashboardRowIndices } from './utils';
 
 type IconComponent = ComponentType<{ className?: string }>;
@@ -216,6 +218,7 @@ export default function Home() {
   const [periodYear, setPeriodYear] = useState(() => String(selectedYear));
   const [today, setToday] = useState(() => new Date());
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+  const [canManageUsers, setCanManageUsers] = useState(false);
 
   const year = selectedYear;
   const month = selectedMonth;
@@ -243,6 +246,34 @@ export default function Home() {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const checkUserManagementAccess = async () => {
+      const token = await getValidAccessToken().catch(() => null);
+      if (!token) {
+        if (mounted) setCanManageUsers(false);
+        return;
+      }
+
+      const response = await fetch('/api/suiviAccount', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }).catch(() => null);
+
+      if (mounted) setCanManageUsers(Boolean(response?.ok));
+    };
+
+    void checkUserManagementAccess();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -962,6 +993,25 @@ export default function Home() {
           </nav>
         </div>
       </aside>
+
+      {canManageUsers && (
+        <div className="fixed bottom-5 left-2 z-50 hidden w-[calc(clamp(238px,17vw,280px)-1rem)] px-2 lg:block">
+          <button
+            type="button"
+            onClick={() => navigate('/utilisateurs')}
+            className="group relative w-full overflow-hidden rounded-xl border border-cyan-200/15 bg-cyan-100/10 px-3 py-2.5 text-left text-[12.5px] font-black uppercase tracking-[0.12em] text-cyan-50 shadow-inner shadow-black/10 transition-all duration-300 hover:bg-cyan-300/15 hover:text-white"
+            title="Gestion des utilisateurs"
+          >
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-cyan-300/10 text-cyan-100 ring-1 ring-cyan-100/20">
+                <Users className="h-3.5 w-3.5" />
+              </span>
+              <span>Utilisateurs</span>
+            </div>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-300/0 to-teal-300/0 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
+          </button>
+        </div>
+      )}
 
       <main className="min-w-0 flex-1 overflow-y-auto lg:overflow-hidden">
         <div className="min-h-full lg:h-full lg:min-h-0">

@@ -3,7 +3,7 @@ import { lazy , useEffect } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 
-const Home = lazy(() => import('@/HomeWithAdminLink'));
+const Home = lazy(() => import('@/Home'));
 const Dashboard = lazy(() => import('@/Dashboard'));
 const SyntheseCA = lazy(() => import('@/SyntheseCA'));
 const RecapAnnuel = lazy(() => import('@/RecapAnnuel'));
