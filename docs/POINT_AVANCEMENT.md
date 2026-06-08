@@ -26,14 +26,13 @@ Important : `docs/ROADMAP_REFACTORING.md` reste l'historique du refactoring deja
 
 ## Priorite technique actuelle â€” nouvelle roadmap audit
 
-Statut : etape 5 terminee, etape 6 a demarrer.
+Statut : etape 6 terminee, etape 7 a demarrer.
 
 Document detaille : `docs/AUDIT_ET_ROADMAP.md`.
 
 Etapes restantes dans l'ordre recommande :
 
-1. Extraire les helpers d'import Excel de `Dashboard.tsx`.
-2. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
+1. Migrer les `parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`.
 
 Regle de suivi obligatoire : apres chaque etape terminee, retirer l'etape de `docs/AUDIT_ET_ROADMAP.md`, puis documenter le travail reellement effectue dans ce fichier ou dans une documentation dediee. Ne pas laisser une etape terminee dans la roadmap active.
 
@@ -55,7 +54,9 @@ Dernieres actions documentaires du 08/06/2026 :
 - Etape 4 terminee : `supabaseAuth.ts` utilise `browserStorage`, typage cible dans `DepensesPetiteCaisse`, `DashboardAnalysisView` et `RemiseTR`, suppression des `any` listes dans la roadmap.
 - Etape 5 terminee : migration des parsings monetaires de `Home.tsx` vers `parseMoneyValue`, suppression de la fonction locale `n()` et des parsings locaux dupliques.
 
-Prochaine action conseillee : demarrer l'etape 6 de `docs/AUDIT_ET_ROADMAP.md` (extraction ciblee des helpers d'import Excel de `Dashboard.tsx`), sans attaquer les etapes suivantes dans le meme lot.
+- Etape 6 terminee : extraction des helpers d'import Excel/PDF de `Dashboard.tsx` vers `src/features/dashboard/importHelpers/` (`historicalBudgetImport.ts`, `payrollImport.ts`, `caisseImport.ts`), sans changement de logique metier.
+
+Prochaine action conseillee : demarrer l'etape 7 de `docs/AUDIT_ET_ROADMAP.md` (`parseFloat` de `Dashboard.tsx` vers `parseMoneyValue`), sans attaquer de sujet hors roadmap.
 
 ## Consolidation patches Vite â€” terminee
 

@@ -41,7 +41,7 @@ Ne pas casser ni refondre sans raison ces Ã©lÃ©ments dÃ©jÃ  propres :
 
 ### Critique
 
-1. `Dashboard.tsx` reste trop gros et dangereux : calculs financiers avec nombreux `parseFloat`, fonctions imbriquÃ©es longues, gros `useMemo`, helpers d'import Excel mÃ©langÃ©s au JSX.
+1. `Dashboard.tsx` reste trop gros et dangereux : calculs financiers avec nombreux `parseFloat`, fonctions imbriquees longues, gros `useMemo`.
 
 ### Majeur
 
@@ -56,20 +56,6 @@ Ne pas casser ni refondre sans raison ces Ã©lÃ©ments dÃ©jÃ  propres :
 ## Roadmap active
 
 Les Ã©tapes doivent Ãªtre faites dans cet ordre, une par une, avec modification ciblÃ©e et validation avant de passer Ã  la suivante.
-
-### Ã‰tape 6 â€” Extraire les helpers d'import Excel de `Dashboard.tsx`
-
-**Risque** : moyen-Ã©levÃ©  
-**Objectif** : isoler la logique d'import et allÃ©ger `Dashboard.tsx`.
-
-Actions :
-
-1. CrÃ©er `src/features/dashboard/importHelpers/historicalBudgetImport.ts` pour les helpers `parseHistoricalBudget*`, `getHistoricalBudget*`, `rowHasHistorical*`, `normalizeHistorical*`, `findHistorical*`.
-2. CrÃ©er `src/features/dashboard/importHelpers/caisseImport.ts` pour `findCaisseAmounts`, `findCaisseAmount`, `findCaisseTheoriqueAmount`, `extractCaisseNumbers`, `findCaisseTtcByRate`.
-3. CrÃ©er `src/features/dashboard/importHelpers/payrollImport.ts` pour `parseHistoricalPayroll*`, `findHistoricalPayroll*`, `getHistoricalPayroll*`, `sumHistoricalPayroll*`, `historicalPayrollHourToDecimal`.
-4. Mettre Ã  jour les imports dans `Dashboard.tsx` sans changer la logique mÃ©tier.
-
-Validation : import budget historique, caisse et paie toujours fonctionnels.
 
 ### Ã‰tape 7 â€” Migrer les `parseFloat` de `Dashboard.tsx`
 
