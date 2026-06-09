@@ -9,13 +9,24 @@ Supprimer toute section terminee. Pas de roman — juste l'essentiel.
 
 ---
 
-## Etape 6 — Valeurs monetaires en number dans DataContext
+## Etape 6 — Valeurs monetaires en number dans DataContext (en cours)
 
-**Effort : plusieurs sessions. Risque : eleve. A faire en dernier.**
+**Risque : eleve. Proceder par groupe de champs homogenes.**
 
-Les montants sont stockes en `string` dans le state. Objectif : stocker en `number`,
-parser a l'entree (saisie utilisateur via `CurrencyInput`), formatter a la sortie
-(affichage).
+Strategie validee sur les 4 premiers canaux simples (Sunday, Uber, Deliveroo, ClickCollect) :
+- `reel: string` → `reel: number` dans les types
+- Parsing dans les updaters dedie (`parseMoneyValue`) au moment du stockage
+- `CurrencyInput` accepte `string | number`
+- `CanalSaisie` accepte `Record<string, string | number>`
+- Les donnees existantes en string restent lisibles (parseMoneyValue est tolerant)
 
-Commencer par un seul canal de saisie pour valider la strategie avant d'etendre.
-Ne pas faire de passe globale en une seule fois.
+Prochains groupes a migrer (meme pattern) :
+- `DayDataNepting.saisie_reel_nepting` et `pourboire_sunday` → number
+- `DayDataEspeces.mis_au_coffre` et `pieces` → number
+- `DayDataConecs.conecs_reel_nepting` → number
+- `DayDataAmexAncv.reel_nepting` → number
+- Champs `DayDataAncvPapiers` (`montant_total`, `total_enveloppes_ancv`) → number
+- Champs `DayDataSaisieTR.TrEntry.valeur` et `nombre` → number
+- Champs `DayDataBilanSynthese` → number
+- Champs monetaires de `MonthDataDepensesPetiteCaisse`
+- Champs de `DayDataTheorique` (impact plus large : theorique est lu partout)
