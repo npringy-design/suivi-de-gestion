@@ -40,7 +40,7 @@ export type DayDataAncvPapiers = {
 };
 
 export type TrEntry = {
-  valeur: string;
+  valeur: number;
   nombre: string;
 };
 
@@ -93,17 +93,17 @@ export type AchatEntry = {
   date: string;
   fournisseur: string;
   description: string;
-  ht: string;
-  tva: string;
+  ht: number;
+  tva: number;
 };
 
 export type AlimentationEntry = {
   date: string;
-  montant: string;
+  montant: number;
 };
 
 export type MonthDataDepensesPetiteCaisse = {
-  solde_debut_mois: string;
+  solde_debut_mois: number;
   achats: AchatEntry[];
   alimentations: AlimentationEntry[];
   comptabilisation: {
@@ -116,27 +116,27 @@ export type MonthDataDepensesPetiteCaisse = {
     c758: string;
   };
   comptage: {
-    p100: string;
-    p50: string;
-    p20: string;
-    p10: string;
-    p5: string;
-    p2: string;
-    p1: string;
-    p050: string;
-    p020: string;
-    p010: string;
-    p005: string;
-    p002: string;
-    p001: string;
+    p100: number;
+    p50: number;
+    p20: number;
+    p10: number;
+    p5: number;
+    p2: number;
+    p1: number;
+    p050: number;
+    p020: number;
+    p010: number;
+    p005: number;
+    p002: number;
+    p001: number;
   };
 };
 
 export type VirementEntry = {
   fournisseur: string;
   numFacture: string;
-  montantHT: string;
-  montantTTC: string;
+  montantHT: number;
+  montantTTC: number;
   dateEcheance: string;
   datePaiementPrevue: string;
   paiementEffectue: boolean;

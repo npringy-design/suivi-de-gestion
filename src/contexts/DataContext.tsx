@@ -76,7 +76,7 @@ type DataContextType = {
   updateEspeces: (month: number, day: number, field: keyof DayDataEspeces, value: string | number) => void;
   updateConecs: (month: number, day: number, field: keyof DayDataConecs, value: string | number) => void;
   updateAncvPapiers: (month: number, day: number, field: keyof DayDataAncvPapiers, value: string | number) => void;
-  updateSaisieTR: (month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string) => void;
+  updateSaisieTR: (month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string | number) => void;
   updateVisuTRPapiers: (month: number, day: number, field: keyof DayDataVisuTRPapiers, value: string) => void;
   updateSunday: (month: number, day: number, field: keyof DayDataSunday, value: string | number) => void;
   updateUber: (month: number, day: number, field: keyof DayDataUber, value: string | number) => void;
@@ -89,7 +89,7 @@ type DataContextType = {
   updateEdgMensuel: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuelRealise: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuelN1: (month: number, cellKey: string, value: string) => void;
-  updateMiseEnPaiement: (month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | boolean) => void;
+  updateMiseEnPaiement: (month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | number | boolean) => void;
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
   config2025: Config2025Data;
   updateConfig2025: (type: 'mensuel' | 'hebdo', index: number, field: string, value: string) => void;
@@ -461,10 +461,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [updateDataForYear]);
 
-  const updateSaisieTR = useCallback((month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string) => {
+  const updateSaisieTR = useCallback((month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string | number) => {
+    const stored = field === 'valeur' ? parseMoneyValue(value) : String(value);
     updateDataForYear(prev => {
       const monthData = normalizeMonthData(prev[month]);
-      const defaultEntries = Array(8).fill({ valeur: '', nombre: '' });
+      const defaultEntries = Array(8).fill({ valeur: 0, nombre: '' });
       const dayData = monthData.saisieTR[day] || {
         edenred: [...defaultEntries],
         pluxee: [...defaultEntries],
@@ -472,7 +473,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         up: [...defaultEntries],
       };
       const providerData = [...dayData[provider]];
-      providerData[index] = { ...providerData[index], [field]: value };
+      providerData[index] = { ...providerData[index], [field]: stored };
 
       return {
         ...prev,
@@ -541,15 +542,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const updateDepensesPetiteCaisse = useCallback((month: number, field: string, value: string | number) => {
     updateDataForYear(prev => {
       const monthData = normalizeMonthData(prev[month]);
+      const DEPENSES_NUMERIC_FIELDS = new Set(['solde_debut_mois', 'ht', 'tva', 'montant', 'p100', 'p50', 'p20', 'p10', 'p5', 'p2', 'p1', 'p050', 'p020', 'p010', 'p005', 'p002', 'p001']);
       const defaultDepenses: MonthDataDepensesPetiteCaisse = {
-        solde_debut_mois: '',
-        achats: Array(30).fill({ date: '', fournisseur: '', description: '', ht: '', tva: '' }),
-        alimentations: Array(5).fill({ date: '', montant: '' }),
+        solde_debut_mois: 0,
+        achats: Array(30).fill({ date: '', fournisseur: '', description: '', ht: 0, tva: 0 }),
+        alimentations: Array(5).fill({ date: '', montant: 0 }),
         comptabilisation: { c606310: '', c606300: '', c606400: '', c626100: '', c627100: '', c44566: '', c758: '' },
-        comptage: { p100: '', p50: '', p20: '', p10: '', p5: '', p2: '', p1: '', p050: '', p020: '', p010: '', p005: '', p002: '', p001: '' },
+        comptage: { p100: 0, p50: 0, p20: 0, p10: 0, p5: 0, p2: 0, p1: 0, p050: 0, p020: 0, p010: 0, p005: 0, p002: 0, p001: 0 },
       };
       const currentDepenses = monthData.depensesPetiteCaisse || defaultDepenses;
       let newDepenses = { ...currentDepenses };
+
+      const stored = (propKey: string) => DEPENSES_NUMERIC_FIELDS.has(propKey) ? parseMoneyValue(value) : String(value);
 
       if (field.startsWith('achats[') || field.startsWith('alimentations[')) {
         const match = field.match(/([a-z]+)\[(\d+)\]\.(.+)/);
@@ -558,11 +562,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           const index = parseInt(indexStr, 10);
           if (arrayName === 'achats') {
             const newArray = [...currentDepenses.achats];
-            newArray[index] = { ...newArray[index], [prop]: value };
+            newArray[index] = { ...newArray[index], [prop]: stored(prop) };
             newDepenses.achats = newArray;
           } else if (arrayName === 'alimentations') {
             const newArray = [...currentDepenses.alimentations];
-            newArray[index] = { ...newArray[index], [prop]: value };
+            newArray[index] = { ...newArray[index], [prop]: stored(prop) };
             newDepenses.alimentations = newArray;
           }
         }
@@ -571,11 +575,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         if (objName === 'comptabilisation' || objName === 'comptage') {
           newDepenses[objName as 'comptabilisation' | 'comptage'] = {
             ...(currentDepenses[objName as 'comptabilisation' | 'comptage'] as Record<string, string | number>),
-            [key]: value,
+            [key]: stored(key),
           } as MonthDataDepensesPetiteCaisse['comptabilisation'] & MonthDataDepensesPetiteCaisse['comptage'];
         }
       } else {
-        newDepenses = { ...currentDepenses, [field]: value };
+        newDepenses = { ...currentDepenses, [field]: stored(field) };
       }
 
       return {
@@ -604,16 +608,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateDataForYear(prev => updateMonthlyStringRecordData(prev, month, 'edgMensuelN1', cellKey, value));
   }, [updateDataForYear]);
 
-  const updateMiseEnPaiement = useCallback((month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | boolean) => {
+  const updateMiseEnPaiement = useCallback((month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | number | boolean) => {
+    const stored = (field === 'montantHT' || field === 'montantTTC') ? parseMoneyValue(value as string | number)
+      : field === 'paiementEffectue' ? Boolean(value)
+      : String(value);
     updateDataForYear(prev => {
       const monthData = normalizeMonthData(prev[month]);
-      const defaultEntries = Array(10).fill({ fournisseur: '', numFacture: '', montantHT: '', montantTTC: '', dateEcheance: '', datePaiementPrevue: '', paiementEffectue: false });
+      const defaultEntries = Array(10).fill({ fournisseur: '', numFacture: '', montantHT: 0, montantTTC: 0, dateEcheance: '', datePaiementPrevue: '', paiementEffectue: false });
       const currentMiseEnPaiement = monthData.miseEnPaiement || {
         period1: [...defaultEntries],
         period2: [...defaultEntries],
       };
       const periodData = [...currentMiseEnPaiement[period]];
-      periodData[index] = { ...periodData[index], [field]: value };
+      periodData[index] = { ...periodData[index], [field]: stored };
 
       return {
         ...prev,

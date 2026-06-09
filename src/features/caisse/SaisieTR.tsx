@@ -18,15 +18,16 @@ const formatDate = (day: number, month: number, year: number) => {
   return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 };
 
-const CurrencyInput = ({ value, onChange, className = "" }: { value: string, onChange: (val: string) => void, className?: string }) => {
+const CurrencyInput = ({ value, onChange, className = "" }: { value: string | number, onChange: (val: string) => void, className?: string }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const displayValue = !isFocused && value ? formatCurrencyFr(value) : value;
+  const strValue = typeof value === 'number' ? (value !== 0 ? String(value) : '') : value;
+  const displayValue = !isFocused && strValue ? formatCurrencyFr(strValue) : strValue;
 
   return (
     <input
       type="text"
       className={`w-full h-full p-2 bg-transparent outline-none text-right transition-colors focus:bg-white focus:ring-2 focus:ring-blue-400 rounded-md ${className}`}
-      value={displayValue}
+      value={displayValue ?? ''}
       onChange={(e) => onChange(sanitizeMoneyInput(e.target.value))}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
@@ -100,7 +101,7 @@ export default function SaisieTR({ month, year, onBack }: SaisieTRProps) {
     providers.forEach(provider => {
       const entries = dayData[provider] || [];
       entries.forEach(entry => {
-        const v = parseVal(entry.valeur);
+        const v = entry.valeur;
         const n = parseVal(entry.nombre);
         totalNombre += n;
         totalValeur += v * n;
@@ -197,10 +198,10 @@ export default function SaisieTR({ month, year, onBack }: SaisieTRProps) {
               <tbody className="divide-y divide-slate-100">
                 {days.filter(day => dayFilter === 'all' || day === dayFilter).map((day) => {
                   const dayData = data[day] || {
-                    edenred: Array(8).fill({ valeur: '', nombre: '' }),
-                    pluxee: Array(8).fill({ valeur: '', nombre: '' }),
-                    bimpli: Array(8).fill({ valeur: '', nombre: '' }),
-                    up: Array(8).fill({ valeur: '', nombre: '' })
+                    edenred: Array(8).fill({ valeur: 0, nombre: '' }),
+                    pluxee: Array(8).fill({ valeur: 0, nombre: '' }),
+                    bimpli: Array(8).fill({ valeur: 0, nombre: '' }),
+                    up: Array(8).fill({ valeur: 0, nombre: '' })
                   };
                   
                   const dayTotal = getDayTotal(day);
@@ -235,7 +236,7 @@ export default function SaisieTR({ month, year, onBack }: SaisieTRProps) {
                             </div>
                           </td>
                           <td className={`px-4 py-2 text-right font-medium text-slate-600 bg-amber-50/10 border-r border-slate-200 ${rowIndex === 7 ? 'border-b border-slate-200' : ''}`}>
-                            {formatCurrency(parseVal(dayData.edenred[rowIndex]?.valeur) * parseVal(dayData.edenred[rowIndex]?.nombre))}
+                            {formatCurrency((dayData.edenred[rowIndex]?.valeur ?? 0) * parseVal(dayData.edenred[rowIndex]?.nombre))}
                           </td>
 
                           {/* PLUXEE */}
@@ -258,7 +259,7 @@ export default function SaisieTR({ month, year, onBack }: SaisieTRProps) {
                             </div>
                           </td>
                           <td className={`px-4 py-2 text-right font-medium text-slate-600 bg-blue-50/10 border-r border-slate-200 ${rowIndex === 7 ? 'border-b border-slate-200' : ''}`}>
-                            {formatCurrency(parseVal(dayData.pluxee[rowIndex]?.valeur) * parseVal(dayData.pluxee[rowIndex]?.nombre))}
+                            {formatCurrency((dayData.pluxee[rowIndex]?.valeur ?? 0) * parseVal(dayData.pluxee[rowIndex]?.nombre))}
                           </td>
 
                           {/* BIMPLI */}
@@ -281,7 +282,7 @@ export default function SaisieTR({ month, year, onBack }: SaisieTRProps) {
                             </div>
                           </td>
                           <td className={`px-4 py-2 text-right font-medium text-slate-600 bg-emerald-50/10 border-r border-slate-200 ${rowIndex === 7 ? 'border-b border-slate-200' : ''}`}>
-                            {formatCurrency(parseVal(dayData.bimpli[rowIndex]?.valeur) * parseVal(dayData.bimpli[rowIndex]?.nombre))}
+                            {formatCurrency((dayData.bimpli[rowIndex]?.valeur ?? 0) * parseVal(dayData.bimpli[rowIndex]?.nombre))}
                           </td>
 
                           {/* UP */}
@@ -304,7 +305,7 @@ export default function SaisieTR({ month, year, onBack }: SaisieTRProps) {
                             </div>
                           </td>
                           <td className={`px-4 py-2 text-right font-medium text-slate-600 bg-slate-50/30 border-r border-slate-200 ${rowIndex === 7 ? 'border-b border-slate-200' : ''}`}>
-                            {formatCurrency(parseVal(dayData.up[rowIndex]?.valeur) * parseVal(dayData.up[rowIndex]?.nombre))}
+                            {formatCurrency((dayData.up[rowIndex]?.valeur ?? 0) * parseVal(dayData.up[rowIndex]?.nombre))}
                           </td>
 
                           {/* TOTAL */}

@@ -4,11 +4,12 @@ import { useData, type AchatEntry, type AlimentationEntry } from '@/contexts/Dat
 import { parseMoneyValue } from '@/lib/money';
 import { MONTH_NAMES } from '@/lib/constants';
 
-const CurrencyInput = ({ value, onChange, className }: { value: string, onChange: (val: string) => void, className?: string }) => {
+const CurrencyInput = ({ value, onChange, className }: { value: string | number, onChange: (val: string) => void, className?: string }) => {
   const [isFocused, setIsFocused] = useState(false);
-  let displayValue = value;
-  if (!isFocused && value) {
-    const num = parseMoneyValue(value);
+  const strValue = typeof value === 'number' ? (value !== 0 ? String(value) : '') : value;
+  let displayValue = strValue;
+  if (!isFocused && strValue) {
+    const num = parseMoneyValue(strValue);
     if (!isNaN(num)) {
       displayValue = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
     }
@@ -17,7 +18,7 @@ const CurrencyInput = ({ value, onChange, className }: { value: string, onChange
     <input
       type="text"
       className={className || "w-full p-2 bg-transparent outline-none text-center transition-colors focus:bg-white focus:ring-2 focus:ring-blue-400 rounded-md"}
-      value={displayValue}
+      value={displayValue ?? ''}
       onChange={(e) => { const val = e.target.value.replace(/[^0-9.,-]/g, ''); onChange(val); }}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
@@ -56,11 +57,11 @@ const NAV = '#1e293b';
 export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPetiteCaisseProps) {
   const { data, updateDepensesPetiteCaisse } = useData();
   const monthData = data[month]?.depensesPetiteCaisse || {
-    solde_debut_mois: '',
-    achats: Array(30).fill({ date: '', fournisseur: '', description: '', ht: '', tva: '' }),
-    alimentations: Array(5).fill({ date: '', montant: '' }),
+    solde_debut_mois: 0,
+    achats: Array(30).fill({ date: '', fournisseur: '', description: '', ht: 0, tva: 0 }),
+    alimentations: Array(5).fill({ date: '', montant: 0 }),
     comptabilisation: { c606310: '', c606300: '', c606400: '', c626100: '', c627100: '', c44566: '', c758: '' },
-    comptage: { p100: '', p50: '', p20: '', p10: '', p5: '', p2: '', p1: '', p050: '', p020: '', p010: '', p005: '', p002: '', p001: '' }
+    comptage: { p100: 0, p50: 0, p20: 0, p10: 0, p5: 0, p2: 0, p1: 0, p050: 0, p020: 0, p010: 0, p005: 0, p002: 0, p001: 0 }
   };
   const fmt = (num: number) => num === 0 ? '-   €' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
@@ -70,29 +71,29 @@ export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPe
   const handleComptageChange = (f: string, v: string) => updateDepensesPetiteCaisse(month, `comptage.${f}`, v);
 
   const calculateSoldeDebut = (m: number): number => {
-    let solde = parseMoneyValue(data[0]?.depensesPetiteCaisse?.solde_debut_mois);
+    let solde = (data[0]?.depensesPetiteCaisse?.solde_debut_mois ?? 0);
     for (let i = 0; i < m; i++) {
       const mData = data[i]?.depensesPetiteCaisse;
       if (!mData) continue;
-      let tTtc = 0; mData.achats.forEach((a: AchatEntry) => tTtc += parseMoneyValue(a.ht) + parseMoneyValue(a.tva));
-      let tAlim = 0; mData.alimentations.forEach((a: AlimentationEntry) => tAlim += parseMoneyValue(a.montant));
+      let tTtc = 0; mData.achats.forEach((a: AchatEntry) => tTtc += a.ht + a.tva);
+      let tAlim = 0; mData.alimentations.forEach((a: AlimentationEntry) => tAlim += a.montant);
       let sReel = 0;
       const cv = { p100:100,p50:50,p20:20,p10:10,p5:5,p2:2,p1:1,p050:0.5,p020:0.2,p010:0.1,p005:0.05,p002:0.02,p001:0.01 };
-      Object.entries(cv).forEach(([k,v]) => { sReel += parseMoneyValue(mData.comptage[k as keyof typeof mData.comptage]) * v; });
+      Object.entries(cv).forEach(([k,v]) => { sReel += (mData.comptage[k as keyof typeof mData.comptage] ?? 0) * v; });
       if (sReel > 0) solde = sReel; else solde = solde + tAlim - tTtc;
     }
     return solde;
   };
 
   let totalHt = 0, totalTva = 0, totalTtc = 0;
-  monthData.achats.forEach((a: AchatEntry) => { const ht=parseMoneyValue(a.ht),tva=parseMoneyValue(a.tva); totalHt+=ht; totalTva+=tva; totalTtc+=ht+tva; });
+  monthData.achats.forEach((a: AchatEntry) => { const ht=a.ht,tva=a.tva; totalHt+=ht; totalTva+=tva; totalTtc+=ht+tva; });
   let totalAlimentation = 0;
-  monthData.alimentations.forEach((a: AlimentationEntry) => { totalAlimentation += parseMoneyValue(a.montant); });
-  const soldeDebut = month === 0 ? parseMoneyValue(monthData.solde_debut_mois) : calculateSoldeDebut(month);
+  monthData.alimentations.forEach((a: AlimentationEntry) => { totalAlimentation += a.montant; });
+  const soldeDebut = month === 0 ? monthData.solde_debut_mois : calculateSoldeDebut(month);
   const soldeTheo = soldeDebut + totalAlimentation - totalTtc;
   const coinValues = { p100:100,p50:50,p20:20,p10:10,p5:5,p2:2,p1:1,p050:0.5,p020:0.2,p010:0.1,p005:0.05,p002:0.02,p001:0.01 };
   let soldeReel = 0;
-  Object.entries(coinValues).forEach(([key,value]) => { soldeReel += parseMoneyValue(monthData.comptage[key as keyof typeof monthData.comptage]) * value; });
+  Object.entries(coinValues).forEach(([key,value]) => { soldeReel += monthData.comptage[key as keyof typeof monthData.comptage] * value; });
   const ecart = soldeReel - soldeTheo;
 
   return (
@@ -129,7 +130,7 @@ export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPe
                 <div className={`w-36 ${month === 0 ? 'bg-orange-50' : 'bg-slate-50'}`}>
                   {month === 0 ? (
                     <input type="text" className="w-full h-full px-3 py-2 bg-transparent text-right font-bold text-slate-800 outline-none focus:bg-white transition-colors text-sm"
-                      value={monthData.solde_debut_mois} onChange={(e) => updateDepensesPetiteCaisse(month, 'solde_debut_mois', e.target.value)} />
+                      value={monthData.solde_debut_mois || ''} onChange={(e) => updateDepensesPetiteCaisse(month, 'solde_debut_mois', e.target.value)} />
                   ) : (
                     <div className="w-full h-full px-3 py-2 text-right font-bold text-slate-800 text-sm">{fmt(soldeDebut)}</div>
                   )}
@@ -152,7 +153,7 @@ export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPe
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {monthData.achats.map((achat: AchatEntry, i: number) => {
-                    const ht = parseMoneyValue(achat.ht), tva = parseMoneyValue(achat.tva), ttc = ht + tva;
+                    const ht = achat.ht, tva = achat.tva, ttc = ht + tva;
                     return (
                       <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
                         <td className="px-1 py-0.5 border-r border-slate-100">
@@ -301,7 +302,7 @@ export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPe
                     { label: '0,02 €',   key: 'p002', val: 0.02 },
                     { label: '0,01 €',   key: 'p001', val: 0.01 },
                   ].map((item) => {
-                    const count = parseMoneyValue(monthData.comptage[item.key as keyof typeof monthData.comptage]);
+                    const count = monthData.comptage[item.key as keyof typeof monthData.comptage];
                     const total = count * item.val;
                     return (
                       <tr key={item.key} className="hover:bg-slate-50/50 transition-colors group">
@@ -309,7 +310,7 @@ export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPe
                         <td className="px-1 py-0.5 border-r border-slate-100">
                           <div className="bg-orange-50/50 rounded border border-orange-100/50 group-hover:border-orange-200 transition-colors">
                             <input type="text" className="w-full px-2 py-1 bg-transparent outline-none text-center text-slate-700 font-medium focus:bg-white focus:ring-1 focus:ring-blue-400 rounded"
-                              value={monthData.comptage[item.key as keyof typeof monthData.comptage]}
+                              value={monthData.comptage[item.key as keyof typeof monthData.comptage] || ''}
                               onChange={(e) => handleComptageChange(item.key, e.target.value)} />
                           </div>
                         </td>

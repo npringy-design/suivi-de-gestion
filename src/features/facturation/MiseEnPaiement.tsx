@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Menu, X } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
-import { parseMoneyValue } from '@/lib/money';
 import { MONTH_NAMES_UPPER } from '@/lib/constants';
 import { formatEuroSymbol } from '@/lib/formatters';
 
@@ -58,8 +57,8 @@ export default function MiseEnPaiement({ month, setMonth, onBack }: MiseEnPaieme
   }, []);
 
   const monthData = data[month]?.miseEnPaiement || {
-    period1: Array(10).fill({ fournisseur: '', numFacture: '', montantHT: '', montantTTC: '', dateEcheance: '', datePaiementPrevue: '', paiementEffectue: false }),
-    period2: Array(10).fill({ fournisseur: '', numFacture: '', montantHT: '', montantTTC: '', dateEcheance: '', datePaiementPrevue: '', paiementEffectue: false })
+    period1: Array(10).fill({ fournisseur: '', numFacture: '', montantHT: 0, montantTTC: 0, dateEcheance: '', datePaiementPrevue: '', paiementEffectue: false }),
+    period2: Array(10).fill({ fournisseur: '', numFacture: '', montantHT: 0, montantTTC: 0, dateEcheance: '', datePaiementPrevue: '', paiementEffectue: false })
   };
 
   const labels = getPeriodLabels(month);
@@ -70,7 +69,7 @@ export default function MiseEnPaiement({ month, setMonth, onBack }: MiseEnPaieme
 
   const renderPeriod = (period: 'period1' | 'period2', labelInfo: { echeance: string, paiement: string }) => {
     const rows = monthData[period];
-    const totalTTC = rows.reduce((sum, row) => sum + parseMoneyValue(row.montantTTC), 0);
+    const totalTTC = rows.reduce((sum, row) => sum + row.montantTTC, 0);
 
     return (
       <div style={{ marginBottom: 32 }}>
@@ -103,7 +102,7 @@ export default function MiseEnPaiement({ month, setMonth, onBack }: MiseEnPaieme
                 <td style={{ border: '1px solid #cbd5e1', padding: 0 }}>
                   <input
                     type="text"
-                    value={row.montantHT}
+                    value={row.montantHT || ''}
                     onChange={(e) => handleUpdate(period, idx, 'montantHT', e.target.value)}
                     style={{ width: '100%', border: 'none', padding: isMobile ? '6px' : '8px', background: '#f1f5f9', outline: 'none', fontSize: isMobile ? 11 : 13, textAlign: 'right' }}
                   />
@@ -111,7 +110,7 @@ export default function MiseEnPaiement({ month, setMonth, onBack }: MiseEnPaieme
                 <td style={{ border: '1px solid #cbd5e1', padding: 0 }}>
                   <input
                     type="text"
-                    value={row.montantTTC}
+                    value={row.montantTTC || ''}
                     onChange={(e) => handleUpdate(period, idx, 'montantTTC', e.target.value)}
                     style={{ width: '100%', border: 'none', padding: '8px', background: '#f1f5f9', outline: 'none', fontSize: 13, textAlign: 'right' }}
                   />

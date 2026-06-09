@@ -103,8 +103,8 @@ export default function DashboardCaisseView({
     { key: 'pluxee', label: 'Pluxee' },
     { key: 'edenred', label: 'Edenred' },
   ] as const;
-  const trPapierReel = trPapierProviders.reduce((sum, provider) => sum + parseCaisseNumber(trData?.[provider.key]?.[0]?.valeur || ''), 0);
-  const trPapierDisplay = trPapierReel ? trPapierReel.toFixed(2) : trPapier?.valeur || '';
+  const trPapierReel = trPapierProviders.reduce((sum, provider) => sum + (trData?.[provider.key]?.[0]?.valeur ?? 0), 0);
+  const trPapierDisplay = trPapierReel ? trPapierReel.toFixed(2) : reelStr(trPapier?.valeur);
   const theorique = monthData?.theorique?.[day];
   const cashValidationComment = nepting?.commentaire || '';
   const cashValidationLabel = cashValidationComment ? 'Validation enregistrée' : 'Non validé';

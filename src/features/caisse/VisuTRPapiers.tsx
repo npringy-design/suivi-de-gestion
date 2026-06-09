@@ -53,7 +53,7 @@ export default function VisuTRPapiers({ month, year, onBack }: VisuTRPapiersProp
     if (!d) return { nombre: 0, valeur: 0 };
     let nb = 0, val = 0;
     (['edenred', 'pluxee', 'bimpli', 'up'] as (keyof DayDataSaisieTR)[]).forEach(p => {
-      (d[p] || []).forEach((e: { nombre: string; valeur: string }) => { nb += parseVal(e.nombre); val += parseVal(e.valeur) * parseVal(e.nombre); });
+      (d[p] || []).forEach((e: { nombre: string; valeur: number }) => { nb += parseVal(e.nombre); val += e.valeur * parseVal(e.nombre); });
     });
     return { nombre: nb, valeur: val };
   };
