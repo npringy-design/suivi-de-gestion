@@ -135,7 +135,7 @@ export default function BilanSynthese({ month, year, onBack }: BilanSyntheseProp
   let sumPourboires = 0;
 
   days.forEach(day => {
-    const dayBilan = bilanData[day] || { ttc_5_5: '', ttc_10: '', ttc_20: '' };
+    const dayBilan = bilanData[day] || { ttc_5_5: 0, ttc_10: 0, ttc_20: 0 };
     const tTheorique = getDayData(theoriqueData, day);
     const tNepting = getDayData(neptingData, day);
     const tEspeces = getDayData(especesData, day);
@@ -397,7 +397,7 @@ export default function BilanSynthese({ month, year, onBack }: BilanSyntheseProp
             </thead>
             <tbody className="divide-y divide-slate-100">
             {days.map((day) => {
-              const dayBilan = bilanData[day] || { ttc_5_5: '', ttc_10: '', ttc_20: '' };
+              const dayBilan = bilanData[day] || { ttc_5_5: 0, ttc_10: 0, ttc_20: 0 };
               const tTheorique = getDayData(theoriqueData, day);
               const tNepting = getDayData(neptingData, day);
               const tEspeces = getDayData(especesData, day);

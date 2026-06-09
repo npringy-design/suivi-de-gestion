@@ -83,7 +83,7 @@ type DataContextType = {
   updateAmexAncv: (month: number, day: number, field: keyof DayDataAmexAncv, value: string | number) => void;
   updateDeliveroo: (month: number, day: number, field: keyof DayDataDeliveroo, value: string | number) => void;
   updateClickCollect: (month: number, day: number, field: keyof DayDataClickCollect, value: string | number) => void;
-  updateBilanSynthese: (month: number, day: number, field: keyof DayDataBilanSynthese, value: string) => void;
+  updateBilanSynthese: (month: number, day: number, field: keyof DayDataBilanSynthese, value: string | number) => void;
   updateDepensesPetiteCaisse: (month: number, field: keyof MonthDataDepensesPetiteCaisse | string, value: string | number) => void;
   updateDashboard: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuel: (month: number, cellKey: string, value: string) => void;
@@ -117,7 +117,7 @@ const DEFAULT_ANCV_PAPIERS_DAY: DayDataAncvPapiers = { nombre_ancv: '', montant_
 const DEFAULT_VISU_TR_PAPIERS_DAY: DayDataVisuTRPapiers = { n_bordereaux: '', nbre_tr_enveloppes: '', total_enveloppes_tr: '', commentaire: '' };
 const DEFAULT_REEL_DAY: DayDataSunday = { reel: 0, commentaire: '' };
 const DEFAULT_AMEX_ANCV_DAY: DayDataAmexAncv = { reel_nepting: 0, commentaire: '' };
-const DEFAULT_BILAN_DAY: DayDataBilanSynthese = { ttc_5_5: '', ttc_10: '', ttc_20: '' };
+const DEFAULT_BILAN_DAY: DayDataBilanSynthese = { ttc_5_5: 0, ttc_10: 0, ttc_20: 0 };
 
 const loadJson = <T,>(key: string, fallback: T): T => {
   try {
@@ -517,7 +517,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [updateDataForYear]);
 
-  const updateBilanSynthese = useCallback((month: number, day: number, field: keyof DayDataBilanSynthese, value: string) => {
+  const updateBilanSynthese = useCallback((month: number, day: number, field: keyof DayDataBilanSynthese, value: string | number) => {
+    const stored = parseMoneyValue(value);
     updateDataForYear(prev => {
       const monthData = normalizeMonthData(prev[month]);
       const dayData = monthData.bilanSynthese[day] || DEFAULT_BILAN_DAY;
@@ -527,7 +528,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           ...monthData,
           bilanSynthese: {
             ...monthData.bilanSynthese,
-            [day]: { ...dayData, [field]: value },
+            [day]: { ...dayData, [field]: stored },
           },
         },
       };

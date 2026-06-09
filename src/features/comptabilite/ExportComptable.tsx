@@ -26,7 +26,7 @@ const getSaisieTRTotal = (dayData?: DayDataSaisieTR) => {
 };
 
 const computeDayTotals = (day: number, monthData: MonthData): DayTotalsWithInfo => {
-  const bilan = monthData.bilanSynthese?.[day] || { ttc_5_5: '', ttc_10: '', ttc_20: '' };
+  const bilan = monthData.bilanSynthese?.[day] || { ttc_5_5: 0, ttc_10: 0, ttc_20: 0 };
   const theorique = monthData.theorique?.[day] || {};
   const nepting = monthData.nepting?.[day] || {};
   const especes = monthData.especes?.[day] || {};

@@ -84,9 +84,9 @@ export type DayDataClickCollect = {
 };
 
 export type DayDataBilanSynthese = {
-  ttc_5_5: string;
-  ttc_10: string;
-  ttc_20: string;
+  ttc_5_5: number;
+  ttc_10: number;
+  ttc_20: number;
 };
 
 export type AchatEntry = {
