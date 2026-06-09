@@ -1,3 +1,5 @@
+import { averagePayrollRate } from '@/personnelSalaryImport';
+import type { SalarieRow } from '@/contexts/DataContext';
 import type { DashboardColumn } from './dashboardTypes';
 
 export const dashboardColumns: DashboardColumn[] = [
@@ -132,3 +134,55 @@ export const dashboardColumns: DashboardColumn[] = [
   ['CA', 'ECART VS N-1', 'VALEUR', 'bg-white'],
   ['RESTAURANTS', 'ECART VS N-1', 'VALEUR', 'bg-white'],
 ];
+
+export function buildDynamicColumns(
+  salariesConfig: Record<string, SalarieRow[]> | undefined,
+  purchaseSupplierNames: Record<number, string>,
+): DashboardColumn[] {
+  const cols = [...dashboardColumns];
+  if (salariesConfig) {
+    // Update FRAIS DE PERSONNEL PROJECTION headers
+    const updateHeader = (idx: number, category: string, label: string, department?: 'cuisine' | 'salle') => {
+      const rows = salariesConfig[category] || [];
+      const avg = averagePayrollRate(rows, department, category);
+      const names = rows
+        .filter((row: SalarieRow) => !department || !row.department || row.department === department)
+        .map((row: SalarieRow) => String(row.nom || '').trim())
+        .filter(Boolean);
+      const namesStr = '';
+      const avgStr = avg > 0 ? `\n${avg.toFixed(2).replace('.', ',')} €` : '';
+      cols[idx] = [...cols[idx]];
+      cols[idx][1] = idx >= 77 ? 'FRAIS PERSONNEL REALISE' : 'PROJECTION S/C';
+      cols[idx][2] = `${label}${namesStr}${avgStr}`;
+    };
+
+    updateHeader(62, 'cadre', 'CADRE\nCUISINE', 'cuisine');
+    updateHeader(63, 'cadre', 'CADRE\nSALLE', 'salle');
+    updateHeader(64, 'maitrise', 'MAITRISE\nCUISINE', 'cuisine');
+    updateHeader(65, 'maitrise', 'MAITRISE\nSALLE', 'salle');
+    updateHeader(66, 'niv12', 'NIV I ET II\nCUISINE', 'cuisine');
+    updateHeader(67, 'niv12', 'NIV I ET II\nSALLE', 'salle');
+    updateHeader(68, 'niv3', 'NIV III\nCUISINE', 'cuisine');
+    updateHeader(69, 'niv3', 'NIV III\nSALLE', 'salle');
+    updateHeader(70, 'apprenti', 'APPRENTI\nCUISINE', 'cuisine');
+    updateHeader(71, 'apprenti', 'APPRENTI\nSALLE', 'salle');
+    updateHeader(77, 'cadre', 'CADRE\nCUISINE', 'cuisine');
+    updateHeader(78, 'cadre', 'CADRE\nSALLE', 'salle');
+    updateHeader(79, 'maitrise', 'MAITRISE\nCUISINE', 'cuisine');
+    updateHeader(80, 'maitrise', 'MAITRISE\nSALLE', 'salle');
+    updateHeader(81, 'niv12', 'NIV I ET II\nCUISINE', 'cuisine');
+    updateHeader(82, 'niv12', 'NIV I ET II\nSALLE', 'salle');
+    updateHeader(83, 'niv3', 'NIV III\nCUISINE', 'cuisine');
+    updateHeader(84, 'niv3', 'NIV III\nSALLE', 'salle');
+    updateHeader(85, 'apprenti', 'APPRENTI\nCUISINE', 'cuisine');
+    updateHeader(86, 'apprenti', 'APPRENTI\nSALLE', 'salle');
+  }
+  Object.entries(purchaseSupplierNames).forEach(([col, name]) => {
+    const colIndex = Number(col);
+    if (colIndex >= 45 && colIndex <= 57 && name.trim()) {
+      cols[colIndex] = [...cols[colIndex]];
+      cols[colIndex][2] = name.trim();
+    }
+  });
+  return cols;
+}
