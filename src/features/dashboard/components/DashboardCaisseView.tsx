@@ -170,18 +170,18 @@ export default function DashboardCaisseView({
   };
 
   const cashRows = [
-    { label: 'CB', theorique: theorique?.cb || '', value: reelStr(nepting?.saisie_reel_nepting) },
+    { label: 'CB', theorique: reelStr(theorique?.cb), value: reelStr(nepting?.saisie_reel_nepting) },
     { label: 'Pourboires', theorique: '', value: reelStr(nepting?.pourboire_sunday), multiplier: -1 },
-    { label: 'Espèces coffre', theorique: theorique?.especes || '', value: reelStr(especes?.mis_au_coffre) },
+    { label: 'Espèces coffre', theorique: reelStr(theorique?.especes), value: reelStr(especes?.mis_au_coffre) },
     { label: 'Pièces', theorique: '', value: reelStr(especes?.pieces) },
-    { label: 'AMEX/ANCV carte', theorique: theorique?.amex || '', value: reelStr(amexAncv?.reel_nepting) },
-    { label: 'TR carte', theorique: theorique?.tr_carte || '', value: reelStr(conecs?.conecs_reel_nepting) },
-    { label: 'ANCV papier', theorique: theorique?.ancv || '', value: ancv?.montant_total || '' },
-    { label: 'TR papier', theorique: theorique?.tr_papier || '', value: trPapierDisplay },
-    { label: 'Sunday', theorique: theorique?.sunday || '', value: reelStr(sunday?.reel) },
-    { label: 'Uber', theorique: theorique?.uber || '', value: reelStr(uber?.reel) },
-    { label: 'Deliveroo', theorique: theorique?.deliveroo || '', value: reelStr(deliveroo?.reel) },
-    { label: 'Click & collect', theorique: theorique?.click_collect || '', value: reelStr(clickCollect?.reel) },
+    { label: 'AMEX/ANCV carte', theorique: reelStr(theorique?.amex), value: reelStr(amexAncv?.reel_nepting) },
+    { label: 'TR carte', theorique: reelStr(theorique?.tr_carte), value: reelStr(conecs?.conecs_reel_nepting) },
+    { label: 'ANCV papier', theorique: reelStr(theorique?.ancv), value: reelStr(ancv?.montant_total) },
+    { label: 'TR papier', theorique: reelStr(theorique?.tr_papier), value: trPapierDisplay },
+    { label: 'Sunday', theorique: reelStr(theorique?.sunday), value: reelStr(sunday?.reel) },
+    { label: 'Uber', theorique: reelStr(theorique?.uber), value: reelStr(uber?.reel) },
+    { label: 'Deliveroo', theorique: reelStr(theorique?.deliveroo), value: reelStr(deliveroo?.reel) },
+    { label: 'Click & collect', theorique: reelStr(theorique?.click_collect), value: reelStr(clickCollect?.reel) },
   ];
   const totalTheorique = cashRows.reduce((sum, row) => sum + parseCaisseNumber(row.theorique), 0);
   const totalReel = cashRows.reduce((sum, row) => sum + parseCaisseNumber(row.value) * (row.multiplier || 1), 0);

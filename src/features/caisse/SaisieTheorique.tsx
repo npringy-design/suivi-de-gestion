@@ -21,21 +21,22 @@ const formatDate = (day: number, month: number, year: number) => {
   return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
-const CurrencyInput = React.memo(({ value, onChange, className }: { value: string; onChange: (val: string) => void; className?: string }) => {
+const CurrencyInput = React.memo(({ value, onChange, className }: { value: string | number; onChange: (val: string) => void; className?: string }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const strValue = typeof value === 'number' ? (value !== 0 ? String(value) : '') : value;
 
   const displayValue = useMemo(() => {
-    if (isFocused || !value) return value;
-    const num = parseMoneyValue(value);
-    if (isNaN(num)) return value;
+    if (isFocused || !strValue) return strValue;
+    const num = parseMoneyValue(strValue);
+    if (isNaN(num)) return strValue;
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
-  }, [value, isFocused]);
+  }, [strValue, isFocused]);
 
   return (
     <input
       type="text"
       className={className || "w-full h-full p-2 bg-transparent outline-none text-center transition-colors focus:bg-white focus:ring-2 focus:ring-blue-400 rounded-md"}
-      value={displayValue}
+      value={displayValue ?? ''}
       onChange={(e) => onChange(e.target.value.replace(/[^0-9.,-]/g, ''))}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
@@ -45,14 +46,14 @@ const CurrencyInput = React.memo(({ value, onChange, className }: { value: strin
 CurrencyInput.displayName = 'CurrencyInput';
 
 type DayData = {
-  total_ca: string; cb: string; amex: string; tr_papier: string; tr_carte: string;
-  ancv: string; especes: string; click_collect: string; uber: string;
-  deliveroo: string; sunday: string; commentaire: string;
+  total_ca: number; cb: number; amex: number; tr_papier: number; tr_carte: number;
+  ancv: number; especes: number; click_collect: number; uber: number;
+  deliveroo: number; sunday: number; commentaire: string;
 };
 
 const EMPTY_DAY: DayData = {
-  total_ca: '', cb: '', amex: '', tr_papier: '', tr_carte: '', ancv: '',
-  especes: '', click_collect: '', uber: '', deliveroo: '', sunday: '', commentaire: ''
+  total_ca: 0, cb: 0, amex: 0, tr_papier: 0, tr_carte: 0, ancv: 0,
+  especes: 0, click_collect: 0, uber: 0, deliveroo: 0, sunday: 0, commentaire: ''
 };
 
 const COLUMNS_TO_SUM: (keyof DayData)[] = [
@@ -60,7 +61,7 @@ const COLUMNS_TO_SUM: (keyof DayData)[] = [
   'click_collect', 'uber', 'deliveroo', 'sunday'
 ];
 
-const parseVal = (s: string) => parseMoneyValue(s);
+const parseVal = (s: string | number) => parseMoneyValue(s);
 const formatCurrency = (num: number) => num === 0 ? '-' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
 
 const NAV = '#1e293b';
@@ -105,7 +106,7 @@ export default function SaisieTheorique({ month, year, onBack }: SaisieTheorique
       const totalEncaisse = COLUMNS_TO_SUM.reduce((s, col) => s + parseVal(d[col]), 0);
       const totalCaVal = parseVal(d.total_ca);
       const ecart = totalCaVal - totalEncaisse;
-      const hasData = Object.values(d).some(v => v !== '');
+      const hasData = Object.values(d).some(v => v !== '' && v !== 0);
       const hasError = hasData && Math.abs(ecart) > 0.001;
       return { day, d, totalEncaisse, totalCaVal, ecart, hasData, hasError };
     });

@@ -73,7 +73,7 @@ type UseDashboardImportHandlersParams = {
   setSalaryImportStatus: (status: string) => void;
   handleCellChange: (rowIndex: number, colIndex: number, value: string) => void;
   updateDashboard: (month: number, cellKey: string, value: string) => void;
-  updateTheorique: (month: number, day: number, field: keyof DayDataTheorique, value: string) => void;
+  updateTheorique: (month: number, day: number, field: keyof DayDataTheorique, value: string | number) => void;
   updateBilanSynthese: (month: number, day: number, field: keyof DayDataBilanSynthese, value: string | number) => void;
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
   personnelInfos: PersonnelInfo[];

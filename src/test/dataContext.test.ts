@@ -6,22 +6,22 @@ describe('DataContext Types', () => {
   describe('DayDataTheorique', () => {
     it('should have required fields', () => {
       const dayData: DayDataTheorique = {
-        total_ca: '100',
-        cb: '50',
-        amex: '30',
-        tr_papier: '10',
-        tr_carte: '5',
-        ancv: '3',
-        especes: '2',
-        click_collect: '0',
-        uber: '0',
-        deliveroo: '0',
-        sunday: '0',
+        total_ca: 100,
+        cb: 50,
+        amex: 30,
+        tr_papier: 10,
+        tr_carte: 5,
+        ancv: 3,
+        especes: 2,
+        click_collect: 0,
+        uber: 0,
+        deliveroo: 0,
+        sunday: 0,
         commentaire: '',
       };
-      expect(dayData.total_ca).toBe('100');
-      expect(dayData.cb).toBe('50');
-      expect(dayData.amex).toBe('30');
+      expect(dayData.total_ca).toBe(100);
+      expect(dayData.cb).toBe(50);
+      expect(dayData.amex).toBe(30);
     });
   });
 

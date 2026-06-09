@@ -71,7 +71,7 @@ type DataContextType = {
   setSelectedMonth: (month: number) => void;
   data: Record<number, MonthData>;
   allData: Record<number, Record<number, MonthData>>;
-  updateTheorique: (month: number, day: number, field: keyof DayDataTheorique, value: string) => void;
+  updateTheorique: (month: number, day: number, field: keyof DayDataTheorique, value: string | number) => void;
   updateNepting: (month: number, day: number, field: keyof DayDataNepting, value: string | number) => void;
   updateEspeces: (month: number, day: number, field: keyof DayDataEspeces, value: string | number) => void;
   updateConecs: (month: number, day: number, field: keyof DayDataConecs, value: string | number) => void;
@@ -107,8 +107,8 @@ const CONFIG_2025_STORAGE_KEY = 'config2025_data_v1';
 const CUSTOM_EVENTS_STORAGE_KEY = 'custom_events_v1';
 
 const DEFAULT_THEORIQUE_DAY: DayDataTheorique = {
-  total_ca: '', cb: '', amex: '', tr_papier: '', tr_carte: '', ancv: '',
-  especes: '', click_collect: '', uber: '', deliveroo: '', sunday: '', commentaire: '',
+  total_ca: 0, cb: 0, amex: 0, tr_papier: 0, tr_carte: 0, ancv: 0,
+  especes: 0, click_collect: 0, uber: 0, deliveroo: 0, sunday: 0, commentaire: '',
 };
 const DEFAULT_NEPTING_DAY: DayDataNepting = { saisie_reel_nepting: 0, pourboire_sunday: 0, commentaire: '' };
 const DEFAULT_ESPECES_DAY: DayDataEspeces = { mis_au_coffre: 0, pieces: 0, commentaire: '' };
@@ -389,7 +389,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateDataForYear(prev => updateDailyChannelData(prev, month, day, channelKey, defaultDayData, field, value));
   }, [updateDataForYear]);
 
-  const updateTheorique = useCallback((month: number, day: number, field: keyof DayDataTheorique, value: string) => {
+  const updateTheorique = useCallback((month: number, day: number, field: keyof DayDataTheorique, value: string | number) => {
+    const stored = field === 'commentaire' ? String(value) : parseMoneyValue(value);
     updateDataForYear(prev => {
       const monthData = normalizeMonthData(prev[month]);
       const dayData = monthData.theorique[day] || DEFAULT_THEORIQUE_DAY;
@@ -399,7 +400,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           ...monthData,
           theorique: {
             ...monthData.theorique,
-            [day]: { ...dayData, [field]: value },
+            [day]: { ...dayData, [field]: stored },
           },
         },
       };

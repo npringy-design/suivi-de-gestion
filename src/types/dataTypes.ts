@@ -1,15 +1,15 @@
 export type DayDataTheorique = {
-  total_ca: string;
-  cb: string;
-  amex: string;
-  tr_papier: string;
-  tr_carte: string;
-  ancv: string;
-  especes: string;
-  click_collect: string;
-  uber: string;
-  deliveroo: string;
-  sunday: string;
+  total_ca: number;
+  cb: number;
+  amex: number;
+  tr_papier: number;
+  tr_carte: number;
+  ancv: number;
+  especes: number;
+  click_collect: number;
+  uber: number;
+  deliveroo: number;
+  sunday: number;
   commentaire: string;
 };
 
