@@ -22,11 +22,7 @@ Toutes les vagues (1 a 11) sont integrees. `vite.config.ts` contient uniquement 
 
 Document temporaire `docs/AUDIT_ET_ROADMAP.md` supprime apres completion des etapes.
 
-Important : `docs/ROADMAP_REFACTORING.md` reste l'historique du refactoring deja effectue. La nouvelle roadmap audit du 07/06/2026 est terminee cote code et documentee ci-dessous.
-
-**Chantier en cours : Etape 8 decomposition de `Dashboard.tsx`.**
-
-Objectif : reduire `Dashboard.tsx` sans modifier le comportement utilisateur. Regle absolue : deplacements purs, aucune modification de logique metier.
+La nouvelle roadmap audit du 07/06/2026 est terminee cote code et documentee ci-dessous.
 
 ## Priorite technique actuelle â€” nouvelle roadmap audit
 
@@ -71,18 +67,6 @@ Dernieres actions documentaires du 08/06/2026 :
 - ROADMAP_STRUCTURE etape 6 terminee : migration de tous les champs monetaires `string → number` dans `DataContext`. Tous les types `DayData*` ont leurs champs numeriques en `number`. Parsing via `parseMoneyValue` dans chaque updater ; les donnees string existantes en storage continuent de fonctionner (migration lazy). `CurrencyInput`, `CanalSaisie`, `SaisieTheorique`, `DashboardCaisseView`, `useDashboardImportHandlers` mis a jour. 68 tests passent, `tsc --noEmit` sans erreur. `ROADMAP_STRUCTURE.md` supprime.
 - ROADMAP_STRUCTURE etape 5 terminee : 39 tests Vitest ajoutes dans 3 fichiers — `src/test/formatters.test.ts` (10 tests : `formatEuro`, `formatPercent`), `src/test/buildDailyEntries.test.ts` (10 tests : `buildDailyEntries`, `checkBalance`, cas limites monetaires et arrondi), `src/test/dashboardCalculations.test.ts` (19 tests : `isDateInRange`, `isExactDate`, `isPayrollInputColumn`, `parsePayrollHourForCalculation`, `formatPayrollHourVisualValue`, `formatKpiCurrency`, `formatKpiNumber`). 39/39 passent.
 - ROADMAP_STRUCTURE etape 4 terminee : reorganisation de `src/` en dossiers par domaine. 34 fichiers deplaces via `git mv` : `src/features/caisse/` (13 fichiers), `src/features/edg/` (9 fichiers), `src/features/salaires/` (4 fichiers), `src/features/comptabilite/` (3 fichiers), `src/features/facturation/` (3 fichiers), `src/pages/` (2 fichiers). `router.tsx`, `Dashboard.tsx` et `App.test.tsx` mis a jour. Les imports `'./utils'` dans les fichiers `edg` et `pages/Home` corriges en `'@/utils'`. `tsc --noEmit` sans erreur. Commit unique.
-
-## Consolidation patches Vite â€” terminee
-
-Document de reference : `docs/ROADMAP_PATCHES_VITE.md`.
-
-Toutes les vagues sont dans l'historique. Aucun patch Vite actif dans `vite.config.ts`.
-
-## Ancienne roadmap refactoring â€” historique
-
-Document de reference : `docs/ROADMAP_REFACTORING.md`.
-
-Cette roadmap de consolidation a deja servi au chantier precedent : suppression Gemini, factorisation canaux, extractions Dashboard, hooks Dashboard, DataContext, debut unification monnaie. Elle ne doit plus etre utilisee comme roadmap active sauf pour comprendre l'historique.
 
 ## Authentification
 
