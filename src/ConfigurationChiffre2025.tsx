@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { parseMoneyValue } from '@/lib/money';
 
 const YEAR = 2025;
 const NAV = '#1e293b';
@@ -11,10 +12,6 @@ const GREEN = '#10b981';
 const MONTHS_SHORT = ['janv.-25','févr.-25','mars-25','avr.-25','mai-25','juin-25','juil.-25','août-25','sept.-25','oct.-25','nov.-25','déc.-25'];
 const WEEKS = Array.from({ length: 52 }, (_, i) => `S${i + 1}`);
 
-const p = (v?: string | number) => {
-  if (typeof v === 'number') return v;
-  return parseFloat((v || '0').replace(',', '.')) || 0;
-};
 const fe = (v: number) => v === 0 ? '0,00 €' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
 const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '—';
 
@@ -89,13 +86,13 @@ export default function ConfigurationChiffre2025({ onBack, hideHeader = false }:
       <tbody>
         {MONTHS_SHORT.map((m, i) => {
           const dt = config2025.mensuel[i] || {};
-          const ca_vae = p(dt.ca_vae);
-          const ca_midi = p(dt.ca_midi);
-          const ca_soir = p(dt.ca_soir);
-          const ca_limonade = p(dt.ca_limonade);
-          const cvts_midi = p(dt.cvts_midi);
-          const cvts_soir = p(dt.cvts_soir);
-          const cvts_limonade = p(dt.cvts_limonade);
+          const ca_vae = parseMoneyValue(dt.ca_vae);
+          const ca_midi = parseMoneyValue(dt.ca_midi);
+          const ca_soir = parseMoneyValue(dt.ca_soir);
+          const ca_limonade = parseMoneyValue(dt.ca_limonade);
+          const cvts_midi = parseMoneyValue(dt.cvts_midi);
+          const cvts_soir = parseMoneyValue(dt.cvts_soir);
+          const cvts_limonade = parseMoneyValue(dt.cvts_limonade);
 
           const ca_mois = ca_vae + ca_midi + ca_soir + ca_limonade;
 
@@ -103,8 +100,8 @@ export default function ConfigurationChiffre2025({ onBack, hideHeader = false }:
           let cumulCvtsLimo = 0;
           for (let j = 0; j <= i; j++) {
             const jdt = config2025.mensuel[j] || {};
-            cumulCA += p(jdt.ca_vae) + p(jdt.ca_midi) + p(jdt.ca_soir) + p(jdt.ca_limonade);
-            cumulCvtsLimo += p(jdt.cvts_limonade);
+            cumulCA += parseMoneyValue(jdt.ca_vae) + parseMoneyValue(jdt.ca_midi) + parseMoneyValue(jdt.ca_soir) + parseMoneyValue(jdt.ca_limonade);
+            cumulCvtsLimo += parseMoneyValue(jdt.cvts_limonade);
           }
           
           const cvts_moy_midi = cvts_midi > 0 ? ca_midi / cvts_midi : 0;
@@ -174,13 +171,13 @@ export default function ConfigurationChiffre2025({ onBack, hideHeader = false }:
         {WEEKS.map((w, i) => {
           const weekNum = i + 1;
           const dt = config2025.hebdo[weekNum] || {};
-          const ca_vae = p(dt.ca_vae);
-          const ca_midi = p(dt.ca_midi);
-          const ca_soir = p(dt.ca_soir);
-          const ca_limonade = p(dt.ca_limonade);
-          const cvts_midi = p(dt.cvts_midi);
-          const cvts_soir = p(dt.cvts_soir);
-          const cvts_limonade = p(dt.cvts_limonade);
+          const ca_vae = parseMoneyValue(dt.ca_vae);
+          const ca_midi = parseMoneyValue(dt.ca_midi);
+          const ca_soir = parseMoneyValue(dt.ca_soir);
+          const ca_limonade = parseMoneyValue(dt.ca_limonade);
+          const cvts_midi = parseMoneyValue(dt.cvts_midi);
+          const cvts_soir = parseMoneyValue(dt.cvts_soir);
+          const cvts_limonade = parseMoneyValue(dt.cvts_limonade);
 
           const ca_semaine = ca_vae + ca_midi + ca_soir + ca_limonade;
 
@@ -189,9 +186,9 @@ export default function ConfigurationChiffre2025({ onBack, hideHeader = false }:
           let cumulCvtsLimo = 0;
           for (let j = 1; j <= weekNum; j++) {
             const jdt = config2025.hebdo[j] || {};
-            cumulCA += p(jdt.ca_vae) + p(jdt.ca_midi) + p(jdt.ca_soir) + p(jdt.ca_limonade);
-            cumulCvtsResto += p(jdt.cvts_midi) + p(jdt.cvts_soir);
-            cumulCvtsLimo += p(jdt.cvts_limonade);
+            cumulCA += parseMoneyValue(jdt.ca_vae) + parseMoneyValue(jdt.ca_midi) + parseMoneyValue(jdt.ca_soir) + parseMoneyValue(jdt.ca_limonade);
+            cumulCvtsResto += parseMoneyValue(jdt.cvts_midi) + parseMoneyValue(jdt.cvts_soir);
+            cumulCvtsLimo += parseMoneyValue(jdt.cvts_limonade);
           }
 
           const cvts_moy_midi = cvts_midi > 0 ? ca_midi / cvts_midi : 0;
@@ -262,17 +259,17 @@ export default function ConfigurationChiffre2025({ onBack, hideHeader = false }:
           const weekNum = i + 1;
           const dt = config2025.hebdo[weekNum] || {};
           
-          const heures_travaillees = p(dt.heures_travaillees);
-          const cout_global = p(dt.cout_global);
+          const heures_travaillees = parseMoneyValue(dt.heures_travaillees);
+          const cout_global = parseMoneyValue(dt.cout_global);
           
-          const ca_semaine = p(dt.ca_vae) + p(dt.ca_midi) + p(dt.ca_soir) + p(dt.ca_limonade);
+          const ca_semaine = parseMoneyValue(dt.ca_vae) + parseMoneyValue(dt.ca_midi) + parseMoneyValue(dt.ca_soir) + parseMoneyValue(dt.ca_limonade);
 
           let cumulCA = 0;
           let cumulCoutGlobal = 0;
           for (let j = 1; j <= weekNum; j++) {
             const jdt = config2025.hebdo[j] || {};
-            cumulCA += p(jdt.ca_vae) + p(jdt.ca_midi) + p(jdt.ca_soir) + p(jdt.ca_limonade);
-            cumulCoutGlobal += p(jdt.cout_global);
+            cumulCA += parseMoneyValue(jdt.ca_vae) + parseMoneyValue(jdt.ca_midi) + parseMoneyValue(jdt.ca_soir) + parseMoneyValue(jdt.ca_limonade);
+            cumulCoutGlobal += parseMoneyValue(jdt.cout_global);
           }
           
           const productivite = heures_travaillees > 0 ? ca_semaine / heures_travaillees : 0;

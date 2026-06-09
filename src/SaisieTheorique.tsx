@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { parseMoneyValue } from '@/lib/money';
 
 interface SaisieTheoriqueProps {
   month: number;
@@ -25,7 +26,7 @@ const CurrencyInput = React.memo(({ value, onChange, className }: { value: strin
 
   const displayValue = useMemo(() => {
     if (isFocused || !value) return value;
-    const num = parseFloat(value.replace(',', '.'));
+    const num = parseMoneyValue(value);
     if (isNaN(num)) return value;
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
   }, [value, isFocused]);
@@ -59,7 +60,7 @@ const COLUMNS_TO_SUM: (keyof DayData)[] = [
   'click_collect', 'uber', 'deliveroo', 'sunday'
 ];
 
-const parseVal = (s: string) => { const n = parseFloat((s || '').replace(',', '.')); return isNaN(n) ? 0 : n; };
+const parseVal = (s: string) => parseMoneyValue(s);
 const formatCurrency = (num: number) => num === 0 ? '-' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(num);
 
 const NAV = '#1e293b';

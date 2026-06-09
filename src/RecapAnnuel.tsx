@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { parseMoneyValue } from '@/lib/money';
 
 import { getDashboardRowIndices } from './utils';
 
@@ -248,7 +249,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     for (let i = 0; i < 110; i++) totals[i] = 0;
     Object.values(indices).forEach(rIdx => {
       for (let cIdx = 0; cIdx < 110; cIdx++) {
-        const val = parseFloat(md[`${rIdx}-${cIdx}`] || '0');
+        const val = parseMoneyValue(md[`${rIdx}-${cIdx}`] || '0');
         if (!isNaN(val)) totals[cIdx] += val;
       }
     });

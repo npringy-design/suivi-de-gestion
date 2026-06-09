@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { parseMoneyValue } from '@/lib/money';
 
 import { getDashboardRowIndices, getISOWeek } from './utils';
 
@@ -51,7 +52,7 @@ export default function Reporting({ onBack, hideHeader = false }: ReportingProps
         const isoWeek = getISOWeek(date);
 
         for (let cIdx = 0; cIdx < 110; cIdx++) {
-          const val = parseFloat(md[`${rIdx}-${cIdx}`] || '0');
+          const val = parseMoneyValue(md[`${rIdx}-${cIdx}`] || '0');
           if (!isNaN(val)) {
             monthly[m][cIdx] += val;
             if (isoWeek >= 1 && isoWeek <= 52) {
