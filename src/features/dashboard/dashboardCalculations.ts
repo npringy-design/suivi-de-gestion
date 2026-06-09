@@ -1,5 +1,9 @@
 import { parseMoneyValue, type MoneyInputValue } from '@/lib/money';
 import { parseHourInputToDecimal } from '@/utils';
+import { averagePayrollRate } from '@/personnelSalaryImport';
+import type { SalarieRow } from '@/contexts/DataContext';
+import type { DashboardColumn, DashboardRow } from './dashboardTypes';
+
 
 export type FgBoxLayout =
   | { type: 'data'; box: number; dataIdx: number }
@@ -113,3 +117,470 @@ export const formatValue = (val: string | number | undefined, c: string[], colIn
   if (isPercentage) return `${prefix}${formattedNum} %`;
   return isCurrency ? `${prefix}${formattedNum} €` : `${prefix}${formattedNum}`;
 };
+
+export function computeDashboardData(
+  cellData: Record<string, string>,
+  rows: DashboardRow[],
+  dynamicColumns: DashboardColumn[],
+  salariesConfig: Record<string, SalarieRow[]> | undefined,
+): Record<string, string> {
+    const data: Record<string, string> = { ...cellData };
+    let cumulCA = 0;
+    let cumulCvts = 0;
+    let cumulRealiseCA = 0;
+    let cumulCoutMatiere = 0;
+    let cumulCvtsRealise = 0;
+    let cumulCvtsLimo = 0;
+    let cumulCvtsBudgetComplet = 0;
+
+    // First pass: Calculate row totals (TOTAL JOUR) and CUMUL
+    rows.forEach((row, rIdx) => {
+      if (row.type === 'day') {
+        // Hippo Thillois : pas d'activite limonade. Les valeurs restent ignorees meme si une ancienne donnee existe.
+        [2, 14, 15, 16, 20, 34, 35, 36, 110, 111, 112, 113, 114, 115].forEach(col => {
+          data[`${rIdx}-${col}`] = '';
+        });
+
+        // Read inputs
+        const cvtsMidi = parseMoneyValue(data[`${rIdx}-6`]);
+        const moyMidi = parseMoneyValue(data[`${rIdx}-7`]);
+        const cvtsSoir = parseMoneyValue(data[`${rIdx}-8`]);
+        const moySoir = parseMoneyValue(data[`${rIdx}-9`]);
+        const cvtsLimo = parseMoneyValue(data[`${rIdx}-14`]);
+        const moyLimo = parseMoneyValue(data[`${rIdx}-15`]);
+
+        // Calculate CA
+        const caMidi = cvtsMidi * moyMidi;
+        const caSoir = cvtsSoir * moySoir;
+        const caLimo = cvtsLimo * moyLimo;
+
+        if (caMidi > 0) data[`${rIdx}-0`] = caMidi.toFixed(2);
+        if (caSoir > 0) data[`${rIdx}-1`] = caSoir.toFixed(2);
+        if (caLimo > 0) data[`${rIdx}-2`] = caLimo.toFixed(2);
+
+        const budgetMidi = parseMoneyValue(data[`${rIdx}-0`]);
+        const budgetSoir = parseMoneyValue(data[`${rIdx}-1`]);
+        const budgetLimo = parseMoneyValue(data[`${rIdx}-2`]);
+
+        const budgetRestaurantTotal = budgetMidi + budgetSoir;
+        if (budgetRestaurantTotal > 0 || data[`${rIdx}-0`] || data[`${rIdx}-1`]) data[`${rIdx}-125`] = budgetRestaurantTotal.toFixed(2);
+
+        const totalJour = budgetRestaurantTotal + budgetLimo;
+        if (totalJour > 0 || data[`${rIdx}-0`] || data[`${rIdx}-1`] || data[`${rIdx}-2`]) {
+          data[`${rIdx}-3`] = totalJour.toFixed(2);
+          cumulCA += totalJour;
+          data[`${rIdx}-4`] = cumulCA.toFixed(2);
+        }
+
+        const jourCvts = cvtsMidi + cvtsSoir;
+        if (jourCvts > 0) {
+          data[`${rIdx}-10`] = jourCvts.toString();
+          const jourMoy = (budgetMidi + budgetSoir) / jourCvts;
+          data[`${rIdx}-11`] = jourMoy.toString();
+          
+          cumulCvts += jourCvts;
+          data[`${rIdx}-12`] = cumulCvts.toString();
+        }
+
+        const budgetCvtsComplet = jourCvts + cvtsLimo;
+        if (budgetCvtsComplet > 0 || data[`${rIdx}-10`] || data[`${rIdx}-14`]) {
+          cumulCvtsBudgetComplet += budgetCvtsComplet;
+          data[`${rIdx}-126`] = budgetCvtsComplet.toFixed(0);
+          data[`${rIdx}-127`] = cumulCvtsBudgetComplet.toFixed(0);
+        }
+
+        // REALISE CA HT — 17=VAE,18=MIDI,19=SOIR,20=LIMO,21=TOTAL,22=ECART,23=CUMUL
+        const realiseVae  = parseMoneyValue(data[`${rIdx}-17`]);
+        const realiseMidi = parseMoneyValue(data[`${rIdx}-18`]);
+        const realiseSoir = parseMoneyValue(data[`${rIdx}-19`]);
+        const realiseLimoMidiDetail = parseMoneyValue(data[`${rIdx}-110`]);
+        const realiseLimoSoirDetail = parseMoneyValue(data[`${rIdx}-111`]);
+        const realiseLimoDetailTotal = realiseLimoMidiDetail + realiseLimoSoirDetail;
+        const realiseLimo = realiseLimoDetailTotal > 0 ? realiseLimoDetailTotal : parseMoneyValue(data[`${rIdx}-20`]);
+        if (realiseLimoDetailTotal > 0) data[`${rIdx}-20`] = realiseLimoDetailTotal.toFixed(2);
+        const realiseRestaurantTotal = realiseMidi + realiseSoir;
+        if (realiseRestaurantTotal > 0 || data[`${rIdx}-18`] || data[`${rIdx}-19`]) data[`${rIdx}-116`] = realiseRestaurantTotal.toFixed(2);
+        const realiseTotalJour = realiseVae + realiseRestaurantTotal + realiseLimo;
+        if (realiseTotalJour > 0 || data[`${rIdx}-17`] || data[`${rIdx}-18`] || data[`${rIdx}-19`] || data[`${rIdx}-20`]) {
+          data[`${rIdx}-21`] = realiseTotalJour.toFixed(2);
+          const realiseEcartBudget = realiseTotalJour - totalJour;
+          data[`${rIdx}-22`] = realiseEcartBudget.toFixed(2);
+          if (totalJour > 0) data[`${rIdx}-117`] = ((realiseEcartBudget / totalJour) * 100).toFixed(2);
+          cumulRealiseCA += realiseTotalJour;
+          data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
+        }
+        // COUVERTS REALISE — 25=NB MIDI,26=MOY,27=NB SOIR,28=MOY,29=TOTAL,30=CUMUL,31=ECART nb vs budget
+        const nbCvtsMidi = parseMoneyValue(data[`${rIdx}-25`]);
+        const nbCvtsSoir = parseMoneyValue(data[`${rIdx}-27`]);
+        if (nbCvtsMidi > 0 && realiseMidi > 0) data[`${rIdx}-26`] = (realiseMidi / nbCvtsMidi).toFixed(2);
+        if (nbCvtsSoir > 0 && realiseSoir > 0) data[`${rIdx}-28`] = (realiseSoir / nbCvtsSoir).toFixed(2);
+        const totalCvtsJour = nbCvtsMidi + nbCvtsSoir;
+        if (totalCvtsJour > 0) {
+          data[`${rIdx}-29`] = totalCvtsJour.toFixed(0);
+          
+          const moyJour = (realiseMidi + realiseSoir) / totalCvtsJour;
+          data[`${rIdx}-30`] = moyJour.toFixed(2);
+          
+          const budgetMoyJour = parseMoneyValue(data[`${rIdx}-11`]);
+          if (budgetMoyJour > 0) {
+            data[`${rIdx}-31`] = (moyJour - budgetMoyJour).toFixed(2);
+          }
+
+          cumulCvtsRealise += totalCvtsJour;
+          data[`${rIdx}-32`] = cumulCvtsRealise.toFixed(0);
+          const budgetCvtsJour = parseMoneyValue(data[`${rIdx}-10`]);
+          if (budgetCvtsJour > 0) data[`${rIdx}-33`] = (totalCvtsJour - budgetCvtsJour).toFixed(0);
+        }
+        // COUVERTS LIMONADE — detail midi/soir + total historique
+        const nbCvtsLimoMidiDetail = parseMoneyValue(data[`${rIdx}-112`]);
+        const nbCvtsLimoSoirDetail = parseMoneyValue(data[`${rIdx}-114`]);
+        const nbCvtsLimoDetailTotal = nbCvtsLimoMidiDetail + nbCvtsLimoSoirDetail;
+        const nbCvtsLimo = nbCvtsLimoDetailTotal > 0 ? nbCvtsLimoDetailTotal : parseMoneyValue(data[`${rIdx}-34`]);
+        if (nbCvtsLimoDetailTotal > 0) data[`${rIdx}-34`] = nbCvtsLimoDetailTotal.toFixed(0);
+        if (nbCvtsLimoMidiDetail > 0 && realiseLimoMidiDetail > 0) data[`${rIdx}-113`] = (realiseLimoMidiDetail / nbCvtsLimoMidiDetail).toFixed(2);
+        if (nbCvtsLimoSoirDetail > 0 && realiseLimoSoirDetail > 0) data[`${rIdx}-115`] = (realiseLimoSoirDetail / nbCvtsLimoSoirDetail).toFixed(2);
+        if (nbCvtsLimo > 0 && realiseLimo > 0) data[`${rIdx}-35`] = (realiseLimo / nbCvtsLimo).toFixed(2);
+        if (nbCvtsLimo > 0) {
+          cumulCvtsLimo = (cumulCvtsLimo || 0) + nbCvtsLimo;
+          data[`${rIdx}-36`] = cumulCvtsLimo.toFixed(0);
+        }
+        const totalCvtsJourComplet = totalCvtsJour + nbCvtsLimo;
+        if (totalCvtsJourComplet > 0) {
+          data[`${rIdx}-120`] = totalCvtsJourComplet.toFixed(0);
+          data[`${rIdx}-121`] = (cumulCvtsRealise + cumulCvtsLimo).toFixed(0);
+          const budgetCvtsJourComplet = parseMoneyValue(data[`${rIdx}-10`]) + parseMoneyValue(data[`${rIdx}-14`]);
+          if (budgetCvtsJourComplet > 0) {
+            const ecartCvtsComplet = totalCvtsJourComplet - budgetCvtsJourComplet;
+            data[`${rIdx}-33`] = ecartCvtsComplet.toFixed(0);
+            data[`${rIdx}-122`] = ((ecartCvtsComplet / budgetCvtsJourComplet) * 100).toFixed(2);
+          }
+        }
+
+        // COUT MATIERE calculations
+        let coutMatiereTotalJour = 0;
+        let hasCoutMatiereData = false;
+        for (let i = 45; i <= 57; i++) {
+          if (data[`${rIdx}-${i}`]) {
+            coutMatiereTotalJour += parseMoneyValue(data[`${rIdx}-${i}`]);
+            hasCoutMatiereData = true;
+          }
+        }
+
+        if (hasCoutMatiereData) {
+          data[`${rIdx}-58`] = coutMatiereTotalJour.toFixed(2);
+          cumulCoutMatiere += coutMatiereTotalJour;
+          data[`${rIdx}-59`] = cumulCoutMatiere.toFixed(2);
+          
+          if (cumulRealiseCA > 0) {
+            data[`${rIdx}-60`] = ((cumulCoutMatiere / cumulRealiseCA) * 100).toFixed(2) + '%';
+          } else {
+            data[`${rIdx}-60`] = '0.00%';
+          }
+        }
+
+        // FRAIS DE PERSONNEL - PROJECTION
+        let totalHeuresProj = 0;
+        let coutGlobalProj = 0;
+        let hasProjData = false;
+        
+        const getAvgRate = (category: string, department: 'cuisine' | 'salle') => {
+          if (!salariesConfig) return 0;
+          const rows = salariesConfig[category] || [];
+          return averagePayrollRate(rows, department, category);
+        };
+
+        const projRates = [
+          getAvgRate('cadre', 'cuisine'),
+          getAvgRate('cadre', 'salle'),
+          getAvgRate('maitrise', 'cuisine'),
+          getAvgRate('maitrise', 'salle'),
+          getAvgRate('niv12', 'cuisine'),
+          getAvgRate('niv12', 'salle'),
+          getAvgRate('niv3', 'cuisine'),
+          getAvgRate('niv3', 'salle'),
+          getAvgRate('apprenti', 'cuisine'),
+          getAvgRate('apprenti', 'salle')
+        ];
+
+        for (let i = 0; i < 10; i++) {
+          const colIdx = 62 + i;
+          if (data[`${rIdx}-${colIdx}`]) {
+            const val = parsePayrollHourForCalculation(data[`${rIdx}-${colIdx}`] || '0');
+            totalHeuresProj += val;
+            coutGlobalProj += val * projRates[i];
+            hasProjData = true;
+          }
+        }
+        
+        if (hasProjData) {
+          data[`${rIdx}-61`] = totalHeuresProj.toFixed(2);
+          data[`${rIdx}-72`] = coutGlobalProj.toFixed(2);
+          if (totalHeuresProj > 0) {
+            data[`${rIdx}-73`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
+          }
+          if (realiseTotalJour > 0) {
+            data[`${rIdx}-74`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
+          }
+        }
+
+        // FRAIS DE PERSONNEL - REALISE
+        let totalHeuresReal = 0;
+        let coutGlobalReal = 0;
+        let hasRealData = false;
+        
+        for (let i = 0; i < 10; i++) {
+          const colIdx = 77 + i;
+          if (data[`${rIdx}-${colIdx}`]) {
+            const val = parsePayrollHourForCalculation(data[`${rIdx}-${colIdx}`] || '0');
+            totalHeuresReal += val;
+            coutGlobalReal += val * projRates[i];
+            hasRealData = true;
+          }
+        }
+        
+        if (hasRealData) {
+          data[`${rIdx}-76`] = totalHeuresReal.toFixed(2);
+          data[`${rIdx}-87`] = coutGlobalReal.toFixed(2);
+          if (totalHeuresReal > 0) {
+            data[`${rIdx}-88`] = (realiseTotalJour / totalHeuresReal).toFixed(2);
+          }
+          if (realiseTotalJour > 0) {
+            data[`${rIdx}-89`] = ((coutGlobalReal / realiseTotalJour) * 100).toFixed(2) + '%';
+          }
+          
+          // Ecarts
+          if (hasProjData) {
+            data[`${rIdx}-91`] = (totalHeuresReal - totalHeuresProj).toFixed(2);
+            if (realiseTotalJour > 0) {
+              const pctReal = (coutGlobalReal / realiseTotalJour) * 100;
+              const pctProj = (coutGlobalProj / realiseTotalJour) * 100;
+              data[`${rIdx}-92`] = (pctReal - pctProj).toFixed(2) + '%';
+            }
+          }
+        }
+      }
+    });
+
+    // Second pass: Week Totals
+    rows.forEach((row, rIdx) => {
+      if (row.type === 'total') {
+        const weekIdx = row.weekIndex;
+        // Find all days in this week
+        const weekDays = rows
+          .map((r, idx) => ({ ...r, originalIdx: idx }))
+          .filter(r => r.type === 'day' && r.weekIndex === weekIdx);
+
+        // Sum up each column for the week
+        dynamicColumns.forEach((_, cIdx) => {
+          // Skip hatched columns or text columns or averages or cumul columns
+          const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 59, 60, 73, 74, 75, 88, 89, 90, 91, 92, 117, 122].includes(cIdx)) return;
+
+          let colSum = 0;
+          let hasData = false;
+          weekDays.forEach(day => {
+            const rawVal = data[`${day.originalIdx}-${cIdx}`] || '';
+            const val = isPayrollInputColumn(cIdx) ? parsePayrollHourForCalculation(rawVal) : parseMoneyValue(rawVal);
+            if (!isNaN(val) && rawVal) {
+              colSum += val;
+              hasData = true;
+            }
+          });
+
+          if (hasData) {
+            data[`${rIdx}-${cIdx}`] = colSum.toString();
+          }
+        });
+
+        // Calculate averages for week
+        const caMidiW = parseMoneyValue(data[`${rIdx}-0`]);
+        const cvtsMidiW = parseMoneyValue(data[`${rIdx}-6`]);
+        if (cvtsMidiW > 0) data[`${rIdx}-7`] = (caMidiW / cvtsMidiW).toString();
+
+        const caSoirW = parseMoneyValue(data[`${rIdx}-1`]);
+        const cvtsSoirW = parseMoneyValue(data[`${rIdx}-8`]);
+        if (cvtsSoirW > 0) data[`${rIdx}-9`] = (caSoirW / cvtsSoirW).toString();
+
+        const caJourW = caMidiW + caSoirW;
+        const cvtsJourW = cvtsMidiW + cvtsSoirW;
+        if (cvtsJourW > 0) data[`${rIdx}-11`] = (caJourW / cvtsJourW).toString();
+
+        const caLimoW = parseMoneyValue(data[`${rIdx}-2`]);
+        const cvtsLimoW = parseMoneyValue(data[`${rIdx}-14`]);
+        if (cvtsLimoW > 0) data[`${rIdx}-15`] = (caLimoW / cvtsLimoW).toString();
+
+        const realiseCAW = parseMoneyValue(data[`${rIdx}-21`]);
+        // Moyennes semaine couverts réalisé
+        const nbMidiW = parseMoneyValue(data[`${rIdx}-25`]);
+        const nbSoirW = parseMoneyValue(data[`${rIdx}-27`]);
+        const caMidiWr = parseMoneyValue(data[`${rIdx}-18`]);
+        const caSoirWr = parseMoneyValue(data[`${rIdx}-19`]);
+        if (nbMidiW > 0 && caMidiWr > 0) data[`${rIdx}-26`] = (caMidiWr / nbMidiW).toFixed(2);
+        if (nbSoirW > 0 && caSoirWr > 0) data[`${rIdx}-28`] = (caSoirWr / nbSoirW).toFixed(2);
+        const budgetCaW = parseMoneyValue(data[`${rIdx}-3`]);
+        if (budgetCaW > 0 || realiseCAW > 0) {
+          const ecartCaBudgetW = realiseCAW - budgetCaW;
+          data[`${rIdx}-22`] = ecartCaBudgetW.toFixed(2);
+          if (budgetCaW > 0) data[`${rIdx}-117`] = ((ecartCaBudgetW / budgetCaW) * 100).toFixed(2);
+        }
+        const totalCvtsRealiseW = nbMidiW + nbSoirW;
+        if (totalCvtsRealiseW > 0) {
+          const moyJourRealiseW = (caMidiWr + caSoirWr) / totalCvtsRealiseW;
+          data[`${rIdx}-29`] = totalCvtsRealiseW.toFixed(0);
+          data[`${rIdx}-30`] = moyJourRealiseW.toFixed(2);
+          const budgetMoyJourW = parseMoneyValue(data[`${rIdx}-11`]);
+          if (budgetMoyJourW > 0) data[`${rIdx}-31`] = (moyJourRealiseW - budgetMoyJourW).toFixed(2);
+          const lastWeekDay = weekDays[weekDays.length - 1];
+          if (lastWeekDay) data[`${rIdx}-32`] = data[`${lastWeekDay.originalIdx}-32`] || totalCvtsRealiseW.toFixed(0);
+          const budgetCvtsW = parseMoneyValue(data[`${rIdx}-10`]) + parseMoneyValue(data[`${rIdx}-14`]);
+          const ecartCvtsW = parseMoneyValue(data[`${rIdx}-33`]);
+          if (budgetCvtsW > 0) data[`${rIdx}-122`] = ((ecartCvtsW / budgetCvtsW) * 100).toFixed(2);
+        }
+        // Cout matiere semaine
+        const coutMatiereW = parseMoneyValue(data[`${rIdx}-58`]);
+        if (realiseCAW > 0) data[`${rIdx}-60`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
+
+        const totalHeuresProjW = parseMoneyValue(data[`${rIdx}-61`]);
+        const coutGlobalProjW = parseMoneyValue(data[`${rIdx}-72`]);
+        if (totalHeuresProjW > 0) data[`${rIdx}-73`] = (realiseCAW / totalHeuresProjW).toFixed(2);
+        if (realiseCAW > 0) {
+          data[`${rIdx}-74`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-75`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+        }
+        
+        const totalHeuresRealW = parseMoneyValue(data[`${rIdx}-76`]);
+        const coutGlobalRealW = parseMoneyValue(data[`${rIdx}-87`]);
+        if (totalHeuresRealW > 0) data[`${rIdx}-88`] = (realiseCAW / totalHeuresRealW).toFixed(2);
+        if (realiseCAW > 0) {
+          data[`${rIdx}-89`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-90`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
+        }
+        
+        data[`${rIdx}-91`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
+        if (realiseCAW > 0) {
+          const pctRealW = (coutGlobalRealW / realiseCAW) * 100;
+          const pctProjW = (coutGlobalProjW / realiseCAW) * 100;
+          data[`${rIdx}-92`] = (pctRealW - pctProjW).toFixed(2) + '%';
+        }
+      }
+    });
+
+    // Third pass: Month Total
+    const monthTotalIdx = rows.findIndex(r => r.type === 'month_total');
+    if (monthTotalIdx !== -1) {
+      const allDays = rows
+        .map((r, idx) => ({ ...r, originalIdx: idx }))
+        .filter(r => r.type === 'day');
+
+      dynamicColumns.forEach((_, cIdx) => {
+        const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 59, 60, 73, 74, 75, 88, 89, 90, 91, 92, 117, 122].includes(cIdx)) return;
+
+        let colSum = 0;
+        let hasData = false;
+        allDays.forEach(day => {
+          const val = parseMoneyValue(data[`${day.originalIdx}-${cIdx}`]);
+          if (!isNaN(val) && data[`${day.originalIdx}-${cIdx}`]) {
+            colSum += val;
+            hasData = true;
+          }
+        });
+
+        if (hasData) {
+            data[`${monthTotalIdx}-${cIdx}`] = colSum.toString();
+        }
+      });
+
+      // Calculate averages for month
+      const caMidiM = parseMoneyValue(data[`${monthTotalIdx}-0`]);
+      const cvtsMidiM = parseMoneyValue(data[`${monthTotalIdx}-6`]);
+      if (cvtsMidiM > 0) data[`${monthTotalIdx}-7`] = (caMidiM / cvtsMidiM).toString();
+
+      const caSoirM = parseMoneyValue(data[`${monthTotalIdx}-1`]);
+      const cvtsSoirM = parseMoneyValue(data[`${monthTotalIdx}-8`]);
+      if (cvtsSoirM > 0) data[`${monthTotalIdx}-9`] = (caSoirM / cvtsSoirM).toString();
+
+      const caJourM = caMidiM + caSoirM;
+      const cvtsJourM = cvtsMidiM + cvtsSoirM;
+      if (cvtsJourM > 0) data[`${monthTotalIdx}-11`] = (caJourM / cvtsJourM).toString();
+
+      const caLimoM = parseMoneyValue(data[`${monthTotalIdx}-2`]);
+      const cvtsLimoM = parseMoneyValue(data[`${monthTotalIdx}-14`]);
+      if (cvtsLimoM > 0) data[`${monthTotalIdx}-15`] = (caLimoM / cvtsLimoM).toString();
+
+      const coutMatiereM = parseMoneyValue(data[`${monthTotalIdx}-58`]);
+      const realiseCAM = parseMoneyValue(data[`${monthTotalIdx}-21`]);
+      if (realiseCAM > 0) data[`${monthTotalIdx}-60`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
+
+      // Moyennes mois couverts réalisé
+      const nbMidiM = parseMoneyValue(data[`${monthTotalIdx}-25`]);
+      const nbSoirM = parseMoneyValue(data[`${monthTotalIdx}-27`]);
+      const caMidiMr = parseMoneyValue(data[`${monthTotalIdx}-18`]);
+      const caSoirMr = parseMoneyValue(data[`${monthTotalIdx}-19`]);
+      if (nbMidiM > 0 && caMidiMr > 0) data[`${monthTotalIdx}-26`] = (caMidiMr / nbMidiM).toFixed(2);
+      if (nbSoirM > 0 && caSoirMr > 0) data[`${monthTotalIdx}-28`] = (caSoirMr / nbSoirM).toFixed(2);
+      const budgetCaM = parseMoneyValue(data[`${monthTotalIdx}-3`]);
+      if (budgetCaM > 0 || realiseCAM > 0) {
+        const ecartCaBudgetM = realiseCAM - budgetCaM;
+        data[`${monthTotalIdx}-22`] = ecartCaBudgetM.toFixed(2);
+        if (budgetCaM > 0) data[`${monthTotalIdx}-117`] = ((ecartCaBudgetM / budgetCaM) * 100).toFixed(2);
+      }
+      const totalCvtsM = nbMidiM + nbSoirM;
+      if (totalCvtsM > 0) {
+        const moyJourRealiseM = (caMidiMr + caSoirMr) / totalCvtsM;
+        data[`${monthTotalIdx}-29`] = totalCvtsM.toFixed(0);
+        data[`${monthTotalIdx}-30`] = moyJourRealiseM.toFixed(2);
+        data[`${monthTotalIdx}-32`] = totalCvtsM.toFixed(0);
+        const budgetMoyJourM = parseMoneyValue(data[`${monthTotalIdx}-11`]);
+        if (budgetMoyJourM > 0) data[`${monthTotalIdx}-31`] = (moyJourRealiseM - budgetMoyJourM).toFixed(2);
+        const budgetCvtsM = parseMoneyValue(data[`${monthTotalIdx}-10`]) + parseMoneyValue(data[`${monthTotalIdx}-14`]);
+        const ecartCvtsM = parseMoneyValue(data[`${monthTotalIdx}-33`]);
+        if (budgetCvtsM > 0) data[`${monthTotalIdx}-122`] = ((ecartCvtsM / budgetCvtsM) * 100).toFixed(2);
+      }
+
+      const totalHeuresProjM = parseMoneyValue(data[`${monthTotalIdx}-61`]);
+      const coutGlobalProjM = parseMoneyValue(data[`${monthTotalIdx}-72`]);
+      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-73`] = (realiseCAM / totalHeuresProjM).toFixed(2);
+      if (realiseCAM > 0) {
+        data[`${monthTotalIdx}-74`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-75`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+      }
+      
+      const totalHeuresRealM = parseMoneyValue(data[`${monthTotalIdx}-76`]);
+      const coutGlobalRealM = parseMoneyValue(data[`${monthTotalIdx}-87`]);
+      if (totalHeuresRealM > 0) data[`${monthTotalIdx}-88`] = (realiseCAM / totalHeuresRealM).toFixed(2);
+      if (realiseCAM > 0) {
+        data[`${monthTotalIdx}-89`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-90`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
+      }
+      
+      data[`${monthTotalIdx}-91`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
+      if (realiseCAM > 0) {
+        const pctRealM = (coutGlobalRealM / realiseCAM) * 100;
+        const pctProjM = (coutGlobalProjM / realiseCAM) * 100;
+        data[`${monthTotalIdx}-92`] = (pctRealM - pctProjM).toFixed(2) + '%';
+      }
+
+      // Calculate FRAIS GENERAUX box totals
+      let globalFgTotal = 0;
+      for (let box = 0; box < 4; box++) {
+        for (let colGroup = 0; colGroup < 3; colGroup++) {
+          let boxTotal = 0;
+          // Max possible data rows is around 10
+          for (let dIdx = 0; dIdx < 10; dIdx++) {
+            const val = parseMoneyValue(data[`fg-data-${box}-${colGroup}-${dIdx}-3`]);
+            boxTotal += val;
+          }
+          data[`fg-total-${box}-${colGroup}`] = boxTotal.toFixed(2).replace('.', ',') + ' €';
+          globalFgTotal += boxTotal;
+        }
+      }
+      
+      const fgTotalIdx = rows.findIndex(r => r.type === 'month_total');
+      if (fgTotalIdx !== -1) {
+        data[`${fgTotalIdx}-fraisGenerauxTotal`] = globalFgTotal.toFixed(2).replace('.', ',') + ' €';
+      }
+    }
+
+    return data;
+}
