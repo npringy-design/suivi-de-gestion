@@ -9,36 +9,6 @@ Supprimer toute section terminee. Pas de roman — juste l'essentiel.
 
 ---
 
-## Etape 4 — Reorganiser src/ en dossiers par domaine
-
-**Effort : 2-3h. Risque : moyen (beaucoup d'imports a mettre a jour).**
-
-Structure cible :
-
-```
-src/
-  features/
-    dashboard/        ← deja fait
-    comptabilite/     ← ExportComptable, ParametrageComptable, BilanSynthese
-    salaires/         ← ConfigSalaires, CalculetteSalaires, VisuelVacances, ConfigurationChiffre2025
-    caisse/           ← CbNepting, Especes, Conecs, AncvPapiers, SaisieTR, VisuTRPapiers
-                         Sunday, Uber, AmexAncv, Deliveroo, ClickCollect, RemiseTR, SaisieTheorique
-    edg/              ← EdgMensuel, BudgetEdgAnnuel, EdgAnnuelTabs, RealiseEdgAnneeFiscale
-                         VsBudget, VsN1, RecapAnnuel, SyntheseCA, Reporting
-    facturation/      ← FactureDevis, MiseEnPaiement, DepensesPetiteCaisse
-  pages/              ← Home, DashboardAnalysisView
-  components/         ← deja fait (CanalSaisie, CurrencyInput)
-  contexts/           ← deja fait
-  lib/                ← deja fait
-  services/           ← deja fait
-  types/              ← apres etape 3
-```
-
-Proceder feature par feature. Mettre a jour `router.tsx` a chaque deplacement.
-Verifier `tsc --noEmit` apres chaque feature. Ne pas tout deplacer en une seule passe.
-
----
-
 ## Etape 5 — Tests sur les modules metier critiques
 
 **Effort : 2-3h. Risque : zero (ajout uniquement).**
