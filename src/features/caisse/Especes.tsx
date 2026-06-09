@@ -8,14 +8,14 @@ interface EspecesProps {
 }
 
 type DayDataEspecesLocal = {
-  mis_au_coffre: string;
-  pieces: string;
+  mis_au_coffre: number;
+  pieces: number;
   commentaire: string;
 };
 
 const defaultEspecesData: DayDataEspecesLocal = {
-  mis_au_coffre: '',
-  pieces: '',
+  mis_au_coffre: 0,
+  pieces: 0,
   commentaire: '',
 };
 

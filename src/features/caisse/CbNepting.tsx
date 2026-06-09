@@ -8,14 +8,14 @@ interface CbNeptingProps {
 }
 
 type DayDataCbNeptingLocal = {
-  saisie_reel_nepting: string;
-  pourboire_sunday: string;
+  saisie_reel_nepting: number;
+  pourboire_sunday: number;
   commentaire: string;
 };
 
 const defaultCbNeptingData: DayDataCbNeptingLocal = {
-  saisie_reel_nepting: '',
-  pourboire_sunday: '',
+  saisie_reel_nepting: 0,
+  pourboire_sunday: 0,
   commentaire: '',
 };
 

@@ -14,19 +14,19 @@ export type DayDataTheorique = {
 };
 
 export type DayDataNepting = {
-  saisie_reel_nepting: string;
-  pourboire_sunday: string;
+  saisie_reel_nepting: number;
+  pourboire_sunday: number;
   commentaire: string;
 };
 
 export type DayDataEspeces = {
-  mis_au_coffre: string;
-  pieces: string;
+  mis_au_coffre: number;
+  pieces: number;
   commentaire: string;
 };
 
 export type DayDataConecs = {
-  conecs_reel_nepting: string;
+  conecs_reel_nepting: number;
   commentaire: string;
 };
 
@@ -69,7 +69,7 @@ export type DayDataUber = {
 };
 
 export type DayDataAmexAncv = {
-  reel_nepting: string;
+  reel_nepting: number;
   commentaire: string;
 };
 

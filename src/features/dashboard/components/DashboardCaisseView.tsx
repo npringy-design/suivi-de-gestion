@@ -170,12 +170,12 @@ export default function DashboardCaisseView({
   };
 
   const cashRows = [
-    { label: 'CB', theorique: theorique?.cb || '', value: nepting?.saisie_reel_nepting || '' },
-    { label: 'Pourboires', theorique: '', value: nepting?.pourboire_sunday || '', multiplier: -1 },
-    { label: 'Espèces coffre', theorique: theorique?.especes || '', value: especes?.mis_au_coffre || '' },
-    { label: 'Pièces', theorique: '', value: especes?.pieces || '' },
-    { label: 'AMEX/ANCV carte', theorique: theorique?.amex || '', value: amexAncv?.reel_nepting || '' },
-    { label: 'TR carte', theorique: theorique?.tr_carte || '', value: conecs?.conecs_reel_nepting || '' },
+    { label: 'CB', theorique: theorique?.cb || '', value: reelStr(nepting?.saisie_reel_nepting) },
+    { label: 'Pourboires', theorique: '', value: reelStr(nepting?.pourboire_sunday), multiplier: -1 },
+    { label: 'Espèces coffre', theorique: theorique?.especes || '', value: reelStr(especes?.mis_au_coffre) },
+    { label: 'Pièces', theorique: '', value: reelStr(especes?.pieces) },
+    { label: 'AMEX/ANCV carte', theorique: theorique?.amex || '', value: reelStr(amexAncv?.reel_nepting) },
+    { label: 'TR carte', theorique: theorique?.tr_carte || '', value: reelStr(conecs?.conecs_reel_nepting) },
     { label: 'ANCV papier', theorique: theorique?.ancv || '', value: ancv?.montant_total || '' },
     { label: 'TR papier', theorique: theorique?.tr_papier || '', value: trPapierDisplay },
     { label: 'Sunday', theorique: theorique?.sunday || '', value: reelStr(sunday?.reel) },
@@ -206,12 +206,12 @@ export default function DashboardCaisseView({
         <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Réel</div>
         <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Écart</div>
       </div>
-      {renderRealCaisseControl('CB', theorique?.cb || '', nepting?.saisie_reel_nepting || '', value => updateNepting(month, day, 'saisie_reel_nepting', value))}
-      {renderRealCaisseControl('Pourboires', '', nepting?.pourboire_sunday || '', value => updateNepting(month, day, 'pourboire_sunday', value), { invertEcart: true })}
-      {renderRealCaisseControl('Espèces coffre', theorique?.especes || '', especes?.mis_au_coffre || '', value => updateEspeces(month, day, 'mis_au_coffre', value))}
-      {renderRealCaisseControl('Pièces', '', especes?.pieces || '', value => updateEspeces(month, day, 'pieces', value))}
-      {renderRealCaisseControl('AMEX/ANCV carte', theorique?.amex || '', amexAncv?.reel_nepting || '', value => updateAmexAncv(month, day, 'reel_nepting', value))}
-      {renderRealCaisseControl('TR carte', theorique?.tr_carte || '', conecs?.conecs_reel_nepting || '', value => updateConecs(month, day, 'conecs_reel_nepting', value))}
+      {renderRealCaisseControl('CB', theorique?.cb || '', reelStr(nepting?.saisie_reel_nepting), value => updateNepting(month, day, 'saisie_reel_nepting', value))}
+      {renderRealCaisseControl('Pourboires', '', reelStr(nepting?.pourboire_sunday), value => updateNepting(month, day, 'pourboire_sunday', value), { invertEcart: true })}
+      {renderRealCaisseControl('Espèces coffre', theorique?.especes || '', reelStr(especes?.mis_au_coffre), value => updateEspeces(month, day, 'mis_au_coffre', value))}
+      {renderRealCaisseControl('Pièces', '', reelStr(especes?.pieces), value => updateEspeces(month, day, 'pieces', value))}
+      {renderRealCaisseControl('AMEX/ANCV carte', theorique?.amex || '', reelStr(amexAncv?.reel_nepting), value => updateAmexAncv(month, day, 'reel_nepting', value))}
+      {renderRealCaisseControl('TR carte', theorique?.tr_carte || '', reelStr(conecs?.conecs_reel_nepting), value => updateConecs(month, day, 'conecs_reel_nepting', value))}
       {renderRealCaisseControl('ANCV papier', theorique?.ancv || '', ancv?.montant_total || '', value => updateAncvPapiers(month, day, 'montant_total', value), {
         detailId: 'ancv',
         details: renderCashDetailField('Nombre ANCV papier', ancv?.nombre_ancv || '', value => updateAncvPapiers(month, day, 'nombre_ancv', value)),

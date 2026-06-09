@@ -8,11 +8,11 @@ interface ConecsProps {
 }
 
 type DayDataConecsLocal = {
-  conecs_reel_nepting: string;
+  conecs_reel_nepting: number;
   commentaire: string;
 };
 
-const defaultConecsData: DayDataConecsLocal = { conecs_reel_nepting: '', commentaire: '' };
+const defaultConecsData: DayDataConecsLocal = { conecs_reel_nepting: 0, commentaire: '' };
 
 const conecsConfig: CanalSaisieConfig = {
   title: 'Carte TR Conecs',

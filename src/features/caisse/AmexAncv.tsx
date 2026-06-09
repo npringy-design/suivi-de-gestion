@@ -7,7 +7,7 @@ interface AmexAncvProps {
   onBack: () => void;
 }
 
-const defaultAmexAncvData: DayDataAmexAncv = { reel_nepting: '', commentaire: '' };
+const defaultAmexAncvData: DayDataAmexAncv = { reel_nepting: 0, commentaire: '' };
 
 const amexAncvConfig: CanalSaisieConfig = {
   title: 'AMEX + ANCV Conecs Réel Nepting',

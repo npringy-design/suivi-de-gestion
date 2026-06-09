@@ -72,15 +72,15 @@ type DataContextType = {
   data: Record<number, MonthData>;
   allData: Record<number, Record<number, MonthData>>;
   updateTheorique: (month: number, day: number, field: keyof DayDataTheorique, value: string) => void;
-  updateNepting: (month: number, day: number, field: keyof DayDataNepting, value: string) => void;
-  updateEspeces: (month: number, day: number, field: keyof DayDataEspeces, value: string) => void;
-  updateConecs: (month: number, day: number, field: keyof DayDataConecs, value: string) => void;
+  updateNepting: (month: number, day: number, field: keyof DayDataNepting, value: string | number) => void;
+  updateEspeces: (month: number, day: number, field: keyof DayDataEspeces, value: string | number) => void;
+  updateConecs: (month: number, day: number, field: keyof DayDataConecs, value: string | number) => void;
   updateAncvPapiers: (month: number, day: number, field: keyof DayDataAncvPapiers, value: string) => void;
   updateSaisieTR: (month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string) => void;
   updateVisuTRPapiers: (month: number, day: number, field: keyof DayDataVisuTRPapiers, value: string) => void;
   updateSunday: (month: number, day: number, field: keyof DayDataSunday, value: string | number) => void;
   updateUber: (month: number, day: number, field: keyof DayDataUber, value: string | number) => void;
-  updateAmexAncv: (month: number, day: number, field: keyof DayDataAmexAncv, value: string) => void;
+  updateAmexAncv: (month: number, day: number, field: keyof DayDataAmexAncv, value: string | number) => void;
   updateDeliveroo: (month: number, day: number, field: keyof DayDataDeliveroo, value: string | number) => void;
   updateClickCollect: (month: number, day: number, field: keyof DayDataClickCollect, value: string | number) => void;
   updateBilanSynthese: (month: number, day: number, field: keyof DayDataBilanSynthese, value: string) => void;
@@ -110,13 +110,13 @@ const DEFAULT_THEORIQUE_DAY: DayDataTheorique = {
   total_ca: '', cb: '', amex: '', tr_papier: '', tr_carte: '', ancv: '',
   especes: '', click_collect: '', uber: '', deliveroo: '', sunday: '', commentaire: '',
 };
-const DEFAULT_NEPTING_DAY: DayDataNepting = { saisie_reel_nepting: '', pourboire_sunday: '', commentaire: '' };
-const DEFAULT_ESPECES_DAY: DayDataEspeces = { mis_au_coffre: '', pieces: '', commentaire: '' };
-const DEFAULT_CONECS_DAY: DayDataConecs = { conecs_reel_nepting: '', commentaire: '' };
+const DEFAULT_NEPTING_DAY: DayDataNepting = { saisie_reel_nepting: 0, pourboire_sunday: 0, commentaire: '' };
+const DEFAULT_ESPECES_DAY: DayDataEspeces = { mis_au_coffre: 0, pieces: 0, commentaire: '' };
+const DEFAULT_CONECS_DAY: DayDataConecs = { conecs_reel_nepting: 0, commentaire: '' };
 const DEFAULT_ANCV_PAPIERS_DAY: DayDataAncvPapiers = { nombre_ancv: '', montant_total: '', n_bordereaux: '', nbre_ancv_enveloppes: '', total_enveloppes_ancv: '', commentaire: '' };
 const DEFAULT_VISU_TR_PAPIERS_DAY: DayDataVisuTRPapiers = { n_bordereaux: '', nbre_tr_enveloppes: '', total_enveloppes_tr: '', commentaire: '' };
 const DEFAULT_REEL_DAY: DayDataSunday = { reel: 0, commentaire: '' };
-const DEFAULT_AMEX_ANCV_DAY: DayDataAmexAncv = { reel_nepting: '', commentaire: '' };
+const DEFAULT_AMEX_ANCV_DAY: DayDataAmexAncv = { reel_nepting: 0, commentaire: '' };
 const DEFAULT_BILAN_DAY: DayDataBilanSynthese = { ttc_5_5: '', ttc_10: '', ttc_20: '' };
 
 const loadJson = <T,>(key: string, fallback: T): T => {
@@ -406,9 +406,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [updateDataForYear]);
 
-  const updateNepting = useMemo(() => makeDailyChannelUpdater('nepting', DEFAULT_NEPTING_DAY), [makeDailyChannelUpdater]);
-  const updateEspeces = useMemo(() => makeDailyChannelUpdater('especes', DEFAULT_ESPECES_DAY), [makeDailyChannelUpdater]);
-  const updateConecs = useMemo(() => makeDailyChannelUpdater('conecs', DEFAULT_CONECS_DAY), [makeDailyChannelUpdater]);
+  const updateNepting = useCallback((month: number, day: number, field: keyof DayDataNepting, value: string | number) => {
+    const NUMERIC: (keyof DayDataNepting)[] = ['saisie_reel_nepting', 'pourboire_sunday'];
+    const stored = NUMERIC.includes(field) ? parseMoneyValue(value) : String(value);
+    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'nepting', DEFAULT_NEPTING_DAY, field, stored));
+  }, [updateDataForYear]);
+  const updateEspeces = useCallback((month: number, day: number, field: keyof DayDataEspeces, value: string | number) => {
+    const NUMERIC: (keyof DayDataEspeces)[] = ['mis_au_coffre', 'pieces'];
+    const stored = NUMERIC.includes(field) ? parseMoneyValue(value) : String(value);
+    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'especes', DEFAULT_ESPECES_DAY, field, stored));
+  }, [updateDataForYear]);
+  const updateConecs = useCallback((month: number, day: number, field: keyof DayDataConecs, value: string | number) => {
+    const stored = field === 'conecs_reel_nepting' ? parseMoneyValue(value) : String(value);
+    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'conecs', DEFAULT_CONECS_DAY, field, stored));
+  }, [updateDataForYear]);
   const updateSunday = useCallback((month: number, day: number, field: keyof DayDataSunday, value: string | number) => {
     const stored = field === 'reel' ? parseMoneyValue(value) : String(value);
     updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'sunday', DEFAULT_REEL_DAY, field, stored));
@@ -417,7 +428,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const stored = field === 'reel' ? parseMoneyValue(value) : String(value);
     updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'uber', DEFAULT_REEL_DAY, field, stored));
   }, [updateDataForYear]);
-  const updateAmexAncv = useMemo(() => makeDailyChannelUpdater('amexAncv', DEFAULT_AMEX_ANCV_DAY), [makeDailyChannelUpdater]);
+  const updateAmexAncv = useCallback((month: number, day: number, field: keyof DayDataAmexAncv, value: string | number) => {
+    const stored = field === 'reel_nepting' ? parseMoneyValue(value) : String(value);
+    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'amexAncv', DEFAULT_AMEX_ANCV_DAY, field, stored));
+  }, [updateDataForYear]);
   const updateDeliveroo = useCallback((month: number, day: number, field: keyof DayDataDeliveroo, value: string | number) => {
     const stored = field === 'reel' ? parseMoneyValue(value) : String(value);
     updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'deliveroo', DEFAULT_REEL_DAY, field, stored));
