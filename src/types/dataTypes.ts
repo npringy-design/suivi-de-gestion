@@ -32,10 +32,10 @@ export type DayDataConecs = {
 
 export type DayDataAncvPapiers = {
   nombre_ancv: string;
-  montant_total: string;
+  montant_total: number;
   n_bordereaux: string;
   nbre_ancv_enveloppes: string;
-  total_enveloppes_ancv: string;
+  total_enveloppes_ancv: number;
   commentaire: string;
 };
 

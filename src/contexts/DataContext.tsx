@@ -75,7 +75,7 @@ type DataContextType = {
   updateNepting: (month: number, day: number, field: keyof DayDataNepting, value: string | number) => void;
   updateEspeces: (month: number, day: number, field: keyof DayDataEspeces, value: string | number) => void;
   updateConecs: (month: number, day: number, field: keyof DayDataConecs, value: string | number) => void;
-  updateAncvPapiers: (month: number, day: number, field: keyof DayDataAncvPapiers, value: string) => void;
+  updateAncvPapiers: (month: number, day: number, field: keyof DayDataAncvPapiers, value: string | number) => void;
   updateSaisieTR: (month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string) => void;
   updateVisuTRPapiers: (month: number, day: number, field: keyof DayDataVisuTRPapiers, value: string) => void;
   updateSunday: (month: number, day: number, field: keyof DayDataSunday, value: string | number) => void;
@@ -113,7 +113,7 @@ const DEFAULT_THEORIQUE_DAY: DayDataTheorique = {
 const DEFAULT_NEPTING_DAY: DayDataNepting = { saisie_reel_nepting: 0, pourboire_sunday: 0, commentaire: '' };
 const DEFAULT_ESPECES_DAY: DayDataEspeces = { mis_au_coffre: 0, pieces: 0, commentaire: '' };
 const DEFAULT_CONECS_DAY: DayDataConecs = { conecs_reel_nepting: 0, commentaire: '' };
-const DEFAULT_ANCV_PAPIERS_DAY: DayDataAncvPapiers = { nombre_ancv: '', montant_total: '', n_bordereaux: '', nbre_ancv_enveloppes: '', total_enveloppes_ancv: '', commentaire: '' };
+const DEFAULT_ANCV_PAPIERS_DAY: DayDataAncvPapiers = { nombre_ancv: '', montant_total: 0, n_bordereaux: '', nbre_ancv_enveloppes: '', total_enveloppes_ancv: 0, commentaire: '' };
 const DEFAULT_VISU_TR_PAPIERS_DAY: DayDataVisuTRPapiers = { n_bordereaux: '', nbre_tr_enveloppes: '', total_enveloppes_tr: '', commentaire: '' };
 const DEFAULT_REEL_DAY: DayDataSunday = { reel: 0, commentaire: '' };
 const DEFAULT_AMEX_ANCV_DAY: DayDataAmexAncv = { reel_nepting: 0, commentaire: '' };
@@ -441,7 +441,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'clickCollect', DEFAULT_REEL_DAY, field, stored));
   }, [updateDataForYear]);
 
-  const updateAncvPapiers = useCallback((month: number, day: number, field: keyof DayDataAncvPapiers, value: string) => {
+  const updateAncvPapiers = useCallback((month: number, day: number, field: keyof DayDataAncvPapiers, value: string | number) => {
+    const NUMERIC: (keyof DayDataAncvPapiers)[] = ['montant_total', 'total_enveloppes_ancv'];
+    const stored = NUMERIC.includes(field) ? parseMoneyValue(value) : String(value);
     updateDataForYear(prev => {
       const monthData = normalizeMonthData(prev[month]);
       const dayData = monthData.ancvPapiers[day] || DEFAULT_ANCV_PAPIERS_DAY;
@@ -451,7 +453,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           ...monthData,
           ancvPapiers: {
             ...monthData.ancvPapiers,
-            [day]: { ...dayData, [field]: value },
+            [day]: { ...dayData, [field]: stored },
           },
         },
       };
