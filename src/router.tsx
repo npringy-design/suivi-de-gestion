@@ -1,7 +1,12 @@
 import { createHashRouter, useNavigate, useParams } from 'react-router-dom';
-import { lazy , useEffect } from 'react';
+import { lazy, useEffect } from 'react';
+import type { ComponentType } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+
+type MonthProps = { month: number; year: number; onBack: () => void };
+type MonthWithSetMonthProps = MonthProps & { setMonth: (m: number) => void };
+type PageProps = { onBack: () => void };
 
 const Home = lazy(() => import('@/pages/Home'));
 const Dashboard = lazy(() => import('@/Dashboard'));
@@ -91,7 +96,7 @@ function SyntheseRoute() {
   );
 }
 
-function MonthRoute({ Component, backPath }: { Component: any; backPath: string }) {
+function MonthRoute({ Component, backPath }: { Component: ComponentType<MonthProps>; backPath: string }) {
   const { selectedYear, selectedMonth } = useData();
   const navigate = useNavigate();
 
@@ -104,7 +109,7 @@ function MonthRoute({ Component, backPath }: { Component: any; backPath: string 
   );
 }
 
-function MonthParamRoute({ Component }: { Component: any }) {
+function MonthParamRoute({ Component }: { Component: ComponentType<MonthProps> }) {
   const { month: monthParam } = useParams();
   const { selectedYear, selectedMonth } = useData();
   const navigate = useNavigate();
@@ -119,7 +124,7 @@ function MonthParamRoute({ Component }: { Component: any }) {
   );
 }
 
-function MonthRouteWithSetMonth({ Component, backPath }: { Component: any; backPath: string }) {
+function MonthRouteWithSetMonth({ Component, backPath }: { Component: ComponentType<MonthWithSetMonthProps>; backPath: string }) {
   const { selectedYear, selectedMonth, setSelectedMonth } = useData();
   const navigate = useNavigate();
 
@@ -133,7 +138,7 @@ function MonthRouteWithSetMonth({ Component, backPath }: { Component: any; backP
   );
 }
 
-function PageRoute({ Component, backPath }: { Component: any; backPath: string }) {
+function PageRoute({ Component, backPath }: { Component: ComponentType<PageProps>; backPath: string }) {
   const navigate = useNavigate();
   return <Component onBack={() => navigate(backPath)} />;
 }
@@ -194,7 +199,7 @@ const router = createHashRouter([
 
 function EdgMensuelRoute() {
   const { month: monthParam } = useParams();
-  const { selectedYear, selectedMonth, setSelectedMonth } = useData();
+  const { selectedMonth, setSelectedMonth } = useData();
   const navigate = useNavigate();
   const month = parseMonthParam(monthParam, selectedMonth);
 
