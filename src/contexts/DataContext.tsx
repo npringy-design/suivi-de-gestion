@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 
 import { fetchCloudAppBootstrap, fetchCloudMonth, isCloudSyncConfigured, saveCloudAppState, type CloudAppState } from '@/services/supabaseAppState';
 import { normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
+import { parseMoneyValue } from '@/lib/money';
 
 export type {
   DayDataTheorique,
@@ -77,11 +78,11 @@ type DataContextType = {
   updateAncvPapiers: (month: number, day: number, field: keyof DayDataAncvPapiers, value: string) => void;
   updateSaisieTR: (month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string) => void;
   updateVisuTRPapiers: (month: number, day: number, field: keyof DayDataVisuTRPapiers, value: string) => void;
-  updateSunday: (month: number, day: number, field: keyof DayDataSunday, value: string) => void;
-  updateUber: (month: number, day: number, field: keyof DayDataUber, value: string) => void;
+  updateSunday: (month: number, day: number, field: keyof DayDataSunday, value: string | number) => void;
+  updateUber: (month: number, day: number, field: keyof DayDataUber, value: string | number) => void;
   updateAmexAncv: (month: number, day: number, field: keyof DayDataAmexAncv, value: string) => void;
-  updateDeliveroo: (month: number, day: number, field: keyof DayDataDeliveroo, value: string) => void;
-  updateClickCollect: (month: number, day: number, field: keyof DayDataClickCollect, value: string) => void;
+  updateDeliveroo: (month: number, day: number, field: keyof DayDataDeliveroo, value: string | number) => void;
+  updateClickCollect: (month: number, day: number, field: keyof DayDataClickCollect, value: string | number) => void;
   updateBilanSynthese: (month: number, day: number, field: keyof DayDataBilanSynthese, value: string) => void;
   updateDepensesPetiteCaisse: (month: number, field: keyof MonthDataDepensesPetiteCaisse | string, value: string | number) => void;
   updateDashboard: (month: number, cellKey: string, value: string) => void;
@@ -114,7 +115,7 @@ const DEFAULT_ESPECES_DAY: DayDataEspeces = { mis_au_coffre: '', pieces: '', com
 const DEFAULT_CONECS_DAY: DayDataConecs = { conecs_reel_nepting: '', commentaire: '' };
 const DEFAULT_ANCV_PAPIERS_DAY: DayDataAncvPapiers = { nombre_ancv: '', montant_total: '', n_bordereaux: '', nbre_ancv_enveloppes: '', total_enveloppes_ancv: '', commentaire: '' };
 const DEFAULT_VISU_TR_PAPIERS_DAY: DayDataVisuTRPapiers = { n_bordereaux: '', nbre_tr_enveloppes: '', total_enveloppes_tr: '', commentaire: '' };
-const DEFAULT_REEL_DAY: DayDataSunday = { reel: '', commentaire: '' };
+const DEFAULT_REEL_DAY: DayDataSunday = { reel: 0, commentaire: '' };
 const DEFAULT_AMEX_ANCV_DAY: DayDataAmexAncv = { reel_nepting: '', commentaire: '' };
 const DEFAULT_BILAN_DAY: DayDataBilanSynthese = { ttc_5_5: '', ttc_10: '', ttc_20: '' };
 
@@ -408,11 +409,23 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const updateNepting = useMemo(() => makeDailyChannelUpdater('nepting', DEFAULT_NEPTING_DAY), [makeDailyChannelUpdater]);
   const updateEspeces = useMemo(() => makeDailyChannelUpdater('especes', DEFAULT_ESPECES_DAY), [makeDailyChannelUpdater]);
   const updateConecs = useMemo(() => makeDailyChannelUpdater('conecs', DEFAULT_CONECS_DAY), [makeDailyChannelUpdater]);
-  const updateSunday = useMemo(() => makeDailyChannelUpdater('sunday', DEFAULT_REEL_DAY), [makeDailyChannelUpdater]);
-  const updateUber = useMemo(() => makeDailyChannelUpdater('uber', DEFAULT_REEL_DAY), [makeDailyChannelUpdater]);
+  const updateSunday = useCallback((month: number, day: number, field: keyof DayDataSunday, value: string | number) => {
+    const stored = field === 'reel' ? parseMoneyValue(value) : String(value);
+    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'sunday', DEFAULT_REEL_DAY, field, stored));
+  }, [updateDataForYear]);
+  const updateUber = useCallback((month: number, day: number, field: keyof DayDataUber, value: string | number) => {
+    const stored = field === 'reel' ? parseMoneyValue(value) : String(value);
+    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'uber', DEFAULT_REEL_DAY, field, stored));
+  }, [updateDataForYear]);
   const updateAmexAncv = useMemo(() => makeDailyChannelUpdater('amexAncv', DEFAULT_AMEX_ANCV_DAY), [makeDailyChannelUpdater]);
-  const updateDeliveroo = useMemo(() => makeDailyChannelUpdater('deliveroo', DEFAULT_REEL_DAY), [makeDailyChannelUpdater]);
-  const updateClickCollect = useMemo(() => makeDailyChannelUpdater('clickCollect', DEFAULT_REEL_DAY), [makeDailyChannelUpdater]);
+  const updateDeliveroo = useCallback((month: number, day: number, field: keyof DayDataDeliveroo, value: string | number) => {
+    const stored = field === 'reel' ? parseMoneyValue(value) : String(value);
+    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'deliveroo', DEFAULT_REEL_DAY, field, stored));
+  }, [updateDataForYear]);
+  const updateClickCollect = useCallback((month: number, day: number, field: keyof DayDataClickCollect, value: string | number) => {
+    const stored = field === 'reel' ? parseMoneyValue(value) : String(value);
+    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'clickCollect', DEFAULT_REEL_DAY, field, stored));
+  }, [updateDataForYear]);
 
   const updateAncvPapiers = useCallback((month: number, day: number, field: keyof DayDataAncvPapiers, value: string) => {
     updateDataForYear(prev => {

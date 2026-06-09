@@ -42,7 +42,7 @@ export const updateDailyChannelData = <K extends DailyChannelKey>(
   channelKey: K,
   defaultDayData: DailyChannelValue<K>,
   field: keyof DailyChannelValue<K>,
-  value: string,
+  value: string | number,
 ): Record<number, MonthData> => {
   const monthData = normalizeMonthData(prev[month]);
   const channelData = monthData[channelKey] as Record<number, DailyChannelValue<K>>;

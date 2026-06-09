@@ -7,7 +7,7 @@ interface DeliverooProps {
   onBack: () => void;
 }
 
-const defaultDeliverooData: DayDataDeliveroo = { reel: '', commentaire: '' };
+const defaultDeliverooData: DayDataDeliveroo = { reel: 0, commentaire: '' };
 
 const deliverooConfig: CanalSaisieConfig = {
   title: 'Deliveroo',

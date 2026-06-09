@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { formatCurrencyFr, sanitizeMoneyInput } from '@/lib/money';
 
 type CurrencyInputProps = {
-  value: string;
+  value: string | number;
   onChange: (val: string) => void;
   className?: string;
   focusClassName?: string;
@@ -18,13 +18,14 @@ export default function CurrencyInput({
   activeFocusClassName = '',
 }: CurrencyInputProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const displayValue = !isFocused && value ? formatCurrencyFr(value) : value;
+  const strValue = typeof value === 'number' ? (value !== 0 ? String(value) : '') : value;
+  const displayValue = !isFocused && strValue ? formatCurrencyFr(strValue) : strValue;
 
   return (
     <input
       type="text"
       className={`w-full h-full p-2 bg-transparent outline-none text-right transition-colors ${focusClassName} ${className} ${isFocused ? activeFocusClassName : ''}`}
-      value={displayValue}
+      value={displayValue ?? ''}
       onChange={(e) => onChange(sanitizeMoneyInput(e.target.value))}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}

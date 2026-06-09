@@ -7,7 +7,7 @@ interface UberProps {
   onBack: () => void;
 }
 
-const defaultUberData: DayDataUber = { reel: '', commentaire: '' };
+const defaultUberData: DayDataUber = { reel: 0, commentaire: '' };
 
 const uberConfig: CanalSaisieConfig = {
   title: 'Uber',

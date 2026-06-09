@@ -59,12 +59,12 @@ export type DayDataVisuTRPapiers = {
 };
 
 export type DayDataSunday = {
-  reel: string;
+  reel: number;
   commentaire: string;
 };
 
 export type DayDataUber = {
-  reel: string;
+  reel: number;
   commentaire: string;
 };
 
@@ -74,12 +74,12 @@ export type DayDataAmexAncv = {
 };
 
 export type DayDataDeliveroo = {
-  reel: string;
+  reel: number;
   commentaire: string;
 };
 
 export type DayDataClickCollect = {
-  reel: string;
+  reel: number;
   commentaire: string;
 };
 

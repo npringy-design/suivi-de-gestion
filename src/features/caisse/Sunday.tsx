@@ -7,7 +7,7 @@ interface SundayProps {
   onBack: () => void;
 }
 
-const defaultSundayData: DayDataSunday = { reel: '', commentaire: '' };
+const defaultSundayData: DayDataSunday = { reel: 0, commentaire: '' };
 
 const sundayConfig: CanalSaisieConfig = {
   title: 'Sunday QR Code + Chèque',

@@ -5,11 +5,19 @@ import type { DayTotals } from '@/utils/buildDailyEntries';
 import type { AccountingMappingRow } from '@/accountingConfig';
 
 const makeMapping = (caisseKey: string, debitAccount: string, creditAccount: string): AccountingMappingRow => ({
+  id: `test-${caisseKey}`,
   active: true,
+  category: 'Paiement',
   caisseKey: caisseKey as AccountingMappingRow['caisseKey'],
+  caisseItem: caisseKey,
+  company: 'Caisse',
   accountingLabel: `Label ${caisseKey}`,
   debitAccount,
   creditAccount,
+  rule: '',
+  tolerance: '0,01',
+  keywords: '',
+  notes: '',
 });
 
 const BASE_TOTALS: DayTotals = {
@@ -20,6 +28,7 @@ const BASE_TOTALS: DayTotals = {
   tva10: 20,
   tva20: 10,
   totalTtc: 385.5,
+  espReel: 0,
   ancvReel: 0,
   amexReel: 0,
   cbReel: 300,
@@ -28,6 +37,7 @@ const BASE_TOTALS: DayTotals = {
   sundayReel: 0,
   crtReel: 0,
   cbTrReel: 0,
+  bilanEcart: 0,
   ceReel: 0,
   fondCaisse: 0,
   ecartNegatif: 0,
@@ -49,11 +59,19 @@ describe('buildDailyEntries', () => {
 
   it('ignore les mappings inactifs', () => {
     const mappings: AccountingMappingRow[] = [{
+      id: 'test-inactive',
       active: false,
+      category: 'Paiement',
       caisseKey: 'ht55',
+      caisseItem: 'ht55',
+      company: 'Caisse',
       accountingLabel: 'HT 5.5',
       debitAccount: '701000',
       creditAccount: '511000',
+      rule: '',
+      tolerance: '0,01',
+      keywords: '',
+      notes: '',
     }];
     const entries = buildDailyEntries('2026-01-15', BASE_TOTALS, mappings, 1, 2026);
     expect(entries).toHaveLength(0);

@@ -84,6 +84,8 @@ export default function DashboardCaisseView({
   if (!day) return null;
 
   const monthData = globalData[month];
+  // reel est stocké en number ; on convertit en string pour les inputs qui attendent une string
+  const reelStr = (v: string | number | undefined): string => (v != null && v !== 0 && v !== '' ? String(v) : '');
   const nepting = monthData?.nepting?.[day];
   const especes = monthData?.especes?.[day];
   const conecs = monthData?.conecs?.[day];
@@ -176,10 +178,10 @@ export default function DashboardCaisseView({
     { label: 'TR carte', theorique: theorique?.tr_carte || '', value: conecs?.conecs_reel_nepting || '' },
     { label: 'ANCV papier', theorique: theorique?.ancv || '', value: ancv?.montant_total || '' },
     { label: 'TR papier', theorique: theorique?.tr_papier || '', value: trPapierDisplay },
-    { label: 'Sunday', theorique: theorique?.sunday || '', value: sunday?.reel || '' },
-    { label: 'Uber', theorique: theorique?.uber || '', value: uber?.reel || '' },
-    { label: 'Deliveroo', theorique: theorique?.deliveroo || '', value: deliveroo?.reel || '' },
-    { label: 'Click & collect', theorique: theorique?.click_collect || '', value: clickCollect?.reel || '' },
+    { label: 'Sunday', theorique: theorique?.sunday || '', value: reelStr(sunday?.reel) },
+    { label: 'Uber', theorique: theorique?.uber || '', value: reelStr(uber?.reel) },
+    { label: 'Deliveroo', theorique: theorique?.deliveroo || '', value: reelStr(deliveroo?.reel) },
+    { label: 'Click & collect', theorique: theorique?.click_collect || '', value: reelStr(clickCollect?.reel) },
   ];
   const totalTheorique = cashRows.reduce((sum, row) => sum + parseCaisseNumber(row.theorique), 0);
   const totalReel = cashRows.reduce((sum, row) => sum + parseCaisseNumber(row.value) * (row.multiplier || 1), 0);
@@ -220,10 +222,10 @@ export default function DashboardCaisseView({
         detailId: 'tr',
         details: trPapierProviders.map(provider => renderCashDetailField(provider.label, trData?.[provider.key]?.[0]?.nombre || '', value => updateSaisieTR(month, day, provider.key, 0, 'nombre', value))),
       })}
-      {renderRealCaisseControl('Sunday', theorique?.sunday || '', sunday?.reel || '', value => updateSunday(month, day, 'reel', value))}
-      {renderRealCaisseControl('Uber', theorique?.uber || '', uber?.reel || '', value => updateUber(month, day, 'reel', value))}
-      {renderRealCaisseControl('Deliveroo', theorique?.deliveroo || '', deliveroo?.reel || '', value => updateDeliveroo(month, day, 'reel', value))}
-      {renderRealCaisseControl('Click & collect', theorique?.click_collect || '', clickCollect?.reel || '', value => updateClickCollect(month, day, 'reel', value))}
+      {renderRealCaisseControl('Sunday', theorique?.sunday || '', reelStr(sunday?.reel), value => updateSunday(month, day, 'reel', value))}
+      {renderRealCaisseControl('Uber', theorique?.uber || '', reelStr(uber?.reel), value => updateUber(month, day, 'reel', value))}
+      {renderRealCaisseControl('Deliveroo', theorique?.deliveroo || '', reelStr(deliveroo?.reel), value => updateDeliveroo(month, day, 'reel', value))}
+      {renderRealCaisseControl('Click & collect', theorique?.click_collect || '', reelStr(clickCollect?.reel), value => updateClickCollect(month, day, 'reel', value))}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(132px, .66fr) repeat(3, minmax(0, 1fr))', gap: 6, alignItems: 'center', marginTop: 2, paddingTop: 7, borderTop: '1px solid #cbd5e1' }}>
         <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em' }}>Total caisse</div>
         {renderCashAutoValue(totalTheorique.toFixed(2))}

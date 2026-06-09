@@ -3,7 +3,7 @@ import { formatCurrencyFr, formatNullableCurrencyFr, parseMoneyValue } from '@/l
 
 import CurrencyInput from './CurrencyInput';
 
-type CanalDayData = Record<string, string>;
+type CanalDayData = Record<string, string | number>;
 
 export type CanalSaisieConfig = {
   title: string;

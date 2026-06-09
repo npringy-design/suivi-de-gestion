@@ -7,7 +7,7 @@ interface ClickCollectProps {
   onBack: () => void;
 }
 
-const defaultClickCollectData: DayDataClickCollect = { reel: '', commentaire: '' };
+const defaultClickCollectData: DayDataClickCollect = { reel: 0, commentaire: '' };
 
 const clickCollectConfig: CanalSaisieConfig = {
   title: 'Click & Collect',
