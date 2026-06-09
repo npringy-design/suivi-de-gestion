@@ -9,22 +9,6 @@ Supprimer toute section terminee. Pas de roman — juste l'essentiel.
 
 ---
 
-## Etape 5 — Tests sur les modules metier critiques
-
-**Effort : 2-3h. Risque : zero (ajout uniquement).**
-
-Cibles prioritaires (fonctions pures, logique metier, risque de regression) :
-
-- `src/utils/buildDailyEntries.ts` — `buildDailyEntries()` et `checkBalance()`
-- `src/features/dashboard/dashboardCalculations.ts` — fonctions KPI et agregation
-- `src/lib/formatters.ts` — `formatEuro` et `formatPercent` (cree a l'etape 2)
-
-Un fichier de test par module, dans `src/test/` ou cote a cote avec le fichier source.
-Pas besoin de 100% de couverture — couvrir les cas limites metier (valeurs nulles,
-virgules, annees bissextiles si pertinent).
-
----
-
 ## Etape 6 — Valeurs monetaires en number dans DataContext
 
 **Effort : plusieurs sessions. Risque : eleve. A faire en dernier.**
