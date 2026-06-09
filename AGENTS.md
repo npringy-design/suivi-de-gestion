@@ -1,30 +1,77 @@
-# Instructions Codex
+# Instructions Claude Code — suivi-de-gestion
 
-Avant toute modification :
+## Avant toute intervention
 
-- Lire le document docs/POINT_AVANCEMENT.md / feuille de route du projet si present.
-- Mode economie strict obligatoire : lectures ciblees, reponses courtes, pas de diagnostic global, pas de build/test complet sauf demande explicite.
-- Lire uniquement les fichiers necessaires.
-- Ne jamais faire de diagnostic global sauf demande explicite.
-- Ne jamais modifier plus de fichiers que necessaire.
-- Ne jamais lancer build/test complet sauf demande explicite.
-- Ne jamais corriger des problemes annexes non demandes.
-- Repondre court : fichiers modifies + verification faite.
-- Le push direct sur `main` est autorise pour les corrections terminees demandees par l'utilisateur, en restant cible, verifie et documente.
+1. Lire `docs/POINT_AVANCEMENT.md` — état du projet et règles actives.
+2. Résumer en une phrase ce que tu vas faire.
+3. N'intervenir que sur les fichiers nécessaires à la tâche demandée.
 
-# Push et securite
+---
 
-- Le commit/push est autorise.
-- Le push direct sur `main` est autorise quand l'utilisateur demande une correction ou une modification claire.
-- Ne pas elargir la tache avant push.
-- Ne modifier que les fichiers necessaires.
-- Si la correction necessite plus de 3 fichiers, expliquer brievement pourquoi.
+## Règles de code (non négociables)
 
-# Confirmations outil
+### TypeScript
+- `tsc --noEmit` doit passer sans erreur après chaque modification.
+- Zéro `any` explicite. Utiliser les types existants dans `src/types/dataTypes.ts`.
+- Les nouveaux types métier vont dans `src/types/dataTypes.ts`, pas dans les composants.
 
-- Minimiser au maximum les demandes de confirmation cote ChatGPT/GitHub.
-- Regrouper les modifications dans un seul lot coherent quand c'est possible.
-- Eviter les fichiers de test, temporaires ou intermediaires sauf necessite reelle.
-- Eviter les commits multiples pour une meme correction simple.
-- Preferer une lecture ciblee, une modification ciblee, puis un seul push final.
-- Si l'outil impose quand meme une confirmation plateforme, continuer sans redemander une validation metier supplementaire dans la discussion.
+### Valeurs monétaires
+- Stocker en `number`, jamais en `string`.
+- Parser à l'entrée avec `parseMoneyValue()` depuis `@/lib/money`.
+- Afficher avec `formatEuro()` ou `formatEuroSymbol()` depuis `@/lib/formatters`.
+- Ne jamais écrire `parseFloat()` pour une valeur monétaire.
+
+### Utilitaires partagés — toujours importer, jamais redéfinir localement
+- Formatage nombres/euros : `@/lib/formatters`
+- Noms de mois : `@/lib/constants`
+- Parsing monétaire : `@/lib/money`
+- Permissions : `@/lib/suiviPermissions`
+- Storage local : `@/lib/browserStorage`
+
+### Structure des fichiers
+- Logique métier pure (calculs, transformations) → fichier `.ts` dans `features/<domaine>/`
+- Hooks React → `features/<domaine>/hooks/use*.ts`
+- Sous-composants JSX > 50 lignes → `features/<domaine>/components/`
+- Types → `src/types/dataTypes.ts`
+- Constantes partagées → `src/lib/constants.ts`
+
+### Règle Dashboard
+`Dashboard.tsx` est un orchestrateur. Il ne contient que :
+- Appels aux hooks `useDashboard*`
+- `useMemo` appelant des fonctions de `dashboardCalculations.ts`
+- JSX de haut niveau via sous-composants
+
+Toute nouvelle logique métier dashboard → `dashboardCalculations.ts` ou nouveau hook.
+Toute nouvelle colonne/groupe → `dashboardColumns.ts` ou `dashboardStaticConfig.ts`.
+Tout nouveau bloc JSX > 50 lignes → nouveau composant dans `features/dashboard/components/`.
+Voir `src/features/dashboard/ARCHITECTURE.md`.
+
+---
+
+## Règles de documentation
+
+- Une tâche terminée → une ligne dans `docs/POINT_AVANCEMENT.md`.
+- Format : `"[sujet] : [ce qui a été fait]. tsc OK."`
+- Supprimer toute section de doc qui ne décrit que de l'historique sans valeur de référence.
+- Ne pas créer de fichier de doc temporaire pour une tâche simple.
+- Les fichiers `docs/` permanents décrivent comment l'appli fonctionne, pas l'historique des chantiers.
+
+---
+
+## Règles de commit
+
+- Un commit par tâche cohérente.
+- Message court : `"feat: ..."`, `"fix: ..."`, `"refactor: ..."`, `"docs: ..."`.
+- Vérifier `tsc --noEmit` avant chaque commit.
+
+---
+
+## Ce qu'il ne faut jamais faire
+
+- Créer une fonction locale qui existe déjà dans `src/lib/`.
+- Stocker une valeur monétaire en `string`.
+- Ajouter du code directement dans `Dashboard.tsx` sans passer par un hook ou sous-composant.
+- Désactiver une règle ESLint sans justification dans le commit.
+- Laisser du `console.log` en dehors des fichiers de test.
+- Modifier la logique métier (formules, calculs) sans que ce soit explicitement demandé.
+- Créer un fichier de patch ou codemod au lieu de modifier le source directement.
