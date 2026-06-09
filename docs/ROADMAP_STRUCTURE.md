@@ -9,46 +9,6 @@ Supprimer toute section terminee. Pas de roman — juste l'essentiel.
 
 ---
 
-## Etape 2 — Extraire les utilitaires dupliques
-
-**Effort : 1h. Risque : faible.**
-
-### 2a — src/lib/formatters.ts
-
-Creer ce fichier avec deux fonctions exportees :
-
-```ts
-export const formatEuro = (v: number): string =>
-  v === 0 ? '0' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v);
-
-export const formatPercent = (v: number): string =>
-  isFinite(v) && !isNaN(v) ? `${v.toFixed(2)}%` : '';
-```
-
-Remplacer les declarations locales `const fe = ...` et `const fp = ...` par un import
-depuis `@/lib/formatters` dans ces fichiers :
-`EdgMensuel`, `VsBudget`, `VsN1`, `BudgetEdgAnnuel`, `RealiseEdgAnneeFiscale`,
-`Reporting`, `MiseEnPaiement`, `ConfigurationChiffre2025`, `RecapAnnuel`, `Home`.
-
-### 2b — src/lib/constants.ts
-
-Creer ce fichier avec :
-
-```ts
-export const MONTH_NAMES = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
-
-export const MONTH_NAMES_SHORT = ['janv', 'fevr', 'mars', 'avr', 'mai', 'juin',
-  'juil', 'aout', 'sept', 'oct', 'nov', 'dec'];
-```
-
-Supprimer les declarations locales dans :
-`EdgMensuel`, `DepensesPetiteCaisse`, `MiseEnPaiement`, `SyntheseCA`, `VsN1`, `ConfigSalaires`.
-
-Verifier `tsc --noEmit`. Committer en un seul commit.
-
----
-
 ## Etape 3 — Extraire les types de DataContext
 
 **Effort : 30 min. Risque : faible.**
