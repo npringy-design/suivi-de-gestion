@@ -4,23 +4,26 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
-import { getDashboardRowIndices } from './utils';
+import { getDashboardRowIndices } from '@/utils';
 
-interface BudgetEdgAnnuelProps {
+const MONTH_INDICES = [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5];
+
+interface RealiseEdgAnneeFiscaleProps {
   onBack: () => void;
   hideHeader?: boolean;
 }
 
 
 
-export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEdgAnnuelProps) {
-  const { data, selectedYear } = useData();
+export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: RealiseEdgAnneeFiscaleProps) {
+  const { allData, selectedYear } = useData();
   const YEAR = selectedYear;
-  const MONTHS_SHORT = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'].map(m => `${m}-${YEAR.toString().slice(-2)}`);
+  const MONTHS_SHORT = ['juil', 'août', 'sept', 'oct', 'nov', 'déc', 'janv', 'févr', 'mars', 'avr', 'mai', 'juin'].map((m, i) => `${m}-${(i < 6 ? YEAR - 1 : YEAR).toString().slice(-2)}`);
 
   const getCaMonth = (m: number) => {
-    const md = data[m]?.dashboard || {};
-    const indices = getDashboardRowIndices(m, YEAR);
+    const year = m >= 6 ? YEAR - 1 : YEAR;
+    const md = allData[year]?.[m]?.dashboard || {};
+    const indices = getDashboardRowIndices(m, year);
     let total = 0;
     Object.values(indices).forEach(rIdx => {
       total += parseMoneyValue(md[`${rIdx}-24`]);
@@ -28,25 +31,21 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
     return total;
   };
 
-  const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [data]);
+  const caMonths = useMemo(() => MONTH_INDICES.map(m => getCaMonth(m)), [allData, YEAR]);
   const caTotal = caMonths.reduce((a, b) => a + b, 0);
 
-  const getValB = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuel?.[key]);
-  const getValR = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuelRealise?.[key]);
-
-  const getRowData = (key: string) => {
-    const monthsB = Array.from({ length: 12 }, (_, i) => getValB(i, key));
-    const monthsR = Array.from({ length: 12 }, (_, i) => getValR(i, key));
-    const totalB = monthsB.reduce((a, b) => a + b, 0);
-    const totalR = monthsR.reduce((a, b) => a + b, 0);
-    return { monthsB, monthsR, totalB, totalR };
+  const getValR = (m: number, key: string) => {
+    const year = m >= 6 ? YEAR - 1 : YEAR;
+    return parseMoneyValue(allData[year]?.[m]?.edgMensuelRealise?.[key]);
   };
 
-  const getMonthCalculations = (m: number) => {
-    const caB = parseMoneyValue(data[m]?.edgMensuel?.['ca_total_ht']);
-    const caR = caMonths[m]; // Realise CA from dashboard
-    
-    const valB = (k: string) => getValB(m, k);
+  const getRowData = (key: string) => {
+    const monthsR = MONTH_INDICES.map(m => getValR(m, key));
+    const totalR = monthsR.reduce((a, b) => a + b, 0);
+    return { monthsR, totalR };
+  };
+
+  const getMonthCalculations = (m: number, caR: number) => {
     const valR = (k: string) => getValR(m, k);
 
     const calcValues = (val: (k: string) => number, ca: number) => {
@@ -79,77 +78,51 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
       };
     };
 
-    return {
-      budget: calcValues(valB, caB),
-      realise: calcValues(valR, caR)
-    };
+    return calcValues(valR, caR);
   };
 
-  const monthCalcs = useMemo(() => Array.from({ length: 12 }, (_, i) => getMonthCalculations(i)), [data, caMonths]);
+  const monthCalcs = useMemo(() => MONTH_INDICES.map((m, i) => getMonthCalculations(m, caMonths[i])), [allData, caMonths]);
 
-  const getTotalCalc = (key: keyof ReturnType<typeof getMonthCalculations>['budget']) => {
-    const budget = monthCalcs.reduce((sum, m) => sum + m.budget[key], 0);
-    const realise = monthCalcs.reduce((sum, m) => sum + m.realise[key], 0);
-    return { budget, realise };
+  const getTotalCalc = (calcKey: keyof ReturnType<typeof getMonthCalculations>) => {
+    return monthCalcs.reduce((sum, m) => sum + m[calcKey], 0);
   };
-
-  const ecart = (r: number, b: number) => r - b;
 
   const renderDataRow = (label: string, key: string, isBlue = false) => {
     const rowData = getRowData(key);
-    const eValTotal = ecart(rowData.totalR, rowData.totalB);
-    const ratioBTotal = caTotal ? (rowData.totalB / caTotal) * 100 : 0;
     const ratioRTotal = caTotal ? (rowData.totalR / caTotal) * 100 : 0;
     
     return (
       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
         <td style={{ padding: '8px 12px', fontSize: 12, background: '#fff', color: '#334155', position: 'sticky', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', minWidth: 250 }}>{label}</td>
-        {Array.from({ length: 12 }).map((_, m) => {
-          const bVal = rowData.monthsB[m];
-          const rVal = rowData.monthsR[m];
-          const eVal = ecart(rVal, bVal);
-          const ratioB = caMonths[m] ? (bVal / caMonths[m]) * 100 : 0;
-          const ratioR = caMonths[m] ? (rVal / caMonths[m]) * 100 : 0;
+        {MONTH_INDICES.map((m, i) => {
+          const rVal = rowData.monthsR[i];
+          const caR = caMonths[i];
+          const ratioR = caR ? (rVal / caR) * 100 : 0;
+          
           return (
-            <React.Fragment key={m}>
+            <React.Fragment key={i}>
               <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: isBlue ? '#eff6ff' : '#fff', fontSize: 12, color: '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8', fontSize: 10 }}>{formatPercent(ratioB)}</span>
-                  <span>{formatEuro(bVal)}</span>
-                </div>
+                {formatEuro(rVal)}
               </td>
-              <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: '#fff', fontSize: 12, color: '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8', fontSize: 10 }}>{formatPercent(ratioR)}</span>
-                  <span>{formatEuro(rVal)}</span>
-                </div>
+              <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fef9c3', fontSize: 11, color: '#854d0e', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>
+                {formatPercent(ratioR)}
               </td>
-              <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: '#fff', fontSize: 12, color: eVal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{formatEuro(eVal)}</td>
             </React.Fragment>
           );
         })}
         <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: isBlue ? '#eff6ff' : '#fff', fontSize: 12, fontWeight: 600, color: '#0f172a', borderLeft: '2px solid #cbd5e1' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#94a3b8', fontSize: 10, fontWeight: 400 }}>{formatPercent(ratioBTotal)}</span>
-            <span>{formatEuro(rowData.totalB)}</span>
-          </div>
+          {formatEuro(rowData.totalR)}
         </td>
-        <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: '#fff', fontSize: 12, fontWeight: 600, color: '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#94a3b8', fontSize: 10, fontWeight: 400 }}>{formatPercent(ratioRTotal)}</span>
-            <span>{formatEuro(rowData.totalR)}</span>
-          </div>
+        <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fef9c3', fontSize: 11, fontWeight: 600, color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>
+          {formatPercent(ratioRTotal)}
         </td>
-        <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: '#fff', fontSize: 12, fontWeight: 600, color: eValTotal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0' }}>{formatEuro(eValTotal)}</td>
       </tr>
     );
   };
 
-  const renderCalcRow = (label: string, calcKey: keyof ReturnType<typeof getMonthCalculations>['budget'], type: 'header' | 'total' | 'subtotal', isRed = false) => {
-    const totals = getTotalCalc(calcKey);
-    const eValTotal = ecart(totals.realise, totals.budget);
-    const ratioBTotal = caTotal ? (totals.budget / caTotal) * 100 : 0;
-    const ratioRTotal = caTotal ? (totals.realise / caTotal) * 100 : 0;
+  const renderCalcRow = (label: string, calcKey: keyof ReturnType<typeof getMonthCalculations>, type: 'header' | 'total' | 'subtotal', isRed = false) => {
+    const totalR = getTotalCalc(calcKey);
+    const ratioRTotal = caTotal ? (totalR / caTotal) * 100 : 0;
     
     let bg = '#fff';
     let color = '#0f172a';
@@ -180,43 +153,28 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
     return (
       <tr style={{ borderBottom, borderTop }}>
         <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: weight, background: bg, color: color, position: 'sticky', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', textTransform: type === 'header' || type === 'total' ? 'uppercase' : 'none' }}>{label}</td>
-        {monthCalcs.map((mCalc, m) => {
-          const bVal = mCalc.budget[calcKey];
-          const rVal = mCalc.realise[calcKey];
-          const eVal = ecart(rVal, bVal);
-          const ratioB = caMonths[m] ? (bVal / caMonths[m]) * 100 : 0;
-          const ratioR = caMonths[m] ? (rVal / caMonths[m]) * 100 : 0;
+        {MONTH_INDICES.map((m, i) => {
+          const rVal = monthCalcs[i][calcKey];
+          const caR = caMonths[i];
+          const ratioR = caR ? (rVal / caR) * 100 : 0;
+          
           return (
-            <React.Fragment key={m}>
+            <React.Fragment key={i}>
               <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, opacity: 0.8 }}>{formatPercent(ratioB)}</span>
-                  <span>{formatEuro(bVal)}</span>
-                </div>
+                {formatEuro(rVal)}
               </td>
-              <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, opacity: 0.8 }}>{formatPercent(ratioR)}</span>
-                  <span>{formatEuro(rVal)}</span>
-                </div>
+              <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fef9c3', color: type === 'header' || type === 'total' ? color : '#854d0e', fontSize: 11, fontWeight: weight, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>
+                {formatPercent(ratioR)}
               </td>
-              <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: bg, color: eVal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{formatEuro(eVal)}</td>
             </React.Fragment>
           );
         })}
         <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: 800, borderLeft: '2px solid #cbd5e1' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{formatPercent(ratioBTotal)}</span>
-            <span>{formatEuro(totals.budget)}</span>
-          </div>
+          {formatEuro(totalR)}
         </td>
-        <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{formatPercent(ratioRTotal)}</span>
-            <span>{formatEuro(totals.realise)}</span>
-          </div>
+        <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fef9c3', color: type === 'header' || type === 'total' ? color : '#854d0e', fontSize: 11, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
+          {formatPercent(ratioRTotal)}
         </td>
-        <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: bg, color: eValTotal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>{formatEuro(eValTotal)}</td>
       </tr>
     );
   };
@@ -230,7 +188,7 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
             Retour Accueil
           </button>
           <div style={{ color: '#fff', fontSize: 14, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' }}>
-            Budget EDG Annuel <span style={{ color: '#64748b', margin: '0 8px' }}>|</span> <span style={{ color: '#10b981' }}>{YEAR}</span>
+            Réaliser EDG année fiscale <span style={{ color: '#64748b', margin: '0 8px' }}>|</span> <span style={{ color: '#10b981' }}>{YEAR - 1}-{YEAR}</span>
           </div>
         </header>
       )}
@@ -241,10 +199,10 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
           <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
             <div>
               <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>EDG "ETAT DE GESTION"</h1>
-              <div style={{ fontSize: 14, fontWeight: 500, color: '#64748b', marginTop: 4 }}>BURO MONTE - BUDGET ANNUEL</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: '#64748b', marginTop: 4 }}>BURO MONTE - ANNEE FISCALE</div>
             </div>
             <div style={{ background: '#10b981', color: '#fff', padding: '6px 16px', borderRadius: 999, fontSize: 14, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)' }}>
-              ANNÉE {YEAR}
+              ANNÉE FISCALE {YEAR - 1}-{YEAR}
             </div>
           </div>
 
@@ -255,27 +213,25 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
                   <th style={{ background: '#f1f5f9', position: 'sticky', left: 0, top: 0, zIndex: 50, borderRight: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1' }}></th>
                   {MONTHS_SHORT.map((m, i) => (
                     <React.Fragment key={i}>
-                      <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{m}</th>
+                      <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{m}</th>
                     </React.Fragment>
                   ))}
-                  <th colSpan={3} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '8px 0', background: '#e2e8f0', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '2px solid #cbd5e1' }}>ANNÉE {YEAR}</th>
+                  <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '8px 0', background: '#e2e8f0', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '2px solid #cbd5e1' }}>TOTAL</th>
                 </tr>
                 <tr style={{ height: 34 }}>
                   <th style={{ background: '#f1f5f9', position: 'sticky', left: 0, top: 34, zIndex: 50, borderRight: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1' }}></th>
                   {MONTHS_SHORT.map((m, i) => (
                     <React.Fragment key={i}>
-                      <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 80, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>BUDGET</th>
-                      <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 80, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>RÉALISÉ</th>
-                      <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 80, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>ÉCART</th>
+                      <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 80, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}></th>
+                      <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#fef9c3', color: '#854d0e', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>Ratio</th>
                     </React.Fragment>
                   ))}
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 90, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f1f5f9', color: '#475569', borderLeft: '2px solid #cbd5e1' }}>BUDGET</th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 90, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f1f5f9', color: '#475569', borderLeft: '1px solid #e2e8f0' }}>RÉALISÉ</th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 90, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f1f5f9', color: '#475569', borderLeft: '1px solid #e2e8f0' }}>ÉCART</th>
+                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 90, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f1f5f9', color: '#475569', borderLeft: '2px solid #cbd5e1' }}></th>
+                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef9c3', color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>Ratio</th>
                 </tr>
               </thead>
               <tbody>
-                {renderCalcRow('C.A. TOTAL HT', 'ca', 'header', true)}
+                {renderCalcRow('C.A. TOTAL ht', 'ca', 'header', true)}
                 {renderDataRow('Achats Food', 'achats_food', true)}
                 {renderDataRow('Consommables liés à la vente (Paper; Flyer;jouets;CO2)', 'consommables')}
                 {renderDataRow('Variation de stock', 'variation_stock')}

@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 
-import { getDashboardRowIndices, getISOWeek } from './utils';
+import { getDashboardRowIndices, getISOWeek } from '@/utils';
 
 const NAV = '#1e293b';
 const AMBER = '#f59e0b';

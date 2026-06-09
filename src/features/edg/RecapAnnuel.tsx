@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 
-import { getDashboardRowIndices } from './utils';
+import { getDashboardRowIndices } from '@/utils';
 
 const CA_N1 = 1_789_254;
 const CA_N1_BY_MONTH = [159802,161245,174361,186373,190990,172214,167786,156793,130384,149359,139948,0];

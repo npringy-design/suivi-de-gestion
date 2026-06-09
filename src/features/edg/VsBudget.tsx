@@ -4,7 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
-import { getDashboardRowIndices } from './utils';
+import { getDashboardRowIndices } from '@/utils';
 
 interface VsBudgetProps {
   onBack: () => void;

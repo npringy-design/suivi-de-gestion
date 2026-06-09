@@ -3,7 +3,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 
 import { DataProvider } from '@/contexts/DataContext';
-import Home from '@/Home';
+import Home from '@/pages/Home';
 
 function LocationDisplay() {
   const location = useLocation();

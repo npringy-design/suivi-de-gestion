@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import DashboardAnalysisView from '@/DashboardAnalysisView';
+import DashboardAnalysisView from '@/pages/DashboardAnalysisView';
 
 import { useData, type SalarieRow } from '@/contexts/DataContext';
 import { averagePayrollRate } from '@/personnelSalaryImport';
