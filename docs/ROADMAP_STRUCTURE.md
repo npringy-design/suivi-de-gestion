@@ -9,23 +9,6 @@ Supprimer toute section terminee. Pas de roman — juste l'essentiel.
 
 ---
 
-## Etape 3 — Extraire les types de DataContext
-
-**Effort : 30 min. Risque : faible.**
-
-`DataContext.tsx` fait 861 lignes dont 27 types exportes en haut du fichier.
-
-1. Creer `src/types/dataTypes.ts`
-2. Deplacer tous les `export type` et `export interface` de `DataContext.tsx` vers ce fichier
-3. Dans `DataContext.tsx`, remplacer par un import groupee depuis `@/types/dataTypes`
-4. Verifier que tous les composants qui importaient depuis `@/contexts/DataContext`
-   trouvent toujours leurs types (les re-exporter depuis DataContext si necessaire
-   pour ne pas casser les imports existants)
-
-Verifier `tsc --noEmit`. Committer.
-
----
-
 ## Etape 4 — Reorganiser src/ en dossiers par domaine
 
 **Effort : 2-3h. Risque : moyen (beaucoup d'imports a mettre a jour).**
