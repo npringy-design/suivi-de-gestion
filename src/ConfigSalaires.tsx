@@ -5,6 +5,7 @@ import type { MonthDataSalariesConfig, SalarieRow } from '@/contexts/DataContext
 import { createEmptyPayrollCategories, PERSONNEL_CATEGORIES } from '@/personnelSalaryImport';
 import { parseHourInputToDecimal } from '@/utils';
 import { parseMoneyValue } from '@/lib/money';
+import { MONTH_NAMES } from '@/lib/constants';
 
 const NAV = '#1e293b';
 
@@ -22,10 +23,7 @@ interface ConfigSalairesProps {
 
 export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   const { selectedYear: YEAR, data, updateSalariesConfig } = useData();
-  const MONTHS = [
-    `Janvier ${YEAR}`, `Février ${YEAR}`, `Mars ${YEAR}`, `Avril ${YEAR}`, `Mai ${YEAR}`, `Juin ${YEAR}`,
-    `Juillet ${YEAR}`, `Août ${YEAR}`, `Septembre ${YEAR}`, `Octobre ${YEAR}`, `Novembre ${YEAR}`, `Décembre ${YEAR}`
-  ];
+  const MONTHS = MONTH_NAMES.map(m => `${m} ${YEAR}`);
   
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0);
   const selectedMonth = MONTHS[selectedMonthIndex];

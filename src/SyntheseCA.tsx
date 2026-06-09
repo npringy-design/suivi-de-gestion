@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { MONTH_NAMES_UPPER } from '@/lib/constants';
 
 interface SyntheseCAProps {
   initialMonth: number;
@@ -21,10 +22,6 @@ interface SyntheseCAProps {
   onDepensesPetiteCaisse: (month: number) => void;
 }
 
-const MONTHS = [
-  'JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN',
-  'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE'
-];
 
 const NAV = '#1e293b';
 
@@ -103,7 +100,7 @@ export default function SyntheseCA({
             onChange={(e) => handleMonthChange(Number(e.target.value))}
             className="w-full py-4 text-center bg-transparent appearance-none cursor-pointer outline-none font-extrabold text-lg uppercase tracking-widest text-slate-700"
           >
-            {MONTHS.map((month, index) => (
+            {MONTH_NAMES_UPPER.map((month, index) => (
               <option key={month} value={index}>
                 {month}
               </option>

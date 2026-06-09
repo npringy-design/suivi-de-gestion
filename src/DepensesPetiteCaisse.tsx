@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import { useData, type AchatEntry, type AlimentationEntry } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
+import { MONTH_NAMES } from '@/lib/constants';
 
 const CurrencyInput = ({ value, onChange, className }: { value: string, onChange: (val: string) => void, className?: string }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -50,7 +51,6 @@ const DateInput = ({ value, onChange, className, year }: { value: string, onChan
 };
 
 type DepensesPetiteCaisseProps = { month: number; year: number; onBack: () => void; };
-const MONTHS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const NAV = '#1e293b';
 
 export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPetiteCaisseProps) {
@@ -120,7 +120,7 @@ export default function DepensesPetiteCaisse({ month, year, onBack }: DepensesPe
             {/* Titre + solde début */}
             <div className="bg-white rounded-t-2xl border border-slate-200 border-b-0 px-4 py-3 flex items-center gap-4">
               <div className="bg-amber-100 text-amber-800 px-5 py-2 rounded-xl font-bold text-base border border-amber-200 whitespace-nowrap">
-                {MONTHS[month]} {year}
+                {MONTH_NAMES[month].toLowerCase()} {year}
               </div>
               <div className="flex items-center bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
                 <div className="px-4 py-2 font-bold text-slate-600 text-sm border-r border-slate-200 whitespace-nowrap">

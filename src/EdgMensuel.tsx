@@ -3,10 +3,10 @@ import { Menu, X, ChevronLeft } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
+import { formatEuro, formatPercent } from '@/lib/formatters';
+import { MONTH_NAMES, MONTH_NAMES_SHORT } from '@/lib/constants';
 
 import { getDashboardRowIndices } from './utils';
-
-const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
 interface EdgMensuelProps {
   month: number;
@@ -15,13 +15,11 @@ interface EdgMensuelProps {
 }
 
 
-const fe = (v: number) => v === 0 ? '0' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v);
-const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v.toFixed(2)}%` : '';
 
 export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps) {
   const { data, updateEdgMensuel, updateEdgMensuelRealise, selectedYear } = useData();
   const YEAR = selectedYear;
-  const MONTHS_SHORT = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'].map(m => `${m}-${YEAR.toString().slice(-2)}`);
+  const MONTHS_SHORT = MONTH_NAMES_SHORT.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
 
@@ -138,7 +136,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
           />
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
-          {caTotalHtBudget > 0 && edgData[key] ? fp((bVal / caTotalHtBudget) * 100) : ''}
+          {caTotalHtBudget > 0 && edgData[key] ? formatPercent((bVal / caTotalHtBudget) * 100) : ''}
         </td>
 
         {/* REALISE */}
@@ -153,13 +151,13 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
           />
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
-          {caTotalHtRealise > 0 && edgRealiseData[key] ? fp((rVal / caTotalHtRealise) * 100) : ''}
+          {caTotalHtRealise > 0 && edgRealiseData[key] ? formatPercent((rVal / caTotalHtRealise) * 100) : ''}
         </td>
 
         {/* ECART */}
         <td style={{ width: 10, background: '#fff', borderBottom: '1px solid #e2e8f0' }}></td>
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '6px 8px' : '8px 12px', textAlign: 'right', background: '#fff', fontSize: isMobile ? 11 : 13, color: eVal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
-          {fe(eVal)}
+          {formatEuro(eVal)}
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, color: '#475569', borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #e2e8f0' }}>
         </td>
@@ -203,25 +201,25 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
               style={{ width: '100%', height: '100%', border: 'none', background: 'transparent', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 11 : 13, outline: 'none', color: isRed ? '#b91c1c' : '#0f172a', fontWeight: 700 }}
               placeholder="0"
             />
-          ) : fe(bVal)}
+          ) : formatEuro(bVal)}
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#fef2f2', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: isRed ? '#b91c1c' : '#0f172a', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
-          {caTotalHtBudget > 0 ? fp((bVal / caTotalHtBudget) * 100) : ''}
+          {caTotalHtBudget > 0 ? formatPercent((bVal / caTotalHtBudget) * 100) : ''}
         </td>
 
         {/* REALISE */}
         <td style={{ width: 10, background: '#fff', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}></td>
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, color: isRed ? '#b91c1c' : '#0f172a', background: '#fef2f2', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
-          {fe(rVal)}
+          {formatEuro(rVal)}
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#fef2f2', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: isRed ? '#b91c1c' : '#0f172a', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
-          {caTotalHtRealise > 0 ? fp((rVal / caTotalHtRealise) * 100) : ''}
+          {caTotalHtRealise > 0 ? formatPercent((rVal / caTotalHtRealise) * 100) : ''}
         </td>
 
         {/* ECART */}
         <td style={{ width: 10, background: '#fff', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}></td>
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, color: eVal < 0 ? '#b91c1c' : '#0f172a', background: '#fef2f2', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
-          {fe(eVal)}
+          {formatEuro(eVal)}
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
         </td>
@@ -255,25 +253,25 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         {/* BUDGET */}
         <td style={{ width: 10, background: '#fff', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}></td>
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: '#166534', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
-          {fe(bVal)}
+          {formatEuro(bVal)}
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#f0fdf4', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: '#166534', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
-          {caTotalHtBudget > 0 ? fp((bVal / caTotalHtBudget) * 100) : ''}
+          {caTotalHtBudget > 0 ? formatPercent((bVal / caTotalHtBudget) * 100) : ''}
         </td>
 
         {/* REALISE */}
         <td style={{ width: 10, background: '#fff', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}></td>
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: '#166534', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
-          {fe(rVal)}
+          {formatEuro(rVal)}
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#f0fdf4', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: '#166534', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
-          {caTotalHtRealise > 0 ? fp((rVal / caTotalHtRealise) * 100) : ''}
+          {caTotalHtRealise > 0 ? formatPercent((rVal / caTotalHtRealise) * 100) : ''}
         </td>
 
         {/* ECART */}
         <td style={{ width: 10, background: '#fff', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}></td>
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: eVal < 0 ? '#b91c1c' : '#166534', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
-          {fe(eVal)}
+          {formatEuro(eVal)}
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
         </td>
@@ -305,25 +303,25 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         {/* BUDGET */}
         <td style={{ width: 10, background: '#fff', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}></td>
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '6px 8px' : '8px 12px', textAlign: 'right', fontWeight: 600, background: '#f8fafc', color: '#0f172a', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
-          {fe(bVal)}
+          {formatEuro(bVal)}
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 500, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
-          {caTotalHtBudget > 0 ? fp((bVal / caTotalHtBudget) * 100) : ''}
+          {caTotalHtBudget > 0 ? formatPercent((bVal / caTotalHtBudget) * 100) : ''}
         </td>
 
         {/* REALISE */}
         <td style={{ width: 10, background: '#fff', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}></td>
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '6px 8px' : '8px 12px', textAlign: 'right', fontWeight: 600, background: '#f8fafc', color: '#0f172a', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
-          {fe(rVal)}
+          {formatEuro(rVal)}
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 500, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
-          {caTotalHtRealise > 0 ? fp((rVal / caTotalHtRealise) * 100) : ''}
+          {caTotalHtRealise > 0 ? formatPercent((rVal / caTotalHtRealise) * 100) : ''}
         </td>
 
         {/* ECART */}
         <td style={{ width: 10, background: '#fff', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}></td>
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '6px 8px' : '8px 12px', textAlign: 'right', fontWeight: 600, background: '#f8fafc', color: eVal < 0 ? '#b91c1c' : '#0f172a', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
-          {fe(eVal)}
+          {formatEuro(eVal)}
         </td>
         <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
         </td>
@@ -376,7 +374,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: 4, scrollbarWidth: 'none' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0 12px 12px 12px' }}>Sélection du mois</div>
-          {MONTHS.map((m, i) => (
+          {MONTH_NAMES.map((m, i) => (
             <button
               key={i}
               onClick={() => setMonth(i)}
@@ -417,7 +415,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
                 </button>
               )}
               <h2 style={{ fontSize: isMobile ? 18 : 28, fontWeight: 800, color: '#0f172a', margin: 0, textTransform: 'capitalize', letterSpacing: '-0.02em' }}>
-                {MONTHS[month]} {YEAR}
+                {MONTH_NAMES[month]} {YEAR}
               </h2>
             </div>
             <div style={{ background: '#10b981', color: '#fff', padding: '6px 16px', borderRadius: 999, fontSize: isMobile ? 12 : 14, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)' }}>

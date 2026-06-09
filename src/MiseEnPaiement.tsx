@@ -3,6 +3,7 @@ import { ChevronLeft, Menu, X } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
+import { MONTH_NAMES_UPPER } from '@/lib/constants';
 
 interface MiseEnPaiementProps {
   month: number;
@@ -10,10 +11,6 @@ interface MiseEnPaiementProps {
   onBack: () => void;
 }
 
-const MONTHS = [
-  'JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN',
-  'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE'
-];
 
 const getPeriodLabels = (monthIndex: number) => {
   const prevMonth = monthIndex === 0 ? 12 : monthIndex;
@@ -194,7 +191,7 @@ export default function MiseEnPaiement({ month, setMonth, onBack }: MiseEnPaieme
         </div>
         
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 16px' }}>
-          {MONTHS.map((m, i) => (
+          {MONTH_NAMES_UPPER.map((m, i) => (
             <button
               key={m}
               onClick={() => {
@@ -239,7 +236,7 @@ export default function MiseEnPaiement({ month, setMonth, onBack }: MiseEnPaieme
                 </button>
               )}
               <h2 style={{ fontSize: isMobile ? 20 : 28, fontWeight: 800, color: '#0f172a', margin: 0, textTransform: 'capitalize', letterSpacing: '-0.02em' }}>
-                Virements {MONTHS[month].toLowerCase()}
+                Virements {MONTH_NAMES_UPPER[month].toLowerCase()}
               </h2>
             </div>
             <div style={{ background: '#f59e0b', color: '#fff', padding: isMobile ? '4px 12px' : '6px 16px', borderRadius: 999, fontSize: isMobile ? 12 : 14, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', boxShadow: '0 2px 4px rgba(245, 158, 11, 0.2)' }}>

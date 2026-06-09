@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
+import { formatEuro, formatPercent } from '@/lib/formatters';
 
 import { getDashboardRowIndices } from './utils';
 
@@ -11,8 +12,6 @@ interface BudgetEdgAnnuelProps {
 }
 
 
-const fe = (v: number) => v === 0 ? '0' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v);
-const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v.toFixed(2)}%` : '';
 
 export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEdgAnnuelProps) {
   const { data, selectedYear } = useData();
@@ -115,33 +114,33 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
             <React.Fragment key={m}>
               <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: isBlue ? '#eff6ff' : '#fff', fontSize: 12, color: '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8', fontSize: 10 }}>{fp(ratioB)}</span>
-                  <span>{fe(bVal)}</span>
+                  <span style={{ color: '#94a3b8', fontSize: 10 }}>{formatPercent(ratioB)}</span>
+                  <span>{formatEuro(bVal)}</span>
                 </div>
               </td>
               <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: '#fff', fontSize: 12, color: '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8', fontSize: 10 }}>{fp(ratioR)}</span>
-                  <span>{fe(rVal)}</span>
+                  <span style={{ color: '#94a3b8', fontSize: 10 }}>{formatPercent(ratioR)}</span>
+                  <span>{formatEuro(rVal)}</span>
                 </div>
               </td>
-              <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: '#fff', fontSize: 12, color: eVal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{fe(eVal)}</td>
+              <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: '#fff', fontSize: 12, color: eVal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{formatEuro(eVal)}</td>
             </React.Fragment>
           );
         })}
         <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: isBlue ? '#eff6ff' : '#fff', fontSize: 12, fontWeight: 600, color: '#0f172a', borderLeft: '2px solid #cbd5e1' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#94a3b8', fontSize: 10, fontWeight: 400 }}>{fp(ratioBTotal)}</span>
-            <span>{fe(rowData.totalB)}</span>
+            <span style={{ color: '#94a3b8', fontSize: 10, fontWeight: 400 }}>{formatPercent(ratioBTotal)}</span>
+            <span>{formatEuro(rowData.totalB)}</span>
           </div>
         </td>
         <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: '#fff', fontSize: 12, fontWeight: 600, color: '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#94a3b8', fontSize: 10, fontWeight: 400 }}>{fp(ratioRTotal)}</span>
-            <span>{fe(rowData.totalR)}</span>
+            <span style={{ color: '#94a3b8', fontSize: 10, fontWeight: 400 }}>{formatPercent(ratioRTotal)}</span>
+            <span>{formatEuro(rowData.totalR)}</span>
           </div>
         </td>
-        <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: '#fff', fontSize: 12, fontWeight: 600, color: eValTotal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0' }}>{fe(eValTotal)}</td>
+        <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: '#fff', fontSize: 12, fontWeight: 600, color: eValTotal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0' }}>{formatEuro(eValTotal)}</td>
       </tr>
     );
   };
@@ -191,33 +190,33 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
             <React.Fragment key={m}>
               <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, opacity: 0.8 }}>{fp(ratioB)}</span>
-                  <span>{fe(bVal)}</span>
+                  <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, opacity: 0.8 }}>{formatPercent(ratioB)}</span>
+                  <span>{formatEuro(bVal)}</span>
                 </div>
               </td>
               <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, opacity: 0.8 }}>{fp(ratioR)}</span>
-                  <span>{fe(rVal)}</span>
+                  <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, opacity: 0.8 }}>{formatPercent(ratioR)}</span>
+                  <span>{formatEuro(rVal)}</span>
                 </div>
               </td>
-              <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: bg, color: eVal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{fe(eVal)}</td>
+              <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: bg, color: eVal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{formatEuro(eVal)}</td>
             </React.Fragment>
           );
         })}
         <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: 800, borderLeft: '2px solid #cbd5e1' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{fp(ratioBTotal)}</span>
-            <span>{fe(totals.budget)}</span>
+            <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{formatPercent(ratioBTotal)}</span>
+            <span>{formatEuro(totals.budget)}</span>
           </div>
         </td>
         <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{fp(ratioRTotal)}</span>
-            <span>{fe(totals.realise)}</span>
+            <span style={{ color: type === 'header' || type === 'total' ? color : '#94a3b8', fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{formatPercent(ratioRTotal)}</span>
+            <span>{formatEuro(totals.realise)}</span>
           </div>
         </td>
-        <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: bg, color: eValTotal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>{fe(eValTotal)}</td>
+        <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: bg, color: eValTotal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>{formatEuro(eValTotal)}</td>
       </tr>
     );
   };

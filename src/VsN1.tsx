@@ -2,10 +2,10 @@ import React, { useMemo } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
+import { formatEuro, formatPercent } from '@/lib/formatters';
+import { MONTH_NAMES_SHORT } from '@/lib/constants';
 
 import { getDashboardRowIndices } from './utils';
-
-const MONTHS = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
 
 interface VsN1Props {
   onBack: () => void;
@@ -13,8 +13,6 @@ interface VsN1Props {
 }
 
 
-const fe = (v: number) => v === 0 ? '0' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v);
-const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v.toFixed(2)}%` : '';
 
 export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   const { data, selectedYear } = useData();
@@ -125,43 +123,43 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
           return (
             <React.Fragment key={m}>
               <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: '#f1f5f9', fontSize: 12, color: '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-                {fe(n1Val)}
+                {formatEuro(n1Val)}
               </td>
               <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#e2e8f0', fontSize: 11, color: '#475569', borderLeft: '1px solid #e2e8f0' }}>
-                {fp(ratioN1)}
+                {formatPercent(ratioN1)}
               </td>
               <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: isBlue ? '#eff6ff' : '#fff', fontSize: 12, color: '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-                {fe(rVal)}
+                {formatEuro(rVal)}
               </td>
               <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fef9c3', fontSize: 11, color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>
-                {fp(ratioR)}
+                {formatPercent(ratioR)}
               </td>
               <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 12, color: eVal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-                {fe(eVal)}
+                {formatEuro(eVal)}
               </td>
               <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 11, color: '#991b1b', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>
-                {fp(ratioE)}
+                {formatPercent(ratioE)}
               </td>
             </React.Fragment>
           );
         })}
         <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: '#f1f5f9', fontSize: 12, fontWeight: 600, color: '#0f172a', borderLeft: '2px solid #cbd5e1' }}>
-          {fe(rowData.totalN1)}
+          {formatEuro(rowData.totalN1)}
         </td>
         <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#e2e8f0', fontSize: 11, fontWeight: 600, color: '#475569', borderLeft: '1px solid #e2e8f0' }}>
-          {fp(ratioN1Total)}
+          {formatPercent(ratioN1Total)}
         </td>
         <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: isBlue ? '#eff6ff' : '#fff', fontSize: 12, fontWeight: 600, color: '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-          {fe(rowData.totalR)}
+          {formatEuro(rowData.totalR)}
         </td>
         <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fef9c3', fontSize: 11, fontWeight: 600, color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>
-          {fp(ratioRTotal)}
+          {formatPercent(ratioRTotal)}
         </td>
         <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 12, fontWeight: 600, color: eValTotal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-          {fe(eValTotal)}
+          {formatEuro(eValTotal)}
         </td>
         <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 11, fontWeight: 600, color: '#991b1b', borderLeft: '1px solid #e2e8f0' }}>
-          {fp(ratioETotal)}
+          {formatPercent(ratioETotal)}
         </td>
       </tr>
     );
@@ -220,43 +218,43 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
           return (
             <React.Fragment key={m}>
               <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#f1f5f9', color: color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
-                {fe(n1Val)}
+                {formatEuro(n1Val)}
               </td>
               <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#e2e8f0', color: type === 'header' || type === 'total' ? color : '#475569', fontSize: 11, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
-                {fp(ratioN1)}
+                {formatPercent(ratioN1)}
               </td>
               <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
-                {fe(rVal)}
+                {formatEuro(rVal)}
               </td>
               <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fef9c3', color: type === 'header' || type === 'total' ? color : '#854d0e', fontSize: 11, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
-                {fp(ratioR)}
+                {formatPercent(ratioR)}
               </td>
               <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: eVal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
-                {fe(eVal)}
+                {formatEuro(eVal)}
               </td>
               <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: type === 'header' || type === 'total' ? color : '#991b1b', fontSize: 11, fontWeight: weight, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>
-                {fp(ratioE)}
+                {formatPercent(ratioE)}
               </td>
             </React.Fragment>
           );
         })}
         <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#f1f5f9', color: color, fontSize: 12, fontWeight: 800, borderLeft: '2px solid #cbd5e1' }}>
-          {fe(totals.n1)}
+          {formatEuro(totals.n1)}
         </td>
         <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#e2e8f0', color: type === 'header' || type === 'total' ? color : '#475569', fontSize: 11, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
-          {fp(ratioN1Total)}
+          {formatPercent(ratioN1Total)}
         </td>
         <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
-          {fe(totals.realise)}
+          {formatEuro(totals.realise)}
         </td>
         <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fef9c3', color: type === 'header' || type === 'total' ? color : '#854d0e', fontSize: 11, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
-          {fp(ratioRTotal)}
+          {formatPercent(ratioRTotal)}
         </td>
         <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: eValTotal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
-          {fe(eValTotal)}
+          {formatEuro(eValTotal)}
         </td>
         <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: type === 'header' || type === 'total' ? color : '#991b1b', fontSize: 11, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
-          {fp(ratioETotal)}
+          {formatPercent(ratioETotal)}
         </td>
       </tr>
     );
@@ -294,7 +292,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
               <thead>
                 <tr style={{ height: 34 }}>
                   <th style={{ background: '#f1f5f9', position: 'sticky', left: 0, top: 0, zIndex: 50, borderRight: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1' }}></th>
-                  {MONTHS.map((m, i) => (
+                  {MONTH_NAMES_SHORT.map((m, i) => (
                     <React.Fragment key={i}>
                       <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#e2e8f0', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{m}-{YEAR - 1}</th>
                       <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #cbd5e1' }}>{m}-{YEAR}</th>
@@ -307,7 +305,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
                 </tr>
                 <tr style={{ height: 34 }}>
                   <th style={{ background: '#f1f5f9', position: 'sticky', left: 0, top: 34, zIndex: 50, borderRight: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1' }}></th>
-                  {MONTHS.map((m, i) => (
+                  {MONTH_NAMES_SHORT.map((m, i) => (
                     <React.Fragment key={i}>
                       <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 80, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f1f5f9', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}></th>
                       <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#e2e8f0', color: '#475569', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>Ratio</th>

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
+import { formatEuro, formatPercent } from '@/lib/formatters';
 
 import { getDashboardRowIndices } from './utils';
 
@@ -11,8 +12,6 @@ interface VsBudgetProps {
 }
 
 
-const fe = (v: number) => v === 0 ? '0' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v);
-const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v.toFixed(2)}%` : '';
 
 export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) {
   const { data, selectedYear } = useData();
@@ -121,31 +120,31 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
           return (
             <React.Fragment key={m}>
               <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: isBlue ? '#eff6ff' : '#fff', fontSize: 12, color: '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-                {fe(rVal)}
+                {formatEuro(rVal)}
               </td>
               <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fef9c3', fontSize: 11, color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>
-                {fp(ratioR)}
+                {formatPercent(ratioR)}
               </td>
               <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 12, color: eVal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-                {fe(eVal)}
+                {formatEuro(eVal)}
               </td>
               <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 11, color: '#991b1b', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>
-                {fp(ratioE)}
+                {formatPercent(ratioE)}
               </td>
             </React.Fragment>
           );
         })}
         <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: isBlue ? '#eff6ff' : '#fff', fontSize: 12, fontWeight: 600, color: '#0f172a', borderLeft: '2px solid #cbd5e1' }}>
-          {fe(rowData.totalR)}
+          {formatEuro(rowData.totalR)}
         </td>
         <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fef9c3', fontSize: 11, fontWeight: 600, color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>
-          {fp(ratioRTotal)}
+          {formatPercent(ratioRTotal)}
         </td>
         <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 12, fontWeight: 600, color: eValTotal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-          {fe(eValTotal)}
+          {formatEuro(eValTotal)}
         </td>
         <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 11, fontWeight: 600, color: '#991b1b', borderLeft: '1px solid #e2e8f0' }}>
-          {fp(ratioETotal)}
+          {formatPercent(ratioETotal)}
         </td>
       </tr>
     );
@@ -202,31 +201,31 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
           return (
             <React.Fragment key={m}>
               <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
-                {fe(rVal)}
+                {formatEuro(rVal)}
               </td>
               <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fef9c3', color: type === 'header' || type === 'total' ? color : '#854d0e', fontSize: 11, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
-                {fp(ratioR)}
+                {formatPercent(ratioR)}
               </td>
               <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: eVal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
-                {fe(eVal)}
+                {formatEuro(eVal)}
               </td>
               <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: type === 'header' || type === 'total' ? color : '#991b1b', fontSize: 11, fontWeight: weight, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>
-                {fp(ratioE)}
+                {formatPercent(ratioE)}
               </td>
             </React.Fragment>
           );
         })}
         <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: bg, color: color, fontSize: 12, fontWeight: 800, borderLeft: '2px solid #cbd5e1' }}>
-          {fe(totals.realise)}
+          {formatEuro(totals.realise)}
         </td>
         <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fef9c3', color: type === 'header' || type === 'total' ? color : '#854d0e', fontSize: 11, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
-          {fp(ratioRTotal)}
+          {formatPercent(ratioRTotal)}
         </td>
         <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: eValTotal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
-          {fe(eValTotal)}
+          {formatEuro(eValTotal)}
         </td>
         <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: type === 'header' || type === 'total' ? color : '#991b1b', fontSize: 11, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
-          {fp(ratioETotal)}
+          {formatPercent(ratioETotal)}
         </td>
       </tr>
     );
