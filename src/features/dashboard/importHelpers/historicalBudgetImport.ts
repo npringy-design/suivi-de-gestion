@@ -1,8 +1,11 @@
-import * as XLSX from 'xlsx';
+import type { Worksheet, Cell } from 'exceljs';
 
-export const getHistoricalBudgetCell = (sheet: XLSX.WorkSheet, rowIndex: number, colIndex: number) => (
-  sheet[XLSX.utils.encode_cell({ r: rowIndex, c: colIndex })] as XLSX.CellObject | undefined
-);
+export type XlRange = { rowCount: number; columnCount: number };
+
+export const getHistoricalBudgetCell = (sheet: Worksheet, rowIndex: number, colIndex: number): Cell | undefined => {
+  const cell = sheet.getCell(rowIndex + 1, colIndex + 1);
+  return (cell.value === null || cell.value === undefined) ? undefined : cell;
+};
 
 export const parseHistoricalBudgetNumber = (value: unknown) => {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
@@ -15,19 +18,15 @@ export const parseHistoricalBudgetNumber = (value: unknown) => {
   return Number(cleaned) || 0;
 };
 
-export const parseHistoricalBudgetCellNumber = (cell: XLSX.CellObject | undefined) => {
+export const parseHistoricalBudgetCellNumber = (cell: Cell | undefined) => {
   if (!cell) return 0;
-  const raw = parseHistoricalBudgetNumber(cell.v);
+  const raw = parseHistoricalBudgetNumber(cell.value);
   if (raw !== 0) return raw;
-  return parseHistoricalBudgetNumber(cell.w);
+  return parseHistoricalBudgetNumber(cell.text);
 };
 
 export const parseHistoricalBudgetDate = (value: unknown) => {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
-  if (typeof value === 'number') {
-    const parsed = XLSX.SSF.parse_date_code(value);
-    if (parsed) return new Date(parsed.y, parsed.m - 1, parsed.d);
-  }
   const text = String(value ?? '').trim();
   const isoTime = Date.parse(text);
   if (/^d{4}-d{2}-d{2}/.test(text) && !Number.isNaN(isoTime)) return new Date(isoTime);
@@ -49,28 +48,28 @@ export const parseHistoricalBudgetDate = (value: unknown) => {
   return null;
 };
 
-export const parseHistoricalBudgetCellDate = (cell: XLSX.CellObject | undefined) => {
+export const parseHistoricalBudgetCellDate = (cell: Cell | undefined) => {
   if (!cell) return null;
-  return parseHistoricalBudgetDate(cell.v) || parseHistoricalBudgetDate(cell.w);
+  return parseHistoricalBudgetDate(cell.value) || parseHistoricalBudgetDate(cell.text);
 };
 
-export const getHistoricalBudgetRowLabel = (sheet: XLSX.WorkSheet, rowNumber: number) => (
+export const getHistoricalBudgetRowLabel = (sheet: Worksheet, rowNumber: number) => (
   [0, 1, 2, 3, 4, 5]
     .map(colIndex => {
       const cell = getHistoricalBudgetCell(sheet, rowNumber, colIndex);
-      return String(cell?.w ?? cell?.v ?? '');
+      return String(cell?.text || cell?.value || '');
     })
     .join(' ')
     .toUpperCase()
 );
 
-export const isHistoricalBudgetTotalRow = (sheet: XLSX.WorkSheet, rowNumber: number) => {
+export const isHistoricalBudgetTotalRow = (sheet: Worksheet, rowNumber: number) => {
   if (rowNumber < 0) return false;
   const label = getHistoricalBudgetRowLabel(sheet, rowNumber);
   return label.includes('TOTAL') || label.includes('SEMAINE') || label.includes('CUMUL');
 };
 
-export const getHistoricalBudgetRowValues = (sheet: XLSX.WorkSheet, rowNumber: number) => {
+export const getHistoricalBudgetRowValues = (sheet: Worksheet, rowNumber: number) => {
   if (rowNumber < 0 || isHistoricalBudgetTotalRow(sheet, rowNumber)) {
     return { couvertsMidi: 0, tmMidi: 0, couvertsSoir: 0, tmSoir: 0 };
   }
@@ -85,7 +84,7 @@ export const rowHasHistoricalBudgetValues = (values: ReturnType<typeof getHistor
   values.couvertsMidi > 0 || values.tmMidi > 0 || values.couvertsSoir > 0 || values.tmSoir > 0
 );
 
-export const getHistoricalRealiseRowValues = (sheet: XLSX.WorkSheet, rowNumber: number) => {
+export const getHistoricalRealiseRowValues = (sheet: Worksheet, rowNumber: number) => {
   if (rowNumber < 0 || isHistoricalBudgetTotalRow(sheet, rowNumber)) return { realiseVae: 0, realiseMidi: 0, realiseSoir: 0, realiseLimo: 0, realiseCouvertsMidi: 0, realiseCouvertsSoir: 0, realiseCouvertsLimo: 0 };
   return {
     realiseVae: parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 33)),
@@ -160,15 +159,15 @@ export const findHistoricalCostMatterTargetColumn = (headerText: unknown) => {
   return 0;
 };
 
-export const getHistoricalCostMatterColumnMap = (sheet: XLSX.WorkSheet, range: XLSX.Range) => {
+export const getHistoricalCostMatterColumnMap = (sheet: Worksheet, range: XlRange) => {
   const map: Record<number, number> = {};
-  const headerEndRow = Math.min(range.e.r, range.s.r + 80);
+  const headerEndRow = Math.min(range.rowCount - 1, 80);
 
-  for (let rowNumber = range.s.r; rowNumber <= headerEndRow; rowNumber += 1) {
-    for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
+  for (let rowNumber = 0; rowNumber <= headerEndRow; rowNumber += 1) {
+    for (let colIndex = 0; colIndex <= range.columnCount - 1; colIndex += 1) {
       if (map[colIndex]) continue;
       const cell = getHistoricalBudgetCell(sheet, rowNumber, colIndex);
-      const targetCol = findHistoricalCostMatterTargetColumn(cell?.w ?? cell?.v);
+      const targetCol = findHistoricalCostMatterTargetColumn(cell?.text || cell?.value);
       if (targetCol) map[colIndex] = targetCol;
     }
   }
@@ -176,14 +175,14 @@ export const getHistoricalCostMatterColumnMap = (sheet: XLSX.WorkSheet, range: X
   return map;
 };
 
-export const parseHistoricalCostMatterCellNumber = (cell: XLSX.CellObject | undefined) => {
+export const parseHistoricalCostMatterCellNumber = (cell: Cell | undefined) => {
   if (!cell) return 0;
-  const rawNumber = typeof cell.v === 'number' && Number.isFinite(cell.v)
-    ? cell.v
-    : parseHistoricalBudgetNumber(cell.v);
+  const rawNumber = typeof cell.value === 'number' && Number.isFinite(cell.value)
+    ? cell.value
+    : parseHistoricalBudgetNumber(cell.value);
   if (rawNumber !== 0) return rawNumber;
 
-  const displayText = String(cell.w ?? cell.v ?? '')
+  const displayText = String(cell.text || cell.value || '')
     .replace(/âˆ’|–|—/g, '-')
     .replace(/\u00a0/g, ' ')
     .trim();
@@ -194,7 +193,7 @@ export const parseHistoricalCostMatterCellNumber = (cell: XLSX.CellObject | unde
   return isNegative ? -Math.abs(displayNumber) : displayNumber;
 };
 
-export const getHistoricalCostMatterValues = (sheet: XLSX.WorkSheet, rowNumber: number, columnMap: Record<number, number>) => {
+export const getHistoricalCostMatterValues = (sheet: Worksheet, rowNumber: number, columnMap: Record<number, number>) => {
   const values: Record<number, number> = {};
   if (rowNumber < 0 || isHistoricalBudgetTotalRow(sheet, rowNumber)) return values;
   Object.entries(columnMap).forEach(([sourceColText, targetCol]) => {

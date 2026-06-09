@@ -57,7 +57,6 @@ import DashboardHeader from '@/features/dashboard/components/DashboardHeader';
 import DashboardDailyRecapModal from '@/features/dashboard/components/DashboardDailyRecapModal';
 import DashboardImportModal from '@/features/dashboard/components/DashboardImportModal';
 // ─────────────────────────────────────────────────────────────────────────────
-import * as XLSX from 'xlsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import jsPDF from 'jspdf';
 import domtoimage from 'dom-to-image-more';
@@ -1313,15 +1312,23 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     return bgClass;
   };
 
-  const handleExport = () => {
-    const table = document.getElementById('dashboard-table');
+  const handleExport = async () => {
+    const table = document.getElementById('dashboard-table') as HTMLTableElement | null;
     if (!table) return;
-    
-    // Create a new workbook and add the table
-    const wb = XLSX.utils.table_to_book(table, { sheet: "Dashboard" });
-    
-    // Generate Excel file and trigger download
-    XLSX.writeFile(wb, `Dashboard_${monthNames[month]}_${year}.xlsx`);
+    const { Workbook } = await import('exceljs');
+    const workbook = new Workbook();
+    const worksheet = workbook.addWorksheet('Dashboard');
+    table.querySelectorAll('tr').forEach(row => {
+      worksheet.addRow(Array.from(row.querySelectorAll('th, td')).map(cell => cell.textContent || ''));
+    });
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Dashboard_${monthNames[month]}_${year}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleExportPDF = async () => {

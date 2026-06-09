@@ -12,14 +12,6 @@ Ce fichier doit etre supprime une fois toutes les vulnerabilites corrigees.
 - Action recommandee : monter de version (`vite@7` ou `8`) en verifiant la
   compatibilite avec `@vitejs/plugin-react` et `@tailwindcss/vite` avant migration
 
-## xlsx (eleve, pas de correctif)
-
-- Version installee : `0.18.5` (aucune version corrigee publiee)
-- Risque : pollution de prototype (GHSA-4r6h-8v6p-xvw6) et deni de service par
-  expression reguliere (ReDoS, GHSA-5pgg-2g8v-p4x9)
-- Action recommandee : remplacer par une alternative maintenue (`exceljs` ou
-  `@e965/xlsx`) en validant l'import/export Excel existant avant bascule
-
 ## Vulnerabilites transitives (outillage de developpement uniquement)
 
 Ces paquets ne sont pas embarques dans le build de production.

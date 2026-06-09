@@ -1,5 +1,6 @@
-import * as XLSX from 'xlsx';
+import type { Worksheet, Cell } from 'exceljs';
 
+import type { XlRange } from './historicalBudgetImport';
 import {
   getHistoricalBudgetCell,
   isHistoricalBudgetTotalRow,
@@ -10,13 +11,13 @@ export const historicalPayrollProjectionCols = [62, 63, 64, 65, 66, 67, 68, 69, 
 export const historicalPayrollRealiseCols = [77, 78, 79, 80, 81, 82, 83, 84, 85, 86];
 export const historicalPayrollAllCols = [...historicalPayrollProjectionCols, ...historicalPayrollRealiseCols];
 
-export const parseHistoricalPayrollHourCell = (cell: XLSX.CellObject | undefined) => {
+export const parseHistoricalPayrollHourCell = (cell: Cell | undefined) => {
   if (!cell) return '';
-  const display = String(cell.w ?? '')
+  const display = String(cell.text || '')
     .replace(/−|–|—/g, '-')
     .replace(/\u00a0/g, ' ')
     .trim();
-  const raw = cell.v;
+  const raw = cell.value;
 
   if (/^d{1,4}[:hH]d{2}$/.test(display)) {
     const normalized = display.replace(/[hH]/, ':');
@@ -46,10 +47,10 @@ export const historicalPayrollHourToDecimal = (value: string) => {
   return Math.round(((Number(match[1]) || 0) + (Number(match[2]) || 0) / 60) * 100) / 100;
 };
 
-export const findHistoricalPayrollTitle = (sheet: XLSX.WorkSheet, range: XLSX.Range, needles: string[]) => {
-  for (let rowNumber = range.s.r; rowNumber <= range.e.r; rowNumber += 1) {
-    for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
-      const text = normalizeHistoricalSupplierName(getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.w ?? getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.v);
+export const findHistoricalPayrollTitle = (sheet: Worksheet, range: XlRange, needles: string[]) => {
+  for (let rowNumber = 0; rowNumber <= range.rowCount - 1; rowNumber += 1) {
+    for (let colIndex = 0; colIndex <= range.columnCount - 1; colIndex += 1) {
+      const text = normalizeHistoricalSupplierName(getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.text || getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.value);
       if (needles.some(needle => text.includes(needle))) return { rowNumber, colIndex };
     }
   }
@@ -62,17 +63,17 @@ export type HistoricalPayrollColumnMap = {
   columns: Record<number, number>;
 };
 
-export const findHistoricalPayrollTotalHoursCols = (sheet: XLSX.WorkSheet, range: XLSX.Range, title: { rowNumber: number; colIndex: number } | null) => {
+export const findHistoricalPayrollTotalHoursCols = (sheet: Worksheet, range: XlRange, title: { rowNumber: number; colIndex: number } | null) => {
   const matches: Array<{ rowNumber: number; colIndex: number }> = [];
   const seen = new Set<string>();
   if (!title) return matches;
   const rowStart = title.rowNumber;
-  const rowEnd = range.e.r;
-  const colStart = Math.max(range.s.c, title.colIndex - 8);
-  const colEnd = Math.min(range.e.c, title.colIndex + 80);
+  const rowEnd = range.rowCount - 1;
+  const colStart = Math.max(0, title.colIndex - 8);
+  const colEnd = Math.min(range.columnCount - 1, title.colIndex + 80);
   for (let rowNumber = rowStart; rowNumber <= rowEnd; rowNumber += 1) {
     for (let colIndex = colStart; colIndex <= colEnd; colIndex += 1) {
-      const text = normalizeHistoricalSupplierName(getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.w ?? getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.v);
+      const text = normalizeHistoricalSupplierName(getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.text || getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.value);
       if (!text.includes('TOTALHEURES')) continue;
       const key = rowNumber + '-' + colIndex;
       if (!seen.has(key)) {
@@ -119,12 +120,12 @@ export const findHistoricalPayrollTargetColumn = (headerText: unknown, baseTarge
   return 0;
 };
 
-export const mapHistoricalPayrollStatusColumns = (sheet: XLSX.WorkSheet, headerRow: number, totalHoursCol: number | null, baseTargetCol: number) => {
+export const mapHistoricalPayrollStatusColumns = (sheet: Worksheet, headerRow: number, totalHoursCol: number | null, baseTargetCol: number) => {
   const map: Record<number, number> = {};
   if (totalHoursCol === null || totalHoursCol === undefined) return map;
   let foundStatusColumn = false;
   for (let colIndex = totalHoursCol + 1; colIndex <= totalHoursCol + 14; colIndex += 1) {
-    const targetCol = findHistoricalPayrollTargetColumn(getHistoricalBudgetCell(sheet, headerRow, colIndex)?.w ?? getHistoricalBudgetCell(sheet, headerRow, colIndex)?.v, baseTargetCol);
+    const targetCol = findHistoricalPayrollTargetColumn(getHistoricalBudgetCell(sheet, headerRow, colIndex)?.text || getHistoricalBudgetCell(sheet, headerRow, colIndex)?.value, baseTargetCol);
     if (targetCol) {
       map[colIndex] = targetCol;
       foundStatusColumn = true;
@@ -143,7 +144,7 @@ export const mapHistoricalPayrollStatusColumns = (sheet: XLSX.WorkSheet, headerR
   return map;
 };
 
-export const getHistoricalPayrollColumnMaps = (sheet: XLSX.WorkSheet, range: XLSX.Range) => {
+export const getHistoricalPayrollColumnMaps = (sheet: Worksheet, range: XlRange) => {
   const projectionTitle = findHistoricalPayrollTitle(sheet, range, ['PROJECTIONSCAVECPLANIFICATIONSKELLO', 'PROJECTIONSC', 'PLANIFICATIONSKELLO']);
   const realiseTitle = findHistoricalPayrollTitle(sheet, range, ['FRAISPERSONNELREALISE']);
   const projectionMaps = findHistoricalPayrollTotalHoursCols(sheet, range, projectionTitle).map(match => ({
@@ -170,7 +171,7 @@ export const selectHistoricalPayrollColumnMap = (rowNumber: number, columnMaps: 
   return selected;
 };
 
-export const getHistoricalPayrollValues = (sheet: XLSX.WorkSheet, rowNumber: number, columnMap: Record<number, number>) => {
+export const getHistoricalPayrollValues = (sheet: Worksheet, rowNumber: number, columnMap: Record<number, number>) => {
   const values: Record<number, string> = {};
   if (rowNumber < 0 || isHistoricalBudgetTotalRow(sheet, rowNumber)) return values;
   Object.entries(columnMap).forEach(([sourceColText, targetCol]) => {
@@ -182,7 +183,7 @@ export const getHistoricalPayrollValues = (sheet: XLSX.WorkSheet, rowNumber: num
 
 export const rowHasHistoricalPayrollValues = (values: Record<number, string>) => Object.keys(values).length > 0;
 
-export const getBestHistoricalPayrollValues = (sheet: XLSX.WorkSheet, primaryRow: number, dateRow: number, columnMaps: HistoricalPayrollColumnMap[]) => {
+export const getBestHistoricalPayrollValues = (sheet: Worksheet, primaryRow: number, dateRow: number, columnMaps: HistoricalPayrollColumnMap[]) => {
   const candidateRows = Array.from(new Set([primaryRow, dateRow, dateRow - 1, dateRow - 2, dateRow - 3, dateRow - 4, dateRow + 1, dateRow + 2, dateRow + 3, dateRow + 4]));
   for (const candidateRow of candidateRows) {
     const columnMap = selectHistoricalPayrollColumnMap(candidateRow, columnMaps);

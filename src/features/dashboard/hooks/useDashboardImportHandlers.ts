@@ -1,5 +1,6 @@
 import React from 'react';
-import * as XLSX from 'xlsx';
+import { Workbook } from 'exceljs';
+import type { Workbook as WorkbookType } from 'exceljs';
 
 import type {
   DayDataBilanSynthese,
@@ -202,18 +203,18 @@ export function useDashboardImportHandlers({
     .trim()
     .toUpperCase();
   
-  const findBudgetSheetName = (workbook: XLSX.WorkBook, targetMonth: number, targetYear: number) => {
+  const findBudgetSheetName = (workbook: WorkbookType, targetMonth: number, targetYear: number) => {
     const yearShort = String(targetYear).slice(-2);
     const yearFull = String(targetYear);
     const tokens = budgetSheetTokens[targetMonth] || [];
-    return workbook.SheetNames.find(sheetName => {
-      const normalized = normalizeExcelSheetName(sheetName);
+    return workbook.worksheets.find(ws => {
+      const normalized = normalizeExcelSheetName(ws.name);
       if (/BILAN|SAISIE|REPORTING|ANNUEL|REALISE/.test(normalized)) return false;
       const hasMonth = tokens.some(token => normalized.includes(normalizeExcelSheetName(token)));
       const parts = normalized.split(/s+/);
       const hasYear = normalized.includes(yearFull) || parts.includes(yearShort) || normalized.endsWith(yearShort);
       return hasMonth && hasYear;
-    }) || '';
+    })?.name || '';
   };
   
   const handleHistoricalBudgetExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -222,7 +223,8 @@ export function useDashboardImportHandlers({
     setHistoricalBudgetStatus('Lecture locale du budget historique Excel sur le mois affiché...');
   
     try {
-      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+      const workbook = new Workbook();
+      await workbook.xlsx.load(await file.arrayBuffer());
       const previews: HistoricalBudgetPreview[] = [];
       const matchedSheets: string[] = [];
       let scannedDateRows = 0;
@@ -231,12 +233,13 @@ export function useDashboardImportHandlers({
         const sheetName = findBudgetSheetName(workbook, monthIndex, year);
         if (!sheetName) continue;
         matchedSheets.push(sheetName);
-        const sheet = workbook.Sheets[sheetName];
-        const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:A1');
+        const sheet = workbook.getWorksheet(sheetName);
+        if (!sheet) continue;
+        const range = { rowCount: sheet.rowCount, columnCount: sheet.columnCount };
         const costMatterColumnMap = getHistoricalCostMatterColumnMap(sheet, range);
         const payrollColumnMaps = getHistoricalPayrollColumnMaps(sheet, range);
   
-        for (let rowNumber = range.s.r; rowNumber <= range.e.r; rowNumber += 1) {
+        for (let rowNumber = 0; rowNumber <= range.rowCount - 1; rowNumber += 1) {
           const parsedDate = parseHistoricalBudgetCellDate(getHistoricalBudgetCell(sheet, rowNumber, 0));
           if (!parsedDate) continue;
           scannedDateRows += 1;
