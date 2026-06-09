@@ -4,6 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 
 import { getDashboardRowIndices, getISOWeek } from '@/utils';
+import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 
 const NAV = '#1e293b';
 const AMBER = '#f59e0b';
@@ -12,8 +13,8 @@ const GREEN = '#10b981';
 
 const WEEKS = Array.from({ length: 52 }, (_, i) => `S${i + 1}`);
 
-const fe = (v: number) => v === 0 ? '0,00 €' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
-const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '—';
+const fe = formatEuroSymbol;
+const fp = formatPercentSigned;
 
 interface ReportingProps {
   onBack: () => void;

@@ -4,6 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 
 import { getDashboardRowIndices } from '@/utils';
+import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 
 const CA_N1 = 1_789_254;
 const CA_N1_BY_MONTH = [159802,161245,174361,186373,190990,172214,167786,156793,130384,149359,139948,0];
@@ -34,8 +35,8 @@ const BG_RES   = '#fef9e7';
 const BG_HATCH = '#e2e8f0';
 const BG_YELL  = '#fef08a';
 
-const fe = (v: number) => v === 0 ? '0,00 €' : new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(v);
-const fp = (v: number) => (isFinite(v)&&!isNaN(v)) ? `${v>=0?'+':''}${v.toFixed(2)}%` : '—';
+const fe = formatEuroSymbol;
+const fp = formatPercentSigned;
 
 // ─── Définition des sections et leurs colonnes ────────────────────────────────
 

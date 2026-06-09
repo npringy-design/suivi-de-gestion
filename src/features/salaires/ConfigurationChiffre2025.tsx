@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
+import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 
 const YEAR = 2025;
 const NAV = '#1e293b';
@@ -12,8 +13,8 @@ const GREEN = '#10b981';
 const MONTHS_SHORT = ['janv.-25','févr.-25','mars-25','avr.-25','mai-25','juin-25','juil.-25','août-25','sept.-25','oct.-25','nov.-25','déc.-25'];
 const WEEKS = Array.from({ length: 52 }, (_, i) => `S${i + 1}`);
 
-const fe = (v: number) => v === 0 ? '0,00 €' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
-const fp = (v: number) => (isFinite(v) && !isNaN(v)) ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '—';
+const fe = formatEuroSymbol;
+const fp = formatPercentSigned;
 
 interface ConfigurationChiffre2025Props {
   onBack: () => void;

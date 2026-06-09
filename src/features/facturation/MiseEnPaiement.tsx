@@ -4,6 +4,7 @@ import { ChevronLeft, Menu, X } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { MONTH_NAMES_UPPER } from '@/lib/constants';
+import { formatEuroSymbol } from '@/lib/formatters';
 
 interface MiseEnPaiementProps {
   month: number;
@@ -39,7 +40,7 @@ const getPeriodLabels = (monthIndex: number) => {
 };
 
 
-const fe = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v);
+const fe = formatEuroSymbol;
 
 export default function MiseEnPaiement({ month, setMonth, onBack }: MiseEnPaiementProps) {
   const { data, updateMiseEnPaiement } = useData();
