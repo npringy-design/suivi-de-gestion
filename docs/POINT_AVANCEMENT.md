@@ -67,8 +67,8 @@ src/
 
 ## Points d'attention actifs
 
-**Import historique personnel** : la dernière semaine ne remonte pas. Mis de côté.
-Reprendre uniquement avec un diagnostic d'import visible. Ne pas empiler des corrections à l'aveugle.
+Import historique personnel : correction des regex `\d` cassées, lecture des cellules `Date`/timedelta (semaine 5+) et des chaînes décimales `"H.MM"`, ajout du schéma `global` (5 colonnes, cols 130-139) en plus de `cuisine_salle` (10 colonnes, cols 62-71/77-86), détection automatique du schéma par mois via `personnelSchema`. tsc OK.
+
 L'appli sera multi-site (~6 sites) : aucune logique codée en dur par site ou par mois.
 
 **Invitation email utilisateur** : retirée temporairement. Le lien Supabase pointe vers localhost

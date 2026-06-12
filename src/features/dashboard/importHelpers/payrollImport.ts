@@ -10,6 +10,16 @@ import {
 export const historicalPayrollProjectionCols = [62, 63, 64, 65, 66, 67, 68, 69, 70, 71];
 export const historicalPayrollRealiseCols = [77, 78, 79, 80, 81, 82, 83, 84, 85, 86];
 export const historicalPayrollAllCols = [...historicalPayrollProjectionCols, ...historicalPayrollRealiseCols];
+export const historicalPayrollProjectionGlobalCols = [130, 131, 132, 133, 134];
+export const historicalPayrollRealiseGlobalCols = [135, 136, 137, 138, 139];
+export const historicalPayrollAllGlobalCols = [...historicalPayrollProjectionGlobalCols, ...historicalPayrollRealiseGlobalCols];
+
+export const decimalHoursToHHMM = (decimal: number): string => {
+  const totalMinutes = Math.round(decimal * 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours === 0 && minutes === 0 ? '' : hours + ':' + String(minutes).padStart(2, '0');
+};
 
 export const parseHistoricalPayrollHourCell = (cell: Cell | undefined) => {
   if (!cell) return '';
@@ -19,30 +29,44 @@ export const parseHistoricalPayrollHourCell = (cell: Cell | undefined) => {
     .trim();
   const raw = cell.value;
 
-  if (/^d{1,4}[:hH]d{2}$/.test(display)) {
+  if (/^\d{1,4}[:hH]\d{2}$/.test(display)) {
     const normalized = display.replace(/[hH]/, ':');
     return /^0+:00$/.test(normalized) ? '' : normalized;
   }
 
   const rawText = String(raw ?? '').trim();
-  if (/^d{1,4}[:hH]d{2}$/.test(rawText)) {
+  if (/^\d{1,4}[:hH]\d{2}$/.test(rawText)) {
     const normalized = rawText.replace(/[hH]/, ':');
     return /^0+:00$/.test(normalized) ? '' : normalized;
   }
 
+  if (raw instanceof Date) {
+    const excelEpoch = Date.UTC(1899, 11, 30);
+    const durationMs = raw.getTime() - excelEpoch;
+    let totalMinutes: number;
+    if (durationMs <= 24 * 3600 * 1000) {
+      totalMinutes = raw.getUTCHours() * 60 + raw.getUTCMinutes();
+    } else {
+      totalMinutes = Math.round(raw.getTime() / 60000) + raw.getTimezoneOffset() - Math.round(excelEpoch / 60000);
+    }
+    return totalMinutes === 0 ? '' : Math.floor(totalMinutes / 60) + ':' + String(totalMinutes % 60).padStart(2, '0');
+  }
+
   if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) {
     const hoursDecimal = raw < 1 ? raw * 24 : raw;
-    const totalMinutes = Math.round(hoursDecimal * 60);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return hours === 0 && minutes === 0 ? '' : hours + ':' + String(minutes).padStart(2, '0');
+    return decimalHoursToHHMM(hoursDecimal);
+  }
+
+  const decimalCandidate = display || rawText;
+  if (/^\d+(\.\d+)?$/.test(decimalCandidate)) {
+    return decimalHoursToHHMM(parseFloat(decimalCandidate));
   }
 
   return '';
 };
 
 export const historicalPayrollHourToDecimal = (value: string) => {
-  const match = value.match(/^(d{1,4})[:hH](d{2})$/);
+  const match = value.match(/^(\d{1,4})[:hH](\d{2})$/);
   if (!match) return 0;
   return Math.round(((Number(match[1]) || 0) + (Number(match[2]) || 0) / 60) * 100) / 100;
 };
@@ -85,7 +109,7 @@ export const findHistoricalPayrollTotalHoursCols = (sheet: Worksheet, range: XlR
   return matches;
 };
 
-export const findHistoricalPayrollTargetColumn = (headerText: unknown, baseTargetCol: number) => {
+export const findHistoricalPayrollTargetColumn = (headerText: unknown, baseTargetCol: number, baseGlobalCol: number) => {
   const rawHeader = String(headerText ?? '')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -112,6 +136,16 @@ export const findHistoricalPayrollTargetColumn = (headerText: unknown, baseTarge
     || header.includes('NIVEAU3')
   );
 
+  const hasZone = header.includes('CUISINE') || header.includes('SALLE');
+  if (!hasZone) {
+    if (header.includes('CADRE')) return baseGlobalCol;
+    if (header.includes('MAITRISE')) return baseGlobalCol + 1;
+    if (isLevelOneTwo) return baseGlobalCol + 2;
+    if (isLevelThree) return baseGlobalCol + 3;
+    if (header.includes('APPRENTI')) return baseGlobalCol + 4;
+    return 0;
+  }
+
   if (header.includes('CADRE')) return baseTargetCol + sectionOffset;
   if (header.includes('MAITRISE')) return baseTargetCol + 2 + sectionOffset;
   if (isLevelOneTwo) return baseTargetCol + 4 + sectionOffset;
@@ -120,12 +154,12 @@ export const findHistoricalPayrollTargetColumn = (headerText: unknown, baseTarge
   return 0;
 };
 
-export const mapHistoricalPayrollStatusColumns = (sheet: Worksheet, headerRow: number, totalHoursCol: number | null, baseTargetCol: number) => {
+export const mapHistoricalPayrollStatusColumns = (sheet: Worksheet, headerRow: number, totalHoursCol: number | null, baseTargetCol: number, baseGlobalCol: number) => {
   const map: Record<number, number> = {};
   if (totalHoursCol === null || totalHoursCol === undefined) return map;
   let foundStatusColumn = false;
   for (let colIndex = totalHoursCol + 1; colIndex <= totalHoursCol + 14; colIndex += 1) {
-    const targetCol = findHistoricalPayrollTargetColumn(getHistoricalBudgetCell(sheet, headerRow, colIndex)?.text || getHistoricalBudgetCell(sheet, headerRow, colIndex)?.value, baseTargetCol);
+    const targetCol = findHistoricalPayrollTargetColumn(getHistoricalBudgetCell(sheet, headerRow, colIndex)?.text || getHistoricalBudgetCell(sheet, headerRow, colIndex)?.value, baseTargetCol, baseGlobalCol);
     if (targetCol) {
       map[colIndex] = targetCol;
       foundStatusColumn = true;
@@ -150,12 +184,12 @@ export const getHistoricalPayrollColumnMaps = (sheet: Worksheet, range: XlRange)
   const projectionMaps = findHistoricalPayrollTotalHoursCols(sheet, range, projectionTitle).map(match => ({
     group: 'projection' as const,
     headerRow: match.rowNumber,
-    columns: mapHistoricalPayrollStatusColumns(sheet, match.rowNumber - 3, match.colIndex, 62),
+    columns: mapHistoricalPayrollStatusColumns(sheet, match.rowNumber - 3, match.colIndex, 62, 130),
   }));
   const realiseMaps = findHistoricalPayrollTotalHoursCols(sheet, range, realiseTitle).map(match => ({
     group: 'realise' as const,
     headerRow: match.rowNumber,
-    columns: mapHistoricalPayrollStatusColumns(sheet, match.rowNumber - 3, match.colIndex, 77),
+    columns: mapHistoricalPayrollStatusColumns(sheet, match.rowNumber - 3, match.colIndex, 77, 135),
   }));
   return [...projectionMaps, ...realiseMaps];
 };

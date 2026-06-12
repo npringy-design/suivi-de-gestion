@@ -173,6 +173,8 @@ export type MonthDataSalariesConfig = {
   categories: Record<string, SalarieRow[]>;
 };
 
+export type PersonnelSchema = 'global' | 'cuisine_salle';
+
 export type PersonnelCategory = 'cadre' | 'maitrise' | 'niv12' | 'niv3' | 'apprenti';
 export type PersonnelDepartment = 'cuisine' | 'salle';
 
@@ -205,4 +207,5 @@ export type MonthData = {
   edgMensuelN1?: Record<string, string>;
   miseEnPaiement?: MonthDataMiseEnPaiement;
   salariesConfig?: MonthDataSalariesConfig;
+  personnelSchema?: PersonnelSchema;
 };

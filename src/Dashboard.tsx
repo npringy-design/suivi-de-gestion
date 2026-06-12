@@ -91,6 +91,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setSelectedYear,
     setSelectedMonth,
     updateSalariesConfig,
+    updatePersonnelSchema,
     resetLocalData,
   } = useData();
   
@@ -337,8 +338,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
   // Calculate totals
   const calculatedData = useMemo(
-    () => computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories),
-    [cellData, globalData[month]?.salariesConfig],
+    () => computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, globalData[month]?.personnelSchema),
+    [cellData, globalData[month]?.salariesConfig, globalData[month]?.personnelSchema],
   );
 
   const todayMarker = useMemo(() => {
@@ -392,9 +393,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     });
 
     const thilloisNoLimonadeColumns = new Set([2, 14, 15, 16, 20, 34, 35, 36, 110, 111, 112, 113, 114, 115]);
+    const isGlobalPersonnelSchema = globalData[month]?.personnelSchema === 'global';
+    const cuisineSalleColumns = new Set([62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]);
+    const globalPersonnelColumns = new Set([130, 131, 132, 133, 134, 135, 136, 137, 138, 139]);
     const visibleColumnsWithoutLimonade = baseVisibleColumns.filter(col => {
       const text = [col[0], col[1], col[2]].join(' ').toUpperCase();
-      return !thilloisNoLimonadeColumns.has(col.originalIndex) && !text.includes('LIMONADE');
+      if (thilloisNoLimonadeColumns.has(col.originalIndex) || text.includes('LIMONADE')) return false;
+      if (isGlobalPersonnelSchema && cuisineSalleColumns.has(col.originalIndex)) return false;
+      if (!isGlobalPersonnelSchema && globalPersonnelColumns.has(col.originalIndex)) return false;
+      return true;
     });
     const findColumn = (colIndex: number) => visibleColumnsWithoutLimonade.find(col => col.originalIndex === colIndex);
     const buildColumn = (colIndex: number, group: string, subGroup: string, label: string, bg?: string) => {
@@ -574,6 +581,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     updateTheorique,
     updateBilanSynthese,
     updateSalariesConfig,
+    updatePersonnelSchema,
     personnelInfos,
   });
 

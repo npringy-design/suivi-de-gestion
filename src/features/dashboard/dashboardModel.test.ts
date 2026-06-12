@@ -40,7 +40,9 @@ describe('dashboard shared model', () => {
     expect(dashboardColumns[115]).toEqual(['REALISE', 'COUVERTS\nLIMONADE', 'SOIR\nMOY', 'bg-white']);
     expect(dashboardColumns[116]).toEqual(['REALISE', 'CA HT RESTAURANT', 'TOTAL', 'bg-[#b4c6e7]']);
     expect(dashboardColumns[129]).toEqual(['RESTAURANTS', 'ECART VS N-1', 'VALEUR', 'bg-white']);
-    expect(dashboardColumns).toHaveLength(130);
+    expect(dashboardColumns[130]).toEqual(['FRAIS DE PERSONNEL PROJECTION', 'PROJECTION S/C', 'CADRE\n38,54 €', 'bg-[#fce4d6]']);
+    expect(dashboardColumns[139]).toEqual(['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'APPRENTI\n8,39 €', 'bg-[#fce4d6]']);
+    expect(dashboardColumns).toHaveLength(140);
   });
 
   it('keeps static dashboard config consistent', () => {

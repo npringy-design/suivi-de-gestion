@@ -8,6 +8,7 @@ import type {
   MonthData,
   MonthDataSalariesConfig,
   PersonnelInfo,
+  PersonnelSchema,
 } from '@/contexts/DataContext';
 import { buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '@/personnelSalaryImport';
 import { parseRecapPeriodeCaisse } from '@/caisseRecapPeriodeParser';
@@ -42,6 +43,7 @@ import {
   getBestHistoricalPayrollValues,
   getHistoricalPayrollColumnMaps,
   historicalPayrollAllCols,
+  historicalPayrollAllGlobalCols,
   sumHistoricalPayrollValues,
 } from '@/features/dashboard/importHelpers/payrollImport';
 
@@ -77,6 +79,7 @@ type UseDashboardImportHandlersParams = {
   updateTheorique: (month: number, day: number, field: keyof DayDataTheorique, value: string | number) => void;
   updateBilanSynthese: (month: number, day: number, field: keyof DayDataBilanSynthese, value: string | number) => void;
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
+  updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
   personnelInfos: PersonnelInfo[];
 };
 
@@ -108,6 +111,7 @@ export function useDashboardImportHandlers({
   updateTheorique,
   updateBilanSynthese,
   updateSalariesConfig,
+  updatePersonnelSchema,
   personnelInfos,
 }: UseDashboardImportHandlersParams) {
   const formatImportedNumber = (value: number, decimals = 2) => value !== 0 ? value.toFixed(decimals) : '';
@@ -311,6 +315,14 @@ export function useDashboardImportHandlers({
   };
   
   const applyHistoricalBudgetExcelImport = () => {
+    const usedTargetCols = new Set<number>();
+    historicalBudgetPreviews.forEach(item => {
+      Object.keys(item.payrollValues || {}).forEach(targetCol => usedTargetCols.add(Number(targetCol)));
+    });
+    if (usedTargetCols.size > 0) {
+      const usesGlobal = historicalPayrollAllGlobalCols.some(col => usedTargetCols.has(col));
+      updatePersonnelSchema(month, usesGlobal ? 'global' : 'cuisine_salle');
+    }
     historicalBudgetPreviews.forEach(item => {
       updateDashboard(item.month, item.rowIndex + '-0', '');
       updateDashboard(item.month, item.rowIndex + '-1', '');
@@ -334,7 +346,7 @@ export function useDashboardImportHandlers({
       Object.entries(item.costMatterValues || {}).forEach(([targetCol, amount]) => {
         updateDashboard(item.month, item.rowIndex + '-' + targetCol, formatImportedNumber(amount));
       });
-      historicalPayrollAllCols.forEach(targetCol => {
+      [...historicalPayrollAllCols, ...historicalPayrollAllGlobalCols].forEach(targetCol => {
         updateDashboard(item.month, item.rowIndex + '-' + targetCol, '');
       });
       Object.entries(item.payrollValues || {}).forEach(([targetCol, hourValue]) => {

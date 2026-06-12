@@ -102,11 +102,11 @@ Correction du 01/06/2026 : les avoirs cout matiere doivent etre importes en nega
 
 Les totaux achat HT, cumuls HT et ratios sans stock restent recalcules par l'application.
 
-## Frais de personnel historique - en cours
+## Frais de personnel historique
 
 Voir aussi `docs/HEURES_PERSONNEL.md`.
 
-Objectif : lire les heures personnel depuis les deux zones de l'Excel historique :
+L'import lit les heures personnel depuis les deux zones de l'Excel historique :
 
 - `PROJECTION S/C AVEC PLANIFICATION SKELLO` ;
 - `FRAIS PERSONNEL REALISE`.
@@ -118,15 +118,34 @@ Regle validee :
 - les taux horaires doivent venir de la configuration salaire actuelle / import PDF salaires ;
 - les couts et ratios sont recalcules par l'application.
 
-Etat technique actuel :
+### Deux schemas de colonnes personnel
 
-- l'ancien Excel peut regrouper les heures personnel par statut ou les separer cuisine/salle selon la feuille ;
-- si la feuille donne cuisine/salle, l'import reprend les deux colonnes ; si elle ne donne que le statut, l'import place les heures sur cuisine pour ne pas inventer une repartition ;
-- colonnes visees projection : `62`, `64`, `66`, `68`, `70` ;
-- colonnes visees realise : `77`, `79`, `81`, `83`, `85` ;
-- correction du 02/06/2026 apres lecture du fichier source `HIP THILL GESTION LDM V26.xlsx` : la structure personnel varie selon les feuilles. Janvier utilise 5 colonnes statut regroupees, fevrier utilise 10 colonnes cuisine/salle. L'import lit donc maintenant les en-tetes de colonnes personnel au lieu de supposer un decalage fixe apres `TOTAL HEURES`.
+Selon le site et la periode, le fichier Excel source presente l'une de ces deux structures pour les en-tetes personnel :
 
-Consigne de reprise : ne pas accuser le format date sans preuve. La derniere semaine est bien lue par budget, realise et cout matiere. Le prochain correctif doit reutiliser autant que possible le meme parcours de jours que ces imports valides, puis appliquer une lecture croisee simple date + colonne statut.
+- **Schema `cuisine_salle` (10 colonnes)** : `CADRE CUISINE`, `CADRE SALLE`, `MAITRISE CUISINE`, `MAITRISE SALLE`, `NIV I ET II CUISINE/SALLE`, `NIV III CUISINE/SALLE`, `APPRENTI CUISINE/SALLE`. Colonnes dashboard projection `62-71`, realise `77-86`.
+- **Schema `global` (5 colonnes)** : `CADRE`, `MAITRISE`, `NIV I ET II`, `NIV III`, `APPRENTI`, sans distinction de zone. Colonnes dashboard projection `130-134`, realise `135-139`.
+
+`findHistoricalPayrollTargetColumn` detecte, pour chaque en-tete de colonne personnel de la feuille, si elle porte un suffixe `CUISINE`/`SALLE` :
+
+- si oui -> mappee vers les colonnes `62-71` / `77-86` (schema `cuisine_salle`) ;
+- si non -> mappee vers les colonnes globales `130-134` / `135-139` (schema `global`).
+
+Apres validation de l'import, l'application detecte automatiquement quel jeu de colonnes a ete rempli et enregistre `personnelSchema: 'global' | 'cuisine_salle'` sur le mois importe (`MonthData.personnelSchema`, voir `src/types/dataTypes.ts`).
+
+Ce champ pilote :
+
+- l'affichage des colonnes Frais de personnel dans `Dashboard.tsx` (`visibleColumns`) : seul le jeu de colonnes correspondant au schema du mois est affiche, l'autre est masque ;
+- les calculs `dashboardCalculations.ts` (Total Heures Travaillees, Cout Global, productivite, ratios, ecarts) : ils sommes soit les colonnes `62-71`/`77-86`, soit `130-139`, jamais les deux.
+
+Un meme site peut utiliser le schema `global` sur certains mois et `cuisine_salle` sur d'autres (bascule au fil du temps) : aucune logique codee en dur par site ou par mois, la detection est faite mois par mois a l'import.
+
+### Lecture des heures
+
+`parseHistoricalPayrollHourCell` gere trois representations de cellule possibles :
+
+- texte `"H:MM"` / `"HhMM"` ;
+- `Date` (timedelta Excel) : heures/minutes lues directement si <= 24h, sinon conversion du nombre total de minutes (semaines cumulees) ;
+- nombre decimal (`0.34` -> fraction de jour) ou texte decimal (`"24.25"` -> 24h15) via `decimalHoursToHHMM`.
 
 ## Garde-fou lignes total semaine
 
@@ -150,7 +169,7 @@ Les donnees realisees sont ecrites dans les colonnes `17`, `18`, `19`, `20`, `25
 
 Les fournisseurs cout matiere sont ecrits dans les colonnes `45` a `57`.
 
-Les heures personnel historiques doivent alimenter les colonnes `62`, `64`, `66`, `68`, `70`, `77`, `79`, `81`, `83`, `85`.
+Les heures personnel historiques alimentent les colonnes `62-71` / `77-86` (schema `cuisine_salle`) ou `130-134` / `135-139` (schema `global`), selon le schema detecte pour le mois (voir section dediee ci-dessus).
 
 ## Securite import
 

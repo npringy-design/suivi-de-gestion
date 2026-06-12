@@ -32,6 +32,7 @@ export type {
   PersonnelDepartment,
   PersonnelInfo,
   MonthData,
+  PersonnelSchema,
 } from '@/types/dataTypes';
 
 import type {
@@ -62,6 +63,7 @@ import type {
   PersonnelDepartment,
   PersonnelInfo,
   MonthData,
+  PersonnelSchema,
 } from '@/types/dataTypes';
 
 type DataContextType = {
@@ -91,6 +93,7 @@ type DataContextType = {
   updateEdgMensuelN1: (month: number, cellKey: string, value: string) => void;
   updateMiseEnPaiement: (month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | number | boolean) => void;
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
+  updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
   config2025: Config2025Data;
   updateConfig2025: (type: 'mensuel' | 'hebdo', index: number, field: string, value: string) => void;
   customEvents: CustomEvent[];
@@ -521,6 +524,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [updateDataForYear]);
 
+  const updatePersonnelSchema = useCallback((month: number, schema: PersonnelSchema) => {
+    updateDataForYear(prev => {
+      const monthData = normalizeMonthData(prev[month]);
+      return {
+        ...prev,
+        [month]: {
+          ...monthData,
+          personnelSchema: schema,
+        },
+      };
+    });
+  }, [updateDataForYear]);
+
   const updateBilanSynthese = useCallback((month: number, day: number, field: keyof DayDataBilanSynthese, value: string | number) => {
     const stored = parseMoneyValue(value);
     updateDataForYear(prev => {
@@ -691,6 +707,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateEdgMensuelN1,
     updateMiseEnPaiement,
     updateSalariesConfig,
+    updatePersonnelSchema,
     config2025,
     updateConfig2025,
     customEvents,
@@ -724,6 +741,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateEdgMensuelN1,
     updateMiseEnPaiement,
     updateSalariesConfig,
+    updatePersonnelSchema,
     config2025,
     updateConfig2025,
     customEvents,

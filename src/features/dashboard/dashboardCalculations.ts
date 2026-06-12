@@ -1,7 +1,7 @@
 import { parseMoneyValue, type MoneyInputValue } from '@/lib/money';
 import { parseHourInputToDecimal } from '@/utils';
 import { averagePayrollRate } from '@/personnelSalaryImport';
-import type { SalarieRow } from '@/contexts/DataContext';
+import type { SalarieRow, PersonnelSchema } from '@/contexts/DataContext';
 import type { DashboardColumn, DashboardRow } from './dashboardTypes';
 
 
@@ -27,6 +27,7 @@ export const isExactDate = (date: Date, dateStr: string): boolean => {
 
 export const isPayrollInputColumn = (colIndex: number): boolean => (
   (colIndex >= 62 && colIndex <= 71) || (colIndex >= 77 && colIndex <= 86)
+  || (colIndex >= 130 && colIndex <= 139)
 );
 
 export const parsePayrollHourForCalculation = (value: string | number | undefined): number => {
@@ -123,6 +124,7 @@ export function computeDashboardData(
   rows: DashboardRow[],
   dynamicColumns: DashboardColumn[],
   salariesConfig: Record<string, SalarieRow[]> | undefined,
+  personnelSchema?: PersonnelSchema,
 ): Record<string, string> {
     const data: Record<string, string> = { ...cellData };
     let cumulCA = 0;
@@ -302,16 +304,27 @@ export function computeDashboardData(
           getAvgRate('apprenti', 'salle')
         ];
 
-        for (let i = 0; i < 10; i++) {
-          const colIdx = 62 + i;
+        const projGlobalRates = [
+          getAvgRate('cadre', 'cuisine'),
+          getAvgRate('maitrise', 'cuisine'),
+          getAvgRate('niv12', 'cuisine'),
+          getAvgRate('niv3', 'cuisine'),
+          getAvgRate('apprenti', 'cuisine'),
+        ];
+
+        const isGlobalSchema = personnelSchema === 'global';
+        const projCols = isGlobalSchema ? [130, 131, 132, 133, 134] : [62, 63, 64, 65, 66, 67, 68, 69, 70, 71];
+        const projColRates = isGlobalSchema ? projGlobalRates : projRates;
+
+        projCols.forEach((colIdx, i) => {
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parsePayrollHourForCalculation(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresProj += val;
-            coutGlobalProj += val * projRates[i];
+            coutGlobalProj += val * projColRates[i];
             hasProjData = true;
           }
-        }
-        
+        });
+
         if (hasProjData) {
           data[`${rIdx}-61`] = totalHeuresProj.toFixed(2);
           data[`${rIdx}-72`] = coutGlobalProj.toFixed(2);
@@ -328,16 +341,18 @@ export function computeDashboardData(
         let coutGlobalReal = 0;
         let hasRealData = false;
         
-        for (let i = 0; i < 10; i++) {
-          const colIdx = 77 + i;
+        const realCols = isGlobalSchema ? [135, 136, 137, 138, 139] : [77, 78, 79, 80, 81, 82, 83, 84, 85, 86];
+        const realColRates = isGlobalSchema ? projGlobalRates : projRates;
+
+        realCols.forEach((colIdx, i) => {
           if (data[`${rIdx}-${colIdx}`]) {
             const val = parsePayrollHourForCalculation(data[`${rIdx}-${colIdx}`] || '0');
             totalHeuresReal += val;
-            coutGlobalReal += val * projRates[i];
+            coutGlobalReal += val * realColRates[i];
             hasRealData = true;
           }
-        }
-        
+        });
+
         if (hasRealData) {
           data[`${rIdx}-76`] = totalHeuresReal.toFixed(2);
           data[`${rIdx}-87`] = coutGlobalReal.toFixed(2);
