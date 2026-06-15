@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 15/06/2026
+
+- Détection des dates journalières import historique : correction de `parseHistoricalBudgetDate` (cellules formule ExcelJS `{formula, result}` non gérées + regex `d`→`\d` cassées). tsc OK.
+
+---
+
 ## État technique au 09/06/2026
 
 - Build Vercel : READY sur `main`. `tsc --noEmit` sans erreur. 68 tests Vitest passent.
