@@ -127,6 +127,7 @@ export function computeDashboardData(
   personnelSchema?: PersonnelSchema,
 ): Record<string, string> {
     const data: Record<string, string> = { ...cellData };
+    const isGlobalSchema = personnelSchema === 'global';
     let cumulCA = 0;
     let cumulCvts = 0;
     let cumulRealiseCA = 0;
@@ -389,7 +390,7 @@ export function computeDashboardData(
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 59, 60, 73, 74, 75, 88, 89, 90, 91, 92, 117, 122].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 121, 122, 127].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -455,6 +456,26 @@ export function computeDashboardData(
         const coutMatiereW = parseMoneyValue(data[`${rIdx}-58`]);
         if (realiseCAW > 0) data[`${rIdx}-60`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
 
+        // Cumuls couverts complets : copier la valeur du dernier jour de la semaine
+        {
+          const lastWeekDay = weekDays[weekDays.length - 1];
+          if (lastWeekDay) {
+            if (data[`${lastWeekDay.originalIdx}-121`]) data[`${rIdx}-121`] = data[`${lastWeekDay.originalIdx}-121`];
+            if (data[`${lastWeekDay.originalIdx}-127`]) data[`${rIdx}-127`] = data[`${lastWeekDay.originalIdx}-127`];
+          }
+        }
+
+        // Recalcul TOTAL HEURES proj et réel pour la semaine (somme correcte des heures décimales)
+        let totalHProjW2 = 0; let totalHRealW2 = 0;
+        const projInputCols = isGlobalSchema ? [130,131,132,133,134] : [62,63,64,65,66,67,68,69,70,71];
+        const realInputCols = isGlobalSchema ? [135,136,137,138,139] : [77,78,79,80,81,82,83,84,85,86];
+        weekDays.forEach(day => {
+          projInputCols.forEach(c => { totalHProjW2 += parsePayrollHourForCalculation(data[`${day.originalIdx}-${c}`] || ''); });
+          realInputCols.forEach(c => { totalHRealW2 += parsePayrollHourForCalculation(data[`${day.originalIdx}-${c}`] || ''); });
+        });
+        if (totalHProjW2 > 0) data[`${rIdx}-61`] = totalHProjW2.toFixed(2);
+        if (totalHRealW2 > 0) data[`${rIdx}-76`] = totalHRealW2.toFixed(2);
+
         const totalHeuresProjW = parseMoneyValue(data[`${rIdx}-61`]);
         const coutGlobalProjW = parseMoneyValue(data[`${rIdx}-72`]);
         if (totalHeuresProjW > 0) data[`${rIdx}-73`] = (realiseCAW / totalHeuresProjW).toFixed(2);
@@ -489,7 +510,7 @@ export function computeDashboardData(
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 59, 60, 73, 74, 75, 88, 89, 90, 91, 92, 117, 122].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 121, 122, 127].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -505,6 +526,24 @@ export function computeDashboardData(
             data[`${monthTotalIdx}-${cIdx}`] = colSum.toString();
         }
       });
+
+      const lastDay = allDays[allDays.length - 1];
+      if (lastDay) {
+        if (data[`${lastDay.originalIdx}-121`]) data[`${monthTotalIdx}-121`] = data[`${lastDay.originalIdx}-121`];
+        if (data[`${lastDay.originalIdx}-127`]) data[`${monthTotalIdx}-127`] = data[`${lastDay.originalIdx}-127`];
+      }
+
+      {
+        let totalHProjM = 0; let totalHRealM = 0;
+        const projInputCols = isGlobalSchema ? [130,131,132,133,134] : [62,63,64,65,66,67,68,69,70,71];
+        const realInputCols = isGlobalSchema ? [135,136,137,138,139] : [77,78,79,80,81,82,83,84,85,86];
+        allDays.forEach(day => {
+          projInputCols.forEach(c => { totalHProjM += parsePayrollHourForCalculation(data[`${day.originalIdx}-${c}`] || ''); });
+          realInputCols.forEach(c => { totalHRealM += parsePayrollHourForCalculation(data[`${day.originalIdx}-${c}`] || ''); });
+        });
+        if (totalHProjM > 0) data[`${monthTotalIdx}-61`] = totalHProjM.toFixed(2);
+        if (totalHRealM > 0) data[`${monthTotalIdx}-76`] = totalHRealM.toFixed(2);
+      }
 
       // Calculate averages for month
       const caMidiM = parseMoneyValue(data[`${monthTotalIdx}-0`]);
