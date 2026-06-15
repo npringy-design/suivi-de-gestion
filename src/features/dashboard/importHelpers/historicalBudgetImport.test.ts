@@ -19,4 +19,16 @@ describe('parseHistoricalBudgetDate', () => {
   it('lit un texte de date au format JJ/MM/AAAA', () => {
     expect(parseHistoricalBudgetDate('01/01/2026')).toEqual(new Date(2026, 0, 1));
   });
+
+  it('distingue une date statique d\'en-tête et une date formule identiques', () => {
+    const staticValue = new Date(2026, 0, 1);
+    const formulaValue = { formula: '+A12+1', result: new Date(2026, 0, 1), sharedFormula: 'A12' };
+
+    expect(parseHistoricalBudgetDate(staticValue)).toEqual(new Date(2026, 0, 1));
+    expect(parseHistoricalBudgetDate(formulaValue)).toEqual(new Date(2026, 0, 1));
+
+    const isFormulaCell = (value: unknown) => value != null && typeof value === 'object' && 'result' in (value as object);
+    expect(isFormulaCell(staticValue)).toBe(false);
+    expect(isFormulaCell(formulaValue)).toBe(true);
+  });
 });
