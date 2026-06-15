@@ -35,7 +35,6 @@ import {
   getHistoricalRealiseRowValues,
   historicalCostMatterSupplierCols,
   parseHistoricalBudgetCellDate,
-  rowHasHistoricalBudgetValues,
   rowHasHistoricalRealiseValues,
   sumHistoricalCostMatterValues,
 } from '@/features/dashboard/importHelpers/historicalBudgetImport';
@@ -260,19 +259,14 @@ export function useDashboardImportHandlers({
           const rowIndex = getDashboardRowIndexForDay(year, monthIndex, day);
           if (rowIndex < 0) continue;
   
-          const previousValues = getHistoricalBudgetRowValues(sheet, rowNumber - 1);
-          const upperValues = getHistoricalBudgetRowValues(sheet, rowNumber - 2);
-          const currentValues = getHistoricalBudgetRowValues(sheet, rowNumber);
-          const values = rowHasHistoricalBudgetValues(previousValues) ? previousValues : rowHasHistoricalBudgetValues(upperValues) ? upperValues : currentValues;
-  
+          const values = getHistoricalBudgetRowValues(sheet, rowNumber);
+
           const couvertsMidi = values.couvertsMidi;
           const tmMidi = values.tmMidi;
           const couvertsSoir = values.couvertsSoir;
           const tmSoir = values.tmSoir;
           const couvertsTotal = couvertsMidi + couvertsSoir;
-          let realiseSourceRow = rowNumber;
-          if (rowHasHistoricalBudgetValues(previousValues)) realiseSourceRow = rowNumber - 1;
-          else if (rowHasHistoricalBudgetValues(upperValues)) realiseSourceRow = rowNumber - 2;
+          const realiseSourceRow = rowNumber;
           const realiseValues = getHistoricalRealiseRowValues(sheet, realiseSourceRow);
           const costMatterValues = getHistoricalCostMatterValues(sheet, rowNumber, costMatterColumnMap);
           const costMatterTotal = sumHistoricalCostMatterValues(costMatterValues);
