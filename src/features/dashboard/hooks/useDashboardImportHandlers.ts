@@ -115,7 +115,7 @@ export function useDashboardImportHandlers({
   updatePersonnelSchema,
   personnelInfos,
 }: UseDashboardImportHandlersParams) {
-  const [pendingDemarques, setPendingDemarques] = React.useState<Array<{
+  const pendingDemarquesRef = React.useRef<Array<{
     date: string; personnel: number; operationnel: number; explication: string;
   }>>([]);
   const formatImportedNumber = (value: number, decimals = 2) => value !== 0 ? value.toFixed(decimals) : '';
@@ -234,11 +234,7 @@ export function useDashboardImportHandlers({
       const workbook = new Workbook();
       await workbook.xlsx.load(await file.arrayBuffer());
       const sheetForDemarques = workbook.getWorksheet(findBudgetSheetName(workbook, month, year) || '');
-      if (sheetForDemarques) {
-        setPendingDemarques(extractHistoricalDemarques(sheetForDemarques));
-      } else {
-        setPendingDemarques([]);
-      }
+      pendingDemarquesRef.current = sheetForDemarques ? extractHistoricalDemarques(sheetForDemarques) : [];
       const previews: HistoricalBudgetPreview[] = [];
       const matchedSheets: string[] = [];
       let scannedDateRows = 0;
@@ -383,7 +379,7 @@ export function useDashboardImportHandlers({
       });
     });
     // Import démarques
-    pendingDemarques.forEach(dem => {
+    pendingDemarquesRef.current.forEach(dem => {
       const [demYear, demMonth, demDay] = dem.date.split('-').map(Number);
       if (demYear !== year || demMonth - 1 !== month) return;
       const rowIndex = getDashboardRowIndexForDay(year, month, demDay);
@@ -392,7 +388,7 @@ export function useDashboardImportHandlers({
       if (dem.operationnel > 0) updateDashboard(month, `${rowIndex}-47`, dem.operationnel.toFixed(2));
       if (dem.explication) updateDashboard(month, `${rowIndex}-50`, dem.explication);
     });
-    setPendingDemarques([]);
+    pendingDemarquesRef.current = [];
     setHistoricalBudgetStatus(historicalBudgetPreviews.length + ' jour(s) prévision couverts/TM importés dans ' + monthNames[month] + ' ' + year + '. Les CA seront recalculés automatiquement.');
     setHistoricalBudgetPreviews([]);
   };
