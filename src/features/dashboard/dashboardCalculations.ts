@@ -259,10 +259,21 @@ export function computeDashboardData(
           }
         }
 
+        // DEMARQUES calculations
+        const demPersonnel = parseMoneyValue(data[`${rIdx}-45`]);
+        const demOperationnel = parseMoneyValue(data[`${rIdx}-47`]);
+        if (demPersonnel > 0 || demOperationnel > 0) {
+          data[`${rIdx}-49`] = (demPersonnel + demOperationnel).toFixed(2);
+          if (realiseTotalJour > 0) {
+            data[`${rIdx}-46`] = ((demPersonnel / realiseTotalJour) * 100).toFixed(2) + '%';
+            data[`${rIdx}-48`] = ((demOperationnel / realiseTotalJour) * 100).toFixed(2) + '%';
+          }
+        }
+
         // COUT MATIERE calculations
         let coutMatiereTotalJour = 0;
         let hasCoutMatiereData = false;
-        for (let i = 45; i <= 57; i++) {
+        for (let i = 51; i <= 57; i++) {
           if (data[`${rIdx}-${i}`]) {
             coutMatiereTotalJour += parseMoneyValue(data[`${rIdx}-${i}`]);
             hasCoutMatiereData = true;

@@ -310,9 +310,9 @@ export function useDashboardImportHandlers({
           if (demYear !== year || demMonth - 1 !== monthIndex) return;
           const rowIndex = getDashboardRowIndexForDay(year, monthIndex, demDay);
           if (rowIndex < 0) return;
-          if (dem.personnel > 0) updateDashboard(monthIndex, `${rowIndex}-39`, dem.personnel.toFixed(2));
-          if (dem.operationnel > 0) updateDashboard(monthIndex, `${rowIndex}-41`, dem.operationnel.toFixed(2));
-          if (dem.explication) updateDashboard(monthIndex, `${rowIndex}-44`, dem.explication);
+          if (dem.personnel > 0) updateDashboard(monthIndex, `${rowIndex}-45`, dem.personnel.toFixed(2));
+          if (dem.operationnel > 0) updateDashboard(monthIndex, `${rowIndex}-47`, dem.operationnel.toFixed(2));
+          if (dem.explication) updateDashboard(monthIndex, `${rowIndex}-50`, dem.explication);
         });
 
         // Import frais généraux et contrats mensualisés
