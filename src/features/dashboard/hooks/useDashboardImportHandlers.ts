@@ -115,7 +115,9 @@ export function useDashboardImportHandlers({
   updatePersonnelSchema,
   personnelInfos,
 }: UseDashboardImportHandlersParams) {
-  const historicalWorkbookRef = React.useRef<WorkbookType | null>(null);
+  const [pendingDemarques, setPendingDemarques] = React.useState<Array<{
+    date: string; personnel: number; operationnel: number; explication: string;
+  }>>([]);
   const formatImportedNumber = (value: number, decimals = 2) => value !== 0 ? value.toFixed(decimals) : '';
   const formatImportedCurrencyLabel = (value: number, decimals = 2) => formatImportedNumber(value, decimals) || '-';
   const formatImportedIntegerLabel = (value: number) => formatImportedNumber(value, 0) || '-';
@@ -231,7 +233,12 @@ export function useDashboardImportHandlers({
     try {
       const workbook = new Workbook();
       await workbook.xlsx.load(await file.arrayBuffer());
-      historicalWorkbookRef.current = workbook;
+      const sheetForDemarques = workbook.getWorksheet(findBudgetSheetName(workbook, month, year) || '');
+      if (sheetForDemarques) {
+        setPendingDemarques(extractHistoricalDemarques(sheetForDemarques));
+      } else {
+        setPendingDemarques([]);
+      }
       const previews: HistoricalBudgetPreview[] = [];
       const matchedSheets: string[] = [];
       let scannedDateRows = 0;
@@ -375,24 +382,17 @@ export function useDashboardImportHandlers({
         updateDashboard(item.month, item.rowIndex + '-' + targetCol, String(hourValue));
       });
     });
-    // Import démarques depuis le workbook stocké
-    const workbook = historicalWorkbookRef.current;
-    if (workbook) {
-      const sheetName = findBudgetSheetName(workbook, month, year);
-      const sheet = sheetName ? workbook.getWorksheet(sheetName) : undefined;
-      if (sheet) {
-        const demarques = extractHistoricalDemarques(sheet);
-        demarques.forEach(dem => {
-          const [demYear, demMonth, demDay] = dem.date.split('-').map(Number);
-          if (demYear !== year || demMonth - 1 !== month) return;
-          const rowIndex = getDashboardRowIndexForDay(year, month, demDay);
-          if (rowIndex < 0) return;
-          if (dem.personnel > 0) updateDashboard(month, `${rowIndex}-45`, dem.personnel.toFixed(2));
-          if (dem.operationnel > 0) updateDashboard(month, `${rowIndex}-47`, dem.operationnel.toFixed(2));
-          if (dem.explication) updateDashboard(month, `${rowIndex}-50`, dem.explication);
-        });
-      }
-    }
+    // Import démarques
+    pendingDemarques.forEach(dem => {
+      const [demYear, demMonth, demDay] = dem.date.split('-').map(Number);
+      if (demYear !== year || demMonth - 1 !== month) return;
+      const rowIndex = getDashboardRowIndexForDay(year, month, demDay);
+      if (rowIndex < 0) return;
+      if (dem.personnel > 0) updateDashboard(month, `${rowIndex}-45`, dem.personnel.toFixed(2));
+      if (dem.operationnel > 0) updateDashboard(month, `${rowIndex}-47`, dem.operationnel.toFixed(2));
+      if (dem.explication) updateDashboard(month, `${rowIndex}-50`, dem.explication);
+    });
+    setPendingDemarques([]);
     setHistoricalBudgetStatus(historicalBudgetPreviews.length + ' jour(s) prévision couverts/TM importés dans ' + monthNames[month] + ' ' + year + '. Les CA seront recalculés automatiquement.');
     setHistoricalBudgetPreviews([]);
   };
