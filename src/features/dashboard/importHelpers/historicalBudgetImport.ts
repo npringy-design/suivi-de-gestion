@@ -114,53 +114,53 @@ export const normalizeHistoricalSupplierName = (value: unknown) => String(value 
   .replace(/[^A-Z0-9]+/gi, '')
   .toUpperCase();
 
-export const historicalCostMatterSupplierCols = [45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57];
+export const historicalCostMatterSupplierCols = [51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63];
 export const historicalCostMatterAliases: Record<string, number> = {
-  DOQUET: 45,
-  C10: 45,
-  RICHARDVINS: 46,
-  CAFERICHARD: 47,
-  STORIA: 48,
-  DOMAFRAIS: 49,
-  BRAKE: 49,
-  BRAKES: 49,
-  TERREAZUR: 50,
-  POMONAFETL: 50,
-  POMONAFL: 50,
-  POMONAFRUITLEGUME: 50,
-  SOCOPA: 51,
-  PLAINE: 51,
-  PLAINEMAISON: 51,
-  PLAINMAISON: 51,
-  EPISAVEUR: 52,
-  EPISAVEURS: 52,
-  EPISAVEURO: 52,
-  MAMMAFIORE: 53,
-  COMPAGNIEDESDESSERTS: 54,
-  DESSERTS: 54,
-  DISTRIPATE: 55,
-  METRO: 56,
-  DEPANNAGE: 56,
-  MARTEL: 57,
+  DOQUET: 51,
+  C10: 51,
+  RICHARDVINS: 52,
+  CAFERICHARD: 53,
+  STORIA: 54,
+  DOMAFRAIS: 55,
+  BRAKE: 55,
+  BRAKES: 55,
+  TERREAZUR: 56,
+  POMONAFETL: 56,
+  POMONAFL: 56,
+  POMONAFRUITLEGUME: 56,
+  SOCOPA: 57,
+  PLAINE: 57,
+  PLAINEMAISON: 57,
+  PLAINMAISON: 57,
+  EPISAVEUR: 58,
+  EPISAVEURS: 58,
+  EPISAVEURO: 58,
+  MAMMAFIORE: 59,
+  COMPAGNIEDESDESSERTS: 60,
+  DESSERTS: 60,
+  DISTRIPATE: 61,
+  METRO: 62,
+  DEPANNAGE: 62,
+  MARTEL: 63,
 };
 
 export const findHistoricalCostMatterTargetColumn = (headerText: unknown) => {
   const header = normalizeHistoricalSupplierName(headerText);
   if (!header || header.length < 4 || /DATE|TOTAL|CUMUL|RATIO|ACHATHT|ACHATS|LIQUIDE|SOLIDE|SANSSTOCK|COUTMATIERE|REALISE|PREVISION|BUDGET|RESTAURANT|JOUR|MIDI|SOIR/.test(header)) return 0;
 
-  if (header.includes('DOQUET') || header.includes('C10')) return 45;
-  if (header.includes('RICHARDVINS')) return 46;
-  if (header.includes('CAFERICHARD')) return 47;
-  if (header.includes('STORIA')) return 48;
-  if (header.includes('DOMAFRAIS') || header.includes('BRAKE')) return 49;
-  if (header.includes('TERREAZUR') || header.includes('POMONAF') || header.includes('POMONAFL')) return 50;
-  if (header.includes('PLAIN') || header.includes('PLAINE') || header.includes('SOCOPA')) return 51;
-  if (header.includes('EPISAVEUR') && header.includes('5')) return 53;
-  if (header.includes('EPISAVEUR')) return 52;
-  if (header.includes('MAMMAFIORE') || header.includes('COMPAGNIEDESDESSERTS') || header.includes('DESSERT')) return 54;
-  if (header.includes('DISTRIPATE')) return 55;
-  if (header.includes('METRO') || header.includes('DEPANNAGE')) return 56;
-  if (header.includes('MARTEL')) return 57;
+  if (header.includes('DOQUET') || header.includes('C10')) return 51;
+  if (header.includes('RICHARDVINS')) return 52;
+  if (header.includes('CAFERICHARD')) return 53;
+  if (header.includes('STORIA')) return 54;
+  if (header.includes('DOMAFRAIS') || header.includes('BRAKE')) return 55;
+  if (header.includes('TERREAZUR') || header.includes('POMONAF') || header.includes('POMONAFL')) return 56;
+  if (header.includes('PLAIN') || header.includes('PLAINE') || header.includes('SOCOPA')) return 57;
+  if (header.includes('EPISAVEUR') && header.includes('5')) return 59;
+  if (header.includes('EPISAVEUR')) return 58;
+  if (header.includes('MAMMAFIORE') || header.includes('COMPAGNIEDESDESSERTS') || header.includes('DESSERT')) return 60;
+  if (header.includes('DISTRIPATE')) return 61;
+  if (header.includes('METRO') || header.includes('DEPANNAGE')) return 62;
+  if (header.includes('MARTEL')) return 63;
 
   return 0;
 };

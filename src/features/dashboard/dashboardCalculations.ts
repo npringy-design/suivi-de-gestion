@@ -273,7 +273,7 @@ export function computeDashboardData(
         // COUT MATIERE calculations
         let coutMatiereTotalJour = 0;
         let hasCoutMatiereData = false;
-        for (let i = 51; i <= 57; i++) {
+        for (let i = 51; i <= 63; i++) {
           if (data[`${rIdx}-${i}`]) {
             coutMatiereTotalJour += parseMoneyValue(data[`${rIdx}-${i}`]);
             hasCoutMatiereData = true;
