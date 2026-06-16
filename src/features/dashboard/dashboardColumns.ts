@@ -189,7 +189,7 @@ export function buildDynamicColumns(
   }
   Object.entries(purchaseSupplierNames).forEach(([col, name]) => {
     const colIndex = Number(col);
-    if (colIndex >= 45 && colIndex <= 57 && name.trim()) {
+    if (colIndex >= 51 && colIndex <= 57 && name.trim()) {
       cols[colIndex] = [...cols[colIndex]];
       cols[colIndex][2] = name.trim();
     }

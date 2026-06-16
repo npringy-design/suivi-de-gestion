@@ -149,7 +149,7 @@ export function useDashboardImportHandlers({
     const compactEvidence = normalizedEvidence.replace(/\s+/g, '');
     const scores: Array<{ col: number; score: number; coverage: number; name: string; tokenCount: number }> = [];
   
-    for (let col = 45; col <= 57; col += 1) {
+    for (let col = 51; col <= 57; col += 1) {
       const columnName = dynamicColumns[col]?.[2] || '';
       const columnTokens = supplierTokens(columnName);
       if (columnTokens.length === 0) continue;
@@ -519,9 +519,9 @@ export function useDashboardImportHandlers({
     const supplier = cleanSupplierCandidate(legalLine || fallbackLine || '');
     const supplierTokenSet = new Set(supplierTokens(supplier));
   
-    let targetCol = 45;
+    let targetCol = 51;
     let bestScore = 0;
-    for (let col = 45; col <= 57; col += 1) {
+    for (let col = 51; col <= 57; col += 1) {
       const columnName = dynamicColumns[col]?.[2] || '';
       const columnTokens = supplierTokens(columnName);
       const score = columnTokens.reduce((sum, token) => sum + (supplierTokenSet.has(token) ? 1 : 0), 0);
@@ -660,7 +660,7 @@ export function useDashboardImportHandlers({
   const createInvoiceImportId = (fileName: string, index: number) => `${Date.now()}-${index}-${fileName}`;
   
   const getInvoiceConfidence = (supplierNeedsCheck: boolean, amountHt: number, invoiceDate: string, targetCol: number, amountReliable: boolean, hasReadableInvoiceText: boolean): InvoiceImportPreview['confidence'] => (
-    hasReadableInvoiceText && !supplierNeedsCheck && amountHt > 0 && amountReliable && isValidInvoiceDateValue(invoiceDate) && targetCol >= 45 && targetCol <= 57
+    hasReadableInvoiceText && !supplierNeedsCheck && amountHt > 0 && amountReliable && isValidInvoiceDateValue(invoiceDate) && targetCol >= 51 && targetCol <= 57
       ? 'verified'
       : 'review'
   );
