@@ -28,6 +28,8 @@ import {
   parseCaisseNumber,
 } from '@/features/dashboard/importHelpers/caisseImport';
 import {
+  extractHistoricalDemarques,
+  extractHistoricalFraisGeneraux,
   getHistoricalBudgetCell,
   getHistoricalBudgetRowValues,
   getHistoricalCostMatterColumnMap,
@@ -300,8 +302,36 @@ export function useDashboardImportHandlers({
             status: couvertsTotal > 0 && (tmMidi > 0 || tmSoir > 0) ? 'Prévision détectée' : 'Prévision partielle détectée',
           });
         }
+
+        // Import démarques (PERSONNEL / OPERATIONEL / EXPLICATION)
+        const demarques = extractHistoricalDemarques(sheet);
+        demarques.forEach(dem => {
+          const [demYear, demMonth, demDay] = dem.date.split('-').map(Number);
+          if (demYear !== year || demMonth - 1 !== monthIndex) return;
+          const rowIndex = getDashboardRowIndexForDay(year, monthIndex, demDay);
+          if (rowIndex < 0) return;
+          if (dem.personnel > 0) updateDashboard(monthIndex, `${rowIndex}-39`, dem.personnel.toFixed(2));
+          if (dem.operationnel > 0) updateDashboard(monthIndex, `${rowIndex}-41`, dem.operationnel.toFixed(2));
+          if (dem.explication) updateDashboard(monthIndex, `${rowIndex}-44`, dem.explication);
+        });
+
+        // Import frais généraux et contrats mensualisés
+        const { entries: fgEntries, contrats } = extractHistoricalFraisGeneraux(sheet);
+        fgEntries.forEach(entry => {
+          const key = `fg-data-${entry.box}-${entry.colGroup}-${entry.dIdx}`;
+          updateDashboard(monthIndex, `${key}-0`, entry.date);
+          updateDashboard(monthIndex, `${key}-1`, entry.fournisseur);
+          updateDashboard(monthIndex, `${key}-2`, entry.motif);
+          updateDashboard(monthIndex, `${key}-3`, entry.montant.toFixed(2));
+        });
+        contrats.forEach(contrat => {
+          const rowIndex = dayRows[contrat.dIdx]?.index;
+          if (rowIndex === undefined) return;
+          updateDashboard(monthIndex, `${rowIndex}-112`, contrat.nom);
+          updateDashboard(monthIndex, `${rowIndex}-113`, contrat.montant.toFixed(2));
+        });
       }
-  
+
       setHistoricalBudgetPreviews(previews);
       setImportPreview([]);
       setCaisseImportPreviews([]);
