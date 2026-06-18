@@ -164,6 +164,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const data = allData[selectedYear] || {};
 
   const cloudLoadedRef = useRef(!isCloudSyncConfigured);
+  const cloudBootstrapDoneRef = useRef(!isCloudSyncConfigured);
   const cloudApplyingRef = useRef(false);
   const cloudSaveTimerRef = useRef<number | null>(null);
   const loadedCloudMonthKeysRef = useRef<Set<string>>(new Set());
@@ -232,7 +233,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     rememberLoadedCloudMonths(cloudState);
 
     if (cloudState.allData && typeof cloudState.allData === 'object') {
-      setAllData(cloudState.allData as Record<number, Record<number, MonthData>>);
+      setAllData(prev => {
+        const incoming = cloudState.allData as Record<number, Record<number, MonthData>>;
+        const merged: Record<number, Record<number, MonthData>> = { ...prev };
+        Object.entries(incoming).forEach(([year, months]) => {
+          if (!months || typeof months !== 'object') return;
+          merged[Number(year)] = { ...(merged[Number(year)] || {}), ...(months as Record<number, MonthData>) };
+        });
+        return merged;
+      });
     }
     if (cloudState.config2025 && typeof cloudState.config2025 === 'object') {
       setConfig2025(cloudState.config2025 as Config2025Data);
@@ -297,9 +306,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           loadedCloudMonthKeysRef.current.add(cloudMonthKey(bootYear, bootMonth));
         } else {
           loadedCloudMonthKeysRef.current.add(cloudMonthKey(bootYear, bootMonth));
+          cloudBootstrapDoneRef.current = true;
           await saveCloudAppState({ allData, config2025, customEvents, personnelInfos });
         }
         hideCloudWarning();
+        if (!cloudBootstrapDoneRef.current) {
+          setTimeout(() => { cloudBootstrapDoneRef.current = true; }, 0);
+        }
       } catch (error) {
         console.warn('Sauvegarde Supabase indisponible au chargement :', error);
         showCloudWarning(cloudErrorMessage('Sauvegarde Supabase indisponible au chargement', error));
@@ -347,7 +360,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [applyCloudMonth, cloudErrorMessage, cloudMonthKey, hideCloudWarning, selectedMonth, selectedYear, showCloudWarning]);
 
   useEffect(() => {
-    if (!isCloudSyncConfigured || !cloudLoadedRef.current) return;
+    if (!isCloudSyncConfigured || !cloudLoadedRef.current || !cloudBootstrapDoneRef.current) return;
     if (cloudApplyingRef.current) {
       cloudApplyingRef.current = false;
       return;
@@ -544,7 +557,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [cloudMonthKey]);
 
   const saveNow = useCallback(async () => {
-    if (!isCloudSyncConfigured || !cloudLoadedRef.current) return;
+    if (!isCloudSyncConfigured || !cloudLoadedRef.current || !cloudBootstrapDoneRef.current) return;
     if (cloudSaveTimerRef.current) {
       window.clearTimeout(cloudSaveTimerRef.current);
       cloudSaveTimerRef.current = null;
