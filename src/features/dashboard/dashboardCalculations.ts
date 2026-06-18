@@ -101,17 +101,20 @@ export const formatKpiNumber = (value: number): string =>
 export const formatValue = (val: string | number | undefined, c: string[], colIndex?: number): string | number => {
   if (val === '' || val === undefined || val === null) return '';
   if (typeof colIndex === 'number' && isPayrollInputColumn(colIndex)) return formatPayrollHourDecimalValue(val);
-  if (typeof val === 'string' && val.includes('%')) return val;
+  const groupName = c[0];
+  const subGroupName = c[1];
+  const colName = c[2] || c[1];
+
+  // Pour les colonnes DEMARQUES non-ratio (PERSONNEL, OPERATIONEL, TOTAL), ignorer tout % stocké par erreur
+  const isDemarquesInput = groupName === 'DEMARQUES' && !colName.includes('Ratio') && !subGroupName.includes('Ratio') && colName !== 'EXPLICATION DEMARQUE';
+  if (typeof val === 'string' && val.includes('%') && !isDemarquesInput) return val;
 
   const num = parseMoneyValue(val);
   if (Number.isNaN(num)) return val;
 
-  const groupName = c[0];
-  const subGroupName = c[1];
-  const colName = c[2] || c[1];
-  const isPercentage = groupName !== 'COUT MATIERE' && (colName.includes('RATIO') || colName.includes('%') || subGroupName.includes('RATIO'));
+  const isPercentage = groupName !== 'COUT MATIERE' && !isDemarquesInput && (colName.includes('RATIO') || colName.includes('%') || subGroupName.includes('RATIO') || colName.toLowerCase().includes('ratio'));
   const isCurrency = !isPercentage && (colName.includes('CA') || colName.includes('HT') || colName.includes('PANIER') || colName.includes('MONTANT') || colName.includes('€') || colName.includes('COUT')
-    || subGroupName.includes('CA HT') || subGroupName.includes('ACHAT') || groupName.includes('COUT'));
+    || subGroupName.includes('CA HT') || subGroupName.includes('ACHAT') || groupName.includes('COUT') || isDemarquesInput);
   const formattedNum = Number.isInteger(num) ? num.toString() : num.toFixed(2).replace('.', ',');
   const prefix = (colName.includes('ECART') && num > 0) ? '+' : '';
 
@@ -401,7 +404,7 @@ export function computeDashboardData(
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 121, 122, 127].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 121, 122, 127].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -463,6 +466,17 @@ export function computeDashboardData(
           const ecartCvtsW = parseMoneyValue(data[`${rIdx}-33`]);
           if (budgetCvtsW > 0) data[`${rIdx}-122`] = ((ecartCvtsW / budgetCvtsW) * 100).toFixed(2);
         }
+        // Démarques semaine
+        const demPersonnelW = parseMoneyValue(data[`${rIdx}-39`]);
+        const demOperationnelW = parseMoneyValue(data[`${rIdx}-41`]);
+        if (demPersonnelW > 0 || demOperationnelW > 0) {
+          data[`${rIdx}-43`] = (demPersonnelW + demOperationnelW).toFixed(2);
+          if (realiseCAW > 0) {
+            data[`${rIdx}-40`] = ((demPersonnelW / realiseCAW) * 100).toFixed(2) + '%';
+            data[`${rIdx}-42`] = ((demOperationnelW / realiseCAW) * 100).toFixed(2) + '%';
+          }
+        }
+
         // Cout matiere semaine
         const coutMatiereW = parseMoneyValue(data[`${rIdx}-58`]);
         if (realiseCAW > 0) data[`${rIdx}-60`] = ((coutMatiereW / realiseCAW) * 100).toFixed(2) + '%';
@@ -521,7 +535,7 @@ export function computeDashboardData(
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 121, 122, 127].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 121, 122, 127].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -576,6 +590,17 @@ export function computeDashboardData(
       const coutMatiereM = parseMoneyValue(data[`${monthTotalIdx}-58`]);
       const realiseCAM = parseMoneyValue(data[`${monthTotalIdx}-21`]);
       if (realiseCAM > 0) data[`${monthTotalIdx}-60`] = ((coutMatiereM / realiseCAM) * 100).toFixed(2) + '%';
+
+      // Démarques mois
+      const demPersonnelM = parseMoneyValue(data[`${monthTotalIdx}-39`]);
+      const demOperationnelM = parseMoneyValue(data[`${monthTotalIdx}-41`]);
+      if (demPersonnelM > 0 || demOperationnelM > 0) {
+        data[`${monthTotalIdx}-43`] = (demPersonnelM + demOperationnelM).toFixed(2);
+        if (realiseCAM > 0) {
+          data[`${monthTotalIdx}-40`] = ((demPersonnelM / realiseCAM) * 100).toFixed(2) + '%';
+          data[`${monthTotalIdx}-42`] = ((demOperationnelM / realiseCAM) * 100).toFixed(2) + '%';
+        }
+      }
 
       // Moyennes mois couverts réalisé
       const nbMidiM = parseMoneyValue(data[`${monthTotalIdx}-25`]);
