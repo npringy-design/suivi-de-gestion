@@ -149,7 +149,7 @@ export function useDashboardImportHandlers({
     const compactEvidence = normalizedEvidence.replace(/\s+/g, '');
     const scores: Array<{ col: number; score: number; coverage: number; name: string; tokenCount: number }> = [];
   
-    for (let col = 51; col <= 57; col += 1) {
+    for (let col = 45; col <= 57; col += 1) {
       const columnName = dynamicColumns[col]?.[2] || '';
       const columnTokens = supplierTokens(columnName);
       if (columnTokens.length === 0) continue;
@@ -384,9 +384,9 @@ export function useDashboardImportHandlers({
       if (demYear !== year || demMonth - 1 !== month) return;
       const rowIndex = getDashboardRowIndexForDay(year, month, demDay);
       if (rowIndex < 0) return;
-      if (dem.personnel > 0) updateDashboard(month, `${rowIndex}-45`, dem.personnel.toFixed(2));
-      if (dem.operationnel > 0) updateDashboard(month, `${rowIndex}-47`, dem.operationnel.toFixed(2));
-      if (dem.explication) updateDashboard(month, `${rowIndex}-50`, dem.explication);
+      if (dem.personnel > 0) updateDashboard(month, `${rowIndex}-39`, dem.personnel.toFixed(2));
+      if (dem.operationnel > 0) updateDashboard(month, `${rowIndex}-41`, dem.operationnel.toFixed(2));
+      if (dem.explication) updateDashboard(month, `${rowIndex}-44`, dem.explication);
     });
     pendingDemarquesRef.current = [];
     setHistoricalBudgetStatus(historicalBudgetPreviews.length + ' jour(s) prévision couverts/TM importés dans ' + monthNames[month] + ' ' + year + '. Les CA seront recalculés automatiquement.');
@@ -519,9 +519,9 @@ export function useDashboardImportHandlers({
     const supplier = cleanSupplierCandidate(legalLine || fallbackLine || '');
     const supplierTokenSet = new Set(supplierTokens(supplier));
   
-    let targetCol = 51;
+    let targetCol = 45;
     let bestScore = 0;
-    for (let col = 51; col <= 57; col += 1) {
+    for (let col = 45; col <= 57; col += 1) {
       const columnName = dynamicColumns[col]?.[2] || '';
       const columnTokens = supplierTokens(columnName);
       const score = columnTokens.reduce((sum, token) => sum + (supplierTokenSet.has(token) ? 1 : 0), 0);
@@ -660,7 +660,7 @@ export function useDashboardImportHandlers({
   const createInvoiceImportId = (fileName: string, index: number) => `${Date.now()}-${index}-${fileName}`;
   
   const getInvoiceConfidence = (supplierNeedsCheck: boolean, amountHt: number, invoiceDate: string, targetCol: number, amountReliable: boolean, hasReadableInvoiceText: boolean): InvoiceImportPreview['confidence'] => (
-    hasReadableInvoiceText && !supplierNeedsCheck && amountHt > 0 && amountReliable && isValidInvoiceDateValue(invoiceDate) && targetCol >= 51 && targetCol <= 57
+    hasReadableInvoiceText && !supplierNeedsCheck && amountHt > 0 && amountReliable && isValidInvoiceDateValue(invoiceDate) && targetCol >= 45 && targetCol <= 57
       ? 'verified'
       : 'review'
   );
