@@ -82,6 +82,7 @@ type UseDashboardImportHandlersParams = {
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
   updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
   markMonthsAsLoaded: (year: number, months: number[]) => void;
+  saveNow: () => Promise<void>;
   personnelInfos: PersonnelInfo[];
 };
 
@@ -115,6 +116,7 @@ export function useDashboardImportHandlers({
   updateSalariesConfig,
   updatePersonnelSchema,
   markMonthsAsLoaded,
+  saveNow,
   personnelInfos,
 }: UseDashboardImportHandlersParams) {
   const pendingDemarquesRef = React.useRef<Array<{
@@ -347,7 +349,7 @@ export function useDashboardImportHandlers({
     }
   };
   
-  const applyHistoricalBudgetExcelImport = () => {
+  const applyHistoricalBudgetExcelImport = async () => {
     const usedColsByMonth = new Map<number, Set<number>>();
     historicalBudgetPreviews.forEach(item => {
       if (!usedColsByMonth.has(item.month)) usedColsByMonth.set(item.month, new Set());
@@ -401,6 +403,7 @@ export function useDashboardImportHandlers({
     pendingDemarquesRef.current = [];
     const importedMonths = [...new Set(historicalBudgetPreviews.map(item => item.month))];
     markMonthsAsLoaded(year, importedMonths);
+    await saveNow();
     setHistoricalBudgetStatus(historicalBudgetPreviews.length + ' jour(s) prévision couverts/TM importés dans ' + monthNames[month] + ' ' + year + '. Les CA seront recalculés automatiquement.');
     setHistoricalBudgetPreviews([]);
   };

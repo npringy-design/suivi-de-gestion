@@ -14,6 +14,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - Import budget historique Excel : lecture de tous les mois du classeur en un seul import. tsc OK.
 - Correctif démarques : application sur tous les mois lors de l'import multi-mois. tsc OK.
 - Correctif import multi-mois : mois importés marqués comme chargés pour éviter l'écrasement Supabase à la navigation. tsc OK.
+- Correctif persistance import : `saveNow` déclenche une sauvegarde Supabase immédiate après confirmation de l'import (le debounce 900ms était annulé si l'utilisateur quittait avant qu'il ne se déclenche). tsc OK.
 
 ---
 

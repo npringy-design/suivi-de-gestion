@@ -95,6 +95,7 @@ type DataContextType = {
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
   updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
   markMonthsAsLoaded: (year: number, months: number[]) => void;
+  saveNow: () => Promise<void>;
   config2025: Config2025Data;
   updateConfig2025: (type: 'mensuel' | 'hebdo', index: number, field: string, value: string) => void;
   customEvents: CustomEvent[];
@@ -542,6 +543,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     months.forEach(m => loadedCloudMonthKeysRef.current.add(cloudMonthKey(targetYear, m)));
   }, [cloudMonthKey]);
 
+  const saveNow = useCallback(async () => {
+    if (!isCloudSyncConfigured || !cloudLoadedRef.current) return;
+    if (cloudSaveTimerRef.current) {
+      window.clearTimeout(cloudSaveTimerRef.current);
+      cloudSaveTimerRef.current = null;
+    }
+    try {
+      await saveCloudAppState({ allData, config2025, customEvents, personnelInfos });
+      hideCloudWarning();
+    } catch (error) {
+      showCloudWarning(cloudErrorMessage('Sauvegarde Supabase echouee', error));
+    }
+  }, [allData, config2025, customEvents, personnelInfos, cloudErrorMessage, hideCloudWarning, showCloudWarning]);
+
   const updateBilanSynthese = useCallback((month: number, day: number, field: keyof DayDataBilanSynthese, value: string | number) => {
     const stored = parseMoneyValue(value);
     updateDataForYear(prev => {
@@ -714,6 +729,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateSalariesConfig,
     updatePersonnelSchema,
     markMonthsAsLoaded,
+    saveNow,
     config2025,
     updateConfig2025,
     customEvents,
@@ -749,6 +765,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateSalariesConfig,
     updatePersonnelSchema,
     markMonthsAsLoaded,
+    saveNow,
     config2025,
     updateConfig2025,
     customEvents,

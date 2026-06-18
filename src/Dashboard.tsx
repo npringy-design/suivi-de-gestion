@@ -93,6 +93,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     updateSalariesConfig,
     updatePersonnelSchema,
     markMonthsAsLoaded,
+    saveNow,
     resetLocalData,
   } = useData();
   
@@ -584,6 +585,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     updateSalariesConfig,
     updatePersonnelSchema,
     markMonthsAsLoaded,
+    saveNow,
     personnelInfos,
   });
 
