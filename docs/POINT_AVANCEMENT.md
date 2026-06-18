@@ -12,6 +12,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - Correctif duplication du 1er janvier : `useDashboardImportHandlers.ts` ne retient désormais que les cellules de date issues d'une formule Excel (ligne journalière), écartant la date statique d'en-tête de feuille. tsc OK.
 - Correctif décalage des données importées : suppression du fallback `rowNumber - 1` / `rowNumber - 2` (couverts/TM/réalisé/personnel) devenu obsolète, lecture directe sur `rowNumber`. tsc OK.
 - Import budget historique Excel : lecture de tous les mois du classeur en un seul import. tsc OK.
+- Correctif démarques : application sur tous les mois lors de l'import multi-mois. tsc OK.
 
 ---
 

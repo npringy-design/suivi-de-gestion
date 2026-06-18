@@ -388,12 +388,13 @@ export function useDashboardImportHandlers({
     // Import démarques
     pendingDemarquesRef.current.forEach(dem => {
       const [demYear, demMonth, demDay] = dem.date.split('-').map(Number);
-      if (demYear !== year || demMonth - 1 !== month) return;
-      const rowIndex = getDashboardRowIndexForDay(year, month, demDay);
+      if (demYear !== year) return;
+      const demMonthIndex = demMonth - 1;
+      const rowIndex = getDashboardRowIndexForDay(year, demMonthIndex, demDay);
       if (rowIndex < 0) return;
-      if (dem.personnel > 0) updateDashboard(month, `${rowIndex}-39`, dem.personnel.toFixed(2));
-      if (dem.operationnel > 0) updateDashboard(month, `${rowIndex}-41`, dem.operationnel.toFixed(2));
-      if (dem.explication) updateDashboard(month, `${rowIndex}-44`, dem.explication);
+      if (dem.personnel > 0) updateDashboard(demMonthIndex, `${rowIndex}-39`, dem.personnel.toFixed(2));
+      if (dem.operationnel > 0) updateDashboard(demMonthIndex, `${rowIndex}-41`, dem.operationnel.toFixed(2));
+      if (dem.explication) updateDashboard(demMonthIndex, `${rowIndex}-44`, dem.explication);
     });
     pendingDemarquesRef.current = [];
     setHistoricalBudgetStatus(historicalBudgetPreviews.length + ' jour(s) prévision couverts/TM importés dans ' + monthNames[month] + ' ' + year + '. Les CA seront recalculés automatiquement.');
