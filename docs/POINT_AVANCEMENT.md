@@ -13,6 +13,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - Correctif décalage des données importées : suppression du fallback `rowNumber - 1` / `rowNumber - 2` (couverts/TM/réalisé/personnel) devenu obsolète, lecture directe sur `rowNumber`. tsc OK.
 - Import budget historique Excel : lecture de tous les mois du classeur en un seul import. tsc OK.
 - Correctif démarques : application sur tous les mois lors de l'import multi-mois. tsc OK.
+- Correctif import multi-mois : mois importés marqués comme chargés pour éviter l'écrasement Supabase à la navigation. tsc OK.
 
 ---
 

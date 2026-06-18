@@ -94,6 +94,7 @@ type DataContextType = {
   updateMiseEnPaiement: (month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | number | boolean) => void;
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
   updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
+  markMonthsAsLoaded: (year: number, months: number[]) => void;
   config2025: Config2025Data;
   updateConfig2025: (type: 'mensuel' | 'hebdo', index: number, field: string, value: string) => void;
   customEvents: CustomEvent[];
@@ -537,6 +538,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [updateDataForYear]);
 
+  const markMonthsAsLoaded = useCallback((targetYear: number, months: number[]) => {
+    months.forEach(m => loadedCloudMonthKeysRef.current.add(cloudMonthKey(targetYear, m)));
+  }, [cloudMonthKey]);
+
   const updateBilanSynthese = useCallback((month: number, day: number, field: keyof DayDataBilanSynthese, value: string | number) => {
     const stored = parseMoneyValue(value);
     updateDataForYear(prev => {
@@ -708,6 +713,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateMiseEnPaiement,
     updateSalariesConfig,
     updatePersonnelSchema,
+    markMonthsAsLoaded,
     config2025,
     updateConfig2025,
     customEvents,
@@ -742,6 +748,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateMiseEnPaiement,
     updateSalariesConfig,
     updatePersonnelSchema,
+    markMonthsAsLoaded,
     config2025,
     updateConfig2025,
     customEvents,
