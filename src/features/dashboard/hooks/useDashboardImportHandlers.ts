@@ -228,18 +228,24 @@ export function useDashboardImportHandlers({
   const handleHistoricalBudgetExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setHistoricalBudgetStatus('Lecture locale du budget historique Excel sur le mois affiché...');
+    setHistoricalBudgetStatus('Lecture locale du budget historique Excel — tous les mois du classeur...');
   
     try {
       const workbook = new Workbook();
       await workbook.xlsx.load(await file.arrayBuffer());
-      const sheetForDemarques = workbook.getWorksheet(findBudgetSheetName(workbook, month, year) || '');
-      pendingDemarquesRef.current = sheetForDemarques ? extractHistoricalDemarques(sheetForDemarques) : [];
+      const allDemarques: typeof pendingDemarquesRef.current = [];
+      for (let mi = 0; mi < 12; mi++) {
+        const sheetNameDem = findBudgetSheetName(workbook, mi, year);
+        if (!sheetNameDem) continue;
+        const sheetDem = workbook.getWorksheet(sheetNameDem);
+        if (sheetDem) allDemarques.push(...extractHistoricalDemarques(sheetDem));
+      }
+      pendingDemarquesRef.current = allDemarques;
       const previews: HistoricalBudgetPreview[] = [];
       const matchedSheets: string[] = [];
       let scannedDateRows = 0;
   
-      for (const monthIndex of [month]) {
+      for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
         const sheetName = findBudgetSheetName(workbook, monthIndex, year);
         if (!sheetName) continue;
         matchedSheets.push(sheetName);
@@ -330,8 +336,8 @@ export function useDashboardImportHandlers({
       setCaisseImportPreviews([]);
       setInvoiceImportPreviews([]);
       setHistoricalBudgetStatus(previews.length > 0
-        ? previews.length + ' jour(s) prévision trouvés pour ' + monthNames[month] + ' ' + year + '. Vérifie puis valide.'
-        : 'Aucune prévision couverts/TM trouvée pour ' + monthNames[month] + ' ' + year + '. Feuille détectée : ' + (matchedSheets.join(', ') || 'aucune') + '. Lignes dates lues : ' + scannedDateRows + '.');
+        ? `${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.`
+        : `Aucune prévision trouvée. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`);
     } catch (error) {
       setHistoricalBudgetStatus('Erreur import budget Excel : ' + (error instanceof Error ? error.message : 'lecture impossible'));
     } finally {
@@ -340,14 +346,15 @@ export function useDashboardImportHandlers({
   };
   
   const applyHistoricalBudgetExcelImport = () => {
-    const usedTargetCols = new Set<number>();
+    const usedColsByMonth = new Map<number, Set<number>>();
     historicalBudgetPreviews.forEach(item => {
-      Object.keys(item.payrollValues || {}).forEach(targetCol => usedTargetCols.add(Number(targetCol)));
+      if (!usedColsByMonth.has(item.month)) usedColsByMonth.set(item.month, new Set());
+      Object.keys(item.payrollValues || {}).forEach(col => usedColsByMonth.get(item.month)!.add(Number(col)));
     });
-    if (usedTargetCols.size > 0) {
-      const usesGlobal = historicalPayrollAllGlobalCols.some(col => usedTargetCols.has(col));
-      updatePersonnelSchema(month, usesGlobal ? 'global' : 'cuisine_salle');
-    }
+    usedColsByMonth.forEach((cols, monthIdx) => {
+      const usesGlobal = historicalPayrollAllGlobalCols.some(col => cols.has(col));
+      updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle');
+    });
     historicalBudgetPreviews.forEach(item => {
       updateDashboard(item.month, item.rowIndex + '-0', '');
       updateDashboard(item.month, item.rowIndex + '-1', '');
