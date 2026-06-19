@@ -140,7 +140,7 @@ export function useDashboardImportHandlers({
   const resetFgDataForMonth = (monthIndex: number) => {
     for (let box = 0; box <= 3; box++) {
       for (let colGroup = 0; colGroup <= 2; colGroup++) {
-        for (let dIdx = 0; dIdx <= 6; dIdx++) {
+        for (let dIdx = 0; dIdx < 10; dIdx++) {
           const key = `fg-data-${box}-${colGroup}-${dIdx}`;
           updateDashboard(monthIndex, `${key}-0`, '');
           updateDashboard(monthIndex, `${key}-1`, '');
