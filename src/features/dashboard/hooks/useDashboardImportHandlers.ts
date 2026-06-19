@@ -51,9 +51,7 @@ import {
   extractHistoricalV25Demarques,
   extractHistoricalV25FraisGeneraux,
   getHistoricalV25RowValues,
-  getHistoricalCostMatterColumnMap as getV25CostMatterColumnMap,
   getHistoricalPayrollColumnMaps as getV25PayrollColumnMaps,
-  V25_DIAG_COLS,
 } from '@/features/dashboard/importHelpers/historicalV25Import';
 
 type DayRowEntry = { row: DashboardRow; index: number };
@@ -457,7 +455,6 @@ export function useDashboardImportHandlers({
         const sheet = workbook.getWorksheet(sheetName);
         if (!sheet) continue;
         const range = { rowCount: sheet.rowCount, columnCount: sheet.columnCount };
-        const costMatterColumnMap = getV25CostMatterColumnMap(sheet, range);
         const payrollColumnMaps = getV25PayrollColumnMaps(sheet, range);
 
         for (let rowNumber = 0; rowNumber <= range.rowCount - 1; rowNumber += 1) {
@@ -470,9 +467,9 @@ export function useDashboardImportHandlers({
           const rowIndex = getDashboardRowIndexForDay(year, monthIndex, day);
           if (rowIndex < 0) continue;
 
-          const v25Values = getHistoricalV25RowValues(sheet, rowNumber, costMatterColumnMap, payrollColumnMaps);
-          const caTotal = v25Values.realiseMidi + v25Values.realiseSoir + v25Values.realiseLimo;
-          const couvertsTotal = v25Values.realiseCouvertsMidi + v25Values.realiseCouvertsSoir;
+          const v25Values = getHistoricalV25RowValues(sheet, rowNumber, payrollColumnMaps);
+          const caTotal = v25Values.realiseVae + v25Values.realiseMidi + v25Values.realiseSoir + v25Values.realiseLimo;
+          const couvertsTotal = v25Values.couvertsMidi + v25Values.couvertsSoir;
 
           if (caTotal === 0 && couvertsTotal === 0 && v25Values.costMatterTotal === 0 && v25Values.payrollTotalHours === 0) continue;
 
@@ -485,12 +482,12 @@ export function useDashboardImportHandlers({
             caMidi: v25Values.realiseMidi,
             caSoir: v25Values.realiseSoir,
             caTotal,
-            couvertsMidi: 0,
-            tmMidi: 0,
-            couvertsSoir: 0,
-            tmSoir: 0,
-            couvertsTotal,
-            realiseVae: 0,
+            couvertsMidi: v25Values.couvertsMidi,
+            tmMidi: v25Values.tmMidi,
+            couvertsSoir: v25Values.couvertsSoir,
+            tmSoir: v25Values.tmSoir,
+            couvertsTotal: v25Values.couvertsMidi + v25Values.couvertsSoir,
+            realiseVae: v25Values.realiseVae,
             realiseMidi: v25Values.realiseMidi,
             realiseSoir: v25Values.realiseSoir,
             realiseLimo: v25Values.realiseLimo,
@@ -521,49 +518,13 @@ export function useDashboardImportHandlers({
         });
       }
 
-      // ── DIAGNOSTIC TEMPORAIRE : 1re ligne avec valeur numérique en col1 ──
-      let diagMsg = '';
-      diagLoop: for (let mi2 = 0; mi2 < 12; mi2++) {
-        const sn2 = findBudgetSheetName(workbook, mi2, year);
-        if (!sn2) continue;
-        const sh2 = workbook.getWorksheet(sn2);
-        if (!sh2) continue;
-        const fmtCell = (row: number) => V25_DIAG_COLS.map(c => {
-          const cell = sh2.getCell(row + 1, c + 1);
-          const v = cell.value;
-          if (v === null || v === undefined) return `c${c}:_`;
-          if (typeof v === 'number') return `c${c}:${v}`;
-          if (v instanceof Date) return `c${c}:DATE`;
-          if (typeof v === 'object' && 'result' in (v as object)) {
-            const r = (v as {result:unknown}).result;
-            return `c${c}:=${r instanceof Date ? 'DATE' : r}`;
-          }
-          return `c${c}:"${String(cell.text||v).slice(0,8)}"`;
-        }).join('|');
-        for (let rn = 0; rn <= sh2.rowCount - 1; rn++) {
-          // Cherche la première ligne où col0=date ET col1 est numérique (vraie donnée)
-          const dc = getHistoricalBudgetCell(sh2, rn, 0);
-          const pd = parseHistoricalBudgetCellDate(dc);
-          if (!pd || pd.getFullYear() !== year || pd.getMonth() !== mi2) continue;
-          const v1 = sh2.getCell(rn + 1, 2).value; // col1
-          const isNum = (v: unknown): boolean => typeof v === 'number'
-            || (v !== null && typeof v === 'object' && 'result' in (v as object) && typeof (v as {result:unknown}).result === 'number');
-          if (!isNum(v1)) continue;
-          diagMsg = `[DIAG DONNÉES feuille=${sn2} L${rn} jour=${pd.getDate()}/${pd.getMonth()+1}] ${fmtCell(rn)} §§ L${rn+1}: ${fmtCell(rn+1)}`;
-          break diagLoop;
-        }
-      }
-      // ── FIN DIAGNOSTIC ──
-
       setHistoricalV25Previews(previews);
       setImportPreview([]);
       setCaisseImportPreviews([]);
       setInvoiceImportPreviews([]);
-      setHistoricalV25Status(diagMsg
-        ? diagMsg
-        : previews.length > 0
-          ? `Budget V25 — ${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.`
-          : `Budget V25 — Aucun réalisé trouvé. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`);
+      setHistoricalV25Status(previews.length > 0
+        ? `Budget V25 — ${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.`
+        : `Budget V25 — Aucun réalisé trouvé. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`);
     } catch (error) {
       setHistoricalV25Status('Erreur import budget V25 : ' + (error instanceof Error ? error.message : 'lecture impossible'));
     } finally {
@@ -583,7 +544,7 @@ export function useDashboardImportHandlers({
     });
 
     // Reset complet de toutes les colonnes V25 pour chaque ligne importée (garantit l'idempotence)
-    const V25_REALISE_COLS = [17, 18, 19, 20, 25, 27, 34];
+    const V25_REALISE_COLS = [6, 7, 8, 9, 17, 18, 19, 20, 25, 27, 34];
     const V25_DEMARQUE_COLS = [39, 41, 44];
     historicalV25Previews.forEach(item => {
       V25_REALISE_COLS.forEach(col => {
@@ -601,6 +562,11 @@ export function useDashboardImportHandlers({
     });
 
     historicalV25Previews.forEach(item => {
+      // Budget couverts / TM
+      updateDashboard(item.month, item.rowIndex + '-6',  formatImportedNumber(item.couvertsMidi, 0));
+      updateDashboard(item.month, item.rowIndex + '-7',  formatImportedNumber(item.tmMidi));
+      updateDashboard(item.month, item.rowIndex + '-8',  formatImportedNumber(item.couvertsSoir, 0));
+      updateDashboard(item.month, item.rowIndex + '-9',  formatImportedNumber(item.tmSoir));
       // Réalisé CA
       updateDashboard(item.month, item.rowIndex + '-17', formatImportedNumber(item.realiseVae));
       updateDashboard(item.month, item.rowIndex + '-18', formatImportedNumber(item.realiseMidi));

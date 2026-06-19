@@ -35,6 +35,9 @@
 - Types → `src/types/dataTypes.ts`
 - Constantes partagées → `src/lib/constants.ts`
 
+### Import V25
+Import V25 : colonnes source hardcodées (budget cols 8/9/10/11, réalisé cols 20/23/27/29/42/44, coût matière cols 67-79). Ne pas utiliser `getHistoricalCostMatterColumnMap` pour le V25 — mapping fixe dans `V25_COST_MATTER_MAP`.
+
 ### Règle Dashboard
 `Dashboard.tsx` est un orchestrateur. Il ne contient que :
 - Appels aux hooks `useDashboard*`
