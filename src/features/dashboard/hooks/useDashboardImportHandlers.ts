@@ -521,7 +521,7 @@ export function useDashboardImportHandlers({
         });
       }
 
-      // ── DIAGNOSTIC TEMPORAIRE : valeurs brutes de la 1re ligne journalière ──
+      // ── DIAGNOSTIC TEMPORAIRE : structure des lignes autour de la 1re date ──
       let diagMsg = '';
       diagLoop: for (let mi2 = 0; mi2 < 12; mi2++) {
         const sn2 = findBudgetSheetName(workbook, mi2, year);
@@ -532,16 +532,17 @@ export function useDashboardImportHandlers({
           const dc = getHistoricalBudgetCell(sh2, rn, 0);
           const pd = parseHistoricalBudgetCellDate(dc);
           if (!pd || pd.getFullYear() !== year || pd.getMonth() !== mi2) continue;
-          const parts = V25_DIAG_COLS.map(c => {
-            const cell = sh2.getCell(rn + 1, c + 1);
+          const fmtCell = (sh: typeof sh2, row: number) => V25_DIAG_COLS.map(c => {
+            const cell = sh.getCell(row + 1, c + 1);
             const v = cell.value;
-            if (v === null || v === undefined) return `col${c}:vide`;
-            if (typeof v === 'number') return `col${c}:${v}`;
-            if (v instanceof Date) return `col${c}:date`;
-            if (typeof v === 'object' && 'result' in (v as object)) return `col${c}:f=${(v as {result:unknown}).result}`;
-            return `col${c}:"${String(cell.text||v).slice(0,10)}"`;
-          });
-          diagMsg = `[DIAG ${String(pd.getDate()).padStart(2,'0')}/${String(mi2+1).padStart(2,'0')} feuille=${sn2}] ${parts.join(' | ')}`;
+            if (v === null || v === undefined) return `c${c}:_`;
+            if (typeof v === 'number') return `c${c}:${v}`;
+            if (v instanceof Date) return `c${c}:DATE`;
+            if (typeof v === 'object' && 'result' in (v as object)) return `c${c}:=${(v as {result:unknown}).result}`;
+            return `c${c}:"${String(cell.text||v).slice(0,8)}"`;
+          }).join('|');
+          const lines = Array.from({length: 5}, (_, i) => `L${rn+i}: ${fmtCell(sh2, rn + i)}`);
+          diagMsg = `[DIAG feuille=${sn2} à partir de L${rn}] ${lines.join(' §§ ')}`;
           break diagLoop;
         }
       }
