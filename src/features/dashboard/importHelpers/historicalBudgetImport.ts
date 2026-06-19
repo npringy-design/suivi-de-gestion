@@ -46,7 +46,7 @@ export const parseHistoricalBudgetDate = (value: unknown): Date | null => {
       return new Date(fullYear, monthIndex, Number(wordDateMatch[1]));
     }
   }
-  const frMatch = text.match(/(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2,4})/);
+  const frMatch = text.match(/(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})/);
   if (frMatch) {
     const fullYear = frMatch[3].length === 2 ? Number('20' + frMatch[3]) : Number(frMatch[3]);
     return new Date(fullYear, Number(frMatch[2]) - 1, Number(frMatch[1]));
