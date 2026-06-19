@@ -27,6 +27,9 @@ export const V25_CA_SOIR_COL = 2;
 export const V25_CA_LIMO_COL = 3;
 export const V25_COUVERTS_MIDI_COL = 8;
 export const V25_COUVERTS_SOIR_COL = 10;
+
+// ─── Diagnostic : colonnes à inspecter pour trouver les bons indices ─────────
+export const V25_DIAG_COLS = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
 export const V25_DEMARQUE_PERS_COL = 60;
 export const V25_DEMARQUE_OP_COL = 62;
 export const V25_DEMARQUE_EXPL_COL = 66;

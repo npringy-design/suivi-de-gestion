@@ -53,6 +53,7 @@ import {
   getHistoricalV25RowValues,
   getHistoricalCostMatterColumnMap as getV25CostMatterColumnMap,
   getHistoricalPayrollColumnMaps as getV25PayrollColumnMaps,
+  V25_DIAG_COLS,
 } from '@/features/dashboard/importHelpers/historicalV25Import';
 
 type DayRowEntry = { row: DashboardRow; index: number };
@@ -520,13 +521,41 @@ export function useDashboardImportHandlers({
         });
       }
 
+      // ── DIAGNOSTIC TEMPORAIRE : valeurs brutes de la 1re ligne journalière ──
+      let diagMsg = '';
+      diagLoop: for (let mi2 = 0; mi2 < 12; mi2++) {
+        const sn2 = findBudgetSheetName(workbook, mi2, year);
+        if (!sn2) continue;
+        const sh2 = workbook.getWorksheet(sn2);
+        if (!sh2) continue;
+        for (let rn = 0; rn <= sh2.rowCount - 1; rn++) {
+          const dc = getHistoricalBudgetCell(sh2, rn, 0);
+          const pd = parseHistoricalBudgetCellDate(dc);
+          if (!pd || pd.getFullYear() !== year || pd.getMonth() !== mi2) continue;
+          const parts = V25_DIAG_COLS.map(c => {
+            const cell = sh2.getCell(rn + 1, c + 1);
+            const v = cell.value;
+            if (v === null || v === undefined) return `col${c}:vide`;
+            if (typeof v === 'number') return `col${c}:${v}`;
+            if (v instanceof Date) return `col${c}:date`;
+            if (typeof v === 'object' && 'result' in (v as object)) return `col${c}:f=${(v as {result:unknown}).result}`;
+            return `col${c}:"${String(cell.text||v).slice(0,10)}"`;
+          });
+          diagMsg = `[DIAG ${String(pd.getDate()).padStart(2,'0')}/${String(mi2+1).padStart(2,'0')} feuille=${sn2}] ${parts.join(' | ')}`;
+          break diagLoop;
+        }
+      }
+      // ── FIN DIAGNOSTIC ──
+
       setHistoricalV25Previews(previews);
       setImportPreview([]);
       setCaisseImportPreviews([]);
       setInvoiceImportPreviews([]);
-      setHistoricalV25Status(previews.length > 0
-        ? `Budget V25 — ${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.`
-        : `Budget V25 — Aucun réalisé trouvé. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`);
+      setHistoricalV25Status(diagMsg
+        ? diagMsg
+        : previews.length > 0
+          ? `Budget V25 — ${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.`
+          : `Budget V25 — Aucun réalisé trouvé. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`);
     } catch (error) {
       setHistoricalV25Status('Erreur import budget V25 : ' + (error instanceof Error ? error.message : 'lecture impossible'));
     } finally {
