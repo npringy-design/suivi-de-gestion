@@ -39,6 +39,8 @@ import {
   parseHistoricalBudgetCellDate,
   rowHasHistoricalRealiseValues,
   sumHistoricalCostMatterValues,
+  type HistoricalFgEntry,
+  type HistoricalContratEntry,
 } from '@/features/dashboard/importHelpers/historicalBudgetImport';
 import {
   getBestHistoricalPayrollValues,
@@ -137,6 +139,16 @@ export function useDashboardImportHandlers({
   const pendingV25DemarquesRef = React.useRef<Array<{
     date: string; personnel: number; operationnel: number; explication: string;
   }>>([]);
+  const pendingFgRef = React.useRef<{
+    monthIndex: number;
+    entries: HistoricalFgEntry[];
+    contrats: HistoricalContratEntry[];
+  }[]>([]);
+  const pendingV25FgRef = React.useRef<{
+    monthIndex: number;
+    entries: HistoricalFgEntry[];
+    contrats: HistoricalContratEntry[];
+  }[]>([]);
   const resetFgDataForMonth = (monthIndex: number) => {
     for (let box = 0; box <= 3; box++) {
       for (let colGroup = 0; colGroup <= 2; colGroup++) {
@@ -272,6 +284,7 @@ export function useDashboardImportHandlers({
       const workbook = new Workbook();
       await workbook.xlsx.load(await file.arrayBuffer());
       const allDemarques: typeof pendingDemarquesRef.current = [];
+      pendingFgRef.current = [];
       for (let mi = 0; mi < 12; mi++) {
         const sheetNameDem = findBudgetSheetName(workbook, mi, year);
         if (!sheetNameDem) continue;
@@ -352,22 +365,9 @@ export function useDashboardImportHandlers({
           });
         }
 
-        // Import frais généraux et contrats mensualisés
-        resetFgDataForMonth(monthIndex);
+        // FG stockés pour application atomique lors de la validation
         const { entries: fgEntries, contrats } = extractHistoricalFraisGeneraux(sheet);
-        fgEntries.forEach(entry => {
-          const key = `fg-data-${entry.box}-${entry.colGroup}-${entry.dIdx}`;
-          updateDashboard(monthIndex, `${key}-0`, entry.date);
-          updateDashboard(monthIndex, `${key}-1`, entry.fournisseur);
-          updateDashboard(monthIndex, `${key}-2`, entry.motif);
-          updateDashboard(monthIndex, `${key}-3`, entry.montant.toFixed(2));
-        });
-        contrats.forEach(contrat => {
-          const rowIndex = dayRows[contrat.dIdx]?.index;
-          if (rowIndex === undefined) return;
-          updateDashboard(monthIndex, `${rowIndex}-112`, contrat.nom);
-          updateDashboard(monthIndex, `${rowIndex}-113`, contrat.montant.toFixed(2));
-        });
+        pendingFgRef.current.push({ monthIndex, entries: fgEntries, contrats });
       }
 
       setHistoricalBudgetPreviews(previews);
@@ -424,6 +424,29 @@ export function useDashboardImportHandlers({
         updateDashboard(item.month, item.rowIndex + '-' + targetCol, String(hourValue));
       });
     });
+    // Reset + écriture des FG (atomique avec saveNow)
+    const fgMonthsDone = new Set<number>();
+    pendingFgRef.current.forEach(({ monthIndex, entries, contrats }) => {
+      if (!fgMonthsDone.has(monthIndex)) {
+        resetFgDataForMonth(monthIndex);
+        fgMonthsDone.add(monthIndex);
+      }
+      entries.forEach(entry => {
+        const key = `fg-data-${entry.box}-${entry.colGroup}-${entry.dIdx}`;
+        updateDashboard(monthIndex, `${key}-0`, entry.date);
+        updateDashboard(monthIndex, `${key}-1`, entry.fournisseur);
+        updateDashboard(monthIndex, `${key}-2`, entry.motif);
+        updateDashboard(monthIndex, `${key}-3`, entry.montant.toFixed(2));
+      });
+      contrats.forEach(contrat => {
+        const rowIndex = dayRows[contrat.dIdx]?.index;
+        if (rowIndex === undefined) return;
+        updateDashboard(monthIndex, `${rowIndex}-112`, contrat.nom);
+        updateDashboard(monthIndex, `${rowIndex}-113`, contrat.montant.toFixed(2));
+      });
+    });
+    pendingFgRef.current = [];
+
     // Import démarques
     pendingDemarquesRef.current.forEach(dem => {
       const [demYear, demMonth, demDay] = dem.date.split('-').map(Number);
@@ -456,6 +479,7 @@ export function useDashboardImportHandlers({
       await workbook.xlsx.load(await file.arrayBuffer());
 
       const allDemarques: typeof pendingV25DemarquesRef.current = [];
+      pendingV25FgRef.current = [];
       for (let mi = 0; mi < 12; mi++) {
         const sheetNameDem = findBudgetSheetName(workbook, mi, year);
         if (!sheetNameDem) continue;
@@ -522,21 +546,9 @@ export function useDashboardImportHandlers({
           });
         }
 
-        resetFgDataForMonth(monthIndex);
+        // FG V25 stockés pour application atomique lors de la validation
         const { entries: fgEntries, contrats } = extractHistoricalV25FraisGeneraux(sheet);
-        fgEntries.forEach(entry => {
-          const key = `fg-data-${entry.box}-${entry.colGroup}-${entry.dIdx}`;
-          updateDashboard(monthIndex, `${key}-0`, entry.date);
-          updateDashboard(monthIndex, `${key}-1`, entry.fournisseur);
-          updateDashboard(monthIndex, `${key}-2`, entry.motif);
-          updateDashboard(monthIndex, `${key}-3`, entry.montant.toFixed(2));
-        });
-        contrats.forEach(contrat => {
-          const rowIndex = dayRows[contrat.dIdx]?.index;
-          if (rowIndex === undefined) return;
-          updateDashboard(monthIndex, `${rowIndex}-112`, contrat.nom);
-          updateDashboard(monthIndex, `${rowIndex}-113`, contrat.montant.toFixed(2));
-        });
+        pendingV25FgRef.current.push({ monthIndex, entries: fgEntries, contrats });
       }
 
       setHistoricalV25Previews(previews);
@@ -611,6 +623,29 @@ export function useDashboardImportHandlers({
         updateDashboard(item.month, item.rowIndex + '-' + targetCol, String(hourValue));
       });
     });
+
+    // Reset + écriture des FG V25 (atomique avec saveNow)
+    const fgV25MonthsDone = new Set<number>();
+    pendingV25FgRef.current.forEach(({ monthIndex, entries, contrats }) => {
+      if (!fgV25MonthsDone.has(monthIndex)) {
+        resetFgDataForMonth(monthIndex);
+        fgV25MonthsDone.add(monthIndex);
+      }
+      entries.forEach(entry => {
+        const key = `fg-data-${entry.box}-${entry.colGroup}-${entry.dIdx}`;
+        updateDashboard(monthIndex, `${key}-0`, entry.date);
+        updateDashboard(monthIndex, `${key}-1`, entry.fournisseur);
+        updateDashboard(monthIndex, `${key}-2`, entry.motif);
+        updateDashboard(monthIndex, `${key}-3`, entry.montant.toFixed(2));
+      });
+      contrats.forEach(contrat => {
+        const rowIndex = dayRows[contrat.dIdx]?.index;
+        if (rowIndex === undefined) return;
+        updateDashboard(monthIndex, `${rowIndex}-112`, contrat.nom);
+        updateDashboard(monthIndex, `${rowIndex}-113`, contrat.montant.toFixed(2));
+      });
+    });
+    pendingV25FgRef.current = [];
 
     // Démarques
     pendingV25DemarquesRef.current.forEach(dem => {
