@@ -262,7 +262,6 @@ export type HistoricalContratEntry = {
   montant: number;
 };
 
-const fgColGroupOffsets = [123, 128, 133]; // 0-based col index for "date" of colGroup 0/1/2
 const FG_BOX_DATA_ROWS_0BASED: [number, number][] = [
   [9, 15], [18, 26], [29, 37], [41, 48],
 ];
@@ -273,12 +272,25 @@ const formatHistoricalFgDate = (value: unknown): string => {
   return `${String(parsed.getDate()).padStart(2, '0')}/${String(parsed.getMonth() + 1).padStart(2, '0')}/${parsed.getFullYear()}`;
 };
 
+export const detectFgColGroupOffsets = (sheet: Worksheet): number[] => {
+  const headerRow = 8; // 0-based
+  const offsets: number[] = [];
+  for (let col = 110; col <= 170; col++) {
+    const cell = getHistoricalBudgetCell(sheet, headerRow, col);
+    const val = cell?.text || String(cell?.value ?? '');
+    if (val.trim() === 'DATE') offsets.push(col);
+  }
+  return offsets.slice(0, 3);
+};
+
 export function extractHistoricalFraisGeneraux(sheet: Worksheet): {
   entries: HistoricalFgEntry[];
   contrats: HistoricalContratEntry[];
 } {
   const entries: HistoricalFgEntry[] = [];
   const contrats: HistoricalContratEntry[] = [];
+  const fgColGroupOffsets = detectFgColGroupOffsets(sheet);
+  if (fgColGroupOffsets.length < 3) return { entries, contrats };
 
   FG_BOX_DATA_ROWS_0BASED.forEach(([startRow, endRow], box) => {
     const dIdxByGroup = [0, 0, 0];
@@ -301,10 +313,11 @@ export function extractHistoricalFraisGeneraux(sheet: Worksheet): {
         dIdxByGroup[colGroup] += 1;
       });
 
-      // Contrats mensualises : col 139 (EI, 0-based 138) = nom, col 140 (EJ, 0-based 139) = montant
-      const nomCell = getHistoricalBudgetCell(sheet, rowNumber, 138);
+      // Contrats mensualises : group2+5 = nom, group2+6 = montant (position variable selon mois)
+      const contratsNomCol = fgColGroupOffsets[2] + 5;
+      const nomCell = getHistoricalBudgetCell(sheet, rowNumber, contratsNomCol);
       const nom = String(nomCell?.text || nomCell?.value || '').trim();
-      const montantContrat = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 139));
+      const montantContrat = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, contratsNomCol + 1));
       if (nom && montantContrat) {
         contrats.push({ dIdx: contrats.length, nom, montant: montantContrat });
       }

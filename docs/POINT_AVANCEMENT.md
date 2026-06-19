@@ -23,6 +23,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - FG V25+V26 : remplacement boucle while par itération sur plages de rows fixes [9-15, 18-26, 29-37, 41-48] — suppression de la détection textuelle de fin de box. tsc OK.
 - Reset complet des cellules FG avant import (box 0-3, colGroup 0-2, dIdx 0-6) pour éliminer les données corrompues des anciens imports. tsc OK.
 - Fix reset FG : borne dIdx corrigée de 6 à 9 pour correspondre au calcul des totaux. tsc OK.
+- FG V26 : détection dynamique des offsets de colonnes par recherche de 'DATE' en row 8 (suppression des offsets hardcodés [123,128,133] invalides pour FEV-DEC 26). tsc OK.
 
 ---
 
