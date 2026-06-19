@@ -18,6 +18,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - Fix bootstrap cloud : `applyCloudState` passe en merger (setAllData fonctionnel) + `cloudBootstrapDoneRef` bloque la sauvegarde auto pendant le bootstrap → données des mois importés conservées au rechargement. tsc OK.
 - Import historique Excel format V25 : parseur dédié `historicalV25Import.ts`, handler `handleHistoricalV25ExcelImport`, détection automatique schéma personnel, bouton distinct dans DashboardImportModal. tsc OK.
 - Correctif import V25 : suppression filtre isFormulaCell inadapté (dates directes dans V25) + reset complet des colonnes avant récriture pour garantir l'idempotence. tsc OK.
+- Correctif parsing V25 : parseHistoricalBudgetNumber extrait désormais le résultat des formules ExcelJS ({ result: number }) avant de tomber sur String(). Corrige CA midi/soir et couverts vides à l'import. tsc OK.
 
 ---
 

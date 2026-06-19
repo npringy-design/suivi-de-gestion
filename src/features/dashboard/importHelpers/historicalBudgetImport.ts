@@ -10,6 +10,11 @@ export const getHistoricalBudgetCell = (sheet: Worksheet, rowIndex: number, colI
 export const parseHistoricalBudgetNumber = (value: unknown) => {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
   if (value instanceof Date) return 0;
+  // Formule ExcelJS : { result: number } ou { formula, result }
+  if (value !== null && typeof value === 'object' && 'result' in (value as object)) {
+    const result = (value as { result: unknown }).result;
+    if (typeof result === 'number') return Number.isFinite(result) ? result : 0;
+  }
   const cleaned = String(value ?? '')
     .replace(/\u00a0/g, ' ')
     .replace(/s/g, '')
