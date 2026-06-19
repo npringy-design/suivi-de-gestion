@@ -164,6 +164,14 @@ export function extractHistoricalV25FraisGeneraux(sheet: Worksheet): {
       const firstColText = String(firstColCell?.text || firstColCell?.value || '').trim().toUpperCase();
       if (firstColText.includes('TOTAL')) break;
 
+      // Lignes TOTAL SEMAINE / séparateurs : col0 est une string non-vide → pas une ligne FG
+      const col0Cell = getHistoricalBudgetCell(sheet, rowNumber, 0);
+      const col0Val = col0Cell?.value ?? col0Cell?.text ?? '';
+      if (typeof col0Val === 'string' && col0Val.trim().length > 0) {
+        rowNumber += 1;
+        continue;
+      }
+
       V25_FG_COL_OFFSETS.forEach((dateCol, colGroup) => {
         const montant = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, dateCol + 3));
         if (!montant || Number.isNaN(montant)) return;
