@@ -40,13 +40,10 @@ export const V25_COST_MATTER_MAP: Record<number, number> = {
   75: 53, 78: 56, 79: 57,
 };
 
-// Démarques / FG — colonnes déjà correctes
+// Démarques — colonnes déjà correctes
 export const V25_DEMARQUE_PERS_COL = 60;
 export const V25_DEMARQUE_OP_COL = 62;
 export const V25_DEMARQUE_EXPL_COL = 66;
-export const V25_FG_COL_OFFSETS = [109, 114, 119] as const;
-export const V25_FG_CONTRAT_NOM_COL = 124;
-export const V25_FG_CONTRAT_MONTANT_COL = 125;
 
 // ─── Type ─────────────────────────────────────────────────────────────────────
 
@@ -141,7 +138,10 @@ export function extractHistoricalV25Demarques(sheet: Worksheet): HistoricalDemar
 
 // ─── Frais généraux V25 ──────────────────────────────────────────────────────
 
-const fgBoxStartRows0Based = [9, 18, 29, 40];
+const V25_FG_BOX_DATA_ROWS_0BASED: [number, number][] = [
+  [9, 15], [18, 26], [29, 37], [41, 48],
+];
+const V25_FG_COL_OFFSETS = [109, 114, 119] as const;
 
 const formatV25FgDate = (value: unknown): string => {
   const parsed = parseHistoricalBudgetDate(value);
@@ -154,24 +154,10 @@ export function extractHistoricalV25FraisGeneraux(sheet: Worksheet): {
   contrats: HistoricalContratEntry[];
 } {
   const entries: HistoricalFgEntry[] = [];
-  const anchorCol = V25_FG_COL_OFFSETS[0];
 
-  fgBoxStartRows0Based.forEach((startRow, box) => {
-    let rowNumber = startRow;
+  V25_FG_BOX_DATA_ROWS_0BASED.forEach(([startRow, endRow], box) => {
     const dIdxByGroup = [0, 0, 0];
-    while (rowNumber <= sheet.rowCount - 1) {
-      const firstColCell = getHistoricalBudgetCell(sheet, rowNumber, anchorCol);
-      const firstColText = String(firstColCell?.text || firstColCell?.value || '').trim().toUpperCase();
-      if (firstColText.includes('TOTAL')) break;
-
-      // Lignes TOTAL SEMAINE / séparateurs : col0 est une string non-vide → pas une ligne FG
-      const col0Cell = getHistoricalBudgetCell(sheet, rowNumber, 0);
-      const col0Val = col0Cell?.value ?? col0Cell?.text ?? '';
-      if (typeof col0Val === 'string' && col0Val.trim().length > 0) {
-        rowNumber += 1;
-        continue;
-      }
-
+    for (let rowNumber = startRow; rowNumber <= endRow; rowNumber += 1) {
       V25_FG_COL_OFFSETS.forEach((dateCol, colGroup) => {
         const montant = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, dateCol + 3));
         if (!montant || Number.isNaN(montant)) return;
@@ -189,8 +175,6 @@ export function extractHistoricalV25FraisGeneraux(sheet: Worksheet): {
         });
         dIdxByGroup[colGroup] += 1;
       });
-
-      rowNumber += 1;
     }
   });
 

@@ -262,8 +262,10 @@ export type HistoricalContratEntry = {
   montant: number;
 };
 
-const fgBoxStartRows0Based = [9, 18, 29, 40];
 const fgColGroupOffsets = [123, 128, 133]; // 0-based col index for "date" of colGroup 0/1/2
+const FG_BOX_DATA_ROWS_0BASED: [number, number][] = [
+  [9, 15], [18, 26], [29, 37], [41, 48],
+];
 
 const formatHistoricalFgDate = (value: unknown): string => {
   const parsed = parseHistoricalBudgetDate(value);
@@ -278,14 +280,9 @@ export function extractHistoricalFraisGeneraux(sheet: Worksheet): {
   const entries: HistoricalFgEntry[] = [];
   const contrats: HistoricalContratEntry[] = [];
 
-  fgBoxStartRows0Based.forEach((startRow, box) => {
-    let rowNumber = startRow;
+  FG_BOX_DATA_ROWS_0BASED.forEach(([startRow, endRow], box) => {
     const dIdxByGroup = [0, 0, 0];
-    while (rowNumber <= sheet.rowCount - 1) {
-      const firstColCell = getHistoricalBudgetCell(sheet, rowNumber, 123);
-      const firstColText = String(firstColCell?.text || firstColCell?.value || '').trim().toUpperCase();
-      if (firstColText.includes('TOTAL')) break;
-
+    for (let rowNumber = startRow; rowNumber <= endRow; rowNumber += 1) {
       fgColGroupOffsets.forEach((dateCol, colGroup) => {
         const montant = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, dateCol + 3));
         if (!montant || Number.isNaN(montant)) return;
@@ -311,8 +308,6 @@ export function extractHistoricalFraisGeneraux(sheet: Worksheet): {
       if (nom && montantContrat) {
         contrats.push({ dIdx: contrats.length, nom, montant: montantContrat });
       }
-
-      rowNumber += 1;
     }
   });
 
