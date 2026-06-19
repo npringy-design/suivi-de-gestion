@@ -17,6 +17,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - Correctif persistance import : `saveNow` déclenche une sauvegarde Supabase immédiate après confirmation de l'import (le debounce 900ms était annulé si l'utilisateur quittait avant qu'il ne se déclenche). tsc OK.
 - Fix bootstrap cloud : `applyCloudState` passe en merger (setAllData fonctionnel) + `cloudBootstrapDoneRef` bloque la sauvegarde auto pendant le bootstrap → données des mois importés conservées au rechargement. tsc OK.
 - Import historique Excel format V25 : parseur dédié `historicalV25Import.ts`, handler `handleHistoricalV25ExcelImport`, détection automatique schéma personnel, bouton distinct dans DashboardImportModal. tsc OK.
+- Correctif import V25 : suppression du filtre isFormulaCell inadapté au format V25 (dates directes, pas de formules). tsc OK.
 
 ---
 
