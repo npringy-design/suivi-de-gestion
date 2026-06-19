@@ -137,6 +137,25 @@ export function useDashboardImportHandlers({
   const pendingV25DemarquesRef = React.useRef<Array<{
     date: string; personnel: number; operationnel: number; explication: string;
   }>>([]);
+  const resetFgDataForMonth = (monthIndex: number) => {
+    for (let box = 0; box <= 3; box++) {
+      for (let colGroup = 0; colGroup <= 2; colGroup++) {
+        for (let dIdx = 0; dIdx <= 6; dIdx++) {
+          const key = `fg-data-${box}-${colGroup}-${dIdx}`;
+          updateDashboard(monthIndex, `${key}-0`, '');
+          updateDashboard(monthIndex, `${key}-1`, '');
+          updateDashboard(monthIndex, `${key}-2`, '');
+          updateDashboard(monthIndex, `${key}-3`, '');
+        }
+      }
+    }
+    for (let i = 0; i < 25; i++) {
+      const rowIndex = dayRows[i]?.index;
+      if (rowIndex === undefined) continue;
+      updateDashboard(monthIndex, `${rowIndex}-112`, '');
+      updateDashboard(monthIndex, `${rowIndex}-113`, '');
+    }
+  };
   const formatImportedNumber = (value: number, decimals = 2) => value !== 0 ? value.toFixed(decimals) : '';
   const formatImportedCurrencyLabel = (value: number, decimals = 2) => formatImportedNumber(value, decimals) || '-';
   const formatImportedIntegerLabel = (value: number) => formatImportedNumber(value, 0) || '-';
@@ -334,6 +353,7 @@ export function useDashboardImportHandlers({
         }
 
         // Import frais généraux et contrats mensualisés
+        resetFgDataForMonth(monthIndex);
         const { entries: fgEntries, contrats } = extractHistoricalFraisGeneraux(sheet);
         fgEntries.forEach(entry => {
           const key = `fg-data-${entry.box}-${entry.colGroup}-${entry.dIdx}`;
@@ -502,6 +522,7 @@ export function useDashboardImportHandlers({
           });
         }
 
+        resetFgDataForMonth(monthIndex);
         const { entries: fgEntries, contrats } = extractHistoricalV25FraisGeneraux(sheet);
         fgEntries.forEach(entry => {
           const key = `fg-data-${entry.box}-${entry.colGroup}-${entry.dIdx}`;

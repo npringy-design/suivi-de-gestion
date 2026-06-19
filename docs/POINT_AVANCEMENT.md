@@ -21,6 +21,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - Correctif parsing V25 : parseHistoricalBudgetNumber extrait désormais le résultat des formules ExcelJS ({ result: number }) avant de tomber sur String(). Corrige CA midi/soir et couverts vides à l'import. tsc OK.
 - Correction colonnes import V25 : budget (8/9/10/11), réalisé CA (20/23/27/29), couverts réalisés (42/44), coût matière mapping fixe (cols 67-79), contrats V25 désactivés (montants tous à 0), diagnostic temporaire supprimé. tsc OK.
 - FG V25+V26 : remplacement boucle while par itération sur plages de rows fixes [9-15, 18-26, 29-37, 41-48] — suppression de la détection textuelle de fin de box. tsc OK.
+- Reset complet des cellules FG avant import (box 0-3, colGroup 0-2, dIdx 0-6) pour éliminer les données corrompues des anciens imports. tsc OK.
 
 ---
 
