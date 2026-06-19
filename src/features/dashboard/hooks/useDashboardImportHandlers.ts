@@ -545,6 +545,24 @@ export function useDashboardImportHandlers({
       updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle');
     });
 
+    // Reset complet de toutes les colonnes V25 pour chaque ligne importée (garantit l'idempotence)
+    const V25_REALISE_COLS = [17, 18, 19, 20, 25, 27, 34];
+    const V25_DEMARQUE_COLS = [39, 41, 44];
+    historicalV25Previews.forEach(item => {
+      V25_REALISE_COLS.forEach(col => {
+        updateDashboard(item.month, item.rowIndex + '-' + col, '');
+      });
+      V25_DEMARQUE_COLS.forEach(col => {
+        updateDashboard(item.month, item.rowIndex + '-' + col, '');
+      });
+      historicalCostMatterSupplierCols.forEach(col => {
+        updateDashboard(item.month, item.rowIndex + '-' + col, '');
+      });
+      [...historicalPayrollAllCols, ...historicalPayrollAllGlobalCols].forEach(col => {
+        updateDashboard(item.month, item.rowIndex + '-' + col, '');
+      });
+    });
+
     historicalV25Previews.forEach(item => {
       // Réalisé CA
       updateDashboard(item.month, item.rowIndex + '-17', formatImportedNumber(item.realiseVae));
