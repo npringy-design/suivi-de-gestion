@@ -34,12 +34,20 @@ export type DashboardImportModalProps = {
   handleSalaryPayrollImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   salaryImportStatus: string;
 
-  // Budget historique Excel
+  // Budget historique Excel V26
   handleHistoricalBudgetExcelImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   historicalBudgetStatus: string;
   historicalBudgetPreviews: HistoricalBudgetPreview[];
   setHistoricalBudgetPreviews: React.Dispatch<React.SetStateAction<HistoricalBudgetPreview[]>>;
   applyHistoricalBudgetExcelImport: () => void;
+
+  // Budget historique Excel V25 (N-1)
+  handleHistoricalV25ExcelImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  historicalV25Status: string;
+  historicalV25Previews: HistoricalBudgetPreview[];
+  setHistoricalV25Previews: React.Dispatch<React.SetStateAction<HistoricalBudgetPreview[]>>;
+  applyHistoricalV25ExcelImport: () => void;
+  year: number;
 
   // Statut / aperçu generiques
   importStatus: string;
@@ -69,6 +77,12 @@ export default function DashboardImportModal({
   historicalBudgetPreviews,
   setHistoricalBudgetPreviews,
   applyHistoricalBudgetExcelImport,
+  handleHistoricalV25ExcelImport,
+  historicalV25Status,
+  historicalV25Previews,
+  setHistoricalV25Previews,
+  applyHistoricalV25ExcelImport,
+  year,
   importStatus,
   importPreview,
 }: DashboardImportModalProps) {
@@ -135,12 +149,31 @@ export default function DashboardImportModal({
             <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #f59e0b', borderRadius: 10, background: '#fffbeb' }}>
               <span style={{ fontSize: 12, fontWeight: 900, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.04em' }}>Budget historique Excel</span>
               <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                Lit uniquement le mois affiché et importe les prévisions couverts + TM ainsi que le réalisé CA/couverts. Les totaux restent calculés par l'application.
+                Importe tous les mois du classeur : prévisions couverts + TM, réalisé CA/couverts, coût matière, personnel, démarques et frais généraux.
+              </span>
+              <span style={{ fontSize: 11, color: '#92400e', fontStyle: 'italic' }}>
+                Année cible : <strong>{year}</strong>
               </span>
               <input
                 type="file"
                 accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                 onChange={handleHistoricalBudgetExcelImport}
+                style={{ fontSize: 13, color: '#0f172a' }}
+              />
+            </label>
+
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #a78bfa', borderRadius: 10, background: '#f5f3ff' }}>
+              <span style={{ fontSize: 12, fontWeight: 900, color: '#5b21b6', textTransform: 'uppercase', letterSpacing: '.04em' }}>Historique Excel N-1 (V25)</span>
+              <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
+                Format V25 : importe le réalisé CA midi/soir/limo, couverts, coût matière, personnel, démarques et frais généraux sur tous les mois du classeur.
+              </span>
+              <span style={{ fontSize: 11, color: '#5b21b6', fontStyle: 'italic' }}>
+                Année cible : <strong>{year}</strong>
+              </span>
+              <input
+                type="file"
+                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                onChange={handleHistoricalV25ExcelImport}
                 style={{ fontSize: 13, color: '#0f172a' }}
               />
             </label>
@@ -178,6 +211,42 @@ export default function DashboardImportModal({
                   </div>
                 ))}
                 {historicalBudgetPreviews.length > 40 && <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>+ {historicalBudgetPreviews.length - 40} lignes non affichees dans l'aperçu</div>}
+              </div>
+            </div>
+          )}
+
+          {historicalV25Status && (
+            <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: historicalV25Status.startsWith('Erreur') ? '#fef2f2' : '#f5f3ff', border: '1px solid ' + (historicalV25Status.startsWith('Erreur') ? '#fecaca' : '#c4b5fd'), color: historicalV25Status.startsWith('Erreur') ? '#991b1b' : '#5b21b6', fontSize: 13, fontWeight: 800 }}>
+              {historicalV25Status}
+            </div>
+          )}
+
+          {historicalV25Previews.length > 0 && (
+            <div style={{ marginTop: 12, display: 'grid', gap: 10, padding: 12, border: '1px solid #c4b5fd', borderRadius: 10, background: '#f5f3ff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 950, color: '#5b21b6', textTransform: 'uppercase', letterSpacing: '.04em' }}>Prévisualisation historique V25</div>
+                  <div style={{ marginTop: 3, fontSize: 12, color: '#64748b', fontWeight: 700 }}>
+                    {historicalV25Previews.length} jours · CA total {formatImportedCurrencyLabel(historicalV25Previews.reduce((sum, item) => sum + item.caTotal, 0))} · Couverts {formatImportedIntegerLabel(historicalV25Previews.reduce((sum, item) => sum + item.couvertsTotal, 0))}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => setHistoricalV25Previews([])} style={{ height: 34, border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', color: '#334155', fontSize: 12, fontWeight: 900, cursor: 'pointer', padding: '0 12px' }}>Annuler</button>
+                  <button type="button" onClick={applyHistoricalV25ExcelImport} style={{ height: 34, border: 'none', borderRadius: 8, background: '#5b21b6', color: '#fff', fontSize: 12, fontWeight: 950, cursor: 'pointer', padding: '0 14px' }}>Valider l'import V25</button>
+                </div>
+              </div>
+              <div style={{ maxHeight: 220, overflow: 'auto', display: 'grid', gap: 6 }}>
+                {historicalV25Previews.slice(0, 40).map(item => (
+                  <div key={item.id} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '120px 90px repeat(4, minmax(86px, 1fr))', gap: 8, alignItems: 'center', padding: '8px 10px', border: '1px solid #c4b5fd', borderRadius: 8, background: '#fff' }}>
+                    <div style={{ fontSize: 12, fontWeight: 900, color: '#0f172a' }}>{monthNames[item.month]} {item.day}</div>
+                    <div style={{ fontSize: 11, fontWeight: 850, color: '#5b21b6' }}>{item.sheetName}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800 }}>CA midi {formatImportedCurrencyLabel(item.realiseMidi)}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800 }}>CA soir {formatImportedCurrencyLabel(item.realiseSoir)}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800 }}>Cts midi {formatImportedIntegerLabel(item.realiseCouvertsMidi)}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800 }}>Cts soir {formatImportedIntegerLabel(item.realiseCouvertsSoir)}</div>
+                  </div>
+                ))}
+                {historicalV25Previews.length > 40 && <div style={{ fontSize: 12, fontWeight: 800, color: '#5b21b6' }}>+ {historicalV25Previews.length - 40} lignes non affichees dans l'aperçu</div>}
               </div>
             </div>
           )}

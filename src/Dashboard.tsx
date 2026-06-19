@@ -175,6 +175,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setHistoricalBudgetStatus,
     historicalBudgetPreviews,
     setHistoricalBudgetPreviews,
+    historicalV25Status,
+    setHistoricalV25Status,
+    historicalV25Previews,
+    setHistoricalV25Previews,
     salaryImportStatus,
     setSalaryImportStatus,
     resetDashboardImportState,
@@ -545,6 +549,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const {
     handleHistoricalBudgetExcelImport,
     applyHistoricalBudgetExcelImport,
+    handleHistoricalV25ExcelImport,
+    applyHistoricalV25ExcelImport,
     handleDailyRealiseImport,
     updateCaisseImportPreview,
     applyCaisseImport,
@@ -570,6 +576,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     globalData,
     monthNames,
     historicalBudgetPreviews,
+    historicalV25Previews,
     setImportStatus,
     setImportPreview,
     setCaisseImportPreviews,
@@ -577,6 +584,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setInvoiceImportStatus,
     setHistoricalBudgetPreviews,
     setHistoricalBudgetStatus,
+    setHistoricalV25Previews,
+    setHistoricalV25Status,
     setSalaryImportStatus,
     handleCellChange,
     updateDashboard,
@@ -1142,6 +1151,12 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           historicalBudgetPreviews={historicalBudgetPreviews}
           setHistoricalBudgetPreviews={setHistoricalBudgetPreviews}
           applyHistoricalBudgetExcelImport={applyHistoricalBudgetExcelImport}
+          handleHistoricalV25ExcelImport={handleHistoricalV25ExcelImport}
+          historicalV25Status={historicalV25Status}
+          historicalV25Previews={historicalV25Previews}
+          setHistoricalV25Previews={setHistoricalV25Previews}
+          applyHistoricalV25ExcelImport={applyHistoricalV25ExcelImport}
+          year={year}
           importStatus={importStatus}
           importPreview={importPreview}
         />

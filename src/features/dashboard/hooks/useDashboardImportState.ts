@@ -15,6 +15,8 @@ export function useDashboardImportState() {
   const [invoiceImportPreviews, setInvoiceImportPreviews] = useState<InvoiceImportPreview[]>([]);
   const [historicalBudgetStatus, setHistoricalBudgetStatus] = useState('');
   const [historicalBudgetPreviews, setHistoricalBudgetPreviews] = useState<HistoricalBudgetPreview[]>([]);
+  const [historicalV25Status, setHistoricalV25Status] = useState('');
+  const [historicalV25Previews, setHistoricalV25Previews] = useState<HistoricalBudgetPreview[]>([]);
   const [salaryImportStatus, setSalaryImportStatus] = useState('');
 
   const resetDashboardImportState = () => {
@@ -41,6 +43,10 @@ export function useDashboardImportState() {
     setHistoricalBudgetStatus,
     historicalBudgetPreviews,
     setHistoricalBudgetPreviews,
+    historicalV25Status,
+    setHistoricalV25Status,
+    historicalV25Previews,
+    setHistoricalV25Previews,
     salaryImportStatus,
     setSalaryImportStatus,
     resetDashboardImportState,

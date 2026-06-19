@@ -47,6 +47,13 @@ import {
   historicalPayrollAllGlobalCols,
   sumHistoricalPayrollValues,
 } from '@/features/dashboard/importHelpers/payrollImport';
+import {
+  extractHistoricalV25Demarques,
+  extractHistoricalV25FraisGeneraux,
+  getHistoricalV25RowValues,
+  getHistoricalCostMatterColumnMap as getV25CostMatterColumnMap,
+  getHistoricalPayrollColumnMaps as getV25PayrollColumnMaps,
+} from '@/features/dashboard/importHelpers/historicalV25Import';
 
 type DayRowEntry = { row: DashboardRow; index: number };
 type ImportPreviewItem = { label: string; value: string };
@@ -67,6 +74,7 @@ type UseDashboardImportHandlersParams = {
   globalData: Record<number, MonthData>;
   monthNames: string[];
   historicalBudgetPreviews: HistoricalBudgetPreview[];
+  historicalV25Previews: HistoricalBudgetPreview[];
   setImportStatus: (status: string) => void;
   setImportPreview: SetState<ImportPreviewItem[]>;
   setCaisseImportPreviews: SetState<CaisseImportPreview[]>;
@@ -74,6 +82,8 @@ type UseDashboardImportHandlersParams = {
   setInvoiceImportStatus: (status: string) => void;
   setHistoricalBudgetPreviews: SetState<HistoricalBudgetPreview[]>;
   setHistoricalBudgetStatus: (status: string) => void;
+  setHistoricalV25Previews: SetState<HistoricalBudgetPreview[]>;
+  setHistoricalV25Status: (status: string) => void;
   setSalaryImportStatus: (status: string) => void;
   handleCellChange: (rowIndex: number, colIndex: number, value: string) => void;
   updateDashboard: (month: number, cellKey: string, value: string) => void;
@@ -101,6 +111,7 @@ export function useDashboardImportHandlers({
   globalData,
   monthNames,
   historicalBudgetPreviews,
+  historicalV25Previews,
   setImportStatus,
   setImportPreview,
   setCaisseImportPreviews,
@@ -108,6 +119,8 @@ export function useDashboardImportHandlers({
   setInvoiceImportStatus,
   setHistoricalBudgetPreviews,
   setHistoricalBudgetStatus,
+  setHistoricalV25Previews,
+  setHistoricalV25Status,
   setSalaryImportStatus,
   handleCellChange,
   updateDashboard,
@@ -120,6 +133,9 @@ export function useDashboardImportHandlers({
   personnelInfos,
 }: UseDashboardImportHandlersParams) {
   const pendingDemarquesRef = React.useRef<Array<{
+    date: string; personnel: number; operationnel: number; explication: string;
+  }>>([]);
+  const pendingV25DemarquesRef = React.useRef<Array<{
     date: string; personnel: number; operationnel: number; explication: string;
   }>>([]);
   const formatImportedNumber = (value: number, decimals = 2) => value !== 0 ? value.toFixed(decimals) : '';
@@ -407,6 +423,176 @@ export function useDashboardImportHandlers({
     setHistoricalBudgetStatus(historicalBudgetPreviews.length + ' jour(s) prévision couverts/TM importés dans ' + monthNames[month] + ' ' + year + '. Les CA seront recalculés automatiquement.');
     setHistoricalBudgetPreviews([]);
   };
+
+  // ─── Import budget V25 ──────────────────────────────────────────────────────
+
+  const handleHistoricalV25ExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setHistoricalV25Status('Lecture locale du budget historique Excel V25 — tous les mois du classeur...');
+
+    try {
+      const { Workbook } = await import('exceljs');
+      const workbook = new Workbook();
+      await workbook.xlsx.load(await file.arrayBuffer());
+
+      const allDemarques: typeof pendingV25DemarquesRef.current = [];
+      for (let mi = 0; mi < 12; mi++) {
+        const sheetNameDem = findBudgetSheetName(workbook, mi, year);
+        if (!sheetNameDem) continue;
+        const sheetDem = workbook.getWorksheet(sheetNameDem);
+        if (sheetDem) allDemarques.push(...extractHistoricalV25Demarques(sheetDem));
+      }
+      pendingV25DemarquesRef.current = allDemarques;
+
+      const previews: HistoricalBudgetPreview[] = [];
+      const matchedSheets: string[] = [];
+      let scannedDateRows = 0;
+
+      for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+        const sheetName = findBudgetSheetName(workbook, monthIndex, year);
+        if (!sheetName) continue;
+        matchedSheets.push(sheetName);
+        const sheet = workbook.getWorksheet(sheetName);
+        if (!sheet) continue;
+        const range = { rowCount: sheet.rowCount, columnCount: sheet.columnCount };
+        const costMatterColumnMap = getV25CostMatterColumnMap(sheet, range);
+        const payrollColumnMaps = getV25PayrollColumnMaps(sheet, range);
+
+        for (let rowNumber = 0; rowNumber <= range.rowCount - 1; rowNumber += 1) {
+          const dateCell = getHistoricalBudgetCell(sheet, rowNumber, 0);
+          const parsedDate = parseHistoricalBudgetCellDate(dateCell);
+          if (!parsedDate) continue;
+          const cellValue = dateCell?.value;
+          const isFormulaCell = cellValue != null && typeof cellValue === 'object' && 'result' in (cellValue as object);
+          if (!isFormulaCell) continue;
+          scannedDateRows += 1;
+          if (parsedDate.getFullYear() !== year || parsedDate.getMonth() !== monthIndex) continue;
+          const day = parsedDate.getDate();
+          const rowIndex = getDashboardRowIndexForDay(year, monthIndex, day);
+          if (rowIndex < 0) continue;
+
+          const v25Values = getHistoricalV25RowValues(sheet, rowNumber, costMatterColumnMap, payrollColumnMaps);
+          const caTotal = v25Values.realiseMidi + v25Values.realiseSoir + v25Values.realiseLimo;
+          const couvertsTotal = v25Values.realiseCouvertsMidi + v25Values.realiseCouvertsSoir;
+
+          if (caTotal === 0 && couvertsTotal === 0 && v25Values.costMatterTotal === 0 && v25Values.payrollTotalHours === 0) continue;
+
+          previews.push({
+            id: sheetName + '-' + rowNumber + '-' + day,
+            sheetName,
+            month: monthIndex,
+            day,
+            rowIndex,
+            caMidi: v25Values.realiseMidi,
+            caSoir: v25Values.realiseSoir,
+            caTotal,
+            couvertsMidi: 0,
+            tmMidi: 0,
+            couvertsSoir: 0,
+            tmSoir: 0,
+            couvertsTotal,
+            realiseVae: 0,
+            realiseMidi: v25Values.realiseMidi,
+            realiseSoir: v25Values.realiseSoir,
+            realiseLimo: v25Values.realiseLimo,
+            realiseCouvertsMidi: v25Values.realiseCouvertsMidi,
+            realiseCouvertsSoir: v25Values.realiseCouvertsSoir,
+            realiseCouvertsLimo: 0,
+            costMatterValues: v25Values.costMatterValues,
+            costMatterTotal: v25Values.costMatterTotal,
+            payrollValues: v25Values.payrollValues,
+            payrollTotalHours: v25Values.payrollTotalHours,
+            status: caTotal > 0 ? 'Réalisé V25 détecté' : 'Données partielles V25 détectées',
+          });
+        }
+
+        const { entries: fgEntries, contrats } = extractHistoricalV25FraisGeneraux(sheet);
+        fgEntries.forEach(entry => {
+          const key = `fg-data-${entry.box}-${entry.colGroup}-${entry.dIdx}`;
+          updateDashboard(monthIndex, `${key}-0`, entry.date);
+          updateDashboard(monthIndex, `${key}-1`, entry.fournisseur);
+          updateDashboard(monthIndex, `${key}-2`, entry.motif);
+          updateDashboard(monthIndex, `${key}-3`, entry.montant.toFixed(2));
+        });
+        contrats.forEach(contrat => {
+          const rowIndex = dayRows[contrat.dIdx]?.index;
+          if (rowIndex === undefined) return;
+          updateDashboard(monthIndex, `${rowIndex}-112`, contrat.nom);
+          updateDashboard(monthIndex, `${rowIndex}-113`, contrat.montant.toFixed(2));
+        });
+      }
+
+      setHistoricalV25Previews(previews);
+      setImportPreview([]);
+      setCaisseImportPreviews([]);
+      setInvoiceImportPreviews([]);
+      setHistoricalV25Status(previews.length > 0
+        ? `Budget V25 — ${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.`
+        : `Budget V25 — Aucun réalisé trouvé. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`);
+    } catch (error) {
+      setHistoricalV25Status('Erreur import budget V25 : ' + (error instanceof Error ? error.message : 'lecture impossible'));
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const applyHistoricalV25ExcelImport = async () => {
+    const usedColsByMonth = new Map<number, Set<number>>();
+    historicalV25Previews.forEach(item => {
+      if (!usedColsByMonth.has(item.month)) usedColsByMonth.set(item.month, new Set());
+      Object.keys(item.payrollValues || {}).forEach(col => usedColsByMonth.get(item.month)!.add(Number(col)));
+    });
+    usedColsByMonth.forEach((cols, monthIdx) => {
+      const usesGlobal = historicalPayrollAllGlobalCols.some(col => cols.has(col));
+      updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle');
+    });
+
+    historicalV25Previews.forEach(item => {
+      // Réalisé CA
+      updateDashboard(item.month, item.rowIndex + '-17', formatImportedNumber(item.realiseVae));
+      updateDashboard(item.month, item.rowIndex + '-18', formatImportedNumber(item.realiseMidi));
+      updateDashboard(item.month, item.rowIndex + '-19', formatImportedNumber(item.realiseSoir));
+      updateDashboard(item.month, item.rowIndex + '-20', formatImportedNumber(item.realiseLimo));
+      updateDashboard(item.month, item.rowIndex + '-25', formatImportedNumber(item.realiseCouvertsMidi, 0));
+      updateDashboard(item.month, item.rowIndex + '-27', formatImportedNumber(item.realiseCouvertsSoir, 0));
+      updateDashboard(item.month, item.rowIndex + '-34', formatImportedNumber(item.realiseCouvertsLimo, 0));
+      // Coût matière
+      historicalCostMatterSupplierCols.forEach(targetCol => {
+        updateDashboard(item.month, item.rowIndex + '-' + targetCol, '');
+      });
+      Object.entries(item.costMatterValues || {}).forEach(([targetCol, amount]) => {
+        updateDashboard(item.month, item.rowIndex + '-' + targetCol, formatImportedNumber(amount));
+      });
+      // Personnel
+      [...historicalPayrollAllCols, ...historicalPayrollAllGlobalCols].forEach(targetCol => {
+        updateDashboard(item.month, item.rowIndex + '-' + targetCol, '');
+      });
+      Object.entries(item.payrollValues || {}).forEach(([targetCol, hourValue]) => {
+        updateDashboard(item.month, item.rowIndex + '-' + targetCol, String(hourValue));
+      });
+    });
+
+    // Démarques
+    pendingV25DemarquesRef.current.forEach(dem => {
+      const [demYear, demMonth, demDay] = dem.date.split('-').map(Number);
+      if (demYear !== year) return;
+      const demMonthIndex = demMonth - 1;
+      const rowIndex = getDashboardRowIndexForDay(year, demMonthIndex, demDay);
+      if (rowIndex < 0) return;
+      if (dem.personnel > 0) updateDashboard(demMonthIndex, `${rowIndex}-39`, dem.personnel.toFixed(2));
+      if (dem.operationnel > 0) updateDashboard(demMonthIndex, `${rowIndex}-41`, dem.operationnel.toFixed(2));
+      if (dem.explication) updateDashboard(demMonthIndex, `${rowIndex}-44`, dem.explication);
+    });
+    pendingV25DemarquesRef.current = [];
+
+    const importedMonths = [...new Set(historicalV25Previews.map(item => item.month))];
+    markMonthsAsLoaded(year, importedMonths);
+    await saveNow();
+    setHistoricalV25Status(historicalV25Previews.length + ' jour(s) V25 importés dans ' + year + '. Les CA seront recalculés automatiquement.');
+    setHistoricalV25Previews([]);
+  };
+
   const parseInvoiceNumber = (value: string) => {
     const cleaned = value.replace(/[^\d,.-]/g, '').replace(/\s/g, '');
     if (cleaned.includes(',')) {
@@ -1224,6 +1410,8 @@ export function useDashboardImportHandlers({
   return {
     handleHistoricalBudgetExcelImport,
     applyHistoricalBudgetExcelImport,
+    handleHistoricalV25ExcelImport,
+    applyHistoricalV25ExcelImport,
     handleDailyRealiseImport,
     updateCaisseImportPreview,
     applyCaisseImport,
