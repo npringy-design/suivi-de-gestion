@@ -521,28 +521,35 @@ export function useDashboardImportHandlers({
         });
       }
 
-      // ── DIAGNOSTIC TEMPORAIRE : structure des lignes autour de la 1re date ──
+      // ── DIAGNOSTIC TEMPORAIRE : 1re ligne avec valeur numérique en col1 ──
       let diagMsg = '';
       diagLoop: for (let mi2 = 0; mi2 < 12; mi2++) {
         const sn2 = findBudgetSheetName(workbook, mi2, year);
         if (!sn2) continue;
         const sh2 = workbook.getWorksheet(sn2);
         if (!sh2) continue;
+        const fmtCell = (row: number) => V25_DIAG_COLS.map(c => {
+          const cell = sh2.getCell(row + 1, c + 1);
+          const v = cell.value;
+          if (v === null || v === undefined) return `c${c}:_`;
+          if (typeof v === 'number') return `c${c}:${v}`;
+          if (v instanceof Date) return `c${c}:DATE`;
+          if (typeof v === 'object' && 'result' in (v as object)) {
+            const r = (v as {result:unknown}).result;
+            return `c${c}:=${r instanceof Date ? 'DATE' : r}`;
+          }
+          return `c${c}:"${String(cell.text||v).slice(0,8)}"`;
+        }).join('|');
         for (let rn = 0; rn <= sh2.rowCount - 1; rn++) {
+          // Cherche la première ligne où col0=date ET col1 est numérique (vraie donnée)
           const dc = getHistoricalBudgetCell(sh2, rn, 0);
           const pd = parseHistoricalBudgetCellDate(dc);
           if (!pd || pd.getFullYear() !== year || pd.getMonth() !== mi2) continue;
-          const fmtCell = (sh: typeof sh2, row: number) => V25_DIAG_COLS.map(c => {
-            const cell = sh.getCell(row + 1, c + 1);
-            const v = cell.value;
-            if (v === null || v === undefined) return `c${c}:_`;
-            if (typeof v === 'number') return `c${c}:${v}`;
-            if (v instanceof Date) return `c${c}:DATE`;
-            if (typeof v === 'object' && 'result' in (v as object)) return `c${c}:=${(v as {result:unknown}).result}`;
-            return `c${c}:"${String(cell.text||v).slice(0,8)}"`;
-          }).join('|');
-          const lines = Array.from({length: 5}, (_, i) => `L${rn+i}: ${fmtCell(sh2, rn + i)}`);
-          diagMsg = `[DIAG feuille=${sn2} à partir de L${rn}] ${lines.join(' §§ ')}`;
+          const v1 = sh2.getCell(rn + 1, 2).value; // col1
+          const isNum = (v: unknown): boolean => typeof v === 'number'
+            || (v !== null && typeof v === 'object' && 'result' in (v as object) && typeof (v as {result:unknown}).result === 'number');
+          if (!isNum(v1)) continue;
+          diagMsg = `[DIAG DONNÉES feuille=${sn2} L${rn} jour=${pd.getDate()}/${pd.getMonth()+1}] ${fmtCell(rn)} §§ L${rn+1}: ${fmtCell(rn+1)}`;
           break diagLoop;
         }
       }
