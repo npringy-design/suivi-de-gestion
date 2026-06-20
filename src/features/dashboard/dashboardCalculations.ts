@@ -141,18 +141,31 @@ export function computeDashboardData(
     const data: Record<string, string> = { ...cellData };
     const isGlobalSchema = personnelSchema === 'global';
 
-    // Index N-1 par semaine ISO + jour de semaine (computed from raw inputs)
-    const nMinus1ByWeekDay = new Map<string, { caBudget: number; cvtsBudget: number; caRealise: number; cvtsRealise: number }>();
+    // Index N-1 par date exacte (YYYY-M-D)
+    // Le jour cible N-1 est calculé par "Nième occurrence du même jour de semaine dans le même mois de l'année N-1".
+    // Cela gère le débordement de fin de mois : le 5ème samedi de janvier 2026 pointe vers le 1er février 2025.
+    const getN1TargetDate = (currentDate: Date): Date => {
+      const year = currentDate.getFullYear() - 1;
+      const month = currentDate.getMonth();
+      const weekOfMonth = Math.ceil(currentDate.getDate() / 7); // 1=jours 1-7, 2=8-14, etc.
+      const targetDow = currentDate.getDay(); // 0=dimanche … 6=samedi
+      const firstOfMonth = new Date(year, month, 1);
+      const daysToFirst = (targetDow - firstOfMonth.getDay() + 7) % 7;
+      return new Date(year, month, 1 + daysToFirst + (weekOfMonth - 1) * 7);
+    };
+
+    const nMinus1ByDate = new Map<string, { caBudget: number; cvtsBudget: number; caRealise: number; cvtsRealise: number }>();
     if (nMinus1Data) {
       nMinus1Data.rows.forEach((row, rIdx) => {
         if (row.type !== 'day' || !row.dateObj) return;
-        const key = `${getISOWeek(row.dateObj)}-${row.dateObj.getDay()}`;
+        const d = row.dateObj;
+        const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
         const cd = nMinus1Data.cellData;
         const cvtsMidiN1 = parseMoneyValue(cd[`${rIdx}-6`]);
         const moyMidiN1 = parseMoneyValue(cd[`${rIdx}-7`]);
         const cvtsSoirN1 = parseMoneyValue(cd[`${rIdx}-8`]);
         const moySoirN1 = parseMoneyValue(cd[`${rIdx}-9`]);
-        nMinus1ByWeekDay.set(key, {
+        nMinus1ByDate.set(dateKey, {
           caBudget: cvtsMidiN1 * moyMidiN1 + cvtsSoirN1 * moySoirN1,
           cvtsBudget: cvtsMidiN1 + cvtsSoirN1,
           caRealise: parseMoneyValue(cd[`${rIdx}-17`]) + parseMoneyValue(cd[`${rIdx}-18`]) + parseMoneyValue(cd[`${rIdx}-19`]),
@@ -421,10 +434,11 @@ export function computeDashboardData(
           }
         }
 
-        // ECART VS N-1 — correspondance semaine ISO + jour de semaine
+        // ECART VS N-1 — Nième occurrence du même jour de semaine dans le mois en N-1
         if (nMinus1Data && row.dateObj) {
-          const key = `${getISOWeek(row.dateObj)}-${row.dateObj.getDay()}`;
-          const n1 = nMinus1ByWeekDay.get(key);
+          const n1Date = getN1TargetDate(row.dateObj);
+          const n1Key = `${n1Date.getFullYear()}-${n1Date.getMonth()}-${n1Date.getDate()}`;
+          const n1 = nMinus1ByDate.get(n1Key);
           if (n1) {
             const caBudgetN = parseMoneyValue(data[`${rIdx}-3`]);
             if (n1.caBudget > 0) {
