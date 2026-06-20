@@ -73,6 +73,7 @@ interface DashboardProps {
 export default function Dashboard({ initialMonth, year, onBack }: DashboardProps) {
   const {
     data: globalData,
+    allData,
     updateDashboard,
     updateTheorique,
     updateBilanSynthese,
@@ -343,10 +344,25 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   // Calculate totals
-  const calculatedData = useMemo(
-    () => computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, globalData[month]?.personnelSchema),
-    [cellData, globalData[month]?.salariesConfig, globalData[month]?.personnelSchema],
-  );
+  const calculatedData = useMemo(() => {
+    const nMinus1MonthData = allData[year - 1]?.[month];
+    let nMinus1Data: { cellData: Record<string, string>; rows: DashboardRow[] } | undefined;
+    if (nMinus1MonthData?.dashboard) {
+      const numDaysN1 = new Date(year - 1, month + 1, 0).getDate();
+      const n1Rows: DashboardRow[] = [];
+      let weekCountN1 = 1;
+      for (let i = 1; i <= numDaysN1; i++) {
+        const date = new Date(year - 1, month, i);
+        n1Rows.push({ type: 'day', label: '', dateObj: date, dayIndex: i, weekIndex: weekCountN1 });
+        if (date.getDay() === 0) { n1Rows.push({ type: 'total', label: '', weekIndex: weekCountN1 }); weekCountN1++; }
+      }
+      if (new Date(year - 1, month, numDaysN1).getDay() !== 0) n1Rows.push({ type: 'total', label: '', weekIndex: weekCountN1 });
+      n1Rows.push({ type: 'fg_box4_total', label: '' });
+      n1Rows.push({ type: 'month_total', label: '' });
+      nMinus1Data = { cellData: nMinus1MonthData.dashboard, rows: n1Rows };
+    }
+    return computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, globalData[month]?.personnelSchema, nMinus1Data);
+  }, [cellData, globalData[month]?.salariesConfig, globalData[month]?.personnelSchema, allData[year - 1]?.[month]]);
 
   const todayMarker = useMemo(() => {
     const now = new Date();

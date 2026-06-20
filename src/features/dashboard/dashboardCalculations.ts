@@ -12,6 +12,14 @@ export type FgBoxLayout =
   | { type: 'subheader'; box: number }
   | null;
 
+const getISOWeek = (date: Date): number => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+  const week1 = new Date(d.getFullYear(), 0, 4);
+  return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+};
+
 export const isDateInRange = (date: Date, startStr: string, endStr: string): boolean => {
   const start = new Date(startStr);
   const end = new Date(endStr);
@@ -128,9 +136,30 @@ export function computeDashboardData(
   dynamicColumns: DashboardColumn[],
   salariesConfig: Record<string, SalarieRow[]> | undefined,
   personnelSchema?: PersonnelSchema,
+  nMinus1Data?: { cellData: Record<string, string>; rows: DashboardRow[] },
 ): Record<string, string> {
     const data: Record<string, string> = { ...cellData };
     const isGlobalSchema = personnelSchema === 'global';
+
+    // Index N-1 par semaine ISO + jour de semaine (computed from raw inputs)
+    const nMinus1ByWeekDay = new Map<string, { caBudget: number; cvtsBudget: number; caRealise: number; cvtsRealise: number }>();
+    if (nMinus1Data) {
+      nMinus1Data.rows.forEach((row, rIdx) => {
+        if (row.type !== 'day' || !row.dateObj) return;
+        const key = `${getISOWeek(row.dateObj)}-${row.dateObj.getDay()}`;
+        const cd = nMinus1Data.cellData;
+        const cvtsMidiN1 = parseMoneyValue(cd[`${rIdx}-6`]);
+        const moyMidiN1 = parseMoneyValue(cd[`${rIdx}-7`]);
+        const cvtsSoirN1 = parseMoneyValue(cd[`${rIdx}-8`]);
+        const moySoirN1 = parseMoneyValue(cd[`${rIdx}-9`]);
+        nMinus1ByWeekDay.set(key, {
+          caBudget: cvtsMidiN1 * moyMidiN1 + cvtsSoirN1 * moySoirN1,
+          cvtsBudget: cvtsMidiN1 + cvtsSoirN1,
+          caRealise: parseMoneyValue(cd[`${rIdx}-17`]) + parseMoneyValue(cd[`${rIdx}-18`]) + parseMoneyValue(cd[`${rIdx}-19`]),
+          cvtsRealise: parseMoneyValue(cd[`${rIdx}-25`]) + parseMoneyValue(cd[`${rIdx}-27`]),
+        });
+      });
+    }
     let cumulCA = 0;
     let cumulCvts = 0;
     let cumulRealiseCA = 0;
@@ -385,6 +414,34 @@ export function computeDashboardData(
               const pctReal = (coutGlobalReal / realiseTotalJour) * 100;
               const pctProj = (coutGlobalProj / realiseTotalJour) * 100;
               data[`${rIdx}-92`] = (pctReal - pctProj).toFixed(2) + '%';
+            }
+          }
+        }
+
+        // ECART VS N-1 — correspondance semaine ISO + jour de semaine
+        if (nMinus1Data && row.dateObj) {
+          const key = `${getISOWeek(row.dateObj)}-${row.dateObj.getDay()}`;
+          const n1 = nMinus1ByWeekDay.get(key);
+          if (n1) {
+            const caBudgetN = parseMoneyValue(data[`${rIdx}-3`]);
+            if (n1.caBudget > 0) {
+              data[`${rIdx}-5`] = (((caBudgetN - n1.caBudget) / n1.caBudget) * 100).toFixed(2);
+            }
+            const cvtsBudgetN = parseMoneyValue(data[`${rIdx}-10`]);
+            if (n1.cvtsBudget > 0) {
+              data[`${rIdx}-13`] = (((cvtsBudgetN - n1.cvtsBudget) / n1.cvtsBudget) * 100).toFixed(2);
+            }
+            const caRealiseN = parseMoneyValue(data[`${rIdx}-21`]);
+            if (n1.caRealise > 0) {
+              const ecartCA = caRealiseN - n1.caRealise;
+              data[`${rIdx}-118`] = ecartCA.toFixed(2);
+              data[`${rIdx}-119`] = ((ecartCA / n1.caRealise) * 100).toFixed(2);
+            }
+            const cvtsRealiseN = parseMoneyValue(data[`${rIdx}-29`]);
+            if (n1.cvtsRealise > 0) {
+              const ecartCvts = cvtsRealiseN - n1.cvtsRealise;
+              data[`${rIdx}-123`] = ecartCvts.toFixed(2);
+              data[`${rIdx}-124`] = ((ecartCvts / n1.cvtsRealise) * 100).toFixed(2);
             }
           }
         }

@@ -25,6 +25,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - Fix reset FG : borne dIdx corrigée de 6 à 9 pour correspondre au calcul des totaux. tsc OK.
 - FG V26 : détection dynamique des offsets de colonnes par recherche de 'DATE' en row 8 (suppression des offsets hardcodés [123,128,133] invalides pour FEV-DEC 26). tsc OK.
 - FG : déplacement du reset+écriture dans apply (atomique avec saveNow) — suppression du reset dans handle qui ne persistait pas en base. tsc OK.
+- Calcul ECART VS N-1 : correspondance par semaine ISO + jour de semaine, cols 5/13 (budget) et 118/119/123/124 (réalisé CA/couverts). tsc OK.
 
 ---
 
