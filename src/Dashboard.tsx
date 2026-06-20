@@ -346,6 +346,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   // Calculate totals
   const calculatedData = useMemo(() => {
     const nMinus1MonthData = allData[year - 1]?.[month];
+    // Données du mois suivant en N-1 pour les jours de débordement (ex: sam 31 jan 2026 → sam 1er fév 2025)
+    const overflowYear = month === 11 ? year : year - 1;
+    const overflowMonth = month === 11 ? 0 : month + 1;
+    const nMinus1OverflowMonthData = allData[overflowYear]?.[overflowMonth];
     let nMinus1Data: { cellData: Record<string, string>; rows: DashboardRow[] } | undefined;
     if (nMinus1MonthData?.dashboard) {
       const numDaysN1 = new Date(year - 1, month + 1, 0).getDate();
@@ -357,12 +361,30 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         if (date.getDay() === 0) { n1Rows.push({ type: 'total', label: '', weekIndex: weekCountN1 }); weekCountN1++; }
       }
       if (new Date(year - 1, month, numDaysN1).getDay() !== 0) n1Rows.push({ type: 'total', label: '', weekIndex: weekCountN1 });
+      // Fusionner les 6 premiers jours du mois overflow N-1 pour gérer le débordement de fin de mois
+      let mergedCellData: Record<string, string> = { ...nMinus1MonthData.dashboard };
+      if (nMinus1OverflowMonthData?.dashboard) {
+        for (let i = 1; i <= 6; i++) {
+          const date = new Date(overflowYear, overflowMonth, i);
+          // Calculer le srcRIdx dans le dashboard du mois overflow (compte les totaux de semaine avant le jour i)
+          let srcRIdx = i - 1;
+          for (let d = 1; d < i; d++) {
+            if (new Date(overflowYear, overflowMonth, d).getDay() === 0) srcRIdx++;
+          }
+          const combinedRIdx = n1Rows.length;
+          n1Rows.push({ type: 'day', label: '', dateObj: date, dayIndex: i, weekIndex: weekCountN1 });
+          [6, 7, 8, 9, 17, 18, 19, 25, 27].forEach(col => {
+            const v = nMinus1OverflowMonthData?.dashboard?.[`${srcRIdx}-${col}`];
+            if (v !== undefined) mergedCellData[`${combinedRIdx}-${col}`] = v;
+          });
+        }
+      }
       n1Rows.push({ type: 'fg_box4_total', label: '' });
       n1Rows.push({ type: 'month_total', label: '' });
-      nMinus1Data = { cellData: nMinus1MonthData.dashboard, rows: n1Rows };
+      nMinus1Data = { cellData: mergedCellData, rows: n1Rows };
     }
     return computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, globalData[month]?.personnelSchema, nMinus1Data);
-  }, [cellData, globalData[month]?.salariesConfig, globalData[month]?.personnelSchema, allData[year - 1]?.[month]]);
+  }, [cellData, globalData[month]?.salariesConfig, globalData[month]?.personnelSchema, allData[year - 1]?.[month], allData[month === 11 ? year : year - 1]?.[month === 11 ? 0 : month + 1]]);
 
   const todayMarker = useMemo(() => {
     const now = new Date();

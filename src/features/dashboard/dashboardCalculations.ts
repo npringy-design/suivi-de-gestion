@@ -442,12 +442,12 @@ export function computeDashboardData(
           if (n1) {
             const caBudgetN = parseMoneyValue(data[`${rIdx}-3`]);
             if (n1.caBudget > 0) {
-              data[`${rIdx}-127`] = (caBudgetN - n1.caBudget).toFixed(2);
+              data[`${rIdx}-128`] = (caBudgetN - n1.caBudget).toFixed(2);
               data[`${rIdx}-5`] = (((caBudgetN - n1.caBudget) / n1.caBudget) * 100).toFixed(2);
             }
             const cvtsBudgetN = parseMoneyValue(data[`${rIdx}-10`]);
             if (n1.cvtsBudget > 0) {
-              data[`${rIdx}-128`] = (cvtsBudgetN - n1.cvtsBudget).toFixed(2);
+              data[`${rIdx}-129`] = (cvtsBudgetN - n1.cvtsBudget).toFixed(2);
               data[`${rIdx}-13`] = (((cvtsBudgetN - n1.cvtsBudget) / n1.cvtsBudget) * 100).toFixed(2);
             }
             const caRealiseN = parseMoneyValue(data[`${rIdx}-21`]);
@@ -491,7 +491,7 @@ export function computeDashboardData(
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 139, 140, 142].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 139, 140, 142].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -572,7 +572,7 @@ export function computeDashboardData(
         {
           const lastWeekDay = weekDays[weekDays.length - 1];
           if (lastWeekDay) {
-            [118, 119, 121, 123, 124, 127, 128, 139, 140, 141, 142].forEach(c => {
+            [118, 119, 121, 123, 124, 127, 128, 129, 139, 140, 141, 142].forEach(c => {
               const key = `${lastWeekDay.originalIdx}-${c}`;
               if (data[key]) data[`${rIdx}-${c}`] = data[key];
             });
@@ -624,7 +624,7 @@ export function computeDashboardData(
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 139, 140, 142].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 139, 140, 142].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -643,22 +643,22 @@ export function computeDashboardData(
 
       const lastDay = allDays[allDays.length - 1];
       if (lastDay) {
-        [118, 119, 121, 123, 124, 127, 128, 139, 140, 141, 142].forEach(c => {
+        [118, 119, 121, 123, 124, 127, 128, 129, 139, 140, 141, 142].forEach(c => {
           const key = `${lastDay.originalIdx}-${c}`;
           if (data[key]) data[`${monthTotalIdx}-${c}`] = data[key];
         });
-        // Col 5 et 127 : VAR % VS N-1 prévision CA — budget mois vs N-1 cumulé
+        // Col 5 et 128 : VAR % VS N-1 prévision CA — budget mois vs N-1 cumulé
         const lastDayN1CumulCA = parseMoneyValue(data[`${lastDay.originalIdx}-143`] || '0');
         if (lastDayN1CumulCA > 0) {
           const budgetCaTotal = parseMoneyValue(data[`${monthTotalIdx}-3`]);
-          data[`${monthTotalIdx}-127`] = (budgetCaTotal - lastDayN1CumulCA).toFixed(2);
+          data[`${monthTotalIdx}-128`] = (budgetCaTotal - lastDayN1CumulCA).toFixed(2);
           data[`${monthTotalIdx}-5`] = (((budgetCaTotal - lastDayN1CumulCA) / lastDayN1CumulCA) * 100).toFixed(2);
         }
-        // Col 13 et 128 : VAR % VS N-1 prévision couverts — budget mois vs N-1 cumulé
+        // Col 13 et 129 : VAR % VS N-1 prévision couverts — budget mois vs N-1 cumulé
         const lastDayN1CumulCvts = parseMoneyValue(data[`${lastDay.originalIdx}-144`] || '0');
         if (lastDayN1CumulCvts > 0) {
           const budgetCvtsTotal = parseMoneyValue(data[`${monthTotalIdx}-10`]);
-          data[`${monthTotalIdx}-128`] = (budgetCvtsTotal - lastDayN1CumulCvts).toFixed(2);
+          data[`${monthTotalIdx}-129`] = (budgetCvtsTotal - lastDayN1CumulCvts).toFixed(2);
           data[`${monthTotalIdx}-13`] = (((budgetCvtsTotal - lastDayN1CumulCvts) / lastDayN1CumulCvts) * 100).toFixed(2);
         }
       }
