@@ -143,7 +143,6 @@ export const dashboardColumns: DashboardColumn[] = [
   ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV I ET II\n16,04 €', 'bg-[#fce4d6]'],
   ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'NIV III\n18,35 €', 'bg-[#fce4d6]'],
   ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'APPRENTI\n8,39 €', 'bg-[#fce4d6]'],
-  ['FRAIS DE PERSONNEL REALISE', 'FRAIS PERSONNEL REALISE', 'APPRENTI\n8,39 €', 'bg-[#fce4d6]'],
   ['REALISE', 'CA HT', 'ECART BUDGET\nCUMUL €', 'bg-white'],
   ['REALISE', 'CA HT', 'ECART N-1\nJOUR €', 'bg-white'],
   ['REALISE', 'CA HT', 'ECART N-1\nJOUR %', 'bg-hatched'],
