@@ -259,6 +259,7 @@ export function computeDashboardData(
           cumulRealiseCA += realiseTotalJour;
           data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
           data[`${rIdx}-139`] = (cumulRealiseCA - cumulCA).toFixed(2);
+          if (cumulCA > 0) data[`${rIdx}-140`] = (((cumulRealiseCA - cumulCA) / cumulCA) * 100).toFixed(2);
         }
         // COUVERTS REALISE — 25=NB MIDI,26=MOY,27=NB SOIR,28=MOY,29=TOTAL,30=CUMUL,31=ECART nb vs budget
         const nbCvtsMidi = parseMoneyValue(data[`${rIdx}-25`]);
@@ -452,27 +453,20 @@ export function computeDashboardData(
             }
             const caRealiseN = parseMoneyValue(data[`${rIdx}-21`]);
             cumulN1CA += n1.caRealise;
-            // Jour vs jour
+            // ECART VS N-1 jour vs jour (CA réalisé)
             const ecartJourCA = caRealiseN - n1.caRealise;
-            data[`${rIdx}-140`] = ecartJourCA.toFixed(2);
-            data[`${rIdx}-141`] = n1.caRealise > 0 ? ((ecartJourCA / n1.caRealise) * 100).toFixed(2) : '0';
-            // Cumul vs cumul
-            if (cumulN1CA > 0) {
-              const ecartCumulCA = cumulRealiseCA - cumulN1CA;
-              data[`${rIdx}-118`] = ecartCumulCA.toFixed(2);
-              data[`${rIdx}-119`] = ((ecartCumulCA / cumulN1CA) * 100).toFixed(2);
-            }
+            data[`${rIdx}-118`] = ecartJourCA.toFixed(2);
+            if (n1.caRealise > 0) data[`${rIdx}-119`] = ((ecartJourCA / n1.caRealise) * 100).toFixed(2);
+            // ECART VS N-1 jour vs jour (CVTS réalisé)
             cumulN1Cvts += n1.cvtsRealise;
-            if (cumulN1Cvts > 0) {
-              const ecartCumulCvts = cumulCvtsRealise - cumulN1Cvts;
-              data[`${rIdx}-123`] = ecartCumulCvts.toFixed(2);
-              data[`${rIdx}-124`] = ((ecartCumulCvts / cumulN1Cvts) * 100).toFixed(2);
-            }
+            const cvtsJour = parseMoneyValue(data[`${rIdx}-25`]) + parseMoneyValue(data[`${rIdx}-27`]);
+            const ecartJourCvts = cvtsJour - n1.cvtsRealise;
+            data[`${rIdx}-123`] = ecartJourCvts.toFixed(2);
+            if (n1.cvtsRealise > 0) data[`${rIdx}-124`] = ((ecartJourCvts / n1.cvtsRealise) * 100).toFixed(2);
+            // Tendance % vs N-1 (cumul courant réalisé)
+            if (cumulN1CA > 0) data[`${rIdx}-141`] = (((cumulRealiseCA - cumulN1CA) / cumulN1CA) * 100).toFixed(2);
             // Écart budget couverts CUMUL
             data[`${rIdx}-142`] = (cumulCvtsRealise - cumulCvts).toFixed(0);
-            // Stockage technique cumulN1 (fantômes)
-            data[`${rIdx}-143`] = cumulN1CA.toFixed(2);
-            data[`${rIdx}-144`] = cumulN1Cvts.toFixed(2);
           }
         }
       }
@@ -572,7 +566,7 @@ export function computeDashboardData(
         {
           const lastWeekDay = weekDays[weekDays.length - 1];
           if (lastWeekDay) {
-            [118, 119, 121, 123, 124, 127, 128, 129, 139, 140, 141, 142].forEach(c => {
+            [121, 127, 128, 129, 139, 140, 141, 142].forEach(c => {
               const key = `${lastWeekDay.originalIdx}-${c}`;
               if (data[key]) data[`${rIdx}-${c}`] = data[key];
             });
@@ -594,6 +588,21 @@ export function computeDashboardData(
           if (weeklyN1Cvts !== 0) {
             data[`${rIdx}-129`] = weeklyEcartCvts.toFixed(2);
             data[`${rIdx}-13`] = ((weeklyEcartCvts / weeklyN1Cvts) * 100).toFixed(2);
+          }
+          // Réalisé ECART VS N-1 total semaine (somme des écarts jours / N-1 déduit)
+          const weeklyEcartRealCA = weekDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-118`] || ''), 0);
+          const weeklyRealCA = parseMoneyValue(data[`${rIdx}-21`] || '');
+          const weeklyN1RealCA = weeklyRealCA - weeklyEcartRealCA;
+          if (weeklyN1RealCA !== 0) {
+            data[`${rIdx}-118`] = weeklyEcartRealCA.toFixed(2);
+            data[`${rIdx}-119`] = ((weeklyEcartRealCA / weeklyN1RealCA) * 100).toFixed(2);
+          }
+          const weeklyEcartRealCvts = weekDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-123`] || ''), 0);
+          const weeklyRealCvts = parseMoneyValue(data[`${rIdx}-29`] || '');
+          const weeklyN1RealCvts = weeklyRealCvts - weeklyEcartRealCvts;
+          if (weeklyN1RealCvts !== 0) {
+            data[`${rIdx}-123`] = weeklyEcartRealCvts.toFixed(2);
+            data[`${rIdx}-124`] = ((weeklyEcartRealCvts / weeklyN1RealCvts) * 100).toFixed(2);
           }
         }
 
@@ -661,7 +670,7 @@ export function computeDashboardData(
 
       const lastDay = allDays[allDays.length - 1];
       if (lastDay) {
-        [118, 119, 121, 123, 124, 127, 128, 129, 139, 140, 141, 142].forEach(c => {
+        [121, 127, 128, 129, 139, 140, 141, 142].forEach(c => {
           const key = `${lastDay.originalIdx}-${c}`;
           if (data[key]) data[`${monthTotalIdx}-${c}`] = data[key];
         });
@@ -680,6 +689,21 @@ export function computeDashboardData(
         if (monthlyN1Cvts !== 0) {
           data[`${monthTotalIdx}-129`] = monthlyEcartCvts.toFixed(2);
           data[`${monthTotalIdx}-13`] = ((monthlyEcartCvts / monthlyN1Cvts) * 100).toFixed(2);
+        }
+        // Réalisé ECART VS N-1 mois total (somme des écarts jours / N-1 déduit)
+        const monthlyEcartRealCA = allDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-118`] || ''), 0);
+        const monthlyRealCA = parseMoneyValue(data[`${monthTotalIdx}-21`]);
+        const monthlyN1RealCA = monthlyRealCA - monthlyEcartRealCA;
+        if (monthlyN1RealCA !== 0) {
+          data[`${monthTotalIdx}-118`] = monthlyEcartRealCA.toFixed(2);
+          data[`${monthTotalIdx}-119`] = ((monthlyEcartRealCA / monthlyN1RealCA) * 100).toFixed(2);
+        }
+        const monthlyEcartRealCvts = allDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-123`] || ''), 0);
+        const monthlyRealCvts = parseMoneyValue(data[`${monthTotalIdx}-29`]);
+        const monthlyN1RealCvts = monthlyRealCvts - monthlyEcartRealCvts;
+        if (monthlyN1RealCvts !== 0) {
+          data[`${monthTotalIdx}-123`] = monthlyEcartRealCvts.toFixed(2);
+          data[`${monthTotalIdx}-124`] = ((monthlyEcartRealCvts / monthlyN1RealCvts) * 100).toFixed(2);
         }
       }
 
