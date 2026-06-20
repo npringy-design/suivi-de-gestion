@@ -26,8 +26,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - FG V26 : détection dynamique des offsets de colonnes par recherche de 'DATE' en row 8 (suppression des offsets hardcodés [123,128,133] invalides pour FEV-DEC 26). tsc OK.
 - FG : déplacement du reset+écriture dans apply (atomique avec saveNow) — suppression du reset dans handle qui ne persistait pas en base. tsc OK.
 - Calcul ECART VS N-1 : correspondance par semaine ISO + jour de semaine, cols 5/13 (budget) et 118/119/123/124 (réalisé CA/couverts). tsc OK.
-- Écart budget CA DEPUIS LE 01 (col 128) : `cumulRealiseCA - cumulCA` calculé dans le first pass et copié depuis le dernier jour dans les totaux semaine et mois. tsc OK.
-- Écart VS N-1 cumulé (cols 118/119 CA, 123/124 couverts) : remplacement de l'écart jour vs jour par l'écart sur le cumul (`cumulRealiseCA - cumulN1CA`, `cumulCvtsRealise - cumulN1Cvts`) ; accumulateurs `cumulN1CA`/`cumulN1Cvts` incrémentés à chaque jour matché ; valeurs copiées depuis le dernier jour dans les totaux semaine et mois. tsc OK.
+- Refactor colonnes ECART section réalisée : collision col 128 corrigée, 5 entrées ajoutées à la fin de dashboardColumns (index 139 = APPRENTI global schema explicit, 140 = ECART BUDGET CUMUL €, 141 = ECART N-1 JOUR €, 142 = ECART N-1 JOUR % hatched, 143 = ECART BUDGET CVTS CUMUL NB). First pass : col 140 remplace col 128 pour l'écart budget cumulé, cols 141/142 ajoutent l'écart N-1 jour vs jour, col 143 = écart couverts cumul, cols 144/145 = stockage fantôme cumulN1CA/Cvts. Second et third pass : exclusion et copie depuis dernier jour pour 140-143. Third pass : cols 5 et 13 (% prévision vs N-1) calculés depuis les fantômes 144/145 du dernier jour. tsc OK.
 
 ---
 
