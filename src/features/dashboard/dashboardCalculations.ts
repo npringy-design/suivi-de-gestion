@@ -579,6 +579,24 @@ export function computeDashboardData(
           }
         }
 
+        // Prévision N-1 VALEUR et % pour le total semaine (somme des écarts jour / N-1 déduit par algèbre)
+        {
+          const weeklyEcartCA = weekDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-128`] || ''), 0);
+          const weeklyBudgetCA = parseMoneyValue(data[`${rIdx}-3`] || '');
+          const weeklyN1CA = weeklyBudgetCA - weeklyEcartCA;
+          if (weeklyN1CA !== 0) {
+            data[`${rIdx}-128`] = weeklyEcartCA.toFixed(2);
+            data[`${rIdx}-5`] = ((weeklyEcartCA / weeklyN1CA) * 100).toFixed(2);
+          }
+          const weeklyEcartCvts = weekDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-129`] || ''), 0);
+          const weeklyBudgetCvts = parseMoneyValue(data[`${rIdx}-10`] || '');
+          const weeklyN1Cvts = weeklyBudgetCvts - weeklyEcartCvts;
+          if (weeklyN1Cvts !== 0) {
+            data[`${rIdx}-129`] = weeklyEcartCvts.toFixed(2);
+            data[`${rIdx}-13`] = ((weeklyEcartCvts / weeklyN1Cvts) * 100).toFixed(2);
+          }
+        }
+
         // Recalcul TOTAL HEURES proj et réel pour la semaine (somme correcte des heures décimales)
         let totalHProjW2 = 0; let totalHRealW2 = 0;
         const projInputCols = isGlobalSchema ? [130,131,132,133,134] : [62,63,64,65,66,67,68,69,70,71];
@@ -647,19 +665,21 @@ export function computeDashboardData(
           const key = `${lastDay.originalIdx}-${c}`;
           if (data[key]) data[`${monthTotalIdx}-${c}`] = data[key];
         });
-        // Col 5 et 128 : VAR % VS N-1 prévision CA — budget mois vs N-1 cumulé
-        const lastDayN1CumulCA = parseMoneyValue(data[`${lastDay.originalIdx}-143`] || '0');
-        if (lastDayN1CumulCA > 0) {
-          const budgetCaTotal = parseMoneyValue(data[`${monthTotalIdx}-3`]);
-          data[`${monthTotalIdx}-128`] = (budgetCaTotal - lastDayN1CumulCA).toFixed(2);
-          data[`${monthTotalIdx}-5`] = (((budgetCaTotal - lastDayN1CumulCA) / lastDayN1CumulCA) * 100).toFixed(2);
+        // Col 5 et 128 : VAR % VS N-1 prévision CA — somme des écarts jours / N-1 déduit par algèbre
+        const monthlyEcartCA = allDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-128`] || ''), 0);
+        const monthlyBudgetCA = parseMoneyValue(data[`${monthTotalIdx}-3`]);
+        const monthlyN1CA = monthlyBudgetCA - monthlyEcartCA;
+        if (monthlyN1CA !== 0) {
+          data[`${monthTotalIdx}-128`] = monthlyEcartCA.toFixed(2);
+          data[`${monthTotalIdx}-5`] = ((monthlyEcartCA / monthlyN1CA) * 100).toFixed(2);
         }
-        // Col 13 et 129 : VAR % VS N-1 prévision couverts — budget mois vs N-1 cumulé
-        const lastDayN1CumulCvts = parseMoneyValue(data[`${lastDay.originalIdx}-144`] || '0');
-        if (lastDayN1CumulCvts > 0) {
-          const budgetCvtsTotal = parseMoneyValue(data[`${monthTotalIdx}-10`]);
-          data[`${monthTotalIdx}-129`] = (budgetCvtsTotal - lastDayN1CumulCvts).toFixed(2);
-          data[`${monthTotalIdx}-13`] = (((budgetCvtsTotal - lastDayN1CumulCvts) / lastDayN1CumulCvts) * 100).toFixed(2);
+        // Col 13 et 129 : VAR % VS N-1 prévision couverts — somme des écarts jours / N-1 déduit par algèbre
+        const monthlyEcartCvts = allDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-129`] || ''), 0);
+        const monthlyCvtsTotal = parseMoneyValue(data[`${monthTotalIdx}-10`]);
+        const monthlyN1Cvts = monthlyCvtsTotal - monthlyEcartCvts;
+        if (monthlyN1Cvts !== 0) {
+          data[`${monthTotalIdx}-129`] = monthlyEcartCvts.toFixed(2);
+          data[`${monthTotalIdx}-13`] = ((monthlyEcartCvts / monthlyN1Cvts) * 100).toFixed(2);
         }
       }
 
