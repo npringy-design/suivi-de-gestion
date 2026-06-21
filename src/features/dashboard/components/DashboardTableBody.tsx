@@ -514,6 +514,10 @@ export default function DashboardTableBody({
                 <div className={`px-1 text-center py-1.5 min-h-[26px] text-[10px] ${val ? textColorClass : 'text-slate-400'}`}>
                   {displayVal || ''}
                 </div>
+              ) : displayVal ? (
+                <div className={`px-1 text-center py-1.5 min-h-[26px] text-[10px] ${textColorClass}`}>
+                  {displayVal}
+                </div>
               ) : null}
             </td>
           );
