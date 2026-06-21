@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import { buildDailyEntries, checkBalance } from '@/utils/buildDailyEntries';
 import type { DayTotals } from '@/utils/buildDailyEntries';
-import type { AccountingMappingRow } from '@/accountingConfig';
+import type { AccountingMappingRow } from '@/features/comptabilite/accountingConfig';
 
 const makeMapping = (caisseKey: string, debitAccount: string, creditAccount: string): AccountingMappingRow => ({
   id: `test-${caisseKey}`,

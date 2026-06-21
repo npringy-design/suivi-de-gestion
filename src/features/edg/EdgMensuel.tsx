@@ -6,7 +6,7 @@ import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 import { MONTH_NAMES, MONTH_NAMES_SHORT } from '@/lib/constants';
 
-import { getDashboardRowIndices } from '@/utils';
+import { getDashboardRowIndices } from '@/lib/utils';
 
 interface EdgMensuelProps {
   month: number;

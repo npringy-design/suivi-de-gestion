@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 
-import { getDashboardRowIndices } from '@/utils';
+import { getDashboardRowIndices } from '@/lib/utils';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 
 const CA_N1 = 1_789_254;

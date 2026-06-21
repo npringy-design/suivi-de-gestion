@@ -1,4 +1,4 @@
-import type { AccountingCaisseKey, AccountingMappingRow } from '@/accountingConfig';
+import type { AccountingCaisseKey, AccountingMappingRow } from '@/features/comptabilite/accountingConfig';
 
 export type DayTotals = Record<Exclude<AccountingCaisseKey, ''>, number>;
 

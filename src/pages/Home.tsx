@@ -37,7 +37,7 @@ import {
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { getValidAccessToken } from '@/services/supabaseAuth';
-import { getDashboardRowIndices } from '@/utils';
+import { getDashboardRowIndices } from '@/lib/utils';
 
 type IconComponent = ComponentType<{ className?: string }>;
 

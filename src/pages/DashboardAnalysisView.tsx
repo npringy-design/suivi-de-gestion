@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 
 import type { SalarieRow } from '@/contexts/DataContext';
 import type { DashboardRow } from '@/features/dashboard/dashboardTypes';
-import { averagePayrollRate } from '@/personnelSalaryImport';
-import { parseHourInputToDecimal } from '@/utils';
+import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
+import { parseHourInputToDecimal } from '@/lib/utils';
 import { parseMoneyValue } from '@/lib/money';
 
 type DashboardAnalysisViewProps = {

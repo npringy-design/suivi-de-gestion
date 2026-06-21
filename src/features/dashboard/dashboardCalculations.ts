@@ -1,6 +1,6 @@
 import { parseMoneyValue, type MoneyInputValue } from '@/lib/money';
-import { parseHourInputToDecimal } from '@/utils';
-import { averagePayrollRate } from '@/personnelSalaryImport';
+import { parseHourInputToDecimal } from '@/lib/utils';
+import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import type { SalarieRow, PersonnelSchema } from '@/contexts/DataContext';
 import type { DashboardColumn, DashboardRow } from './dashboardTypes';
 

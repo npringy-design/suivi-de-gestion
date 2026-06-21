@@ -4,7 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
-import { getDashboardRowIndices } from '@/utils';
+import { getDashboardRowIndices } from '@/lib/utils';
 
 const MONTH_INDICES = [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5];
 

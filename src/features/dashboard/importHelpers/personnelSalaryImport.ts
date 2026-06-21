@@ -1,5 +1,5 @@
 import type { PersonnelInfo, SalarieRow } from '@/contexts/DataContext';
-import { parseHourInputToDecimal } from '@/utils';
+import { parseHourInputToDecimal } from '@/lib/utils';
 
 export const PERSONNEL_CATEGORIES = ['cadre', 'maitrise', 'niv12', 'niv3', 'apprenti'] as const;
 
@@ -59,7 +59,7 @@ export const createEmptyPayrollCategories = (): SalariesCategories => ({
 export const normalizePersonnelText = (value: string) =>
   value
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, ' ')
     .trim();
@@ -129,7 +129,7 @@ const parsePayrollNumber = (value: string) => {
 const formatPayrollNumber = (value: number) => String(Math.round(value * 100) / 100).replace('.', ',');
 
 const numberMatches = (text: string) =>
-  Array.from(text.matchAll(/[-+]?(?:\d{1,3}(?:[\s\u00a0]\d{3})+|\d+)(?:[,.]\d{1,2})?/g))
+  Array.from(text.matchAll(/[-+]?(?:\d{1,3}(?:[\s ]\d{3})+|\d+)(?:[,.]\d{1,2})?/g))
     .map(match => ({
       raw: match[0],
       value: parsePayrollNumber(match[0]),
@@ -155,7 +155,7 @@ const extractNumberNearLabels = (text: string, labels: string[]) => {
 const isForfaitJourLine = (line: string) => normalizePersonnelText(line).includes('FORFAIT JOUR');
 
 const extractPayrollTableValues = (sourceLine: string) => {
-  const line = sourceLine.replace(/\u00a0/g, ' ');
+  const line = sourceLine.replace(/ /g, ' ');
   const monthMatches = Array.from(line.matchAll(/\b(?:0[1-9]|1[0-2])\/20\d{2}\b/g));
   const payrollMonth = monthMatches.at(-1);
   if (!payrollMonth || payrollMonth.index === undefined) return null;
@@ -164,8 +164,6 @@ const extractPayrollTableValues = (sourceLine: string) => {
   const values = numberMatches(afterMonth).map(item => item.value);
   if (values.length < 2) return null;
 
-  // Dans le tableau PDF, les 6 dernières valeurs sont :
-  // Brut, Charges patronales, % charges patronales, Supp. coût global, Coût global, Taux h. moyen.
   const coutGlobal = values[values.length - 2] || 0;
   const heures = isForfaitJourLine(line)
     ? FORFAIT_JOUR_HOURS
@@ -190,7 +188,7 @@ const extractPayrollValues = (sourceLine: string, context: string) => {
 
 const findPersonnelLine = (text: string, personnel: PersonnelInfo) => {
   const lines = text
-    .replace(/\u00a0/g, ' ')
+    .replace(/ /g, ' ')
     .split(/\r?\n/)
     .map(line => line.trim())
     .filter(Boolean);

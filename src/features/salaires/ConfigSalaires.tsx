@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import type { MonthDataSalariesConfig, SalarieRow } from '@/contexts/DataContext';
-import { createEmptyPayrollCategories, PERSONNEL_CATEGORIES } from '@/personnelSalaryImport';
-import { parseHourInputToDecimal } from '@/utils';
+import { createEmptyPayrollCategories, PERSONNEL_CATEGORIES } from '@/features/dashboard/importHelpers/personnelSalaryImport';
+import { parseHourInputToDecimal } from '@/lib/utils';
 import { parseMoneyValue } from '@/lib/money';
 import { MONTH_NAMES } from '@/lib/constants';
 

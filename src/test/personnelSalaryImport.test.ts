@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { PersonnelInfo } from '../contexts/DataContext';
-import { averagePayrollRate, buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '../personnelSalaryImport';
+import { averagePayrollRate, buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '../features/dashboard/importHelpers/personnelSalaryImport';
 
 const personnel: PersonnelInfo[] = [
   { id: '1', nom: 'Pringy Nicolas', category: 'cadre', department: 'salle', aliases: 'Nicolas Pringy' },

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Download, FileText, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { loadAccountingMappings } from '@/accountingConfig';
+import { loadAccountingMappings } from '@/features/comptabilite/accountingConfig';
 import { parseMoneyValue } from '@/lib/money';
 import { useData, type DayDataSaisieTR, type MonthData } from '@/contexts/DataContext';
 import { buildDailyEntries, checkBalance, type AccountingEntry, type BalanceCheck, type DayTotals } from '@/utils/buildDailyEntries';

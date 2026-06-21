@@ -2,16 +2,14 @@ export const getDashboardRowIndices = (month: number, year: number) => {
   const numDays = new Date(year, month + 1, 0).getDate();
   const indices: Record<number, number> = {};
   let rIdx = 0;
-  let weekCount = 1;
 
   for (let i = 1; i <= numDays; i++) {
     const date = new Date(year, month, i);
     indices[i] = rIdx;
     rIdx++;
-    
+
     if (date.getDay() === 0) {
       rIdx++; // Skip total row
-      weekCount++;
     }
   }
   return indices;

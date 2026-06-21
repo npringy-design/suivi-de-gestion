@@ -10,7 +10,7 @@ import {
   type AccountingCaisseKey,
   type AccountingCategory,
   type AccountingMappingRow,
-} from '@/accountingConfig';
+} from '@/features/comptabilite/accountingConfig';
 
 type ParametrageComptableProps = {
   onBack: () => void;

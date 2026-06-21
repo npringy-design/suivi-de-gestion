@@ -1,4 +1,4 @@
-import { averagePayrollRate } from '@/personnelSalaryImport';
+import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import type { SalarieRow } from '@/contexts/DataContext';
 import type { DashboardColumn } from './dashboardTypes';
 

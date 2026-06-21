@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { getDashboardRowIndices, getISOWeek, parseHourInputToDecimal } from '../utils';
+import { getDashboardRowIndices, getISOWeek, parseHourInputToDecimal } from '../lib/utils';
 
 describe('utils', () => {
   describe('getDashboardRowIndices', () => {

@@ -10,8 +10,8 @@ import type {
   PersonnelInfo,
   PersonnelSchema,
 } from '@/contexts/DataContext';
-import { buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '@/personnelSalaryImport';
-import { parseRecapPeriodeCaisse } from '@/caisseRecapPeriodeParser';
+import { buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '@/features/dashboard/importHelpers/personnelSalaryImport';
+import { parseRecapPeriodeCaisse } from '@/features/caisse/caisseRecapPeriodeParser';
 import type {
   CaisseImportPreview,
   DashboardColumn,
