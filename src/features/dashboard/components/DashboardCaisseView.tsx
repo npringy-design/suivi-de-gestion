@@ -1,5 +1,7 @@
 import React from 'react';
 
+import TrPapierModal from './TrPapierModal';
+import { parseMoneyValue } from '@/lib/money';
 import type { DashboardRow } from '@/features/dashboard/dashboardTypes';
 import type {
   DayDataNepting,
@@ -80,6 +82,8 @@ export default function DashboardCaisseView({
   updateDeliveroo,
   updateClickCollect,
 }: DashboardCaisseViewProps) {
+  const [isTrModalOpen, setIsTrModalOpen] = React.useState(false);
+
   const day = selectedDayRow?.dayIndex;
   if (!day) return null;
 
@@ -95,16 +99,13 @@ export default function DashboardCaisseView({
   const amexAncv = monthData?.amexAncv?.[day];
   const deliveroo = monthData?.deliveroo?.[day];
   const clickCollect = monthData?.clickCollect?.[day];
-  const trData = monthData?.saisieTR?.[day];
-  const trPapier = trData?.edenred?.[0];
-  const trPapierProviders = [
-    { key: 'bimpli', label: 'Bimpli' },
-    { key: 'up', label: 'Up' },
-    { key: 'pluxee', label: 'Pluxee' },
-    { key: 'edenred', label: 'Edenred' },
-  ] as const;
-  const trPapierReel = trPapierProviders.reduce((sum, provider) => sum + (trData?.[provider.key]?.[0]?.valeur ?? 0), 0);
-  const trPapierDisplay = trPapierReel ? trPapierReel.toFixed(2) : reelStr(trPapier?.valeur);
+  const trData = monthData?.saisieTR?.[day] as DayDataSaisieTR | undefined;
+  const providers: (keyof DayDataSaisieTR)[] = ['edenred', 'bimpli', 'pluxee', 'up'];
+  const trPapierTotal = providers.reduce((sum, p) => {
+    const entries: TrEntry[] = trData?.[p] || [];
+    return sum + entries.reduce((s: number, e: TrEntry) => s + (e.valeur ?? 0) * parseMoneyValue(e.nombre), 0);
+  }, 0);
+  const trPapierDisplay = trPapierTotal > 0 ? trPapierTotal.toFixed(2) : '';
   const theorique = monthData?.theorique?.[day];
   const cashValidationComment = nepting?.commentaire || '';
   const cashValidationLabel = cashValidationComment ? 'Validation enregistrée' : 'Non validé';
@@ -128,7 +129,7 @@ export default function DashboardCaisseView({
     theoriqueValue: string,
     value: string,
     onChange: (value: string) => void,
-    options: { detailId?: CashDetailId; details?: React.ReactNode; invertEcart?: boolean } = {}
+    options: { detailId?: CashDetailId; details?: React.ReactNode; invertEcart?: boolean; onLabelClick?: () => void } = {}
   ) => {
     const hasValues = Boolean(theoriqueValue || value);
     const realValue = parseCaisseNumber(value) * (options.invertEcart ? -1 : 1);
@@ -136,20 +137,22 @@ export default function DashboardCaisseView({
     const ecartDisplay = hasValues ? ecart.toFixed(2) : '-';
     const isExpanded = options.detailId && expandedCashDetail === options.detailId;
 
+    const labelEl = (options.onLabelClick || options.detailId) ? (
+      <button
+        type="button"
+        onClick={options.onLabelClick ?? (() => setExpandedCashDetail(isExpanded ? null : options.detailId || null))}
+        style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', border: 'none', background: 'transparent', padding: 0, color: options.onLabelClick ? '#0f766e' : (isExpanded ? '#0f766e' : '#334155'), cursor: 'pointer', fontSize: 10, fontWeight: 950, letterSpacing: '.03em', textAlign: 'left', textTransform: 'uppercase', textDecoration: (options.onLabelClick || isExpanded) ? 'underline' : 'none', textUnderlineOffset: 3 }}
+        title={options.onLabelClick ? 'Saisir le détail TR papier' : 'Afficher le détail du nombre'}
+      >
+        {label}
+      </button>
+    ) : (
+      <span style={{ fontSize: 10, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+    );
+
     return (
       <div key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(132px, .66fr) repeat(3, minmax(0, 1fr))', gap: 6, alignItems: 'center', minWidth: 0 }}>
-        {options.detailId ? (
-          <button
-            type="button"
-            onClick={() => setExpandedCashDetail(isExpanded ? null : options.detailId || null)}
-            style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', border: 'none', background: 'transparent', padding: 0, color: isExpanded ? '#0f766e' : '#334155', cursor: 'pointer', fontSize: 10, fontWeight: 950, letterSpacing: '.03em', textAlign: 'left', textTransform: 'uppercase', textDecoration: isExpanded ? 'underline' : 'none', textUnderlineOffset: 3 }}
-            title="Afficher le détail du nombre"
-          >
-            {label}
-          </button>
-        ) : (
-          <span style={{ fontSize: 10, fontWeight: 900, color: '#334155', textTransform: 'uppercase', letterSpacing: '.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
-        )}
+        {labelEl}
         {renderCashAutoValue(theoriqueValue)}
         <DebouncedInput
           dataRow={`cash-${selectedDayRowIndex}`}
@@ -199,6 +202,7 @@ export default function DashboardCaisseView({
   };
 
   return (
+    <>
     <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr', gap: 5, width: '100%' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(132px, .66fr) repeat(3, minmax(0, 1fr))', gap: 6, alignItems: 'center', minWidth: 0 }}>
         <div />
@@ -216,11 +220,8 @@ export default function DashboardCaisseView({
         detailId: 'ancv',
         details: renderCashDetailField('Nombre ANCV papier', ancv?.nombre_ancv || '', value => updateAncvPapiers(month, day, 'nombre_ancv', value)),
       })}
-      {renderRealCaisseControl('TR papier', theorique?.tr_papier || '', trPapierDisplay, value => {
-        updateSaisieTR(month, day, 'edenred', 0, 'valeur', value);
-      }, {
-        detailId: 'tr',
-        details: trPapierProviders.map(provider => renderCashDetailField(provider.label, trData?.[provider.key]?.[0]?.nombre || '', value => updateSaisieTR(month, day, provider.key, 0, 'nombre', value))),
+      {renderRealCaisseControl('TR papier', theorique?.tr_papier || '', trPapierDisplay, () => {}, {
+        onLabelClick: () => setIsTrModalOpen(true),
       })}
       {renderRealCaisseControl('Sunday', theorique?.sunday || '', reelStr(sunday?.reel), value => updateSunday(month, day, 'reel', value))}
       {renderRealCaisseControl('Uber', theorique?.uber || '', reelStr(uber?.reel), value => updateUber(month, day, 'reel', value))}
@@ -246,5 +247,15 @@ export default function DashboardCaisseView({
         </button>
       </div>
     </div>
+    {isTrModalOpen && (
+      <TrPapierModal
+        day={day}
+        month={month}
+        trData={trData}
+        updateSaisieTR={updateSaisieTR}
+        onClose={() => setIsTrModalOpen(false)}
+      />
+    )}
+    </>
   );
 }
