@@ -170,7 +170,7 @@ export default function DashboardTableBody({
           if (isMonthTotal) cellBorderClasses += ' border-y-2 border-y-amber-500';
 
           let textColorClass = isMonthTotal ? 'text-amber-900' : 'text-slate-800';
-          const isVarianceCol = c[1].includes('ECART') || c[2].includes('ECART') || [22, 31, 33, 117, 122, 118, 119, 123, 124, 128, 129, 140, 141, 142].includes(originalCIdx);
+          const isVarianceCol = c[1].includes('ECART') || c[2].includes('ECART') || [22, 31, 33, 117, 122, 118, 119, 123, 124, 128, 129, 141, 142].includes(originalCIdx);
           if ((c[2] === 'ECART AU\nBUDGET\nJOUR' || isVarianceCol) && val !== '') {
             const numVal = parseMoneyValue(val);
             if (numVal > 0) {
