@@ -13,6 +13,7 @@ export type DashboardDailyRecapModalProps = {
   setDailyRecapGoogleRatings: React.Dispatch<React.SetStateAction<Record<number, string>>>;
   buildDailyRecapHtml: (options: { managerMidi?: string; managerSoir?: string; commentMidi?: string; commentSoir?: string; googleRatings?: Record<number, string> }) => string;
   handleValidateDailyRecapMail: () => void;
+  copyDailyRecapAsHtml: () => void;
 };
 
 export default function DashboardDailyRecapModal({
@@ -27,6 +28,7 @@ export default function DashboardDailyRecapModal({
   setDailyRecapGoogleRatings,
   buildDailyRecapHtml,
   handleValidateDailyRecapMail,
+  copyDailyRecapAsHtml,
 }: DashboardDailyRecapModalProps) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 105, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 10 : 18 }}>
@@ -119,6 +121,9 @@ export default function DashboardDailyRecapModal({
         <div style={{ padding: '14px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button type="button" onClick={() => setIsDailyRecapModalOpen(false)} style={{ height: 38, padding: '0 14px', background: '#fff', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 13, fontWeight: 850, cursor: 'pointer' }}>
             Annuler
+          </button>
+          <button type="button" onClick={copyDailyRecapAsHtml} style={{ height: 38, padding: '0 16px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 900, cursor: 'pointer' }}>
+            Copier HTML
           </button>
           <button type="button" onClick={handleValidateDailyRecapMail} style={{ height: 38, padding: '0 16px', background: '#0f766e', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 900, cursor: 'pointer' }}>
             Valider et ouvrir le mail

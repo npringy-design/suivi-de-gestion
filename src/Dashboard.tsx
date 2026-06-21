@@ -645,6 +645,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     buildDailyRecapHtml,
     openDailyRecapPreview,
     handleValidateDailyRecapMail,
+    copyDailyRecapAsHtml,
   } = useDashboardDailyRecapHandlers({
     selectedDayRowIndex,
     selectedDayLabel,
@@ -1167,6 +1168,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           setDailyRecapGoogleRatings={setDailyRecapGoogleRatings}
           buildDailyRecapHtml={buildDailyRecapHtml}
           handleValidateDailyRecapMail={handleValidateDailyRecapMail}
+          copyDailyRecapAsHtml={copyDailyRecapAsHtml}
         />
       )}
       {/* Import Modal */}

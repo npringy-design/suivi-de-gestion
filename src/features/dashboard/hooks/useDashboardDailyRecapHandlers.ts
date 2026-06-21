@@ -499,6 +499,28 @@ export function useDashboardDailyRecapHandlers(params: {
     }
   };
 
+  const copyDailyRecapAsHtml = async () => {
+    const recapOptions = {
+      managerMidi: dailyRecapManagers.midi,
+      managerSoir: dailyRecapManagers.soir,
+      commentMidi: dailyRecapServiceComments.midi,
+      commentSoir: dailyRecapServiceComments.soir,
+      googleRatings: dailyRecapGoogleRatings,
+    };
+    const { html } = buildDailyRecapReport(recapOptions);
+    try {
+      const ClipboardItemCtor = (window as Window & { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+      if (navigator.clipboard?.write && ClipboardItemCtor) {
+        await navigator.clipboard.write([new ClipboardItemCtor({ 'text/html': new Blob([html], { type: 'text/html' }) })]);
+        setDailyRecapStatus('HTML copié. Dans Outlook, clique dans le corps du mail puis Ctrl+V.');
+      } else {
+        setDailyRecapStatus('Copie HTML non supportée par ce navigateur.');
+      }
+    } catch {
+      setDailyRecapStatus('Erreur lors de la copie HTML.');
+    }
+  };
+
   return {
     getDailyCellValue,
     getDailyDisplayValue,
@@ -513,5 +535,6 @@ export function useDashboardDailyRecapHandlers(params: {
     buildDailyRecapHtml,
     openDailyRecapPreview,
     handleValidateDailyRecapMail,
+    copyDailyRecapAsHtml,
   };
 }
