@@ -218,7 +218,7 @@ export default function DashboardCaisseView({
       {renderRealCaisseControl('Pièces', '', reelStr(especes?.pieces), value => updateEspeces(month, day, 'pieces', value))}
       {renderRealCaisseControl('AMEX/ANCV carte', theorique?.amex || '', reelStr(amexAncv?.reel_nepting), value => updateAmexAncv(month, day, 'reel_nepting', value))}
       {renderRealCaisseControl('TR carte', theorique?.tr_carte || '', reelStr(conecs?.conecs_reel_nepting), value => updateConecs(month, day, 'conecs_reel_nepting', value))}
-      {renderRealCaisseControl('ANCV papier', theorique?.ancv || '', ancv?.montant_total || '', () => {}, {
+      {renderRealCaisseControl('ANCV papier', theorique?.ancv || '', reelStr(ancv?.montant_total), () => {}, {
         onLabelClick: () => setIsAncvModalOpen(true),
       })}
       {renderRealCaisseControl('TR papier', theorique?.tr_papier || '', trPapierDisplay, () => {}, {
