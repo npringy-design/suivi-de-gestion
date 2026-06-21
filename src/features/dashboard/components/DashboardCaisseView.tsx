@@ -9,6 +9,7 @@ import type {
   DayDataEspeces,
   DayDataAmexAncv,
   DayDataConecs,
+  AncvEntry,
   DayDataAncvPapiers,
   DayDataSaisieTR,
   DayDataSunday,
@@ -51,6 +52,7 @@ type DashboardCaisseViewProps = {
   updateAmexAncv: (month: number, day: number, field: keyof DayDataAmexAncv, value: string) => void;
   updateConecs: (month: number, day: number, field: keyof DayDataConecs, value: string) => void;
   updateAncvPapiers: (month: number, day: number, field: keyof DayDataAncvPapiers, value: string) => void;
+  updateAncvLigne: (month: number, day: number, index: number, field: keyof AncvEntry, value: string) => void;
   updateSaisieTR: (month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string) => void;
   updateSunday: (month: number, day: number, field: keyof DayDataSunday, value: string) => void;
   updateUber: (month: number, day: number, field: keyof DayDataUber, value: string) => void;
@@ -77,6 +79,7 @@ export default function DashboardCaisseView({
   updateAmexAncv,
   updateConecs,
   updateAncvPapiers,
+  updateAncvLigne,
   updateSaisieTR,
   updateSunday,
   updateUber,
@@ -253,7 +256,7 @@ export default function DashboardCaisseView({
         day={day}
         month={month}
         ancv={ancv as DayDataAncvPapiers | undefined}
-        updateAncvPapiers={updateAncvPapiers}
+        updateAncvLigne={updateAncvLigne}
         onClose={() => setIsAncvModalOpen(false)}
       />
     )}

@@ -9,6 +9,7 @@ export type {
   DayDataNepting,
   DayDataEspeces,
   DayDataConecs,
+  AncvEntry,
   DayDataAncvPapiers,
   TrEntry,
   DayDataSaisieTR,
@@ -40,6 +41,7 @@ import type {
   DayDataNepting,
   DayDataEspeces,
   DayDataConecs,
+  AncvEntry,
   DayDataAncvPapiers,
   TrEntry,
   DayDataSaisieTR,
@@ -78,6 +80,7 @@ type DataContextType = {
   updateEspeces: (month: number, day: number, field: keyof DayDataEspeces, value: string | number) => void;
   updateConecs: (month: number, day: number, field: keyof DayDataConecs, value: string | number) => void;
   updateAncvPapiers: (month: number, day: number, field: keyof DayDataAncvPapiers, value: string | number) => void;
+  updateAncvLigne: (month: number, day: number, index: number, field: keyof AncvEntry, value: string) => void;
   updateSaisieTR: (month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string | number) => void;
   updateVisuTRPapiers: (month: number, day: number, field: keyof DayDataVisuTRPapiers, value: string) => void;
   updateSunday: (month: number, day: number, field: keyof DayDataSunday, value: string | number) => void;
@@ -479,6 +482,42 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [updateDataForYear]);
 
+  const updateAncvLigne = useCallback((month: number, day: number, index: number, field: keyof AncvEntry, value: string) => {
+    const NUM_ROWS = 8;
+    updateDataForYear(prev => {
+      const monthData = normalizeMonthData(prev[month]);
+      const existing = monthData.ancvPapiers[day] || DEFAULT_ANCV_PAPIERS_DAY;
+      const lignes: AncvEntry[] = existing.lignes
+        ? [...existing.lignes]
+        : Array.from({ length: NUM_ROWS }, () => ({ valeur: 0, nombre: '' }));
+      while (lignes.length < NUM_ROWS) lignes.push({ valeur: 0, nombre: '' });
+      lignes[index] = {
+        ...lignes[index],
+        [field]: field === 'valeur' ? parseMoneyValue(value) : value,
+      };
+      let totalMontant = 0;
+      let totalNombre = 0;
+      lignes.forEach(l => {
+        const nb = parseMoneyValue(l.nombre);
+        totalMontant += l.valeur * nb;
+        totalNombre += nb;
+      });
+      const updated: DayDataAncvPapiers = {
+        ...existing,
+        lignes,
+        montant_total: totalMontant,
+        nombre_ancv: totalNombre > 0 ? String(totalNombre) : '',
+      };
+      return {
+        ...prev,
+        [month]: {
+          ...monthData,
+          ancvPapiers: { ...monthData.ancvPapiers, [day]: updated },
+        },
+      };
+    });
+  }, [updateDataForYear]);
+
   const updateSaisieTR = useCallback((month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string | number) => {
     const stored = field === 'valeur' ? parseMoneyValue(value) : String(value);
     updateDataForYear(prev => {
@@ -725,6 +764,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateEspeces,
     updateConecs,
     updateAncvPapiers,
+    updateAncvLigne,
     updateSaisieTR,
     updateVisuTRPapiers,
     updateSunday,
@@ -761,6 +801,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateEspeces,
     updateConecs,
     updateAncvPapiers,
+    updateAncvLigne,
     updateSaisieTR,
     updateVisuTRPapiers,
     updateSunday,

@@ -1,15 +1,17 @@
 import React from 'react';
 
-import type { DayDataAncvPapiers } from '@/contexts/DataContext';
+import type { AncvEntry, DayDataAncvPapiers } from '@/contexts/DataContext';
 import { parseMoneyValue, formatCurrencyFr, sanitizeMoneyInput } from '@/lib/money';
 
 interface AncvPapierModalProps {
   day: number;
   month: number;
   ancv: DayDataAncvPapiers | undefined;
-  updateAncvPapiers: (month: number, day: number, field: keyof DayDataAncvPapiers, value: string) => void;
+  updateAncvLigne: (month: number, day: number, index: number, field: keyof AncvEntry, value: string) => void;
   onClose: () => void;
 }
+
+const NUM_ROWS = 8;
 
 const CurrencyInput = ({ value, onChange }: { value: string | number; onChange: (val: string) => void }) => {
   const [draft, setDraft] = React.useState<string | null>(null);
@@ -19,7 +21,7 @@ const CurrencyInput = ({ value, onChange }: { value: string | number; onChange: 
   return (
     <input
       type="text"
-      className="w-full h-9 px-3 bg-white border border-slate-300 rounded-lg text-right text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
+      className="w-full h-7 px-2 bg-white border border-slate-200 rounded text-right text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
       value={displayValue}
       onChange={e => {
         const sanitized = sanitizeMoneyInput(e.target.value);
@@ -35,15 +37,31 @@ const CurrencyInput = ({ value, onChange }: { value: string | number; onChange: 
 const NumberInput = ({ value, onChange }: { value: string; onChange: (val: string) => void }) => (
   <input
     type="text"
-    className="w-full h-9 px-3 bg-white border border-slate-300 rounded-lg text-center text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
+    className="w-full h-7 px-2 bg-white border border-slate-200 rounded text-center text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
     value={value}
     onChange={e => onChange(e.target.value.replace(/[^0-9]/g, ''))}
   />
 );
 
-export default function AncvPapierModal({ day, month, ancv, updateAncvPapiers, onClose }: AncvPapierModalProps) {
-  const montantTotal = ancv?.montant_total ?? 0;
-  const nombreAncv = ancv?.nombre_ancv ?? '';
+export default function AncvPapierModal({ day, month, ancv, updateAncvLigne, onClose }: AncvPapierModalProps) {
+  const getEntries = (): AncvEntry[] => {
+    const existing = ancv?.lignes ?? [];
+    const result: AncvEntry[] = [];
+    for (let i = 0; i < NUM_ROWS; i++) {
+      result.push(existing[i] ?? { valeur: 0, nombre: '' });
+    }
+    return result;
+  };
+
+  const entries = getEntries();
+
+  const total = entries.reduce(
+    (acc, e) => {
+      const nb = parseMoneyValue(e.nombre);
+      return { nombre: acc.nombre + nb, montant: acc.montant + (e.valeur ?? 0) * nb };
+    },
+    { nombre: 0, montant: 0 }
+  );
 
   const dateLabel = new Date(new Date().getFullYear(), month, day).toLocaleDateString('fr-FR', {
     weekday: 'long', day: '2-digit', month: 'long',
@@ -54,7 +72,7 @@ export default function AncvPapierModal({ day, month, ancv, updateAncvPapiers, o
       style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ background: '#fff', borderRadius: 16, maxWidth: 400, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 60px rgba(0,0,0,.3)' }}>
+      <div style={{ background: '#fff', borderRadius: 16, maxWidth: 480, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 60px rgba(0,0,0,.3)' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
           <div>
@@ -71,32 +89,49 @@ export default function AncvPapierModal({ day, month, ancv, updateAncvPapiers, o
         </div>
 
         {/* Body */}
-        <div style={{ padding: '20px' }}>
-          <div className="bg-blue-50/40 rounded-lg p-4" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>Montant total</div>
-              <CurrencyInput
-                value={montantTotal}
-                onChange={val => updateAncvPapiers(month, day, 'montant_total', val)}
-              />
+        <div style={{ padding: '16px 20px' }}>
+          <div className="rounded-lg bg-blue-50/40 p-3">
+            <div className="text-xs font-bold uppercase tracking-wider mb-3 text-center text-blue-700">ANCV</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 56px auto', gap: 4, marginBottom: 4 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', textAlign: 'right' }}>Valeur faciale</div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', textAlign: 'center' }}>Nombre</div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', textAlign: 'right', minWidth: 60 }}>Sous-total</div>
             </div>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>Nombre ANCV</div>
-              <NumberInput
-                value={nombreAncv}
-                onChange={val => updateAncvPapiers(month, day, 'nombre_ancv', val)}
-              />
-            </div>
+            {entries.map((entry, i) => {
+              const lineTotal = (entry.valeur ?? 0) * parseMoneyValue(entry.nombre);
+              return (
+                <div key={i} style={{ marginBottom: 4 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 56px auto', gap: 4, alignItems: 'center' }}>
+                    <CurrencyInput
+                      value={entry.valeur || ''}
+                      onChange={val => updateAncvLigne(month, day, i, 'valeur', val)}
+                    />
+                    <NumberInput
+                      value={entry.nombre || ''}
+                      onChange={val => updateAncvLigne(month, day, i, 'nombre', val)}
+                    />
+                    <div style={{ fontSize: 10, color: lineTotal > 0 ? '#1d4ed8' : '#cbd5e1', textAlign: 'right', minWidth: 60, fontWeight: lineTotal > 0 ? 700 : 400 }}>
+                      {lineTotal > 0 ? `${formatCurrencyFr(lineTotal)} €` : '—'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {total.montant > 0 && (
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #bfdbfe', fontSize: 11, fontWeight: 800, color: '#1d4ed8', textAlign: 'right' }}>
+                {formatCurrencyFr(total.montant)} €
+              </div>
+            )}
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ margin: '0 20px 16px', padding: '10px 16px', background: '#eff6ff', borderRadius: 8, border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ margin: '0 20px 16px', padding: '10px 16px', background: '#fff7ed', borderRadius: 8, border: '1px solid #fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#1e3a8a', textTransform: 'uppercase', letterSpacing: '.04em' }}>Récapitulatif</div>
-            <div style={{ fontSize: 15, fontWeight: 900, color: '#1d4ed8', marginTop: 2 }}>
-              {parseMoneyValue(nombreAncv) > 0 ? `${nombreAncv} ANCV` : '—'}
-              {montantTotal > 0 ? ` · ${formatCurrencyFr(montantTotal)} €` : ''}
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#9a3412', textTransform: 'uppercase', letterSpacing: '.04em' }}>Total</div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: '#c2410c', marginTop: 2 }}>
+              {total.nombre > 0 ? `${total.nombre} ANCV` : '—'}
+              {total.montant > 0 ? ` · ${formatCurrencyFr(total.montant)} €` : ''}
             </div>
           </div>
           <button

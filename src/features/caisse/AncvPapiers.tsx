@@ -71,11 +71,12 @@ export default function AncvPapiers({ month, year, onBack }: AncvPapiersProps) {
 
   const formatCurrency = formatCurrencyFr;
 
-  const getVal = (day: number, field: keyof DayDataAncvPapiers) => parseMoneyValue(data[day]?.[field]);
+  type AncvScalarField = Exclude<keyof DayDataAncvPapiers, 'lignes'>;
+  const getVal = (day: number, field: AncvScalarField) => parseMoneyValue(data[day]?.[field] as string | number | undefined);
 
   const getTheoriqueVal = (day: number, field: 'ancv') => parseMoneyValue(theoriqueData[day]?.[field]);
 
-  const getColTotal = (field: keyof DayDataAncvPapiers) => {
+  const getColTotal = (field: AncvScalarField) => {
     return days.reduce((sum, day) => sum + getVal(day, field), 0);
   };
 

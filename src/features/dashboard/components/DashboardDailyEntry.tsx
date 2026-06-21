@@ -7,6 +7,7 @@ import type {
   DayDataEspeces,
   DayDataAmexAncv,
   DayDataConecs,
+  AncvEntry,
   DayDataAncvPapiers,
   DayDataSaisieTR,
   DayDataSunday,
@@ -50,6 +51,7 @@ type DashboardDailyEntryProps = {
   updateAmexAncv: (month: number, day: number, field: keyof DayDataAmexAncv, value: string) => void;
   updateConecs: (month: number, day: number, field: keyof DayDataConecs, value: string) => void;
   updateAncvPapiers: (month: number, day: number, field: keyof DayDataAncvPapiers, value: string) => void;
+  updateAncvLigne: (month: number, day: number, index: number, field: keyof AncvEntry, value: string) => void;
   updateSaisieTR: (month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string | number) => void;
   updateSunday: (month: number, day: number, field: keyof DayDataSunday, value: string) => void;
   updateUber: (month: number, day: number, field: keyof DayDataUber, value: string) => void;
@@ -85,6 +87,7 @@ export default function DashboardDailyEntry({
   updateAmexAncv,
   updateConecs,
   updateAncvPapiers,
+  updateAncvLigne,
   updateSaisieTR,
   updateSunday,
   updateUber,
@@ -138,6 +141,7 @@ export default function DashboardDailyEntry({
               updateAmexAncv={updateAmexAncv}
               updateConecs={updateConecs}
               updateAncvPapiers={updateAncvPapiers}
+              updateAncvLigne={updateAncvLigne}
               updateSaisieTR={updateSaisieTR}
               updateSunday={updateSunday}
               updateUber={updateUber}

@@ -81,6 +81,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     updateEspeces,
     updateConecs,
     updateAncvPapiers,
+    updateAncvLigne,
     updateSaisieTR,
     updateSunday,
     updateUber,
@@ -828,6 +829,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       updateAmexAncv={updateAmexAncv}
       updateConecs={updateConecs}
       updateAncvPapiers={updateAncvPapiers}
+      updateAncvLigne={updateAncvLigne}
       updateSaisieTR={updateSaisieTR}
       updateSunday={updateSunday}
       updateUber={updateUber}

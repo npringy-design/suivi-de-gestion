@@ -30,6 +30,11 @@ export type DayDataConecs = {
   commentaire: string;
 };
 
+export type AncvEntry = {
+  valeur: number;
+  nombre: string;
+};
+
 export type DayDataAncvPapiers = {
   nombre_ancv: string;
   montant_total: number;
@@ -37,6 +42,7 @@ export type DayDataAncvPapiers = {
   nbre_ancv_enveloppes: string;
   total_enveloppes_ancv: number;
   commentaire: string;
+  lignes?: AncvEntry[];
 };
 
 export type TrEntry = {
