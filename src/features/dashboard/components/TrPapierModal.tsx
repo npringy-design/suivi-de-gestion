@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 import type { DayDataSaisieTR, TrEntry } from '@/contexts/DataContext';
 import { parseMoneyValue, formatCurrencyFr, sanitizeMoneyInput } from '@/lib/money';
@@ -19,17 +19,22 @@ const PROVIDERS: { key: keyof DayDataSaisieTR; label: string; bg: string; header
 ];
 
 const CurrencyInput = ({ value, onChange }: { value: string | number; onChange: (val: string) => void }) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const strValue = typeof value === 'number' ? (value !== 0 ? String(value) : '') : value;
-  const displayValue = !isFocused && strValue ? formatCurrencyFr(strValue) : strValue;
+  const [draft, setDraft] = React.useState<string | null>(null);
+  const isFocused = draft !== null;
+  const strValue = typeof value === 'number' ? (value !== 0 ? String(value) : '') : (value ?? '');
+  const displayValue = isFocused ? draft! : (strValue ? formatCurrencyFr(strValue) : '');
   return (
     <input
       type="text"
       className="w-full h-7 px-2 bg-white border border-slate-200 rounded text-right text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
-      value={displayValue ?? ''}
-      onChange={e => onChange(sanitizeMoneyInput(e.target.value))}
-      onFocus={() => setIsFocused(true)}
-      onBlur={() => setIsFocused(false)}
+      value={displayValue}
+      onChange={e => {
+        const sanitized = sanitizeMoneyInput(e.target.value);
+        setDraft(sanitized);
+        onChange(sanitized);
+      }}
+      onFocus={() => setDraft(strValue)}
+      onBlur={() => setDraft(null)}
     />
   );
 };

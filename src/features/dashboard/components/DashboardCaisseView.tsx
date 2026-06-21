@@ -1,6 +1,7 @@
 import React from 'react';
 
 import TrPapierModal from './TrPapierModal';
+import AncvPapierModal from './AncvPapierModal';
 import { parseMoneyValue } from '@/lib/money';
 import type { DashboardRow } from '@/features/dashboard/dashboardTypes';
 import type {
@@ -83,6 +84,7 @@ export default function DashboardCaisseView({
   updateClickCollect,
 }: DashboardCaisseViewProps) {
   const [isTrModalOpen, setIsTrModalOpen] = React.useState(false);
+  const [isAncvModalOpen, setIsAncvModalOpen] = React.useState(false);
 
   const day = selectedDayRow?.dayIndex;
   if (!day) return null;
@@ -216,9 +218,8 @@ export default function DashboardCaisseView({
       {renderRealCaisseControl('Pièces', '', reelStr(especes?.pieces), value => updateEspeces(month, day, 'pieces', value))}
       {renderRealCaisseControl('AMEX/ANCV carte', theorique?.amex || '', reelStr(amexAncv?.reel_nepting), value => updateAmexAncv(month, day, 'reel_nepting', value))}
       {renderRealCaisseControl('TR carte', theorique?.tr_carte || '', reelStr(conecs?.conecs_reel_nepting), value => updateConecs(month, day, 'conecs_reel_nepting', value))}
-      {renderRealCaisseControl('ANCV papier', theorique?.ancv || '', ancv?.montant_total || '', value => updateAncvPapiers(month, day, 'montant_total', value), {
-        detailId: 'ancv',
-        details: renderCashDetailField('Nombre ANCV papier', ancv?.nombre_ancv || '', value => updateAncvPapiers(month, day, 'nombre_ancv', value)),
+      {renderRealCaisseControl('ANCV papier', theorique?.ancv || '', ancv?.montant_total || '', () => {}, {
+        onLabelClick: () => setIsAncvModalOpen(true),
       })}
       {renderRealCaisseControl('TR papier', theorique?.tr_papier || '', trPapierDisplay, () => {}, {
         onLabelClick: () => setIsTrModalOpen(true),
@@ -247,6 +248,15 @@ export default function DashboardCaisseView({
         </button>
       </div>
     </div>
+    {isAncvModalOpen && (
+      <AncvPapierModal
+        day={day}
+        month={month}
+        ancv={ancv as DayDataAncvPapiers | undefined}
+        updateAncvPapiers={updateAncvPapiers}
+        onClose={() => setIsAncvModalOpen(false)}
+      />
+    )}
     {isTrModalOpen && (
       <TrPapierModal
         day={day}

@@ -19,18 +19,23 @@ const formatDate = (day: number, month: number, year: number) => {
 };
 
 const CurrencyInput = ({ value, onChange, className = "" }: { value: string | number, onChange: (val: string) => void, className?: string }) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const strValue = typeof value === 'number' ? (value !== 0 ? String(value) : '') : value;
-  const displayValue = !isFocused && strValue ? formatCurrencyFr(strValue) : strValue;
+  const [draft, setDraft] = React.useState<string | null>(null);
+  const isFocused = draft !== null;
+  const strValue = typeof value === 'number' ? (value !== 0 ? String(value) : '') : (value ?? '');
+  const displayValue = isFocused ? draft! : (strValue ? formatCurrencyFr(strValue) : '');
 
   return (
     <input
       type="text"
       className={`w-full h-full p-2 bg-transparent outline-none text-right transition-colors focus:bg-white focus:ring-2 focus:ring-blue-400 rounded-md ${className}`}
-      value={displayValue ?? ''}
-      onChange={(e) => onChange(sanitizeMoneyInput(e.target.value))}
-      onFocus={() => setIsFocused(true)}
-      onBlur={() => setIsFocused(false)}
+      value={displayValue}
+      onChange={(e) => {
+        const sanitized = sanitizeMoneyInput(e.target.value);
+        setDraft(sanitized);
+        onChange(sanitized);
+      }}
+      onFocus={() => setDraft(strValue)}
+      onBlur={() => setDraft(null)}
     />
   );
 };
