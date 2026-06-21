@@ -362,7 +362,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       }
       if (new Date(year - 1, month, numDaysN1).getDay() !== 0) n1Rows.push({ type: 'total', label: '', weekIndex: weekCountN1 });
       // Fusionner les 6 premiers jours du mois overflow N-1 pour gérer le débordement de fin de mois
-      let mergedCellData: Record<string, string> = { ...nMinus1MonthData.dashboard };
+      const mergedCellData: Record<string, string> = { ...nMinus1MonthData.dashboard };
       if (nMinus1OverflowMonthData?.dashboard) {
         for (let i = 1; i <= 6; i++) {
           const date = new Date(overflowYear, overflowMonth, i);
