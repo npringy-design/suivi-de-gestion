@@ -258,8 +258,8 @@ export function computeDashboardData(
           if (totalJour > 0) data[`${rIdx}-117`] = ((realiseEcartBudget / totalJour) * 100).toFixed(2);
           cumulRealiseCA += realiseTotalJour;
           data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
-          data[`${rIdx}-139`] = (cumulRealiseCA - cumulCA).toFixed(2);
-          if (cumulCA > 0) data[`${rIdx}-140`] = (((cumulRealiseCA - cumulCA) / cumulCA) * 100).toFixed(2);
+          data[`${rIdx}-140`] = (cumulRealiseCA - cumulCA).toFixed(2);
+          if (cumulCA > 0) data[`${rIdx}-141`] = (((cumulRealiseCA - cumulCA) / cumulCA) * 100).toFixed(2);
         }
         // COUVERTS REALISE — 25=NB MIDI,26=MOY,27=NB SOIR,28=MOY,29=TOTAL,30=CUMUL,31=ECART nb vs budget
         const nbCvtsMidi = parseMoneyValue(data[`${rIdx}-25`]);
@@ -464,9 +464,9 @@ export function computeDashboardData(
             data[`${rIdx}-123`] = ecartJourCvts.toFixed(2);
             if (n1.cvtsRealise > 0) data[`${rIdx}-124`] = ((ecartJourCvts / n1.cvtsRealise) * 100).toFixed(2);
             // Tendance % vs N-1 (cumul courant réalisé)
-            if (cumulN1CA > 0) data[`${rIdx}-141`] = (((cumulRealiseCA - cumulN1CA) / cumulN1CA) * 100).toFixed(2);
+            if (cumulN1CA > 0) data[`${rIdx}-142`] = (((cumulRealiseCA - cumulN1CA) / cumulN1CA) * 100).toFixed(2);
             // Écart budget couverts CUMUL
-            data[`${rIdx}-142`] = (cumulCvtsRealise - cumulCvts).toFixed(0);
+            data[`${rIdx}-143`] = (cumulCvtsRealise - cumulCvts).toFixed(0);
           }
         }
       }
@@ -485,7 +485,7 @@ export function computeDashboardData(
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 139, 140, 142].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 140, 141, 143].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -566,7 +566,7 @@ export function computeDashboardData(
         {
           const lastWeekDay = weekDays[weekDays.length - 1];
           if (lastWeekDay) {
-            [121, 127, 128, 129, 139, 140, 141, 142].forEach(c => {
+            [121, 127, 128, 129, 140, 141, 142, 143].forEach(c => {
               const key = `${lastWeekDay.originalIdx}-${c}`;
               if (data[key]) data[`${rIdx}-${c}`] = data[key];
             });
@@ -651,7 +651,7 @@ export function computeDashboardData(
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 139, 140, 142].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 140, 141, 143].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
@@ -670,7 +670,7 @@ export function computeDashboardData(
 
       const lastDay = allDays[allDays.length - 1];
       if (lastDay) {
-        [121, 127, 128, 129, 139, 140, 141, 142].forEach(c => {
+        [121, 127, 128, 129, 140, 141, 142, 143].forEach(c => {
           const key = `${lastDay.originalIdx}-${c}`;
           if (data[key]) data[`${monthTotalIdx}-${c}`] = data[key];
         });

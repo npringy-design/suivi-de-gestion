@@ -439,7 +439,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const thilloisNoLimonadeColumns = new Set([2, 14, 15, 16, 20, 34, 35, 36, 110, 111, 112, 113, 114, 115]);
     const isGlobalPersonnelSchema = globalData[month]?.personnelSchema === 'global';
     const cuisineSalleColumns = new Set([62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]);
-    const globalPersonnelColumns = new Set([130, 131, 132, 133, 134, 135, 136, 137, 138]);
+    const globalPersonnelColumns = new Set([130, 131, 132, 133, 134, 135, 136, 137, 138, 139]);
     const visibleColumnsWithoutLimonade = baseVisibleColumns.filter(col => {
       const text = [col[0], col[1], col[2]].join(' ').toUpperCase();
       if (thilloisNoLimonadeColumns.has(col.originalIndex) || text.includes('LIMONADE')) return false;
@@ -500,9 +500,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       buildColumn(117, 'CA HT', 'ECART BUDGET', '%', 'bg-white'),
       buildColumn(118, 'CA HT', 'ECART VS N-1', 'VALEUR', 'bg-white'),
       buildColumn(119, 'CA HT', 'ECART VS N-1', '%', 'bg-white'),
-      buildColumn(139, 'CA HT', 'TENDANCE CUMUL', 'vs Budget €', 'bg-white'),
-      buildColumn(140, 'CA HT', 'TENDANCE CUMUL', 'vs Budget %', 'bg-hatched'),
-      buildColumn(141, 'CA HT', 'TENDANCE CUMUL', 'vs N-1 %', 'bg-hatched'),
+      buildColumn(140, 'CA HT', 'TENDANCE CUMUL', 'vs Budget €', 'bg-white'),
+      buildColumn(141, 'CA HT', 'TENDANCE CUMUL', 'vs Budget %', 'bg-hatched'),
+      buildColumn(142, 'CA HT', 'TENDANCE CUMUL', 'vs N-1 %', 'bg-hatched'),
       buildColumn(25, 'COUVERTS', 'COUVERTS RESTAURANT', 'MIDI'),
       buildColumn(26, 'COUVERTS', 'COUVERTS RESTAURANT', 'TM MIDI'),
       buildColumn(27, 'COUVERTS', 'COUVERTS RESTAURANT', 'SOIR'),
