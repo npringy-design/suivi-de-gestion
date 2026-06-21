@@ -349,7 +349,7 @@ export function useDashboardDailyRecapHandlers(params: {
       50 + section.rows.length * lineH + (section.manager ? 22 : 0) + (section.comment ? 30 : 0)
     );
     const contentHeight = 106 + sections.reduce((sum, section) => sum + cardHeight(section) + cardGap, 0) + 90;
-    const dpr = 1;
+    const dpr = Math.min(window.devicePixelRatio || 2, 3);
     const canvas = document.createElement('canvas');
     canvas.width = width * dpr;
     canvas.height = contentHeight * dpr;
