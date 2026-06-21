@@ -349,13 +349,11 @@ export function useDashboardDailyRecapHandlers(params: {
       50 + section.rows.length * lineH + (section.manager ? 22 : 0) + (section.comment ? 30 : 0)
     );
     const contentHeight = 106 + sections.reduce((sum, section) => sum + cardHeight(section) + cardGap, 0) + 90;
-    const scale = 2;
     const canvas = document.createElement('canvas');
-    canvas.width = width * scale;
-    canvas.height = contentHeight * scale;
+    canvas.width = width;
+    canvas.height = contentHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas indisponible');
-    ctx.scale(scale, scale);
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, contentHeight);
 
@@ -378,14 +376,14 @@ export function useDashboardDailyRecapHandlers(params: {
       ctx.fillText(text, x, y);
     };
 
-    drawText('Bonsoir,', pad, 30, 13, '400');
+    drawText('Bonsoir,', pad, 30, 15, '400');
     ctx.fillStyle = '#ecfeff';
     roundRect(pad, 46, width - pad * 2, 48, 8);
     ctx.fill();
     ctx.strokeStyle = '#a5f3fc';
     ctx.stroke();
-    drawText('Récapitulatif de clôture', pad + 14, 68, 10, '700', '#0f766e');
-    drawText(selectedDayLabel, pad + 14, 88, 15, '700', '#0f172a');
+    drawText('Récapitulatif de clôture', pad + 14, 68, 12, '700', '#0f766e');
+    drawText(selectedDayLabel, pad + 14, 88, 17, '700', '#0f172a');
 
     let y = 112;
     sections.forEach(section => {
@@ -398,29 +396,29 @@ export function useDashboardDailyRecapHandlers(params: {
       ctx.fillStyle = section.accent;
       roundRect(pad, y, 5, h, 5);
       ctx.fill();
-      drawText(section.title.toUpperCase(), pad + 16, y + 24, 13, '700', '#0f172a');
+      drawText(section.title.toUpperCase(), pad + 16, y + 24, 15, '700', '#0f172a');
       let cy = y + 46;
       if (section.manager) {
-        drawText(`Responsable : ${section.manager}`, pad + 16, cy, 12, '700', '#334155');
+        drawText(`Responsable : ${section.manager}`, pad + 16, cy, 13, '700', '#334155');
         cy += 22;
       }
       section.rows.forEach(row => {
         if (row.header) {
-          drawText(row.label, pad + 16, cy, 12, '700', section.accent === '#2563eb' ? '#1d4ed8' : section.accent);
+          drawText(row.label, pad + 16, cy, 13, '700', section.accent === '#2563eb' ? '#1d4ed8' : section.accent);
           cy += lineH;
           return;
         }
-        drawText(row.label, pad + 16, cy, 12, '400', '#475569');
-        drawText(row.value, pad + 185, cy, 12, '700', row.color || '#0f172a');
+        drawText(row.label, pad + 16, cy, 13, '400', '#475569');
+        drawText(row.value, pad + 185, cy, 13, '700', row.color || '#0f172a');
         cy += lineH;
       });
       if (section.comment) {
-        drawText(`Commentaire : ${section.comment}`, pad + 16, cy + 8, 12, '700', '#334155');
+        drawText(`Commentaire : ${section.comment}`, pad + 16, cy + 8, 13, '700', '#334155');
       }
       y += h + cardGap;
     });
-    drawText('Bonne soirée,', pad, y + 8, 13, '400');
-    drawText('Cordialement,', pad, y + 32, 13, '400');
+    drawText('Bonne soirée,', pad, y + 8, 15, '400');
+    drawText('Cordialement,', pad, y + 32, 15, '400');
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(nextBlob => nextBlob ? resolve(nextBlob) : reject(new Error('Image non générée')), 'image/png');
