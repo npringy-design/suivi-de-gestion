@@ -349,11 +349,13 @@ export function useDashboardDailyRecapHandlers(params: {
       50 + section.rows.length * lineH + (section.manager ? 22 : 0) + (section.comment ? 30 : 0)
     );
     const contentHeight = 106 + sections.reduce((sum, section) => sum + cardHeight(section) + cardGap, 0) + 90;
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = contentHeight;
-    const ctx = canvas.getContext('2d');
+    const scale = 2;
+    const canvasHD = document.createElement('canvas');
+    canvasHD.width = width * scale;
+    canvasHD.height = contentHeight * scale;
+    const ctx = canvasHD.getContext('2d');
     if (!ctx) throw new Error('Canvas indisponible');
+    ctx.scale(scale, scale);
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, contentHeight);
 
@@ -420,6 +422,14 @@ export function useDashboardDailyRecapHandlers(params: {
     drawText('Bonne soirée,', pad, y + 8, 15, '400');
     drawText('Cordialement,', pad, y + 32, 15, '400');
 
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = contentHeight;
+    const ctxFinal = canvas.getContext('2d');
+    if (!ctxFinal) throw new Error('Canvas final indisponible');
+    ctxFinal.imageSmoothingEnabled = true;
+    ctxFinal.imageSmoothingQuality = 'high';
+    ctxFinal.drawImage(canvasHD, 0, 0, width, contentHeight);
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(nextBlob => nextBlob ? resolve(nextBlob) : reject(new Error('Image non générée')), 'image/png');
     });
