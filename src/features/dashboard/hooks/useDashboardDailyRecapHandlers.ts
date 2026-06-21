@@ -349,13 +349,13 @@ export function useDashboardDailyRecapHandlers(params: {
       50 + section.rows.length * lineH + (section.manager ? 22 : 0) + (section.comment ? 30 : 0)
     );
     const contentHeight = 106 + sections.reduce((sum, section) => sum + cardHeight(section) + cardGap, 0) + 90;
-    const dpr = Math.min(window.devicePixelRatio || 2, 3);
+    const scale = 2;
     const canvas = document.createElement('canvas');
-    canvas.width = width * dpr;
-    canvas.height = contentHeight * dpr;
+    canvas.width = width * scale;
+    canvas.height = contentHeight * scale;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas indisponible');
-    ctx.scale(dpr, dpr);
+    ctx.scale(scale, scale);
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, contentHeight);
 
