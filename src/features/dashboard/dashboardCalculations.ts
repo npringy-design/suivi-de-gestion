@@ -498,7 +498,7 @@ export function computeDashboardData(
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 140, 141, 143].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 140, 141, 142, 143].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -664,7 +664,7 @@ export function computeDashboardData(
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 140, 141, 143].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 140, 141, 142, 143].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;
