@@ -258,8 +258,7 @@ export function computeDashboardData(
           if (totalJour > 0) data[`${rIdx}-117`] = ((realiseEcartBudget / totalJour) * 100).toFixed(2);
           cumulRealiseCA += realiseTotalJour;
           data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
-          data[`${rIdx}-140`] = (cumulRealiseCA - cumulCA).toFixed(2);
-          if (cumulCA > 0) data[`${rIdx}-141`] = (((cumulRealiseCA - cumulCA) / cumulCA) * 100).toFixed(2);
+          // cols 140/141/142 (Tendance) calculés après le premier passage (totalBudgetMois requis)
         }
         // COUVERTS REALISE — 25=NB MIDI,26=MOY,27=NB SOIR,28=MOY,29=TOTAL,30=CUMUL,31=ECART nb vs budget
         const nbCvtsMidi = parseMoneyValue(data[`${rIdx}-25`]);
@@ -463,14 +462,28 @@ export function computeDashboardData(
             const ecartJourCvts = cvtsJour - n1.cvtsRealise;
             data[`${rIdx}-123`] = ecartJourCvts.toFixed(2);
             if (n1.cvtsRealise > 0) data[`${rIdx}-124`] = ((ecartJourCvts / n1.cvtsRealise) * 100).toFixed(2);
-            // Tendance % vs N-1 (cumul courant réalisé)
-            if (cumulN1CA > 0) data[`${rIdx}-142`] = (((cumulRealiseCA - cumulN1CA) / cumulN1CA) * 100).toFixed(2);
             // Écart budget couverts CUMUL
             data[`${rIdx}-143`] = (cumulCvtsRealise - cumulCvts).toFixed(0);
           }
         }
       }
     });
+
+    // Mini-passage post-premier-passage : Tendance mensuelle (nécessite totalBudgetMois et totalN1Mois)
+    {
+      const totalBudgetMois = cumulCA;
+      const totalN1Mois = cumulN1CA;
+      rows.forEach((row, rIdx) => {
+        if (row.type !== 'day') return;
+        const cR = parseMoneyValue(data[`${rIdx}-23`]); // cumul réalisé CA
+        const cB = parseMoneyValue(data[`${rIdx}-4`]);  // cumul budget CA
+        if (cR === 0 || cB === 0) return;
+        const tendance = cR * totalBudgetMois / cB;
+        data[`${rIdx}-140`] = tendance.toFixed(2);
+        if (totalBudgetMois > 0) data[`${rIdx}-141`] = ((tendance / totalBudgetMois - 1) * 100).toFixed(2);
+        if (totalN1Mois > 0) data[`${rIdx}-142`] = ((tendance / totalN1Mois - 1) * 100).toFixed(2);
+      });
+    }
 
     // Second pass: Week Totals
     rows.forEach((row, rIdx) => {
