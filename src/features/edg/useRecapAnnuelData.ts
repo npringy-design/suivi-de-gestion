@@ -42,9 +42,15 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       return parseMoneyValue(monthCalcData[mi][`${idx}-fraisGenerauxTotal`] ?? '0');
     };
 
+    const getRaw = (mi: number, col: number): string => {
+      const idx = monthTotalIndices[mi];
+      if (idx < 0) return '—';
+      return monthCalcData[mi][`${idx}-${col}`] ?? '—';
+    };
+
     const caByMonth = Array.from({ length: 12 }, (_, mi) => getVal(mi, 21));
     const totalCA = caByMonth.reduce((s, v) => s + v, 0);
 
-    return { getVal, getFgTotal, caByMonth, totalCA };
+    return { getVal, getFgTotal, getRaw, caByMonth, totalCA };
   }, [data, year]);
 }
