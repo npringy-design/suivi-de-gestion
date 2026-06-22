@@ -36,150 +36,142 @@ const BG_YELL  = '#fef08a';
 const fe = formatEuroSymbol;
 const fp = formatPercentSigned;
 
-// ─── Définition des sections et leurs colonnes ────────────────────────────────
-
 type ColDef = { g: string; l: string; bg: string; w: number };
+
+// ─── Sections ────────────────────────────────────────────────────────────────
+// Budget : 14 cols (CA Limo + groupe LIMONADE supprimés car vides)
+// Réalisé : 27 cols (groupe COUVERTS LIMONADE supprimé)
 
 const SECTIONS: { key: string; label: string; icon: string; accentBg: string; accentColor: string; cols: ColDef[] }[] = [
   {
     key: 'budget', label: 'Budget', icon: '🎯',
     accentBg: '#92400e', accentColor: '#fff',
     cols: [
-      { g:'CA',              l:'CA HT\nMidi',         bg:BG_BUDG, w:70 },
-      { g:'CA',              l:'CA HT\nSoir',         bg:BG_BUDG, w:70 },
-      { g:'CA',              l:'CA HT\nLimonade',     bg:BG_BUDG, w:70 },
-      { g:'CA',              l:'CA HT\nJour',         bg:BG_BUDG, w:75 },
-      { g:'CA',              l:'Cumul\nDepuis le 01', bg:BG_BUDG, w:80 },
-      { g:'CA',              l:'VAR\nVS N-1',         bg:BG_HATCH,w:65 },
-      { g:'COUVERT\nMIDI',   l:'NB CVTS',             bg:BG_BUDG, w:65 },
-      { g:'COUVERT\nMIDI',   l:'CVTS MOY HT',         bg:BG_BUDG, w:75 },
-      { g:'COUVERT\nSOIR',   l:'NB CVTS',             bg:BG_BUDG, w:65 },
-      { g:'COUVERT\nSOIR',   l:'CVTS MOY HT',         bg:BG_BUDG, w:75 },
-      { g:'COUVERT\nJOUR',   l:'NB CVTS',             bg:BG_BUDG, w:65 },
-      { g:'COUVERT\nJOUR',   l:'CVTS MOY',            bg:BG_BUDG, w:65 },
-      { g:'COUVERT\nJOUR',   l:'CVTS CUMUL',          bg:BG_BUDG, w:75 },
-      { g:'COUVERT\nJOUR',   l:'VAR VS N-1',          bg:BG_HATCH,w:65 },
-      { g:'LIMONADE',        l:'NB CVTS\nJour',       bg:BG_BUDG, w:65 },
-      { g:'LIMONADE',        l:'CVTS MOY HT',         bg:BG_BUDG, w:75 },
-      { g:'LIMONADE',        l:'VAR VS N-1',          bg:BG_HATCH,w:65 },
-      { g:'VAE',             l:'CA HT VAE',           bg:BG_BUDG, w:70 },
+      { g:'CA',              l:'CA HT\nMidi',         bg:BG_BUDG,  w:70 },  // col 0
+      { g:'CA',              l:'CA HT\nSoir',         bg:BG_BUDG,  w:70 },  // col 1
+      { g:'CA',              l:'CA HT\nJour',         bg:BG_BUDG,  w:75 },  // col 3
+      { g:'CA',              l:'Cumul\nDepuis le 01', bg:BG_BUDG,  w:80 },  // col 4
+      { g:'CA',              l:'VAR\nVS N-1',         bg:BG_HATCH, w:65 },  // col 5
+      { g:'COUVERT\nMIDI',   l:'NB CVTS',             bg:BG_BUDG,  w:65 },  // col 6
+      { g:'COUVERT\nMIDI',   l:'CVTS MOY HT',         bg:BG_BUDG,  w:75 },  // col 7
+      { g:'COUVERT\nSOIR',   l:'NB CVTS',             bg:BG_BUDG,  w:65 },  // col 8
+      { g:'COUVERT\nSOIR',   l:'CVTS MOY HT',         bg:BG_BUDG,  w:75 },  // col 9
+      { g:'COUVERT\nJOUR',   l:'NB CVTS',             bg:BG_BUDG,  w:65 },  // col 10
+      { g:'COUVERT\nJOUR',   l:'CVTS MOY',            bg:BG_BUDG,  w:65 },  // col 11
+      { g:'COUVERT\nJOUR',   l:'CVTS CUMUL',          bg:BG_BUDG,  w:75 },  // col 12
+      { g:'COUVERT\nJOUR',   l:'VAR VS N-1',          bg:BG_HATCH, w:65 },  // col 13
+      { g:'VAE',             l:'CA HT VAE',           bg:BG_BUDG,  w:70 },  // col 17
     ],
   },
   {
     key: 'realise', label: 'Réalisé', icon: '📊',
     accentBg: '#1e40af', accentColor: '#fff',
     cols: [
-      { g:'CA HT',                   l:'VAR\nVS N-1',              bg:BG_HATCH, w:65 },
-      { g:'CA HT',                   l:'CA HT\nVAE',               bg:BG_REAL2, w:70 },
-      { g:'CA HT',                   l:'CA HT\nMidi',              bg:BG_REAL2, w:70 },
-      { g:'CA HT',                   l:'Ecart au\nBudget\nMidi',   bg:'#fff',   w:65 },
-      { g:'CA HT',                   l:'CA HT\nSoir',              bg:BG_REAL2, w:70 },
-      { g:'CA HT',                   l:'Ecart au\nBudget\nSoir',   bg:'#fff',   w:65 },
-      { g:'CA HT',                   l:'CA HT\nLimonade',          bg:BG_REAL2, w:70 },
-      { g:'CA HT',                   l:'Ecart au\nBudget\nLimo',   bg:'#fff',   w:65 },
-      { g:'CA HT',                   l:'CAHT\nMois',               bg:BG_REAL2, w:75 },
-      { g:'CA HT',                   l:'VAR VS N-1',               bg:BG_HATCH, w:65 },
-      { g:'CA HT',                   l:'Cumul\nDepuis Janv.',      bg:BG_REAL2, w:80 },
-      { g:'CA HT',                   l:'Ecart\nBudget Mois',       bg:'#fff',   w:65 },
-      { g:'CA HT',                   l:'Ecart\nDepuis 01/01',      bg:'#fff',   w:70 },
-      { g:'CA HT',                   l:'Tendance\nAnnuel',         bg:'#fff',   w:65 },
-      { g:'CA HT',                   l:'Tendance\nVAR % -1',       bg:'#fff',   w:65 },
-      { g:'CA HT',                   l:'RAPPEL CA\nN-1',           bg:BG_HATCH, w:75 },
-      { g:'COUVERTS\nRESTAURANT',    l:'MIDI\nNB CVTS',            bg:BG_REAL2, w:65 },
-      { g:'COUVERTS\nRESTAURANT',    l:'MIDI\nCVTS MOY',           bg:BG_REAL2, w:65 },
-      { g:'COUVERTS\nRESTAURANT',    l:'SOIR\nNB CVTS',            bg:BG_REAL2, w:65 },
-      { g:'COUVERTS\nRESTAURANT',    l:'SOIR\nCVTS MOY',           bg:BG_REAL2, w:65 },
-      { g:'COUVERTS\nRESTAURANT',    l:'JOUR\nNB CVTS',            bg:BG_REAL2, w:65 },
-      { g:'COUVERTS\nRESTAURANT',    l:'JOUR\nCVTS MOY',           bg:BG_REAL2, w:65 },
-      { g:'COUVERTS\nRESTAURANT',    l:'JOUR\nCVTS CUMUL',         bg:BG_REAL2, w:70 },
-      { g:'COUVERTS\nRESTAURANT',    l:'Ecart\nBudget Cvts',       bg:'#fff',   w:65 },
-      { g:'COUVERTS\nRESTAURANT',    l:'Ecart\nMoy CVTS',          bg:'#fff',   w:65 },
-      { g:'COUVERTS\nRESTAURANT',    l:'VAR VS N-1',               bg:BG_HATCH, w:65 },
-      { g:'COUVERTS\nLIMONADE',      l:'JOUR\nNB CVTS',            bg:BG_REAL2, w:65 },
-      { g:'COUVERTS\nLIMONADE',      l:'JOUR\nCVTS MOY',           bg:BG_REAL2, w:65 },
-      { g:'COUVERTS\nLIMONADE',      l:'JOUR\nCVTS CUMUL',         bg:BG_REAL2, w:70 },
-      { g:'COUVERTS\nLIMONADE',      l:'Ecart\nBudget Cvts',       bg:'#fff',   w:65 },
-      { g:'COUVERTS\nLIMONADE',      l:'Ecart\nMoy CVTS',          bg:'#fff',   w:65 },
-      { g:'COUVERTS\nLIMONADE',      l:'VAR VS N-1',               bg:BG_HATCH, w:65 },
-      { g:'',                        l:'RAPPEL CA\nN-1',           bg:BG_HATCH, w:80 },
+      { g:'CA HT',                l:'VAR\nVS N-1',             bg:BG_HATCH, w:65 },  // computed
+      { g:'CA HT',                l:'CA HT\nVAE',              bg:BG_REAL2, w:70 },  // col 17
+      { g:'CA HT',                l:'CA HT\nMidi',             bg:BG_REAL2, w:70 },  // col 18
+      { g:'CA HT',                l:'Ecart\nBudget Midi',      bg:'#fff',   w:65 },  // col 22 (ecart global)
+      { g:'CA HT',                l:'CA HT\nSoir',             bg:BG_REAL2, w:70 },  // col 19
+      { g:'CA HT',                l:'Ecart\nBudget Soir',      bg:'#fff',   w:65 },  // —
+      { g:'CA HT',                l:'CA HT\nLimonade',         bg:BG_REAL2, w:70 },  // col 20
+      { g:'CA HT',                l:'Ecart\nBudget Limo',      bg:'#fff',   w:65 },  // —
+      { g:'CA HT',                l:'CAHT\nMois',              bg:BG_REAL2, w:75 },  // col 21
+      { g:'CA HT',                l:'VAR VS N-1',              bg:BG_HATCH, w:65 },  // col 24
+      { g:'CA HT',                l:'Cumul\nDepuis Janv.',     bg:BG_REAL2, w:80 },  // col 23
+      { g:'CA HT',                l:'Ecart\nBudget Mois',      bg:'#fff',   w:65 },  // col 22
+      { g:'CA HT',                l:'Ecart\nDepuis 01/01',     bg:'#fff',   w:70 },  // —
+      { g:'CA HT',                l:'Tendance\nAnnuel',        bg:'#fff',   w:65 },  // —
+      { g:'CA HT',                l:'Tendance\nVAR % -1',      bg:'#fff',   w:65 },  // —
+      { g:'CA HT',                l:'RAPPEL CA\nN-1',          bg:BG_HATCH, w:75 },  // caN1
+      { g:'COUVERTS\nRESTAURANT', l:'MIDI\nNB CVTS',           bg:BG_REAL2, w:65 },  // col 25
+      { g:'COUVERTS\nRESTAURANT', l:'MIDI\nCVTS MOY',          bg:BG_REAL2, w:65 },  // col 26
+      { g:'COUVERTS\nRESTAURANT', l:'SOIR\nNB CVTS',           bg:BG_REAL2, w:65 },  // col 27
+      { g:'COUVERTS\nRESTAURANT', l:'SOIR\nCVTS MOY',          bg:BG_REAL2, w:65 },  // col 28
+      { g:'COUVERTS\nRESTAURANT', l:'JOUR\nNB CVTS',           bg:BG_REAL2, w:65 },  // col 29
+      { g:'COUVERTS\nRESTAURANT', l:'JOUR\nCVTS MOY',          bg:BG_REAL2, w:65 },  // col 30
+      { g:'COUVERTS\nRESTAURANT', l:'JOUR\nCVTS CUMUL',        bg:BG_REAL2, w:70 },  // col 32
+      { g:'COUVERTS\nRESTAURANT', l:'Ecart\nBudget Cvts',      bg:'#fff',   w:65 },  // col 33
+      { g:'COUVERTS\nRESTAURANT', l:'Ecart\nMoy CVTS',         bg:'#fff',   w:65 },  // col 31
+      { g:'COUVERTS\nRESTAURANT', l:'VAR VS N-1',              bg:BG_HATCH, w:65 },  // —
+      { g:'',                     l:'RAPPEL CA\nN-1',          bg:BG_HATCH, w:80 },  // caN1
     ],
   },
   {
     key: 'cout_matiere', label: 'Coût Matière', icon: '🛒',
     accentBg: '#166534', accentColor: '#fff',
     cols: [
-      { g:'DEMARQUES',          l:'Personnel',            bg:BG_CM,  w:65 },
-      { g:'DEMARQUES',          l:'Ratio\nPerso',         bg:BG_FP,  w:55 },
-      { g:'DEMARQUES',          l:'Cuisine',              bg:BG_CM,  w:65 },
-      { g:'DEMARQUES',          l:'Ratio\nCuisine',       bg:BG_FP,  w:55 },
-      { g:'DEMARQUES',          l:'TOTAL',                bg:BG_CM3, w:65 },
-      { g:'ACHATS\nLIQUIDE HT', l:'C10',                  bg:BG_CM,  w:65 },
-      { g:'ACHATS\nLIQUIDE HT', l:'Richard\nVins',        bg:BG_CM,  w:70 },
-      { g:'ACHATS\nLIQUIDE HT', l:'Café\nRichard',        bg:BG_CM,  w:70 },
-      { g:'ACHATS\nLIQUIDE HT', l:'Storia',               bg:BG_CM,  w:60 },
-      { g:'ACHATS\nSOLIDES HT', l:'Brake',                bg:BG_CM,  w:60 },
-      { g:'ACHATS\nSOLIDES HT', l:'Pomona\nF&L',          bg:BG_CM,  w:65 },
-      { g:'ACHATS\nSOLIDES HT', l:'Socopa',               bg:BG_CM,  w:60 },
-      { g:'ACHATS\nSOLIDES HT', l:'Episaveur',            bg:BG_CM,  w:65 },
-      { g:'ACHATS\nSOLIDES HT', l:'Mamma\nfiore',         bg:BG_CM,  w:65 },
-      { g:'ACHATS\nSOLIDES HT', l:'Cie des\nDesserts',    bg:BG_CM,  w:65 },
-      { g:'ACHATS\nSOLIDES HT', l:'Distripate',           bg:BG_CM,  w:65 },
-      { g:'ACHATS\nSOLIDES HT', l:'Metro /\nDép.',        bg:BG_CM,  w:65 },
-      { g:'ACHATS\nSOLIDES HT', l:'Martel',               bg:BG_CM,  w:60 },
-      { g:'ACHAT HT',           l:'Total HT',             bg:BG_CM2, w:75 },
-      { g:'ACHAT HT',           l:'Cumul HT',             bg:BG_CM2, w:75 },
-      { g:'RATIO',              l:'Sans le\nStock',        bg:BG_CM,  w:65 },
-      { g:'',                   l:'Marge\nRéelle',         bg:'#fff', w:70 },
-      { g:'',                   l:'Variation\nStock',      bg:'#fff', w:75 },
+      { g:'DEMARQUES',          l:'Personnel',            bg:BG_CM,  w:65 },  // col 39
+      { g:'DEMARQUES',          l:'Ratio\nPerso',         bg:BG_FP,  w:55 },  // col 40
+      { g:'DEMARQUES',          l:'Cuisine',              bg:BG_CM,  w:65 },  // col 41
+      { g:'DEMARQUES',          l:'Ratio\nCuisine',       bg:BG_FP,  w:55 },  // col 42
+      { g:'DEMARQUES',          l:'TOTAL',                bg:BG_CM3, w:65 },  // col 43
+      { g:'ACHATS\nLIQUIDE HT', l:'C10',                  bg:BG_CM,  w:65 },  // col 45
+      { g:'ACHATS\nLIQUIDE HT', l:'Richard\nVins',        bg:BG_CM,  w:70 },  // col 46
+      { g:'ACHATS\nLIQUIDE HT', l:'Café\nRichard',        bg:BG_CM,  w:70 },  // col 47
+      { g:'ACHATS\nLIQUIDE HT', l:'Storia',               bg:BG_CM,  w:60 },  // col 48
+      { g:'ACHATS\nSOLIDES HT', l:'Brake',                bg:BG_CM,  w:60 },  // col 49
+      { g:'ACHATS\nSOLIDES HT', l:'Pomona\nF&L',          bg:BG_CM,  w:65 },  // col 50
+      { g:'ACHATS\nSOLIDES HT', l:'Socopa',               bg:BG_CM,  w:60 },  // col 51
+      { g:'ACHATS\nSOLIDES HT', l:'Episaveur',            bg:BG_CM,  w:65 },  // col 52
+      { g:'ACHATS\nSOLIDES HT', l:'Mamma\nfiore',         bg:BG_CM,  w:65 },  // col 53
+      { g:'ACHATS\nSOLIDES HT', l:'Cie des\nDesserts',    bg:BG_CM,  w:65 },  // col 54
+      { g:'ACHATS\nSOLIDES HT', l:'Distripate',           bg:BG_CM,  w:65 },  // col 55
+      { g:'ACHATS\nSOLIDES HT', l:'Metro /\nDép.',        bg:BG_CM,  w:65 },  // col 56
+      { g:'ACHATS\nSOLIDES HT', l:'Martel',               bg:BG_CM,  w:60 },  // col 57
+      { g:'ACHAT HT',           l:'Total HT',             bg:BG_CM2, w:75 },  // col 58
+      { g:'ACHAT HT',           l:'Cumul HT',             bg:BG_CM2, w:75 },  // col 59
+      { g:'RATIO',              l:'Sans le\nStock',        bg:BG_CM,  w:65 },  // col 60
+      { g:'',                   l:'Marge\nRéelle',         bg:'#fff', w:70 },  // —
+      { g:'',                   l:'Variation\nStock',      bg:'#fff', w:75 },  // —
     ],
   },
   {
     key: 'frais_personnel', label: 'Frais Personnel', icon: '👥',
     accentBg: '#7c2d12', accentColor: '#fff',
     cols: [
-      { g:'',                          l:'Coût\nGlobal',              bg:'#fff', w:75 },
-      { g:'Productivité\nCible 50,00', l:'Productivité\nRéelle',      bg:'#fff', w:70 },
-      { g:'Budget FP\n35,00%',         l:'Frais Perso\n%',            bg:'#fff', w:70 },
-      { g:'',                          l:'Ratio\nAnnuel %',           bg:'#fff', w:65 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Total\nHeures',              bg:BG_FP,  w:60 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Cadre\nCuisine',            bg:BG_FP,  w:65 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Cadre\nSalle',              bg:BG_FP,  w:65 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Maîtrise\nCuisine',         bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Maîtrise\nSalle',           bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'NIV I-II\nCuisine',         bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'NIV I-II\nSalle',           bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'NIV III\nCuisine',          bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'NIV III\nSalle',            bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Apprenti\nCuisine',         bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Apprenti\nSalle',           bg:BG_FP,  w:70 },
-      { g:'PROJECTION S/C\nSKELLO',   l:'Coût\nGlobal',              bg:'#fff', w:80 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'Total\nHeures',              bg:BG_FP,  w:60 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'Cadre\nCuisine',             bg:BG_FP,  w:60 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'Cadre\nSalle',               bg:BG_FP,  w:60 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'Maîtrise\nCuisine',          bg:BG_FP,  w:65 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'Maîtrise\nSalle',            bg:BG_FP,  w:65 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'NIV I-II\nCuisine',          bg:BG_FP,  w:65 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'NIV I-II\nSalle',            bg:BG_FP,  w:65 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'NIV III\nCuisine',           bg:BG_FP,  w:65 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'NIV III\nSalle',             bg:BG_FP,  w:65 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'Apprenti\nCuisine',          bg:BG_FP,  w:65 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'Apprenti\nSalle',            bg:BG_FP,  w:65 },
-      { g:'FRAIS PERSONNEL\nREALISE', l:'FP Réel\nMois',              bg:'#fff', w:80 },
-      { g:'',                          l:"Ecart Budget\nNB d'Heure",  bg:BG_FG,  w:80 },
-      { g:'',                          l:'Ecart Budget\nS/C%',        bg:BG_FG,  w:70 },
-      { g:'',                          l:'VAR VS N-1',                bg:BG_HATCH,w:65},
-      { g:'',                          l:'Ratio\nHebdo %',            bg:'#fff', w:65 },
+      { g:'',                          l:'Coût\nGlobal',              bg:'#fff', w:75 },  // col 87
+      { g:'Productivité\nCible 50,00', l:'Productivité\nRéelle',      bg:'#fff', w:70 },  // col 88
+      { g:'Budget FP\n35,00%',         l:'Frais Perso\n%',            bg:'#fff', w:70 },  // col 89
+      { g:'',                          l:'Ratio\nAnnuel %',           bg:'#fff', w:65 },  // —
+      { g:'PROJECTION S/C\nSKELLO',   l:'Total\nHeures',              bg:BG_FP,  w:60 },  // col 61
+      { g:'PROJECTION S/C\nSKELLO',   l:'Cadre\nCuisine',            bg:BG_FP,  w:65 },  // col 62
+      { g:'PROJECTION S/C\nSKELLO',   l:'Cadre\nSalle',              bg:BG_FP,  w:65 },  // col 63
+      { g:'PROJECTION S/C\nSKELLO',   l:'Maîtrise\nCuisine',         bg:BG_FP,  w:70 },  // col 64
+      { g:'PROJECTION S/C\nSKELLO',   l:'Maîtrise\nSalle',           bg:BG_FP,  w:70 },  // col 65
+      { g:'PROJECTION S/C\nSKELLO',   l:'NIV I-II\nCuisine',         bg:BG_FP,  w:70 },  // col 66
+      { g:'PROJECTION S/C\nSKELLO',   l:'NIV I-II\nSalle',           bg:BG_FP,  w:70 },  // col 67
+      { g:'PROJECTION S/C\nSKELLO',   l:'NIV III\nCuisine',          bg:BG_FP,  w:70 },  // col 68
+      { g:'PROJECTION S/C\nSKELLO',   l:'NIV III\nSalle',            bg:BG_FP,  w:70 },  // col 69
+      { g:'PROJECTION S/C\nSKELLO',   l:'Apprenti\nCuisine',         bg:BG_FP,  w:70 },  // col 70
+      { g:'PROJECTION S/C\nSKELLO',   l:'Apprenti\nSalle',           bg:BG_FP,  w:70 },  // col 71
+      { g:'PROJECTION S/C\nSKELLO',   l:'Coût\nGlobal',              bg:'#fff', w:80 },  // col 72
+      { g:'FRAIS PERSONNEL\nREALISE', l:'Total\nHeures',              bg:BG_FP,  w:60 },  // col 76
+      { g:'FRAIS PERSONNEL\nREALISE', l:'Cadre\nCuisine',             bg:BG_FP,  w:60 },  // col 77
+      { g:'FRAIS PERSONNEL\nREALISE', l:'Cadre\nSalle',               bg:BG_FP,  w:60 },  // col 78
+      { g:'FRAIS PERSONNEL\nREALISE', l:'Maîtrise\nCuisine',          bg:BG_FP,  w:65 },  // col 79
+      { g:'FRAIS PERSONNEL\nREALISE', l:'Maîtrise\nSalle',            bg:BG_FP,  w:65 },  // col 80
+      { g:'FRAIS PERSONNEL\nREALISE', l:'NIV I-II\nCuisine',          bg:BG_FP,  w:65 },  // col 81
+      { g:'FRAIS PERSONNEL\nREALISE', l:'NIV I-II\nSalle',            bg:BG_FP,  w:65 },  // col 82
+      { g:'FRAIS PERSONNEL\nREALISE', l:'NIV III\nCuisine',           bg:BG_FP,  w:65 },  // col 83
+      { g:'FRAIS PERSONNEL\nREALISE', l:'NIV III\nSalle',             bg:BG_FP,  w:65 },  // col 84
+      { g:'FRAIS PERSONNEL\nREALISE', l:'Apprenti\nCuisine',          bg:BG_FP,  w:65 },  // col 85
+      { g:'FRAIS PERSONNEL\nREALISE', l:'Apprenti\nSalle',            bg:BG_FP,  w:65 },  // col 86
+      { g:'FRAIS PERSONNEL\nREALISE', l:'FP Réel\nMois',              bg:'#fff', w:80 },  // col 87
+      { g:'',                          l:"Ecart Budget\nNB d'Heure",  bg:BG_FG,  w:80 },  // col 91
+      { g:'',                          l:'Ecart Budget\nS/C%',        bg:BG_FG,  w:70 },  // col 92
+      { g:'',                          l:'VAR VS N-1',                bg:BG_HATCH,w:65 }, // col 93
+      { g:'',                          l:'Ratio\nHebdo %',            bg:'#fff', w:65 },  // col 90
     ],
   },
   {
     key: 'frais_generaux', label: 'Frais Généraux', icon: '📋',
     accentBg: '#78350f', accentColor: '#fff',
     cols: [
-      { g:'',                           l:'Frais Perso\nRéel Mois',       bg:BG_FG2, w:80 },
-      { g:'',                           l:'Ecart au\nBudget NB Heure',    bg:BG_FG,  w:80 },
-      { g:'',                           l:'Ecart au\nBudget S/C%',        bg:BG_FG,  w:70 },
-      { g:'',                           l:'VAR VS N-1',                   bg:BG_HATCH,w:65},
-      { g:'Entretien &\nRéparation',    l:'Montant HT', bg:BG_FG,  w:80 },
+      { g:'',                           l:'Frais Perso\nRéel Mois',       bg:BG_FG2, w:80 },  // col 87
+      { g:'',                           l:'Ecart au\nBudget NB Heure',    bg:BG_FG,  w:80 },  // col 91
+      { g:'',                           l:'Ecart au\nBudget S/C%',        bg:BG_FG,  w:70 },  // col 92
+      { g:'',                           l:'VAR VS N-1',                   bg:BG_HATCH,w:65 }, // col 93
+      { g:'Entretien &\nRéparation',    l:'Montant HT', bg:BG_FG,  w:80 },  // TODO: brancher par catégorie FG
       { g:'Entretien &\nRéparation',    l:'% CA',       bg:BG_FP,  w:55 },
       { g:'Petit Matériel\n& Vaisselles',l:'Montant HT', bg:BG_FG, w:80 },
       { g:'Petit Matériel\n& Vaisselles',l:'% CA',       bg:BG_FP, w:55 },
@@ -201,7 +193,7 @@ const SECTIONS: { key: string; label: string; icon: string; accentBg: string; ac
       { g:'Énergie',                    l:'% CA',       bg:BG_FP,  w:55 },
       { g:'Divers',                     l:'Montant HT', bg:BG_FG,  w:80 },
       { g:'Divers',                     l:'% CA',       bg:BG_FP,  w:55 },
-      { g:'TOTAL FG\n(Hors Contrat)',   l:'Montant HT', bg:BG_CM2, w:90 },
+      { g:'TOTAL FG\n(Hors Contrat)',   l:'Montant HT', bg:BG_CM2, w:90 },  // getFgTotal
       { g:'TOTAL FG\n(Hors Contrat)',   l:'% CA',       bg:BG_CM2, w:55 },
       { g:'CONTRAT FG\nANNUEL',        l:'PI Electronique',  bg:'#f0fdf4', w:95 },
       { g:'CONTRAT FG\nANNUEL',        l:'Skello',           bg:'#f0fdf4', w:75 },
@@ -220,116 +212,192 @@ const SECTIONS: { key: string; label: string; icon: string; accentBg: string; ac
       { g:'CA',      l:'VAR % N-1',        bg:BG_RES, w:80  },
       { g:'CA',      l:'Différence N-1',   bg:BG_RES, w:95  },
       { g:'CA',      l:'Diff. Budget',     bg:BG_RES, w:90  },
-      { g:'TICKETS', l:'Couverts\nAnnuel', bg:BG_BUDG,w:75  },
-      { g:'TICKETS', l:'Moy Cvts\n/jour',  bg:BG_BUDG,w:70  },
+      { g:'TICKETS', l:'Couverts\nAnnuel', bg:BG_BUDG,w:75  },  // col 32 (cumul)
+      { g:'TICKETS', l:'Moy Cvts\n/jour',  bg:BG_BUDG,w:70  },  // col 30
       { g:'TICKETS', l:'TM\nAnnuel',       bg:BG_BUDG,w:70  },
       { g:'MARGE',   l:'Stock\nInitial',   bg:BG_CM,  w:80  },
       { g:'MARGE',   l:'Stock\nFinal',     bg:BG_CM,  w:80  },
       { g:'MARGE',   l:'Variation\nStock', bg:BG_CM,  w:80  },
-      { g:'MARGE',   l:'Total Achat\nHors Metro', bg:BG_CM, w:95 },
+      { g:'MARGE',   l:'Total Achat\nHors Metro', bg:BG_CM, w:95 },  // col 58
     ],
   },
 ];
 
-// ─── Données par mois ─────────────────────────────────────────────────────────
+// ─── Composant ───────────────────────────────────────────────────────────────
 
 interface RecapAnnuelProps { onBack: () => void; }
 
 export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
-  const { data, selectedYear } = useData();
+  const { data, selectedYear, setSelectedYear } = useData();
   const YEAR = selectedYear;
   const MONTHS_SHORT = MONTHS_SHORT_LABELS.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [activeTab, setActiveTab] = useState<string>(SECTIONS[0].key);
 
-  const { getVal, caByMonth, totalCA } = useRecapAnnuelData(data, YEAR);
+  const { getVal, getFgTotal, caByMonth, totalCA } = useRecapAnnuelData(data, YEAR);
 
-  // Génère les valeurs d'une section pour un mois donné
+  // Somme annuelle d'une colonne dashboard (mois 0–11)
+  const sumCol = (col: number) =>
+    Array.from({ length: 12 }, (_, mi) => getVal(mi, col)).reduce((a, b) => a + b, 0);
+
+  // ─── Valeurs par mois ─────────────────────────────────────────────────────
   const getSectionValues = (sectionKey: string, mi: number): string[] => {
     const ca   = caByMonth[mi];
     const caN1 = CA_N1_BY_MONTH[mi];
     const varP = caN1 > 0 && ca > 0 ? ((ca - caN1) / caN1) * 100 : -100;
-    const diff = ca > 0 ? ca - caN1 : -caN1;
+    const diff = ca - caN1;
     const isJan = mi === 0;
     const g = (col: number) => getVal(mi, col);
+    const fgt = getFgTotal(mi);
+
+    switch (sectionKey) {
+      // 14 valeurs (colonnes budget sans limonade)
+      case 'budget': return [
+        fe(g(0)), fe(g(1)), fe(g(3)), fe(g(4)), fp(g(5)),
+        g(6).toString(), fe(g(7)),
+        g(8).toString(), fe(g(9)),
+        g(10).toString(), fe(g(11)), g(12).toString(), fp(g(13)),
+        fe(g(17)),
+      ];
+
+      // 27 valeurs (colonnes réalisé sans COUVERTS LIMONADE)
+      case 'realise': return [
+        fp(varP),
+        fe(g(17)), fe(g(18)), fe(g(22)),
+        fe(g(19)), '—',
+        fe(g(20)), '—',
+        ca > 0 ? fe(ca) : '0,00 €', fp(g(24)), fe(g(23)), fe(g(22)),
+        '—', '—', '—',
+        fe(caN1),
+        g(25).toString(), fe(g(26)),
+        g(27).toString(), fe(g(28)),
+        g(29).toString(), fe(g(30)),
+        g(32).toString(), g(33).toString(), fe(g(31)), '—',
+        fe(caN1),
+      ];
+
+      // 23 valeurs
+      case 'cout_matiere': return [
+        fe(g(39)), fp(g(40)), fe(g(41)), fp(g(42)), fe(g(43)),
+        fe(g(45)), fe(g(46)), fe(g(47)), fe(g(48)),
+        fe(g(49)), fe(g(50)), fe(g(51)), fe(g(52)), fe(g(53)), fe(g(54)), fe(g(55)), fe(g(56)), fe(g(57)),
+        fe(g(58)), fe(g(59)), fp(g(60)),
+        '0,00 €', '0,00 €',
+      ];
+
+      // 32 valeurs
+      case 'frais_personnel': return [
+        fe(g(87)), fp(g(88)), fp(g(89)), '—',
+        g(61).toString(),
+        g(62).toString(), g(63).toString(), g(64).toString(), g(65).toString(),
+        g(66).toString(), g(67).toString(), g(68).toString(), g(69).toString(),
+        g(70).toString(), g(71).toString(),
+        fe(g(72)),
+        g(76).toString(),
+        g(77).toString(), g(78).toString(), g(79).toString(), g(80).toString(),
+        g(81).toString(), g(82).toString(), g(83).toString(), g(84).toString(),
+        g(85).toString(), g(86).toString(),
+        fe(g(87)),
+        g(91).toString(), fp(g(92)), fp(g(93)), fp(g(90)),
+      ];
+
+      // 34 valeurs
+      case 'frais_generaux': return [
+        fe(g(87)), g(91).toString(), fp(g(92)), fp(g(93)),
+        // TODO: brancher par catégorie FG (11 sous-catégories × 2 = 22 colonnes)
+        ...Array<string>(22).fill('—'),
+        fgt > 0 ? fe(fgt) : '0,00 €',
+        ca > 0 && fgt > 0 ? `${((fgt / ca) * 100).toFixed(2)} %` : '—',
+        ...CONTRATS_FG.map(c => isJan ? fe(c.montant) : ''),
+      ];
+
+      // 12 valeurs
+      case 'resultats': return [
+        ca > 0 ? fe(ca) : '0,00 €', '—',
+        fp(varP),
+        ca > 0 ? fe(diff) : fe(-caN1), '—',
+        g(32).toString(), fe(g(30)), '—',
+        '0,00 €', '0,00 €', '0,00 €', fe(g(58)),
+      ];
+
+      default: return [];
+    }
+  };
+
+  // ─── Totaux annuels ───────────────────────────────────────────────────────
+  const getTotalValues = (sectionKey: string): string[] => {
+    const totalVarP = totalCA > 0 ? ((totalCA - CA_N1) / CA_N1) * 100 : -100;
+    const s = sumCol;
+    const totalFgt = Array.from({ length: 12 }, (_, mi) => getFgTotal(mi)).reduce((a, b) => a + b, 0);
+    const sCvtsMidi = s(25); const sCvtsSoir = s(27); const sCvtsJour = s(29);
 
     switch (sectionKey) {
       case 'budget': return [
-        fe(g(0)), fe(g(1)), fe(g(2)), fe(g(3)), fe(g(4)), fp(g(5)),
-        g(6).toString(), fe(g(7)), g(8).toString(), fe(g(9)),
-        g(10).toString(), fe(g(11)), g(12).toString(), fp(g(13)),
-        g(14).toString(), fe(g(15)), fp(g(16)),
-        fe(g(17)),
+        fe(s(0)), fe(s(1)), fe(s(3)), fe(s(3)), fp(totalVarP),
+        s(6).toString(), sCvtsMidi > 0 ? fe(s(0) / sCvtsMidi) : '—',
+        s(8).toString(), sCvtsSoir > 0 ? fe(s(1) / sCvtsSoir) : '—',
+        s(10).toString(), sCvtsJour > 0 ? fe(s(3) / sCvtsJour) : '—', s(12).toString(), fp(totalVarP),
+        fe(s(17)),
       ];
+
       case 'realise': return [
-        fp(varP),
-        fe(g(17)), fe(g(18)), fe(g(19)),
-        fe(g(20)), fe(g(21)),
-        fe(g(22)), fe(g(23)),
-        ca>0?fe(ca):'0,00 €', fp(varP),
-        ca>0?fe(ca):'0,00 €',
-        fe(g(27)), fe(g(28)),
-        fe(g(30)), fp(g(31)),
-        fe(caN1),
-        g(33).toString(), fe(g(34)), g(35).toString(), fe(g(36)),
-        g(37).toString(), fe(g(38)), g(39).toString(), g(40).toString(), g(41).toString(),
-        fp(g(42)),
-        g(43).toString(), fe(g(44)), g(45).toString(), g(46).toString(), g(47).toString(),
-        fp(g(48)),
-        fe(caN1),
+        fp(totalVarP),
+        fe(s(17)), fe(s(18)), '—',
+        fe(s(19)), '—',
+        fe(s(20)), '—',
+        totalCA > 0 ? fe(totalCA) : '0,00 €', fp(totalVarP), fe(totalCA),
+        '—', '—', '—', '—',
+        fe(CA_N1),
+        s(25).toString(), sCvtsMidi > 0 ? fe(s(18) / sCvtsMidi) : '—',
+        s(27).toString(), sCvtsSoir > 0 ? fe(s(19) / sCvtsSoir) : '—',
+        s(29).toString(), sCvtsJour > 0 ? fe(s(21) / sCvtsJour) : '—',
+        s(32).toString(), '—', '—', '—',
+        fe(CA_N1),
       ];
+
       case 'cout_matiere': return [
-        fe(g(51)), fp(g(52)), fe(g(53)), fp(g(54)), fe(g(55)),
-        fe(g(57)), fe(g(58)), fe(g(59)), fe(g(60)),
-        fe(g(61)), fe(g(62)), fe(g(63)), fe(g(64)), fe(g(65)), fe(g(66)), fe(g(67)), fe(g(68)), fe(g(69)),
-        fe(g(70)), fe(g(71)), fp(g(72)),
+        fe(s(39)), '—', fe(s(41)), '—', fe(s(43)),
+        fe(s(45)), fe(s(46)), fe(s(47)), fe(s(48)),
+        fe(s(49)), fe(s(50)), fe(s(51)), fe(s(52)), fe(s(53)), fe(s(54)), fe(s(55)), fe(s(56)), fe(s(57)),
+        fe(s(58)), fe(s(59)), totalCA > 0 ? fp(s(58) / totalCA * 100) : '—',
         '0,00 €', '0,00 €',
       ];
+
       case 'frais_personnel': return [
-        fe(g(101)), g(102).toString(), fp(g(103)), fp(g(104)),
-        g(75).toString(), g(76).toString(), g(77).toString(), g(78).toString(), g(79).toString(),
-        g(80).toString(), g(81).toString(), g(82).toString(), g(83).toString(), g(84).toString(), g(85).toString(),
-        fe(g(86)),
-        g(90).toString(), g(91).toString(), g(92).toString(), g(93).toString(), g(94).toString(),
-        g(95).toString(), g(96).toString(), g(97).toString(), g(98).toString(), g(99).toString(), g(100).toString(),
-        fe(g(101)),
-        g(104).toString(), fp(g(105)), fp(g(105)), fp(g(102)),
+        fe(s(87)), '—', totalCA > 0 ? fp(s(87) / totalCA * 100) : '—', '—',
+        s(61).toString(),
+        s(62).toString(), s(63).toString(), s(64).toString(), s(65).toString(),
+        s(66).toString(), s(67).toString(), s(68).toString(), s(69).toString(),
+        s(70).toString(), s(71).toString(),
+        fe(s(72)),
+        s(76).toString(),
+        s(77).toString(), s(78).toString(), s(79).toString(), s(80).toString(),
+        s(81).toString(), s(82).toString(), s(83).toString(), s(84).toString(),
+        s(85).toString(), s(86).toString(),
+        fe(s(87)),
+        '—', '—', '—', '—',
       ];
+
       case 'frais_generaux': return [
-        fe(g(99)), g(103).toString(), fp(g(104)), fp(g(105)),
-        ...Array(11).fill(null).flatMap((_, i) => {
-          const isAnim = i === 3 && isJan;
-          const val = isAnim ? FG_ANIM_JAN : 0;
-          const pct = ca > 0 && val > 0 ? `${((val/ca)*100).toFixed(2)}%` : '—';
-          return [isAnim ? fe(val) : '0,00 €', pct];
-        }),
-        isJan ? fe(FG_ANIM_JAN) : '0,00 €',
-        ca>0&&isJan ? `${((FG_ANIM_JAN/ca)*100).toFixed(2)}%` : '—',
-        ...CONTRATS_FG.map(c => isJan ? fe(c.montant) : ''),
+        fe(s(87)), '—', '—', '—',
+        ...Array<string>(22).fill('—'),
+        totalFgt > 0 ? fe(totalFgt) : '0,00 €',
+        totalCA > 0 && totalFgt > 0 ? `${((totalFgt / totalCA) * 100).toFixed(2)} %` : '—',
+        ...CONTRATS_FG.map(c => fe(c.montant)),
       ];
+
       case 'resultats': return [
-        ca>0?fe(ca):'0,00 €', '0,00',
-        fp(varP),
-        ca>0?fe(diff):fe(-caN1), '0,00',
-        g(37).toString(), fe(g(38)), '—',
-        '0,00 €','0,00 €','0,00 €','0,00 €',
+        totalCA > 0 ? fe(totalCA) : '0,00 €', '—',
+        fp(totalVarP),
+        fe(totalCA - CA_N1), '—',
+        s(32).toString(), '—', '—',
+        '0,00 €', '0,00 €', '0,00 €', fe(s(58)),
       ];
+
       default: return [];
     }
   };
 
-  const getTotalValues = (sectionKey: string): string[] => {
-    const totalVarP = totalCA > 0 ? ((totalCA - CA_N1) / CA_N1) * 100 : -100;
-    switch (sectionKey) {
-      case 'budget':          return ['0,00','0,00','0,00','0,00','0,00','—','0','','0','','0','','0','—','0','','—','0,00'];
-      case 'realise':         return [fp(totalVarP),'0,00','0,00','0','0,00','0','0,00','0',totalCA>0?fe(totalCA):'0,00',fp(totalVarP),totalCA>0?fe(totalCA):'0,00','0,00','0,00','0','0',fe(CA_N1),'0','','0','','0','','0','0','0','-100,00%','0','','0','0','0','-100,00%',fe(CA_N1)];
-      case 'cout_matiere':    return ['0,00','—','0,00','—','0,00',...Array(13).fill('0,00'),'0,00','0,00','—','0,00','0,00'];
-      case 'frais_personnel': return ['0 €','—','—','—',...Array(12).fill('0:00'),...Array(12).fill('0:00'),'0:00','0,00%','—','—'];
-      case 'frais_generaux':  return ['0,00','0:00','0,00%','—',...Array(11).fill(null).flatMap(()=>['0,00 €','—']),fe(FG_ANIM_JAN),'—',...CONTRATS_FG.map(c=>fe(c.montant))];
-      case 'resultats':       return [totalCA>0?fe(totalCA):'0,00 €','0,00',fp(totalVarP),fe(totalCA-CA_N1),'0,00','0','0','—','0,00 €','0,00 €','0,00 €','0,00 €'];
-      default: return [];
-    }
-  };
-
+  // ─── Styles ───────────────────────────────────────────────────────────────
   const thBase: React.CSSProperties = {
     position: 'sticky',
     border: '1px solid #cbd5e1',
@@ -345,7 +413,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   const activeSection = SECTIONS.find(s => s.key === activeTab) || SECTIONS[0];
 
-  // Dériver les groupes de l'onglet actif
   const groups: { g: string; count: number }[] = [];
   activeSection.cols.forEach(c => {
     const last = groups[groups.length - 1];
@@ -364,9 +431,31 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           Retour Accueil
         </button>
-        <div style={{ color: '#fff', fontSize: 15, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase' }}>
-          📋 Récapitulatif Annuel · {YEAR}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ color: '#fff', fontSize: 15, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+            📋 Récapitulatif Annuel
+          </div>
+          {/* Sélecteur d'année */}
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            {[YEAR - 1, YEAR, YEAR + 1].map(y => (
+              <button
+                key={y}
+                onClick={() => setSelectedYear(y)}
+                style={{
+                  padding: '3px 10px', borderRadius: 6, border: '1px solid',
+                  fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all .15s',
+                  background: y === YEAR ? '#f59e0b' : 'transparent',
+                  borderColor: y === YEAR ? '#f59e0b' : '#475569',
+                  color: y === YEAR ? '#1e293b' : '#94a3b8',
+                }}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
         </div>
+
         <div style={{ background: '#f59e0b18', border: '1px solid #f59e0b30', borderRadius: 6, padding: '4px 14px', color: AMBER, fontSize: 11, fontWeight: 700, letterSpacing: '.04em' }}>
           BURO MONTE &nbsp;·&nbsp; CA N-1 : {fe(CA_N1)}
         </div>
@@ -407,7 +496,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
         <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff' }}>
           <thead>
-            {/* ROW 1 — section titre */}
             <tr style={{ height: 30 }}>
               <th rowSpan={3} style={{ ...thBase, background: BG_DATE, color: '#fff', minWidth: 82, left: 0, top: 0, zIndex: 60, borderRight: '3px solid #475569', borderBottom: '3px solid #475569' }}>
                 DATE
@@ -416,7 +504,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                 {activeSection.icon} {activeSection.label.toUpperCase()}
               </th>
             </tr>
-            {/* ROW 2 — groupes */}
             <tr style={{ height: 30 }}>
               {groups.map((g, gi) => (
                 <th key={`g${gi}`} colSpan={g.count} style={{ ...thBase, background: activeSection.cols[groups.slice(0,gi).reduce((a,x)=>a+x.count,0)].bg, color: '#1e293b', top: 30, height: 30, fontSize: 9, zIndex: 40, borderBottom: '1px solid #94a3b8' }}>
@@ -424,7 +511,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                 </th>
               ))}
             </tr>
-            {/* ROW 3 — labels colonnes */}
             <tr style={{ height: 60 }}>
               {activeSection.cols.map((c, ci) => (
                 <th key={`col${ci}`} style={{ ...thBase, background: c.bg, color: '#374151', top: 60, height: 60, minWidth: c.w || 65, fontSize: 9, zIndex: 40, borderBottom: '3px solid #374151' }}>
@@ -437,7 +523,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           <tbody>
             {MONTHS_FULL.map((_, mi) => {
               const vals = getSectionValues(activeSection.key, mi);
-              const isCurrent = mi === new Date().getMonth();
+              const isCurrent = mi === new Date().getMonth() && YEAR === new Date().getFullYear();
               return (
                 <tr key={mi} className="rr" style={{ background: isCurrent ? '#eff6ff' : (mi%2===0?'#fff':'#f8fafc') }}>
                   <td style={{ ...tdBase, position:'sticky', left:0, zIndex:20, background: isCurrent?'#dbeafe':'#f1f5f9', fontWeight: isCurrent?800:600, fontSize:11, color:'#1e293b', borderRight:'3px solid #475569', minWidth:82, textAlign:'left', paddingLeft:8 }}>
