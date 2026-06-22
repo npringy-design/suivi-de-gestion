@@ -1,10 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
-import { parseMoneyValue } from '@/lib/money';
-
-import { getDashboardRowIndices } from '@/lib/utils';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
+import { useRecapAnnuelData } from './useRecapAnnuelData';
 
 const CA_N1 = 1_789_254;
 const CA_N1_BY_MONTH = [159802,161245,174361,186373,190990,172214,167786,156793,130384,149359,139948,0];
@@ -243,33 +241,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   const MONTHS_SHORT = MONTHS_SHORT_LABELS.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [activeTab, setActiveTab] = useState<string>(SECTIONS[0].key);
 
-  const dashboardTotals = useMemo(() => MONTHS_FULL.map((_, mi) => {
-    const md = data[mi]?.dashboard || {};
-    const indices = getDashboardRowIndices(mi, YEAR);
-    const totals: Record<number, number> = {};
-    for (let i = 0; i < 110; i++) totals[i] = 0;
-    Object.values(indices).forEach(rIdx => {
-      for (let cIdx = 0; cIdx < 110; cIdx++) {
-        const val = parseMoneyValue(md[`${rIdx}-${cIdx}`] || '0');
-        if (!isNaN(val)) totals[cIdx] += val;
-      }
-    });
-    if (totals[6]  > 0) totals[7]  = totals[0] / totals[6];
-    if (totals[8]  > 0) totals[9]  = totals[1] / totals[8];
-    if (totals[10] > 0) totals[11] = totals[3] / totals[10];
-    if (totals[14] > 0) totals[15] = totals[2] / totals[14];
-    if (totals[33] > 0) totals[34] = totals[18] / totals[33];
-    if (totals[35] > 0) totals[36] = totals[20] / totals[35];
-    if (totals[37] > 0) totals[38] = (totals[18] + totals[20]) / totals[37];
-    if (totals[43] > 0) totals[44] = totals[22] / totals[43];
-    return totals;
-  }), [data, YEAR]);
-
-  const caByMonth = useMemo(() =>
-    MONTHS_FULL.map((_, mi) => dashboardTotals[mi][24] || 0),
-  [dashboardTotals]);
-
-  const totalCA = caByMonth.reduce((s, v) => s + v, 0);
+  const { getVal, caByMonth, totalCA } = useRecapAnnuelData(data, YEAR);
 
   // Génère les valeurs d'une section pour un mois donné
   const getSectionValues = (sectionKey: string, mi: number): string[] => {
@@ -278,52 +250,52 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     const varP = caN1 > 0 && ca > 0 ? ((ca - caN1) / caN1) * 100 : -100;
     const diff = ca > 0 ? ca - caN1 : -caN1;
     const isJan = mi === 0;
-    const dt = dashboardTotals[mi];
+    const g = (col: number) => getVal(mi, col);
 
     switch (sectionKey) {
       case 'budget': return [
-        fe(dt[0]), fe(dt[1]), fe(dt[2]), fe(dt[3]), fe(dt[4]), fp(dt[5]),
-        dt[6].toString(), fe(dt[7]), dt[8].toString(), fe(dt[9]),
-        dt[10].toString(), fe(dt[11]), dt[12].toString(), fp(dt[13]),
-        dt[14].toString(), fe(dt[15]), fp(dt[16]),
-        fe(dt[17]),
+        fe(g(0)), fe(g(1)), fe(g(2)), fe(g(3)), fe(g(4)), fp(g(5)),
+        g(6).toString(), fe(g(7)), g(8).toString(), fe(g(9)),
+        g(10).toString(), fe(g(11)), g(12).toString(), fp(g(13)),
+        g(14).toString(), fe(g(15)), fp(g(16)),
+        fe(g(17)),
       ];
       case 'realise': return [
         fp(varP),
-        fe(dt[17]), fe(dt[18]), fe(dt[19]),
-        fe(dt[20]), fe(dt[21]),
-        fe(dt[22]), fe(dt[23]),
+        fe(g(17)), fe(g(18)), fe(g(19)),
+        fe(g(20)), fe(g(21)),
+        fe(g(22)), fe(g(23)),
         ca>0?fe(ca):'0,00 €', fp(varP),
         ca>0?fe(ca):'0,00 €',
-        fe(dt[27]), fe(dt[28]),
-        fe(dt[30]), fp(dt[31]),
+        fe(g(27)), fe(g(28)),
+        fe(g(30)), fp(g(31)),
         fe(caN1),
-        dt[33].toString(), fe(dt[34]), dt[35].toString(), fe(dt[36]),
-        dt[37].toString(), fe(dt[38]), dt[39].toString(), dt[40].toString(), dt[41].toString(),
-        fp(dt[42]),
-        dt[43].toString(), fe(dt[44]), dt[45].toString(), dt[46].toString(), dt[47].toString(),
-        fp(dt[48]),
+        g(33).toString(), fe(g(34)), g(35).toString(), fe(g(36)),
+        g(37).toString(), fe(g(38)), g(39).toString(), g(40).toString(), g(41).toString(),
+        fp(g(42)),
+        g(43).toString(), fe(g(44)), g(45).toString(), g(46).toString(), g(47).toString(),
+        fp(g(48)),
         fe(caN1),
       ];
       case 'cout_matiere': return [
-        fe(dt[51]), fp(dt[52]), fe(dt[53]), fp(dt[54]), fe(dt[55]),
-        fe(dt[57]), fe(dt[58]), fe(dt[59]), fe(dt[60]),
-        fe(dt[61]), fe(dt[62]), fe(dt[63]), fe(dt[64]), fe(dt[65]), fe(dt[66]), fe(dt[67]), fe(dt[68]), fe(dt[69]),
-        fe(dt[70]), fe(dt[71]), fp(dt[72]),
+        fe(g(51)), fp(g(52)), fe(g(53)), fp(g(54)), fe(g(55)),
+        fe(g(57)), fe(g(58)), fe(g(59)), fe(g(60)),
+        fe(g(61)), fe(g(62)), fe(g(63)), fe(g(64)), fe(g(65)), fe(g(66)), fe(g(67)), fe(g(68)), fe(g(69)),
+        fe(g(70)), fe(g(71)), fp(g(72)),
         '0,00 €', '0,00 €',
       ];
       case 'frais_personnel': return [
-        fe(dt[101]), dt[102].toString(), fp(dt[103]), fp(dt[104]),
-        dt[75].toString(), dt[76].toString(), dt[77].toString(), dt[78].toString(), dt[79].toString(),
-        dt[80].toString(), dt[81].toString(), dt[82].toString(), dt[83].toString(), dt[84].toString(), dt[85].toString(),
-        fe(dt[86]),
-        dt[90].toString(), dt[91].toString(), dt[92].toString(), dt[93].toString(), dt[94].toString(),
-        dt[95].toString(), dt[96].toString(), dt[97].toString(), dt[98].toString(), dt[99].toString(), dt[100].toString(),
-        fe(dt[101]),
-        dt[104].toString(), fp(dt[105]), fp(dt[105]), fp(dt[102]),
+        fe(g(101)), g(102).toString(), fp(g(103)), fp(g(104)),
+        g(75).toString(), g(76).toString(), g(77).toString(), g(78).toString(), g(79).toString(),
+        g(80).toString(), g(81).toString(), g(82).toString(), g(83).toString(), g(84).toString(), g(85).toString(),
+        fe(g(86)),
+        g(90).toString(), g(91).toString(), g(92).toString(), g(93).toString(), g(94).toString(),
+        g(95).toString(), g(96).toString(), g(97).toString(), g(98).toString(), g(99).toString(), g(100).toString(),
+        fe(g(101)),
+        g(104).toString(), fp(g(105)), fp(g(105)), fp(g(102)),
       ];
       case 'frais_generaux': return [
-        fe(dt[99]), dt[103].toString(), fp(dt[104]), fp(dt[105]),
+        fe(g(99)), g(103).toString(), fp(g(104)), fp(g(105)),
         ...Array(11).fill(null).flatMap((_, i) => {
           const isAnim = i === 3 && isJan;
           const val = isAnim ? FG_ANIM_JAN : 0;
@@ -338,7 +310,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ca>0?fe(ca):'0,00 €', '0,00',
         fp(varP),
         ca>0?fe(diff):fe(-caN1), '0,00',
-        dt[37].toString(), fe(dt[38]), '—',
+        g(37).toString(), fe(g(38)), '—',
         '0,00 €','0,00 €','0,00 €','0,00 €',
       ];
       default: return [];

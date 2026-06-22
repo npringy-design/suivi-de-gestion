@@ -12,11 +12,11 @@ import type {
   VisibleDashboardColumn,
 } from '@/features/dashboard/dashboardTypes';
 import { buildDynamicColumns, dashboardColumns as C } from '@/features/dashboard/dashboardColumns';
+import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import {
   contextColumns,
   dailyPersonnelRows,
   dailyPersonnelTotals,
-  days,
   editableCols,
   monthNames,
 } from '@/features/dashboard/dashboardStaticConfig';
@@ -280,47 +280,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setDragState(null);
   };
 
-  const rows = useMemo(() => {
-    const generatedRows: DashboardRow[] = [];
-    let weekCount = 1;
-    const numDays = new Date(year, month + 1, 0).getDate();
-    const monthName = monthNames[month];
-
-    for (let i = 1; i <= numDays; i++) {
-      const date = new Date(year, month, i);
-      const dayName = days[date.getDay()];
-      
-      const isSchoolHoliday = schoolHolidays.some(h => isDateInRange(date, h.start, h.end));
-      const isPublicHoliday = publicHolidays.some(h => isExactDate(date, h));
-      const isCustomEvent = customEvents?.some(e => isExactDate(date, e.date));
-      
-      generatedRows.push({ 
-        type: 'day', 
-        label: `${dayName} ${i} ${monthName} ${year}`, 
-        isWeekend: date.getDay() === 0 || date.getDay() === 6,
-        isSchoolHoliday,
-        isPublicHoliday,
-        isCustomEvent,
-        dateObj: date,
-        dayIndex: i,
-        weekIndex: weekCount
-      });
-      
-      if (date.getDay() === 0) {
-        generatedRows.push({ type: 'total', label: `Total Semaine ${weekCount}`, weekIndex: weekCount });
-        weekCount++;
-      }
-    }
-    
-    if (new Date(year, month, numDays).getDay() !== 0) {
-      const lastWeekHasDays = generatedRows.some(r => r.type === 'day' && r.weekIndex === weekCount);
-      if (lastWeekHasDays) generatedRows.push({ type: 'total', label: `Total Semaine ${weekCount}`, weekIndex: weekCount });
-    }
-
-    generatedRows.push({ type: 'fg_box4_total', label: '' });
-    generatedRows.push({ type: 'month_total', label: 'TOTAL' });
-    return generatedRows;
-  }, [month, year]);
+  const rows = useMemo(() =>
+    buildMonthRows(year, month, { schoolHolidays, publicHolidays, customEvents: customEvents ?? [] }),
+  [month, year, schoolHolidays, publicHolidays, customEvents]);
 
   const fgBoxNames = [
     ['ENTRETIEN ET REPARATION', 'ECOLAB / DIVERSEY', 'MARKETING LOCAL (BFF / FUCHEY / TRADER)'],
