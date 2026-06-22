@@ -48,21 +48,20 @@ type ColDef = { g: string; l: string; bg: string; w: number };
 // ─── Colonnes statiques ──────────────────────────────────────────────────────
 
 const COLS_BUDGET: ColDef[] = [
-  // 14 colonnes — CA Limo (col 2) + groupe LIMONADE (cols 14-16) exclus
+  // 13 colonnes — CA Limo (col 2) + groupe LIMONADE (cols 14-16) + VAE exclus
   { g: 'CA',             l: 'CA HT\nMidi',         bg: BG_BUDG,  w: 70 }, // col 0
   { g: 'CA',             l: 'CA HT\nSoir',         bg: BG_BUDG,  w: 70 }, // col 1
   { g: 'CA',             l: 'CA HT\nJour',         bg: BG_BUDG,  w: 75 }, // col 3
-  { g: 'CA',             l: 'Cumul\nDepuis le 01', bg: BG_BUDG,  w: 80 }, // col 4
-  { g: 'CA',             l: 'VAR\nVS N-1',         bg: BG_HATCH, w: 65 }, // col 5
+  { g: 'CA',             l: 'Cumul\nDepuis le 01', bg: BG_BUDG,  w: 80 }, // col 4 (last day)
+  { g: 'CA',             l: 'VAR\nVS N-1',         bg: BG_HATCH, w: 65 }, // calc local
   { g: 'COUVERT\nMIDI',  l: 'NB CVTS',             bg: BG_BUDG,  w: 65 }, // col 6
-  { g: 'COUVERT\nMIDI',  l: 'CVTS MOY HT',         bg: BG_BUDG,  w: 75 }, // col 7
+  { g: 'COUVERT\nMIDI',  l: 'CVTS MOY HT',         bg: BG_BUDG,  w: 75 }, // CA Midi / NB Midi
   { g: 'COUVERT\nSOIR',  l: 'NB CVTS',             bg: BG_BUDG,  w: 65 }, // col 8
-  { g: 'COUVERT\nSOIR',  l: 'CVTS MOY HT',         bg: BG_BUDG,  w: 75 }, // col 9
+  { g: 'COUVERT\nSOIR',  l: 'CVTS MOY HT',         bg: BG_BUDG,  w: 75 }, // CA Soir / NB Soir
   { g: 'COUVERT\nJOUR',  l: 'NB CVTS',             bg: BG_BUDG,  w: 65 }, // col 10
-  { g: 'COUVERT\nJOUR',  l: 'CVTS MOY',            bg: BG_BUDG,  w: 65 }, // col 11
-  { g: 'COUVERT\nJOUR',  l: 'CVTS CUMUL',          bg: BG_BUDG,  w: 75 }, // col 12
-  { g: 'COUVERT\nJOUR',  l: 'VAR VS N-1',          bg: BG_HATCH, w: 65 }, // col 13
-  { g: 'VAE',            l: 'CA HT VAE',           bg: BG_BUDG,  w: 70 }, // col 17
+  { g: 'COUVERT\nJOUR',  l: 'CVTS MOY',            bg: BG_BUDG,  w: 65 }, // CA Jour / NB Jour
+  { g: 'COUVERT\nJOUR',  l: 'CVTS CUMUL',          bg: BG_BUDG,  w: 75 }, // col 12 (last day)
+  { g: 'COUVERT\nJOUR',  l: 'VAR VS N-1',          bg: BG_HATCH, w: 65 }, // calc local
 ];
 
 const COLS_REALISE: ColDef[] = [
@@ -247,7 +246,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   const MONTHS_SHORT = MONTHS_SHORT_LABELS.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [activeTab, setActiveTab] = useState<string>('budget');
 
-  const { getVal, getFgTotal, getRaw, caByMonth, totalCA } = useRecapAnnuelData(data, YEAR);
+  const { getVal, getFgTotal, getRaw, getLastDayVal, caByMonth, totalCA } = useRecapAnnuelData(data, YEAR);
 
   // Détection schéma personnel (global = 5 cats unifiées, cuisine_salle = 10 cats)
   const personnelSchema = useMemo(() =>
@@ -281,13 +280,21 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
     switch (sectionKey) {
 
-      // ── 14 valeurs ──────────────────────────────────────────────────────────
+      // ── 13 valeurs ──────────────────────────────────────────────────────────
       case 'budget': return [
-        fe(g(0)), fe(g(1)), fe(g(3)), fe(g(4)), fp(g(5)),
-        String(Math.round(g(6))), fe(g(7)),
-        String(Math.round(g(8))), fe(g(9)),
-        String(Math.round(g(10))), fe(g(11)), String(Math.round(g(12))), fp(g(13)),
-        fe(g(17)),
+        fe(g(0)),
+        fe(g(1)),
+        fe(g(3)),
+        fe(getLastDayVal(mi, 4)),
+        fp(varP),
+        String(Math.round(g(6))),
+        fe(g(6) > 0 ? g(0) / g(6) : 0),
+        String(Math.round(g(8))),
+        fe(g(8) > 0 ? g(1) / g(8) : 0),
+        String(Math.round(g(10))),
+        fe(g(10) > 0 ? g(3) / g(10) : 0),
+        String(Math.round(getLastDayVal(mi, 12))),
+        fp(varP),
       ];
 
       // ── 25 valeurs ──────────────────────────────────────────────────────────
@@ -391,15 +398,33 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
     switch (sectionKey) {
 
-      // ── 14 totaux ───────────────────────────────────────────────────────────
-      case 'budget': return [
-        fe(s(0)), fe(s(1)), fe(s(3)), fe(s(4)), fp(totalVarP),
-        String(Math.round(s(6))), sCvtsMidi > 0 ? fe(s(0) / sCvtsMidi) : '—',
-        String(Math.round(s(8))), sCvtsSoir > 0 ? fe(s(1) / sCvtsSoir) : '—',
-        String(Math.round(s(10))), sCvtsJour > 0 ? fe(s(3) / sCvtsJour) : '—',
-        String(Math.round(s(12))), fp(totalVarP),
-        fe(s(17)),
-      ];
+      // ── 13 totaux ───────────────────────────────────────────────────────────
+      case 'budget': {
+        const totalCaMidi   = s(0);
+        const totalCaSoir   = s(1);
+        const totalCaJour   = s(3);
+        const totalCvtsMidi = s(6);
+        const totalCvtsSoir = s(8);
+        const totalCvtsJour = s(10);
+        const totalCumulCA   = Array.from({ length: 12 }, (_, mi) => getLastDayVal(mi, 4)).reduce((a, b) => a + b, 0);
+        const totalCumulCvts = Array.from({ length: 12 }, (_, mi) => Math.round(getLastDayVal(mi, 12))).reduce((a, b) => a + b, 0);
+        const varPAnnuel = CA_N1 > 0 ? ((totalCA - CA_N1) / CA_N1) * 100 : 0;
+        return [
+          fe(totalCaMidi),
+          fe(totalCaSoir),
+          fe(totalCaJour),
+          fe(totalCumulCA),
+          fp(varPAnnuel),
+          String(Math.round(totalCvtsMidi)),
+          totalCvtsMidi > 0 ? fe(totalCaMidi / totalCvtsMidi) : '—',
+          String(Math.round(totalCvtsSoir)),
+          totalCvtsSoir > 0 ? fe(totalCaSoir / totalCvtsSoir) : '—',
+          String(Math.round(totalCvtsJour)),
+          totalCvtsJour > 0 ? fe(totalCaJour / totalCvtsJour) : '—',
+          String(totalCumulCvts),
+          fp(varPAnnuel),
+        ];
+      }
 
       // ── 25 totaux ───────────────────────────────────────────────────────────
       case 'realise': return [

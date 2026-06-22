@@ -10,6 +10,7 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
   return useMemo(() => {
     const monthCalcData: Record<string, string>[] = [];
     const monthTotalIndices: number[] = [];
+    const monthLastDayIndices: number[] = [];
 
     for (let mi = 0; mi <= 11; mi++) {
       const monthData = data[mi];
@@ -28,6 +29,12 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       );
       monthCalcData.push(calculatedData);
       monthTotalIndices.push(rows.findIndex(r => r.type === 'month_total'));
+      // Index du dernier jour du mois (type 'day')
+      let lastDayIdx = -1;
+      for (let i = rows.length - 1; i >= 0; i--) {
+        if (rows[i].type === 'day') { lastDayIdx = i; break; }
+      }
+      monthLastDayIndices.push(lastDayIdx);
     }
 
     const getVal = (mi: number, col: number): number => {
@@ -48,9 +55,16 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       return monthCalcData[mi][`${idx}-${col}`] ?? '—';
     };
 
+    // Lit la valeur d'une colonne sur le dernier jour du mois (cumuls progressifs)
+    const getLastDayVal = (mi: number, col: number): number => {
+      const idx = monthLastDayIndices[mi];
+      if (idx < 0) return 0;
+      return parseMoneyValue(monthCalcData[mi][`${idx}-${col}`] ?? '0');
+    };
+
     const caByMonth = Array.from({ length: 12 }, (_, mi) => getVal(mi, 21));
     const totalCA = caByMonth.reduce((s, v) => s + v, 0);
 
-    return { getVal, getFgTotal, getRaw, caByMonth, totalCA };
+    return { getVal, getFgTotal, getRaw, getLastDayVal, caByMonth, totalCA };
   }, [data, year]);
 }
