@@ -286,20 +286,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     const r = (col: number) => getRaw(mi, col);
     const fgt = getFgTotal(mi);
 
-    const lastRealMi = Array.from({ length: 12 }, (_, i) => i)
-      .filter(i => caByMonth[i] > 0)
-      .at(-1) ?? -1;
-    const tendanceCA = lastRealMi >= 0
-      ? Array.from({ length: 12 }, (_, i) =>
-          i <= lastRealMi ? caByMonth[i] : getVal(i, 3)
-        ).reduce((a, b) => a + b, 0)
-      : 0;
-    const tendanceCvts = lastRealMi >= 0
-      ? Array.from({ length: 12 }, (_, i) =>
-          i <= lastRealMi ? getVal(i, 29) : getVal(i, 10)
-        ).reduce((a, b) => a + b, 0)
-      : 0;
-
     switch (sectionKey) {
 
       // ── 13 valeurs ──────────────────────────────────────────────────────────
@@ -329,6 +315,13 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i]).reduce((a, b) => a + b, 0);
         const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 29))).reduce((a, b) => a + b, 0);
         const ecartJourPct = !isEmpty && g(3) > 0 ? ((g(21) - g(3)) / g(3)) * 100 : 0;
+        // Tendance = budget annuel + cumul des écarts réalisés jusqu'au mois courant (mois vides = 0)
+        const budgetAnnuel    = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
+        const budgetCvtsAnnuel = Array.from({ length: 12 }, (_, i) => getVal(i, 10)).reduce((a, b) => a + b, 0);
+        const cumulEcartCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? getVal(i, 22) : 0).reduce((a, b) => a + b, 0);
+        const cumulEcartCvts = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? (getVal(i, 29) - getVal(i, 10)) : 0).reduce((a, b) => a + b, 0);
+        const tendanceCA   = budgetAnnuel    + cumulEcartCA;
+        const tendanceCvts = budgetCvtsAnnuel + cumulEcartCvts;
         return [
           isEmpty ? '—' : fe(g(17)),
           isEmpty ? '—' : fe(g(18)),
@@ -471,19 +464,12 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const totalCvtsSoir = s(27);
         const totalCvtsJour = s(29);
         const ecartJourPct = totalBudJour > 0 ? ((totalCaJour - totalBudJour) / totalBudJour) * 100 : 0;
-        const tLastRealMi = Array.from({ length: 12 }, (_, i) => i)
-          .filter(i => caByMonth[i] > 0)
-          .at(-1) ?? -1;
-        const tTendanceCA = tLastRealMi >= 0
-          ? Array.from({ length: 12 }, (_, i) =>
-              i <= tLastRealMi ? caByMonth[i] : getVal(i, 3)
-            ).reduce((a, b) => a + b, 0)
-          : 0;
-        const tTendanceCvts = tLastRealMi >= 0
-          ? Array.from({ length: 12 }, (_, i) =>
-              i <= tLastRealMi ? getVal(i, 29) : getVal(i, 10)
-            ).reduce((a, b) => a + b, 0)
-          : 0;
+        const tBudgetAnnuel     = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
+        const tBudgetCvtsAnnuel = Array.from({ length: 12 }, (_, i) => getVal(i, 10)).reduce((a, b) => a + b, 0);
+        const tCumulEcartCA   = Array.from({ length: 12 }, (_, i) => caByMonth[i] > 0 ? getVal(i, 22) : 0).reduce((a, b) => a + b, 0);
+        const tCumulEcartCvts = Array.from({ length: 12 }, (_, i) => caByMonth[i] > 0 ? (getVal(i, 29) - getVal(i, 10)) : 0).reduce((a, b) => a + b, 0);
+        const tTendanceCA   = tBudgetAnnuel    + tCumulEcartCA;
+        const tTendanceCvts = tBudgetCvtsAnnuel + tCumulEcartCvts;
         return [
           fe(s(17)),
           fe(totalCaMidi),
