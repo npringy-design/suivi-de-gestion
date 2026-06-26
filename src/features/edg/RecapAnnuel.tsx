@@ -79,23 +79,25 @@ const COLS_BUDGET: ColDef[] = [
 ];
 
 const COLS_REALISE: ColDef[] = [
-  // CA HT — 8 colonnes
-  { g: 'CA HT', l: 'CA HT\nMidi',         bg: BG_REAL2, w: 75 }, // col 18
-  { g: 'CA HT', l: 'CA HT\nSoir',         bg: BG_REAL2, w: 75 }, // col 19
-  { g: 'CA HT', l: 'CA HT\nVAE',          bg: BG_REAL2, w: 70 }, // col 17
-  { g: 'CA HT', l: 'CAHT\nMois',          bg: BG_REAL2, w: 80 }, // col 21
-  { g: 'CA HT', l: 'VAR\nVS N-1',         bg: BG_HATCH, w: 65 }, // calc local
-  { g: 'CA HT', l: 'Cumul\nAnnuel',       bg: BG_REAL2, w: 85 }, // sum col 21 jan→mois
-  { g: 'CA HT', l: 'Ecart\nBudget Mois',  bg: '#fff',   w: 70 }, // col 22
-  { g: 'CA HT', l: 'Rappel CA\nN-1',      bg: BG_HATCH, w: 75 }, // caN1
+  // CA HT — 10 colonnes
+  { g: 'CA HT', l: 'CA HT\nVAE',               bg: BG_REAL2, w: 75 }, // col 17
+  { g: 'CA HT', l: 'CA HT\nMidi',               bg: BG_REAL2, w: 75 }, // col 18
+  { g: 'CA HT', l: 'Ecart vs\nBudget Midi',      bg: '#fff',   w: 75 }, // g(18)-g(0)
+  { g: 'CA HT', l: 'CA HT\nSoir',               bg: BG_REAL2, w: 75 }, // col 19
+  { g: 'CA HT', l: 'Ecart vs\nBudget Soir',      bg: '#fff',   w: 75 }, // g(19)-g(1)
+  { g: 'CA HT', l: 'CA HT\nJour',               bg: BG_REAL2, w: 80 }, // col 21
+  { g: 'CA HT', l: 'Ecart Budget\nJour Valeur',  bg: '#fff',   w: 80 }, // col 22
+  { g: 'CA HT', l: 'Ecart Budget\nJour %',       bg: BG_HATCH, w: 70 }, // calc local
+  { g: 'CA HT', l: 'Cumul\nAnnuel',              bg: BG_REAL2, w: 85 }, // sum col 21 jan→mois
+  { g: 'CA HT', l: 'Tendance\nAnnuel',           bg: '#fff',   w: 75 }, // —
   // COUVERTS RESTAURANT — 7 colonnes
-  { g: 'COUVERTS\nRESTAURANT', l: 'MIDI\nNB CVTS',    bg: BG_REAL2, w: 65 }, // col 25
-  { g: 'COUVERTS\nRESTAURANT', l: 'MIDI\nCVTS MOY',   bg: BG_REAL2, w: 65 }, // col 26
-  { g: 'COUVERTS\nRESTAURANT', l: 'SOIR\nNB CVTS',    bg: BG_REAL2, w: 65 }, // col 27
-  { g: 'COUVERTS\nRESTAURANT', l: 'SOIR\nCVTS MOY',   bg: BG_REAL2, w: 65 }, // col 28
-  { g: 'COUVERTS\nRESTAURANT', l: 'JOUR\nNB CVTS',    bg: BG_REAL2, w: 65 }, // col 29
-  { g: 'COUVERTS\nRESTAURANT', l: 'JOUR\nCVTS MOY',   bg: BG_REAL2, w: 65 }, // col 30
-  { g: 'COUVERTS\nRESTAURANT', l: 'JOUR\nCVTS CUMUL', bg: BG_REAL2, w: 75 }, // sum col 29 jan→mois
+  { g: 'COUVERTS\nRESTAURANT', l: 'Midi\nNB CVTS',   bg: BG_REAL2, w: 65 }, // col 25
+  { g: 'COUVERTS\nRESTAURANT', l: 'Midi\nMoy',        bg: BG_REAL2, w: 65 }, // col 26
+  { g: 'COUVERTS\nRESTAURANT', l: 'Soir\nNB CVTS',   bg: BG_REAL2, w: 65 }, // col 27
+  { g: 'COUVERTS\nRESTAURANT', l: 'Soir\nMoy',        bg: BG_REAL2, w: 65 }, // col 28
+  { g: 'COUVERTS\nRESTAURANT', l: 'Jour\nNB CVTS',   bg: BG_REAL2, w: 65 }, // col 29
+  { g: 'COUVERTS\nRESTAURANT', l: 'Jour\nMoy',        bg: BG_REAL2, w: 65 }, // col 30
+  { g: 'COUVERTS\nRESTAURANT', l: 'Cumul\nAnnuel',    bg: BG_REAL2, w: 75 }, // sum col 29 jan→mois
 ];
 
 const COLS_COUT_MATIERE: ColDef[] = [
@@ -306,19 +308,22 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 15 valeurs ──────────────────────────────────────────────────────────
+      // ── 17 valeurs ──────────────────────────────────────────────────────────
       case 'realise': {
         const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 21)).reduce((a, b) => a + b, 0);
         const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 29))).reduce((a, b) => a + b, 0);
+        const ecartJourPct = g(3) > 0 ? ((g(21) - g(3)) / g(3)) * 100 : 0;
         return [
-          fe(g(18)),
-          fe(g(19)),
           fe(g(17)),
-          fe(ca > 0 ? ca : 0),
-          fp(caN1 > 0 && ca > 0 ? ((ca - caN1) / caN1) * 100 : 0),
-          fe(cumulCA),
+          fe(g(18)),
+          fe(g(18) - g(0)),
+          fe(g(19)),
+          fe(g(19) - g(1)),
+          fe(g(21)),
           fe(g(22)),
-          fe(caN1),
+          fp(ecartJourPct),
+          fe(cumulCA),
+          '—',
           String(Math.round(g(25))),
           fe(g(26)),
           String(Math.round(g(27))),
@@ -437,27 +442,35 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 15 totaux ───────────────────────────────────────────────────────────
+      // ── 17 totaux ───────────────────────────────────────────────────────────
       case 'realise': {
-        const totalVarP     = CA_N1 > 0 ? ((totalCA - CA_N1) / CA_N1) * 100 : 0;
+        const totalCaMidi  = s(18);
+        const totalCaSoir  = s(19);
+        const totalCaJour  = s(21);
+        const totalBudMidi = s(0);
+        const totalBudSoir = s(1);
+        const totalBudJour = s(3);
         const totalCvtsMidi = s(25);
         const totalCvtsSoir = s(27);
         const totalCvtsJour = s(29);
+        const ecartJourPct = totalBudJour > 0 ? ((totalCaJour - totalBudJour) / totalBudJour) * 100 : 0;
         return [
-          fe(s(18)),
-          fe(s(19)),
           fe(s(17)),
-          fe(totalCA),
-          fp(totalVarP),
-          fe(totalCA),
+          fe(totalCaMidi),
+          fe(totalCaMidi - totalBudMidi),
+          fe(totalCaSoir),
+          fe(totalCaSoir - totalBudSoir),
+          fe(totalCaJour),
+          fe(totalCaJour - totalBudJour),
+          fp(ecartJourPct),
+          fe(totalCaJour),
           '—',
-          fe(CA_N1),
           String(Math.round(totalCvtsMidi)),
-          fe(totalCvtsMidi > 0 ? s(18) / totalCvtsMidi : 0),
+          fe(totalCvtsMidi > 0 ? totalCaMidi / totalCvtsMidi : 0),
           String(Math.round(totalCvtsSoir)),
-          fe(totalCvtsSoir > 0 ? s(19) / totalCvtsSoir : 0),
+          fe(totalCvtsSoir > 0 ? totalCaSoir / totalCvtsSoir : 0),
           String(Math.round(totalCvtsJour)),
-          fe(totalCvtsJour > 0 ? totalCA / totalCvtsJour : 0),
+          fe(totalCvtsJour > 0 ? totalCaJour / totalCvtsJour : 0),
           String(Math.round(totalCvtsJour)),
         ];
       }
