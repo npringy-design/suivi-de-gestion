@@ -79,32 +79,23 @@ const COLS_BUDGET: ColDef[] = [
 ];
 
 const COLS_REALISE: ColDef[] = [
-  // 25 colonnes — CA HT Limo + Ecart Budget Limo exclus (service limo inexistant)
-  { g: 'CA HT',                l: 'VAR\nVS N-1',          bg: BG_HATCH, w: 65 }, // calc local
-  { g: 'CA HT',                l: 'CA HT\nVAE',           bg: BG_REAL2, w: 70 }, // col 17
-  { g: 'CA HT',                l: 'CA HT\nMidi',          bg: BG_REAL2, w: 70 }, // col 18
-  { g: 'CA HT',                l: 'Ecart\nBudget Midi',   bg: '#fff',   w: 65 }, // —
-  { g: 'CA HT',                l: 'CA HT\nSoir',          bg: BG_REAL2, w: 70 }, // col 19
-  { g: 'CA HT',                l: 'Ecart\nBudget Soir',   bg: '#fff',   w: 65 }, // —
-  { g: 'CA HT',                l: 'CAHT\nMois',           bg: BG_REAL2, w: 75 }, // col 21
-  { g: 'CA HT',                l: 'VAR VS N-1',           bg: BG_HATCH, w: 65 }, // calc local
-  { g: 'CA HT',                l: 'Cumul\nDepuis Janv.',  bg: BG_REAL2, w: 80 }, // col 23
-  { g: 'CA HT',                l: 'Ecart\nBudget Mois',   bg: '#fff',   w: 65 }, // col 22
-  { g: 'CA HT',                l: 'Ecart\nDepuis 01/01',  bg: '#fff',   w: 70 }, // —
-  { g: 'CA HT',                l: 'Tendance\nAnnuel',     bg: '#fff',   w: 65 }, // —
-  { g: 'CA HT',                l: 'Tendance\nVAR % -1',   bg: '#fff',   w: 65 }, // —
-  { g: 'CA HT',                l: 'RAPPEL CA\nN-1',       bg: BG_HATCH, w: 75 }, // caN1
-  { g: 'COUVERTS\nRESTAURANT', l: 'MIDI\nNB CVTS',        bg: BG_REAL2, w: 65 }, // col 25
-  { g: 'COUVERTS\nRESTAURANT', l: 'MIDI\nCVTS MOY',       bg: BG_REAL2, w: 65 }, // col 26
-  { g: 'COUVERTS\nRESTAURANT', l: 'SOIR\nNB CVTS',        bg: BG_REAL2, w: 65 }, // col 27
-  { g: 'COUVERTS\nRESTAURANT', l: 'SOIR\nCVTS MOY',       bg: BG_REAL2, w: 65 }, // col 28
-  { g: 'COUVERTS\nRESTAURANT', l: 'JOUR\nNB CVTS',        bg: BG_REAL2, w: 65 }, // col 29
-  { g: 'COUVERTS\nRESTAURANT', l: 'JOUR\nCVTS MOY',       bg: BG_REAL2, w: 65 }, // col 30
-  { g: 'COUVERTS\nRESTAURANT', l: 'JOUR\nCVTS CUMUL',     bg: BG_REAL2, w: 70 }, // col 32
-  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart\nBudget Cvts',   bg: '#fff',   w: 65 }, // —
-  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart\nMoy CVTS',      bg: '#fff',   w: 65 }, // —
-  { g: 'COUVERTS\nRESTAURANT', l: 'VAR VS N-1',           bg: BG_HATCH, w: 65 }, // —
-  { g: '',                     l: 'RAPPEL CA\nN-1',        bg: BG_HATCH, w: 80 }, // caN1
+  // CA HT — 8 colonnes
+  { g: 'CA HT', l: 'CA HT\nMidi',         bg: BG_REAL2, w: 75 }, // col 18
+  { g: 'CA HT', l: 'CA HT\nSoir',         bg: BG_REAL2, w: 75 }, // col 19
+  { g: 'CA HT', l: 'CA HT\nVAE',          bg: BG_REAL2, w: 70 }, // col 17
+  { g: 'CA HT', l: 'CAHT\nMois',          bg: BG_REAL2, w: 80 }, // col 21
+  { g: 'CA HT', l: 'VAR\nVS N-1',         bg: BG_HATCH, w: 65 }, // calc local
+  { g: 'CA HT', l: 'Cumul\nAnnuel',       bg: BG_REAL2, w: 85 }, // sum col 21 jan→mois
+  { g: 'CA HT', l: 'Ecart\nBudget Mois',  bg: '#fff',   w: 70 }, // col 22
+  { g: 'CA HT', l: 'Rappel CA\nN-1',      bg: BG_HATCH, w: 75 }, // caN1
+  // COUVERTS RESTAURANT — 7 colonnes
+  { g: 'COUVERTS\nRESTAURANT', l: 'MIDI\nNB CVTS',    bg: BG_REAL2, w: 65 }, // col 25
+  { g: 'COUVERTS\nRESTAURANT', l: 'MIDI\nCVTS MOY',   bg: BG_REAL2, w: 65 }, // col 26
+  { g: 'COUVERTS\nRESTAURANT', l: 'SOIR\nNB CVTS',    bg: BG_REAL2, w: 65 }, // col 27
+  { g: 'COUVERTS\nRESTAURANT', l: 'SOIR\nCVTS MOY',   bg: BG_REAL2, w: 65 }, // col 28
+  { g: 'COUVERTS\nRESTAURANT', l: 'JOUR\nNB CVTS',    bg: BG_REAL2, w: 65 }, // col 29
+  { g: 'COUVERTS\nRESTAURANT', l: 'JOUR\nCVTS MOY',   bg: BG_REAL2, w: 65 }, // col 30
+  { g: 'COUVERTS\nRESTAURANT', l: 'JOUR\nCVTS CUMUL', bg: BG_REAL2, w: 75 }, // sum col 29 jan→mois
 ];
 
 const COLS_COUT_MATIERE: ColDef[] = [
@@ -315,23 +306,28 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 25 valeurs ──────────────────────────────────────────────────────────
-      case 'realise': return [
-        fp(varP),
-        fe(g(17)), fe(g(18)), '—',
-        fe(g(19)), '—',
-        ca > 0 ? fe(ca) : '0,00 €',
-        fp(varP),
-        fe(g(23)), fe(g(22)),
-        '—', '—', '—',
-        fe(caN1),
-        String(Math.round(g(25))), fe(g(26)),
-        String(Math.round(g(27))), fe(g(28)),
-        String(Math.round(g(29))), fe(g(30)),
-        String(Math.round(g(32))),
-        '—', '—', '—',
-        fe(caN1),
-      ];
+      // ── 15 valeurs ──────────────────────────────────────────────────────────
+      case 'realise': {
+        const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 21)).reduce((a, b) => a + b, 0);
+        const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 29))).reduce((a, b) => a + b, 0);
+        return [
+          fe(g(18)),
+          fe(g(19)),
+          fe(g(17)),
+          fe(ca > 0 ? ca : 0),
+          fp(caN1 > 0 && ca > 0 ? ((ca - caN1) / caN1) * 100 : 0),
+          fe(cumulCA),
+          fe(g(22)),
+          fe(caN1),
+          String(Math.round(g(25))),
+          fe(g(26)),
+          String(Math.round(g(27))),
+          fe(g(28)),
+          String(Math.round(g(29))),
+          fe(g(30)),
+          String(cumulCvts),
+        ];
+      }
 
       // ── 23 valeurs ──────────────────────────────────────────────────────────
       case 'cout_matiere': return [
@@ -410,9 +406,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     const totalVarP = CA_N1 > 0 ? ((totalCA - CA_N1) / CA_N1) * 100 : 0;
     const s = sumCol;
     const totalFgt = Array.from({ length: 12 }, (_, mi) => getFgTotal(mi)).reduce((a, b) => a + b, 0);
-    const sCvtsMidi = Math.round(s(25));
-    const sCvtsSoir = Math.round(s(27));
-    const sCvtsJour = Math.round(s(29));
 
     switch (sectionKey) {
 
@@ -444,23 +437,30 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 25 totaux ───────────────────────────────────────────────────────────
-      case 'realise': return [
-        fp(totalVarP),
-        fe(s(17)), fe(s(18)), '—',
-        fe(s(19)), '—',
-        totalCA > 0 ? fe(totalCA) : '0,00 €',
-        fp(totalVarP),
-        fe(totalCA),
-        '—', '—', '—', '—',
-        fe(CA_N1),
-        String(sCvtsMidi), sCvtsMidi > 0 ? fe(s(18) / sCvtsMidi) : '—',
-        String(sCvtsSoir), sCvtsSoir > 0 ? fe(s(19) / sCvtsSoir) : '—',
-        String(sCvtsJour), sCvtsJour > 0 ? fe(totalCA / sCvtsJour) : '—',
-        String(Math.round(s(32))),
-        '—', '—', '—',
-        fe(CA_N1),
-      ];
+      // ── 15 totaux ───────────────────────────────────────────────────────────
+      case 'realise': {
+        const totalVarP     = CA_N1 > 0 ? ((totalCA - CA_N1) / CA_N1) * 100 : 0;
+        const totalCvtsMidi = s(25);
+        const totalCvtsSoir = s(27);
+        const totalCvtsJour = s(29);
+        return [
+          fe(s(18)),
+          fe(s(19)),
+          fe(s(17)),
+          fe(totalCA),
+          fp(totalVarP),
+          fe(totalCA),
+          '—',
+          fe(CA_N1),
+          String(Math.round(totalCvtsMidi)),
+          fe(totalCvtsMidi > 0 ? s(18) / totalCvtsMidi : 0),
+          String(Math.round(totalCvtsSoir)),
+          fe(totalCvtsSoir > 0 ? s(19) / totalCvtsSoir : 0),
+          String(Math.round(totalCvtsJour)),
+          fe(totalCvtsJour > 0 ? totalCA / totalCvtsJour : 0),
+          String(Math.round(totalCvtsJour)),
+        ];
+      }
 
       // ── 23 totaux ───────────────────────────────────────────────────────────
       case 'cout_matiere': return [

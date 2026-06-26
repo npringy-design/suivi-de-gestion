@@ -7,6 +7,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ## 26/06/2026
 
+- RecapAnnuel Réalisé : COLS_REALISE réduit de 25 à 15 colonnes (colonnes vides/redondantes supprimées, ordre Midi/Soir/VAE/Mois) ; getSectionValues et getTotalValues recalculés (cumul = somme col 21 jan→mois, cumul couverts = somme col 29, VAR N-1 protégée si ca=0, moyennes pondérées TOTAL) ; sCvtsMidi/Soir/Jour hors scope supprimées. tsc OK.
+
+## 26/06/2026 (Budget précédent)
+
 - RecapAnnuel Budget : CA_N1_BY_MONTH remplacé par les réalisés 2025 (source feuille "Variation 2025") ; cumul CA et CVTS calculés par somme jan→mois courant (au lieu de getLastDayVal) ; VAR VS N-1 basé sur le CA budget du mois vs CA réalisé N-1 ; ligne TOTAL avec moyennes CVTS pondérées et cumul annuel = totalCaJour. tsc OK.
 
 ## 15/06/2026
