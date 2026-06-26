@@ -98,6 +98,7 @@ const COLS_REALISE: ColDef[] = [
   { g: 'COUVERTS\nRESTAURANT', l: 'Jour\nNB CVTS',   bg: BG_REAL2, w: 65 }, // col 29
   { g: 'COUVERTS\nRESTAURANT', l: 'Jour\nMoy',        bg: BG_REAL2, w: 65 }, // col 30
   { g: 'COUVERTS\nRESTAURANT', l: 'Cumul\nAnnuel',    bg: BG_REAL2, w: 75 }, // sum col 29 jan→mois
+  { g: 'COUVERTS\nRESTAURANT', l: 'Tendance\nAnnuel', bg: '#fff',   w: 85 }, // tendanceCvts
 ];
 
 const COLS_COUT_MATIERE: ColDef[] = [
@@ -285,6 +286,20 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     const r = (col: number) => getRaw(mi, col);
     const fgt = getFgTotal(mi);
 
+    const lastRealMi = Array.from({ length: 12 }, (_, i) => i)
+      .filter(i => caByMonth[i] > 0)
+      .at(-1) ?? -1;
+    const tendanceCA = lastRealMi >= 0
+      ? Array.from({ length: 12 }, (_, i) =>
+          i <= lastRealMi ? caByMonth[i] : getVal(i, 3)
+        ).reduce((a, b) => a + b, 0)
+      : 0;
+    const tendanceCvts = lastRealMi >= 0
+      ? Array.from({ length: 12 }, (_, i) =>
+          i <= lastRealMi ? getVal(i, 29) : getVal(i, 10)
+        ).reduce((a, b) => a + b, 0)
+      : 0;
+
     switch (sectionKey) {
 
       // ── 13 valeurs ──────────────────────────────────────────────────────────
@@ -308,29 +323,31 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 17 valeurs ──────────────────────────────────────────────────────────
+      // ── 18 valeurs ──────────────────────────────────────────────────────────
       case 'realise': {
-        const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 21)).reduce((a, b) => a + b, 0);
+        const isEmpty = ca === 0;
+        const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i]).reduce((a, b) => a + b, 0);
         const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 29))).reduce((a, b) => a + b, 0);
-        const ecartJourPct = g(3) > 0 ? ((g(21) - g(3)) / g(3)) * 100 : 0;
+        const ecartJourPct = !isEmpty && g(3) > 0 ? ((g(21) - g(3)) / g(3)) * 100 : 0;
         return [
-          fe(g(17)),
-          fe(g(18)),
-          fe(g(18) - g(0)),
-          fe(g(19)),
-          fe(g(19) - g(1)),
-          fe(g(21)),
-          fe(g(22)),
-          fp(ecartJourPct),
-          fe(cumulCA),
-          '—',
-          String(Math.round(g(25))),
-          fe(g(26)),
-          String(Math.round(g(27))),
-          fe(g(28)),
-          String(Math.round(g(29))),
-          fe(g(30)),
-          String(cumulCvts),
+          isEmpty ? '—' : fe(g(17)),
+          isEmpty ? '—' : fe(g(18)),
+          isEmpty ? '—' : fe(g(18) - g(0)),
+          isEmpty ? '—' : fe(g(19)),
+          isEmpty ? '—' : fe(g(19) - g(1)),
+          isEmpty ? '—' : fe(g(21)),
+          isEmpty ? '—' : fe(g(22)),
+          isEmpty ? '—' : fp(ecartJourPct),
+          isEmpty ? '—' : fe(cumulCA),
+          fe(tendanceCA),
+          isEmpty ? '—' : String(Math.round(g(25))),
+          isEmpty ? '—' : fe(g(26)),
+          isEmpty ? '—' : String(Math.round(g(27))),
+          isEmpty ? '—' : fe(g(28)),
+          isEmpty ? '—' : String(Math.round(g(29))),
+          isEmpty ? '—' : fe(g(30)),
+          isEmpty ? '—' : String(cumulCvts),
+          String(Math.round(tendanceCvts)),
         ];
       }
 
@@ -442,7 +459,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 17 totaux ───────────────────────────────────────────────────────────
+      // ── 18 totaux ───────────────────────────────────────────────────────────
       case 'realise': {
         const totalCaMidi  = s(18);
         const totalCaSoir  = s(19);
@@ -454,6 +471,19 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const totalCvtsSoir = s(27);
         const totalCvtsJour = s(29);
         const ecartJourPct = totalBudJour > 0 ? ((totalCaJour - totalBudJour) / totalBudJour) * 100 : 0;
+        const tLastRealMi = Array.from({ length: 12 }, (_, i) => i)
+          .filter(i => caByMonth[i] > 0)
+          .at(-1) ?? -1;
+        const tTendanceCA = tLastRealMi >= 0
+          ? Array.from({ length: 12 }, (_, i) =>
+              i <= tLastRealMi ? caByMonth[i] : getVal(i, 3)
+            ).reduce((a, b) => a + b, 0)
+          : 0;
+        const tTendanceCvts = tLastRealMi >= 0
+          ? Array.from({ length: 12 }, (_, i) =>
+              i <= tLastRealMi ? getVal(i, 29) : getVal(i, 10)
+            ).reduce((a, b) => a + b, 0)
+          : 0;
         return [
           fe(s(17)),
           fe(totalCaMidi),
@@ -464,7 +494,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           fe(totalCaJour - totalBudJour),
           fp(ecartJourPct),
           fe(totalCaJour),
-          '—',
+          fe(tTendanceCA),
           String(Math.round(totalCvtsMidi)),
           fe(totalCvtsMidi > 0 ? totalCaMidi / totalCvtsMidi : 0),
           String(Math.round(totalCvtsSoir)),
@@ -472,6 +502,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(totalCvtsJour)),
           fe(totalCvtsJour > 0 ? totalCaJour / totalCvtsJour : 0),
           String(Math.round(totalCvtsJour)),
+          String(Math.round(tTendanceCvts)),
         ];
       }
 

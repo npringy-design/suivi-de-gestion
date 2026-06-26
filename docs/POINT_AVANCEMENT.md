@@ -7,6 +7,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ## 26/06/2026
 
+- RecapAnnuel Réalisé : affichage '—' sur mois vides (ca=0) ; tendanceCA/tendanceCvts calculées (réalisé jan→lastReal + budget pour les mois restants) ; COLS_REALISE passe à 18 colonnes (Tendance Cvts ajoutée en couverts) ; cumul CA corrigé sur caByMonth. tsc OK.
 - RecapAnnuel Réalisé : COLS_REALISE restructuré à 17 colonnes (VAE/Midi/Écart Midi/Soir/Écart Soir/Jour/Écart Valeur/Écart %/Cumul/Tendance + 7 couverts) ; getSectionValues et getTotalValues mis à jour (écarts vs budget Midi/Soir/Jour calculés, ecartJourPct protégé si g(3)=0, cumul = somme col 21/29 jan→mois, moyennes pondérées TOTAL). tsc OK.
 
 - RecapAnnuel Réalisé précédent : COLS_REALISE réduit de 25 à 15 colonnes (colonnes vides/redondantes supprimées, ordre Midi/Soir/VAE/Mois) ; getSectionValues et getTotalValues recalculés (cumul = somme col 21 jan→mois, cumul couverts = somme col 29, VAR N-1 protégée si ca=0, moyennes pondérées TOTAL) ; sCvtsMidi/Soir/Jour hors scope supprimées. tsc OK.
