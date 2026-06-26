@@ -4,8 +4,22 @@ import { useData } from '@/contexts/DataContext';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 import { useRecapAnnuelData } from './useRecapAnnuelData';
 
-const CA_N1 = 1_789_254;
-const CA_N1_BY_MONTH = [159802, 161245, 174361, 186373, 190990, 172214, 167786, 156793, 130384, 149359, 139948, 0];
+// CA Réalisé N-1 (2025) par mois — source : feuille "Variation 2025"
+const CA_N1_BY_MONTH = [
+  100140.41,  // janvier
+  122148.18,  // février
+  113683.74,  // mars
+  104913.83,  // avril
+  116309.09,  // mai
+  102128.20,  // juin
+  114122.14,  // juillet
+  115047.47,  // août
+   90585.35,  // septembre
+  125965.82,  // octobre
+  116430.32,  // novembre
+  150217.73,  // décembre
+];
+const CA_N1 = CA_N1_BY_MONTH.reduce((a, b) => a + b, 0); // 1 371 692,28
 const MONTHS_FULL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const MONTHS_SHORT_LABELS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const CONTRATS_FG = [
@@ -281,21 +295,25 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     switch (sectionKey) {
 
       // ── 13 valeurs ──────────────────────────────────────────────────────────
-      case 'budget': return [
-        fe(g(0)),
-        fe(g(1)),
-        fe(g(3)),
-        fe(getLastDayVal(mi, 4)),
-        fp(varP),
-        String(Math.round(g(6))),
-        fe(g(6) > 0 ? g(0) / g(6) : 0),
-        String(Math.round(g(8))),
-        fe(g(8) > 0 ? g(1) / g(8) : 0),
-        String(Math.round(g(10))),
-        fe(g(10) > 0 ? g(3) / g(10) : 0),
-        String(Math.round(getLastDayVal(mi, 12))),
-        fp(varP),
-      ];
+      case 'budget': {
+        const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
+        const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 10))).reduce((a, b) => a + b, 0);
+        return [
+          fe(g(0)),
+          fe(g(1)),
+          fe(g(3)),
+          fe(cumulCA),
+          fp(caN1 > 0 ? ((g(3) - caN1) / caN1) * 100 : 0),
+          String(Math.round(g(6))),
+          fe(g(6) > 0 ? g(0) / g(6) : 0),
+          String(Math.round(g(8))),
+          fe(g(8) > 0 ? g(1) / g(8) : 0),
+          String(Math.round(g(10))),
+          fe(g(10) > 0 ? g(3) / g(10) : 0),
+          String(cumulCvts),
+          fp(caN1 > 0 ? ((g(3) - caN1) / caN1) * 100 : 0),
+        ];
+      }
 
       // ── 25 valeurs ──────────────────────────────────────────────────────────
       case 'realise': return [
@@ -406,23 +424,23 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const totalCvtsMidi = s(6);
         const totalCvtsSoir = s(8);
         const totalCvtsJour = s(10);
-        const totalCumulCA   = Array.from({ length: 12 }, (_, mi) => getLastDayVal(mi, 4)).reduce((a, b) => a + b, 0);
-        const totalCumulCvts = Array.from({ length: 12 }, (_, mi) => Math.round(getLastDayVal(mi, 12))).reduce((a, b) => a + b, 0);
-        const varPAnnuel = CA_N1 > 0 ? ((totalCA - CA_N1) / CA_N1) * 100 : 0;
+        const totalCumulCA   = totalCaJour;
+        const totalCumulCvts = Math.round(totalCvtsJour);
+        const totalVarBudget = CA_N1 > 0 ? ((totalCaJour - CA_N1) / CA_N1) * 100 : 0;
         return [
           fe(totalCaMidi),
           fe(totalCaSoir),
           fe(totalCaJour),
           fe(totalCumulCA),
-          fp(varPAnnuel),
+          fp(totalVarBudget),
           String(Math.round(totalCvtsMidi)),
-          totalCvtsMidi > 0 ? fe(totalCaMidi / totalCvtsMidi) : '—',
+          fe(totalCvtsMidi > 0 ? totalCaMidi / totalCvtsMidi : 0),
           String(Math.round(totalCvtsSoir)),
-          totalCvtsSoir > 0 ? fe(totalCaSoir / totalCvtsSoir) : '—',
+          fe(totalCvtsSoir > 0 ? totalCaSoir / totalCvtsSoir : 0),
           String(Math.round(totalCvtsJour)),
-          totalCvtsJour > 0 ? fe(totalCaJour / totalCvtsJour) : '—',
+          fe(totalCvtsJour > 0 ? totalCaJour / totalCvtsJour : 0),
           String(totalCumulCvts),
-          fp(varPAnnuel),
+          fp(totalVarBudget),
         ];
       }
 

@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 26/06/2026
+
+- RecapAnnuel Budget : CA_N1_BY_MONTH remplacé par les réalisés 2025 (source feuille "Variation 2025") ; cumul CA et CVTS calculés par somme jan→mois courant (au lieu de getLastDayVal) ; VAR VS N-1 basé sur le CA budget du mois vs CA réalisé N-1 ; ligne TOTAL avec moyennes CVTS pondérées et cumul annuel = totalCaJour. tsc OK.
+
 ## 15/06/2026
 
 - Détection des dates journalières import historique : correction de `parseHistoricalBudgetDate` (cellules formule ExcelJS `{formula, result}` non gérées + regex `d`→`\d` cassées). tsc OK.
