@@ -673,87 +673,130 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
       {/* TABLEAU */}
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
-        <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff' }}>
-          <thead>
-            <tr style={{ height: 30 }}>
-              <th rowSpan={3} style={{ ...thBase, background: BG_DATE, color: '#fff', minWidth: 82, left: 0, top: 0, zIndex: 60, borderRight: '3px solid #475569', borderBottom: '3px solid #475569' }}>
-                DATE
-              </th>
-              <th colSpan={activeSection.cols.length} style={{ ...thBase, background: activeSection.accentBg, color: activeSection.accentColor, top: 0, height: 30, fontSize: 11, zIndex: 40 }}>
-                {activeSection.icon} {activeSection.label.toUpperCase()}
-              </th>
-            </tr>
-            <tr style={{ height: 30 }}>
-              {groups.map((gr, gi) => {
-                const offset = groups.slice(0, gi).reduce((a, x) => a + x.count, 0);
-                return (
-                  <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: activeSection.cols[offset].bg, color: '#1e293b', top: 30, height: 30, fontSize: 9, zIndex: 40, borderBottom: '1px solid #94a3b8' }}>
-                    {gr.g}
-                  </th>
-                );
-              })}
-            </tr>
-            <tr style={{ height: 60 }}>
-              {activeSection.cols.map((c, ci) => (
-                <th key={`col${ci}`} style={{ ...thBase, background: c.bg, color: '#374151', top: 60, height: 60, minWidth: c.w || 65, fontSize: 9, zIndex: 40, borderBottom: '3px solid #374151' }}>
-                  {c.l}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {MONTHS_FULL.map((_, mi) => {
-              const vals = getSectionValues(activeSection.key, mi);
-              const isCurrent = mi === new Date().getMonth() && YEAR === new Date().getFullYear();
-              return (
-                <tr key={mi} className="rr" style={{ background: isCurrent ? '#eff6ff' : (mi % 2 === 0 ? '#fff' : '#f8fafc') }}>
-                  <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isCurrent ? '#dbeafe' : '#f1f5f9', fontWeight: isCurrent ? 800 : 600, fontSize: 11, color: '#1e293b', borderRight: '3px solid #475569', minWidth: 82, textAlign: 'left', paddingLeft: 8 }}>
-                    {MONTHS_SHORT[mi]}
-                  </td>
-                  {vals.map((v, ci) => {
-                    const colDef = activeSection.cols[ci];
-                    const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
-                    const isPos = typeof v === 'string' && v.startsWith('+');
-                    return (
-                      <td key={ci} style={{
-                        ...tdBase,
-                        background: colDef?.bg ?? '#fff',
-                        color: isNeg ? '#dc2626' : isPos ? '#16a34a' : v === '—' || v === '' ? '#94a3b8' : '#334155',
-                        fontWeight: isNeg || isPos ? 700 : 500,
-                        minWidth: colDef?.w ?? 65,
-                      }}>
-                        {v}
+        {(() => {
+          const renderTable = (
+            cols: ColDef[],
+            label: string,
+            icon: string,
+            accentBg: string,
+            accentColor: string,
+            getVals: (mi: number) => string[],
+            totalVals: string[],
+          ) => {
+            const grps: { g: string; count: number }[] = [];
+            cols.forEach(c => {
+              const last = grps[grps.length - 1];
+              if (last && last.g === c.g) last.count++;
+              else grps.push({ g: c.g, count: 1 });
+            });
+            return (
+              <div key={label} style={{ marginBottom: 16, overflow: 'auto' }}>
+                <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff' }}>
+                  <thead>
+                    <tr style={{ height: 30 }}>
+                      <th rowSpan={3} style={{ ...thBase, background: BG_DATE, color: '#fff', minWidth: 82, left: 0, top: 0, zIndex: 60, borderRight: '3px solid #475569', borderBottom: '3px solid #475569' }}>
+                        DATE
+                      </th>
+                      <th colSpan={cols.length} style={{ ...thBase, background: accentBg, color: accentColor, top: 0, height: 30, fontSize: 11, zIndex: 40 }}>
+                        {icon} {label.toUpperCase()}
+                      </th>
+                    </tr>
+                    <tr style={{ height: 30 }}>
+                      {grps.map((gr, gi) => {
+                        const offset = grps.slice(0, gi).reduce((a, x) => a + x.count, 0);
+                        return (
+                          <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: cols[offset].bg, color: '#1e293b', top: 30, height: 30, fontSize: 9, zIndex: 40, borderBottom: '1px solid #94a3b8' }}>
+                            {gr.g}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                    <tr style={{ height: 60 }}>
+                      {cols.map((c, ci) => (
+                        <th key={`col${ci}`} style={{ ...thBase, background: c.bg, color: '#374151', top: 60, height: 60, minWidth: c.w || 65, fontSize: 9, zIndex: 40, borderBottom: '3px solid #374151' }}>
+                          {c.l}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MONTHS_FULL.map((_, mi) => {
+                      const vals = getVals(mi);
+                      const isCurrent = mi === new Date().getMonth() && YEAR === new Date().getFullYear();
+                      return (
+                        <tr key={mi} className="rr" style={{ background: isCurrent ? '#eff6ff' : (mi % 2 === 0 ? '#fff' : '#f8fafc') }}>
+                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isCurrent ? '#dbeafe' : '#f1f5f9', fontWeight: isCurrent ? 800 : 600, fontSize: 11, color: '#1e293b', borderRight: '3px solid #475569', minWidth: 82, textAlign: 'left', paddingLeft: 8 }}>
+                            {MONTHS_SHORT[mi]}
+                          </td>
+                          {vals.map((v, ci) => {
+                            const colDef = cols[ci];
+                            const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
+                            const isPos = typeof v === 'string' && v.startsWith('+');
+                            return (
+                              <td key={ci} style={{
+                                ...tdBase,
+                                background: colDef?.bg ?? '#fff',
+                                color: isNeg ? '#dc2626' : isPos ? '#16a34a' : v === '—' || v === '' ? '#94a3b8' : '#334155',
+                                fontWeight: isNeg || isPos ? 700 : 500,
+                                minWidth: colDef?.w ?? 65,
+                              }}>
+                                {v}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: BG_YELL, fontWeight: 800, fontSize: 12, color: '#713f12', borderRight: '3px solid #ca8a04', borderTop: '2px solid #ca8a04', textAlign: 'left', paddingLeft: 8 }}>
+                        TOTAL
                       </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
+                      {totalVals.map((v, ci) => {
+                        const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
+                        const isPos = typeof v === 'string' && v.startsWith('+');
+                        return (
+                          <td key={ci} style={{
+                            ...tdBase, background: BG_YELL,
+                            fontWeight: 800, fontSize: 11,
+                            color: isNeg ? '#dc2626' : isPos ? '#16a34a' : '#713f12',
+                            borderTop: '2px solid #ca8a04',
+                          }}>
+                            {v}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            );
+          };
 
-          <tfoot>
-            <tr>
-              <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: BG_YELL, fontWeight: 800, fontSize: 12, color: '#713f12', borderRight: '3px solid #ca8a04', borderTop: '2px solid #ca8a04', textAlign: 'left', paddingLeft: 8 }}>
-                TOTAL
-              </td>
-              {getTotalValues(activeSection.key).map((v, ci) => {
-                const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
-                const isPos = typeof v === 'string' && v.startsWith('+');
-                return (
-                  <td key={ci} style={{
-                    ...tdBase, background: BG_YELL,
-                    fontWeight: 800, fontSize: 11,
-                    color: isNeg ? '#dc2626' : isPos ? '#16a34a' : '#713f12',
-                    borderTop: '2px solid #ca8a04',
-                  }}>
-                    {v}
-                  </td>
-                );
-              })}
-            </tr>
-          </tfoot>
-        </table>
+          if (activeTab === 'realise') {
+            const totals = getTotalValues('realise');
+            return (
+              <>
+                {renderTable(
+                  COLS_REALISE.slice(0, 11), 'CA HT', '📊', '#1e40af', '#fff',
+                  (mi) => getSectionValues('realise', mi).slice(0, 11),
+                  totals.slice(0, 11),
+                )}
+                {renderTable(
+                  COLS_REALISE.slice(11), 'Couverts Restaurant', '📊', '#1e40af', '#fff',
+                  (mi) => getSectionValues('realise', mi).slice(11),
+                  totals.slice(11),
+                )}
+              </>
+            );
+          }
+          return renderTable(
+            activeSection.cols, activeSection.label, activeSection.icon, activeSection.accentBg, activeSection.accentColor,
+            (mi) => getSectionValues(activeSection.key, mi),
+            getTotalValues(activeSection.key),
+          );
+        })()}
       </div>
 
       <footer style={{ padding: '10px 28px', borderTop: '1px solid #e2e8f0', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
