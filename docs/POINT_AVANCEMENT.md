@@ -7,6 +7,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ## 26/06/2026
 
+- RecapAnnuel Réalisé CVTS : même disposition que CA HT — 10 colonnes (NB Midi / Écart Midi / NB Soir / Écart Soir / NB Jour / Moy Jour / Écart Jour NB / Écart Jour % / Cumul / Tendance progressive) ; getSectionValues et getTotalValues passent à 20 valeurs. tsc OK.
 - RecapAnnuel Réalisé Tendance : logique corrigée — budgetAnnuel + cumul progressif des écarts réalisés (col 22 / col 29-10) jusqu'au mois courant ; mois vides maintiennent le dernier cumul figé ; TOTAL = budget + somme de tous les écarts réalisés. tsc OK.
 - RecapAnnuel Réalisé : affichage '—' sur mois vides (ca=0) ; tendanceCA/tendanceCvts calculées (réalisé jan→lastReal + budget pour les mois restants) ; COLS_REALISE passe à 18 colonnes (Tendance Cvts ajoutée en couverts) ; cumul CA corrigé sur caByMonth. tsc OK.
 - RecapAnnuel Réalisé : COLS_REALISE restructuré à 17 colonnes (VAE/Midi/Écart Midi/Soir/Écart Soir/Jour/Écart Valeur/Écart %/Cumul/Tendance + 7 couverts) ; getSectionValues et getTotalValues mis à jour (écarts vs budget Midi/Soir/Jour calculés, ecartJourPct protégé si g(3)=0, cumul = somme col 21/29 jan→mois, moyennes pondérées TOTAL). tsc OK.

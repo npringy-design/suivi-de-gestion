@@ -90,15 +90,17 @@ const COLS_REALISE: ColDef[] = [
   { g: 'CA HT', l: 'Ecart Budget\nJour %',       bg: BG_HATCH, w: 70 }, // calc local
   { g: 'CA HT', l: 'Cumul\nAnnuel',              bg: BG_REAL2, w: 85 }, // sum col 21 jan→mois
   { g: 'CA HT', l: 'Tendance\nAnnuel',           bg: '#fff',   w: 75 }, // —
-  // COUVERTS RESTAURANT — 7 colonnes
-  { g: 'COUVERTS\nRESTAURANT', l: 'Midi\nNB CVTS',   bg: BG_REAL2, w: 65 }, // col 25
-  { g: 'COUVERTS\nRESTAURANT', l: 'Midi\nMoy',        bg: BG_REAL2, w: 65 }, // col 26
-  { g: 'COUVERTS\nRESTAURANT', l: 'Soir\nNB CVTS',   bg: BG_REAL2, w: 65 }, // col 27
-  { g: 'COUVERTS\nRESTAURANT', l: 'Soir\nMoy',        bg: BG_REAL2, w: 65 }, // col 28
-  { g: 'COUVERTS\nRESTAURANT', l: 'Jour\nNB CVTS',   bg: BG_REAL2, w: 65 }, // col 29
-  { g: 'COUVERTS\nRESTAURANT', l: 'Jour\nMoy',        bg: BG_REAL2, w: 65 }, // col 30
-  { g: 'COUVERTS\nRESTAURANT', l: 'Cumul\nAnnuel',    bg: BG_REAL2, w: 75 }, // sum col 29 jan→mois
-  { g: 'COUVERTS\nRESTAURANT', l: 'Tendance\nAnnuel', bg: '#fff',   w: 85 }, // tendanceCvts
+  // COUVERTS RESTAURANT — 10 colonnes (même disposition que CA HT)
+  { g: 'COUVERTS\nRESTAURANT', l: 'Midi\nNB CVTS',          bg: BG_REAL2, w: 65 }, // col 25
+  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart vs\nBudget Midi',  bg: '#fff',   w: 70 }, // g(25)-g(6)
+  { g: 'COUVERTS\nRESTAURANT', l: 'Soir\nNB CVTS',          bg: BG_REAL2, w: 65 }, // col 27
+  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart vs\nBudget Soir',  bg: '#fff',   w: 70 }, // g(27)-g(8)
+  { g: 'COUVERTS\nRESTAURANT', l: 'Jour\nNB CVTS',          bg: BG_REAL2, w: 65 }, // col 29
+  { g: 'COUVERTS\nRESTAURANT', l: 'Jour\nMoy HT',           bg: BG_REAL2, w: 65 }, // col 30
+  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart Budget\nJour NB',  bg: '#fff',   w: 70 }, // g(29)-g(10)
+  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart Budget\nJour %',   bg: BG_HATCH, w: 65 }, // calc local
+  { g: 'COUVERTS\nRESTAURANT', l: 'Cumul\nAnnuel',          bg: BG_REAL2, w: 75 }, // sum col 29 jan→mois
+  { g: 'COUVERTS\nRESTAURANT', l: 'Tendance\nAnnuel',       bg: '#fff',   w: 85 }, // progressive
 ];
 
 const COLS_COUT_MATIERE: ColDef[] = [
@@ -309,20 +311,21 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 18 valeurs ──────────────────────────────────────────────────────────
+      // ── 20 valeurs ──────────────────────────────────────────────────────────
       case 'realise': {
         const isEmpty = ca === 0;
         const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i]).reduce((a, b) => a + b, 0);
         const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 29))).reduce((a, b) => a + b, 0);
-        const ecartJourPct = !isEmpty && g(3) > 0 ? ((g(21) - g(3)) / g(3)) * 100 : 0;
-        // Tendance = budget annuel + cumul des écarts réalisés jusqu'au mois courant (mois vides = 0)
-        const budgetAnnuel    = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
+        const ecartCaJourPct   = !isEmpty && g(3) > 0  ? ((g(21) - g(3))  / g(3))  * 100 : 0;
+        const ecartCvtsJourPct = !isEmpty && g(10) > 0 ? ((g(29) - g(10)) / g(10)) * 100 : 0;
+        const budgetAnnuel     = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
         const budgetCvtsAnnuel = Array.from({ length: 12 }, (_, i) => getVal(i, 10)).reduce((a, b) => a + b, 0);
         const cumulEcartCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? getVal(i, 22) : 0).reduce((a, b) => a + b, 0);
         const cumulEcartCvts = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? (getVal(i, 29) - getVal(i, 10)) : 0).reduce((a, b) => a + b, 0);
         const tendanceCA   = budgetAnnuel    + cumulEcartCA;
         const tendanceCvts = budgetCvtsAnnuel + cumulEcartCvts;
         return [
+          // CA HT — 10 valeurs
           isEmpty ? '—' : fe(g(17)),
           isEmpty ? '—' : fe(g(18)),
           isEmpty ? '—' : fe(g(18) - g(0)),
@@ -330,15 +333,18 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           isEmpty ? '—' : fe(g(19) - g(1)),
           isEmpty ? '—' : fe(g(21)),
           isEmpty ? '—' : fe(g(22)),
-          isEmpty ? '—' : fp(ecartJourPct),
+          isEmpty ? '—' : fp(ecartCaJourPct),
           isEmpty ? '—' : fe(cumulCA),
           fe(tendanceCA),
+          // COUVERTS — 10 valeurs
           isEmpty ? '—' : String(Math.round(g(25))),
-          isEmpty ? '—' : fe(g(26)),
+          isEmpty ? '—' : String(Math.round(g(25) - g(6))),
           isEmpty ? '—' : String(Math.round(g(27))),
-          isEmpty ? '—' : fe(g(28)),
+          isEmpty ? '—' : String(Math.round(g(27) - g(8))),
           isEmpty ? '—' : String(Math.round(g(29))),
           isEmpty ? '—' : fe(g(30)),
+          isEmpty ? '—' : String(Math.round(g(29) - g(10))),
+          isEmpty ? '—' : fp(ecartCvtsJourPct),
           isEmpty ? '—' : String(cumulCvts),
           String(Math.round(tendanceCvts)),
         ];
@@ -452,25 +458,30 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 18 totaux ───────────────────────────────────────────────────────────
+      // ── 20 totaux ───────────────────────────────────────────────────────────
       case 'realise': {
-        const totalCaMidi  = s(18);
-        const totalCaSoir  = s(19);
-        const totalCaJour  = s(21);
-        const totalBudMidi = s(0);
-        const totalBudSoir = s(1);
-        const totalBudJour = s(3);
+        const totalCaMidi   = s(18);
+        const totalCaSoir   = s(19);
+        const totalCaJour   = s(21);
+        const totalBudMidi  = s(0);
+        const totalBudSoir  = s(1);
+        const totalBudJour  = s(3);
         const totalCvtsMidi = s(25);
         const totalCvtsSoir = s(27);
         const totalCvtsJour = s(29);
-        const ecartJourPct = totalBudJour > 0 ? ((totalCaJour - totalBudJour) / totalBudJour) * 100 : 0;
+        const totalBudCvtsMidi = s(6);
+        const totalBudCvtsSoir = s(8);
+        const totalBudCvtsJour = s(10);
+        const ecartCaJourPct   = totalBudJour    > 0 ? ((totalCaJour   - totalBudJour)    / totalBudJour)    * 100 : 0;
+        const ecartCvtsJourPct = totalBudCvtsJour > 0 ? ((totalCvtsJour - totalBudCvtsJour) / totalBudCvtsJour) * 100 : 0;
         const tBudgetAnnuel     = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
         const tBudgetCvtsAnnuel = Array.from({ length: 12 }, (_, i) => getVal(i, 10)).reduce((a, b) => a + b, 0);
         const tCumulEcartCA   = Array.from({ length: 12 }, (_, i) => caByMonth[i] > 0 ? getVal(i, 22) : 0).reduce((a, b) => a + b, 0);
         const tCumulEcartCvts = Array.from({ length: 12 }, (_, i) => caByMonth[i] > 0 ? (getVal(i, 29) - getVal(i, 10)) : 0).reduce((a, b) => a + b, 0);
-        const tTendanceCA   = tBudgetAnnuel    + tCumulEcartCA;
+        const tTendanceCA   = tBudgetAnnuel     + tCumulEcartCA;
         const tTendanceCvts = tBudgetCvtsAnnuel + tCumulEcartCvts;
         return [
+          // CA HT — 10 valeurs
           fe(s(17)),
           fe(totalCaMidi),
           fe(totalCaMidi - totalBudMidi),
@@ -478,15 +489,18 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           fe(totalCaSoir - totalBudSoir),
           fe(totalCaJour),
           fe(totalCaJour - totalBudJour),
-          fp(ecartJourPct),
+          fp(ecartCaJourPct),
           fe(totalCaJour),
           fe(tTendanceCA),
+          // COUVERTS — 10 valeurs
           String(Math.round(totalCvtsMidi)),
-          fe(totalCvtsMidi > 0 ? totalCaMidi / totalCvtsMidi : 0),
+          String(Math.round(totalCvtsMidi - totalBudCvtsMidi)),
           String(Math.round(totalCvtsSoir)),
-          fe(totalCvtsSoir > 0 ? totalCaSoir / totalCvtsSoir : 0),
+          String(Math.round(totalCvtsSoir - totalBudCvtsSoir)),
           String(Math.round(totalCvtsJour)),
           fe(totalCvtsJour > 0 ? totalCaJour / totalCvtsJour : 0),
+          String(Math.round(totalCvtsJour - totalBudCvtsJour)),
+          fp(ecartCvtsJourPct),
           String(Math.round(totalCvtsJour)),
           String(Math.round(tTendanceCvts)),
         ];
