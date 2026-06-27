@@ -337,8 +337,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           isEmpty ? '—' : fe(g(22)),
           isEmpty ? '—' : fp(ecartCaJourPct),
           isEmpty ? '—' : fe(cumulCA),
-          fe(tendanceCA),
-          fp(budgetAnnuel > 0 ? (cumulEcartCA / budgetAnnuel) * 100 : 0),
+          isEmpty ? '—' : fe(tendanceCA),
+          isEmpty ? '—' : fp(budgetAnnuel > 0 ? (cumulEcartCA / budgetAnnuel) * 100 : 0),
           // COUVERTS — 11 valeurs
           isEmpty ? '—' : String(Math.round(g(25))),
           isEmpty ? '—' : String(Math.round(g(25) - g(6))),
@@ -349,8 +349,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           isEmpty ? '—' : String(Math.round(g(29) - g(10))),
           isEmpty ? '—' : fp(ecartCvtsJourPct),
           isEmpty ? '—' : String(cumulCvts),
-          String(Math.round(tendanceCvts)),
-          fp(budgetCvtsAnnuel > 0 ? (cumulEcartCvts / budgetCvtsAnnuel) * 100 : 0),
+          isEmpty ? '—' : String(Math.round(tendanceCvts)),
+          isEmpty ? '—' : fp(budgetCvtsAnnuel > 0 ? (cumulEcartCvts / budgetCvtsAnnuel) * 100 : 0),
         ];
       }
 
@@ -609,7 +609,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   }, [activeSection]);
 
   return (
-    <div style={{ height: '100vh', background: '#f1f5f9', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ height: '100vh', background: '#f1f5f9', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden', maxWidth: '100vw' }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#eff6ff!important}`}</style>
 
       {/* HEADER */}
