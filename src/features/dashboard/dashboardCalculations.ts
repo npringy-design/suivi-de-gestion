@@ -142,16 +142,27 @@ export function computeDashboardData(
     const isGlobalSchema = personnelSchema === 'global';
 
     // Index N-1 par date exacte (YYYY-M-D)
-    // Le jour cible N-1 est calculé par "Nième occurrence du même jour de semaine dans le même mois de l'année N-1".
-    // Cela gère le débordement de fin de mois : le 5ème samedi de janvier 2026 pointe vers le 1er février 2025.
+    // Appairage par numéro de semaine ISO + jour de la semaine : même semaine ISO, même jour, année N-1.
     const getN1TargetDate = (currentDate: Date): Date => {
-      const year = currentDate.getFullYear() - 1;
-      const month = currentDate.getMonth();
-      const weekOfMonth = Math.ceil(currentDate.getDate() / 7); // 1=jours 1-7, 2=8-14, etc.
-      const targetDow = currentDate.getDay(); // 0=dimanche … 6=samedi
-      const firstOfMonth = new Date(year, month, 1);
-      const daysToFirst = (targetDow - firstOfMonth.getDay() + 7) % 7;
-      return new Date(year, month, 1 + daysToFirst + (weekOfMonth - 1) * 7);
+      const getISOWeek = (d: Date): number => {
+        const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        tmp.setUTCDate(tmp.getUTCDate() + 4 - (tmp.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+        return Math.ceil((((tmp.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+      };
+      const mondayOfISOWeek = (y: number, w: number): Date => {
+        const jan4 = new Date(Date.UTC(y, 0, 4));
+        const dow = jan4.getUTCDay() || 7;
+        const monday = new Date(jan4);
+        monday.setUTCDate(jan4.getUTCDate() - (dow - 1) + (w - 1) * 7);
+        return monday;
+      };
+      const isoWeek = getISOWeek(currentDate);
+      const dow = currentDate.getDay() || 7; // 1=lun … 7=dim (local)
+      const mondayN1 = mondayOfISOWeek(currentDate.getFullYear() - 1, isoWeek);
+      // Convertir en date locale pour que la clé YYYY-M-D soit cohérente avec nMinus1ByDate
+      const utcMs = mondayN1.getTime() + (dow - 1) * 86400000;
+      return new Date(utcMs);
     };
 
     const nMinus1ByDate = new Map<string, { caBudget: number; cvtsBudget: number; caRealise: number; cvtsRealise: number }>();
@@ -586,36 +597,45 @@ export function computeDashboardData(
           }
         }
 
-        // Prévision N-1 VALEUR et % pour le total semaine (somme des écarts jour / N-1 déduit par algèbre)
+        // Écart VS N-1 total semaine — différence des totaux (appairage ISO semaine)
         {
-          const weeklyEcartCA = weekDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-128`] || ''), 0);
+          const n1KeyOf = (d: { dateObj?: Date }) => {
+            const n1Date = getN1TargetDate(d.dateObj!);
+            return `${n1Date.getFullYear()}-${n1Date.getMonth()}-${n1Date.getDate()}`;
+          };
+
+          // Prévision/budget
           const weeklyBudgetCA = parseMoneyValue(data[`${rIdx}-3`] || '');
-          const weeklyN1CA = weeklyBudgetCA - weeklyEcartCA;
+          const weeklyN1CA = weekDays.reduce((s, d) => s + (nMinus1ByDate.get(n1KeyOf(d))?.caBudget ?? 0), 0);
           if (weeklyN1CA !== 0) {
-            data[`${rIdx}-128`] = weeklyEcartCA.toFixed(2);
-            data[`${rIdx}-5`] = ((weeklyEcartCA / weeklyN1CA) * 100).toFixed(2);
+            const ecartCA = weeklyBudgetCA - weeklyN1CA;
+            data[`${rIdx}-128`] = ecartCA.toFixed(2);
+            data[`${rIdx}-5`] = ((ecartCA / weeklyN1CA) * 100).toFixed(2);
           }
-          const weeklyEcartCvts = weekDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-129`] || ''), 0);
           const weeklyBudgetCvts = parseMoneyValue(data[`${rIdx}-10`] || '');
-          const weeklyN1Cvts = weeklyBudgetCvts - weeklyEcartCvts;
+          const weeklyN1Cvts = weekDays.reduce((s, d) => s + (nMinus1ByDate.get(n1KeyOf(d))?.cvtsBudget ?? 0), 0);
           if (weeklyN1Cvts !== 0) {
-            data[`${rIdx}-129`] = weeklyEcartCvts.toFixed(2);
-            data[`${rIdx}-13`] = ((weeklyEcartCvts / weeklyN1Cvts) * 100).toFixed(2);
+            const ecartCvts = weeklyBudgetCvts - weeklyN1Cvts;
+            data[`${rIdx}-129`] = ecartCvts.toFixed(2);
+            data[`${rIdx}-13`] = ((ecartCvts / weeklyN1Cvts) * 100).toFixed(2);
           }
-          // Réalisé ECART VS N-1 total semaine (somme des écarts jours / N-1 déduit)
-          const weeklyEcartRealCA = weekDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-118`] || ''), 0);
+
+          // Réalisé CA
           const weeklyRealCA = parseMoneyValue(data[`${rIdx}-21`] || '');
-          const weeklyN1RealCA = weeklyRealCA - weeklyEcartRealCA;
+          const weeklyN1RealCA = weekDays.reduce((s, d) => s + (nMinus1ByDate.get(n1KeyOf(d))?.caRealise ?? 0), 0);
           if (weeklyN1RealCA !== 0) {
-            data[`${rIdx}-118`] = weeklyEcartRealCA.toFixed(2);
-            data[`${rIdx}-119`] = ((weeklyEcartRealCA / weeklyN1RealCA) * 100).toFixed(2);
+            const ecartRealCA = weeklyRealCA - weeklyN1RealCA;
+            data[`${rIdx}-118`] = ecartRealCA.toFixed(2);
+            data[`${rIdx}-119`] = ((ecartRealCA / weeklyN1RealCA) * 100).toFixed(2);
           }
-          const weeklyEcartRealCvts = weekDays.reduce((s, d) => s + parseMoneyValue(data[`${d.originalIdx}-123`] || ''), 0);
+
+          // Réalisé couverts
           const weeklyRealCvts = parseMoneyValue(data[`${rIdx}-29`] || '');
-          const weeklyN1RealCvts = weeklyRealCvts - weeklyEcartRealCvts;
+          const weeklyN1RealCvts = weekDays.reduce((s, d) => s + (nMinus1ByDate.get(n1KeyOf(d))?.cvtsRealise ?? 0), 0);
           if (weeklyN1RealCvts !== 0) {
-            data[`${rIdx}-123`] = weeklyEcartRealCvts.toFixed(2);
-            data[`${rIdx}-124`] = ((weeklyEcartRealCvts / weeklyN1RealCvts) * 100).toFixed(2);
+            const ecartRealCvts = weeklyRealCvts - weeklyN1RealCvts;
+            data[`${rIdx}-123`] = ecartRealCvts.toFixed(2);
+            data[`${rIdx}-124`] = ((ecartRealCvts / weeklyN1RealCvts) * 100).toFixed(2);
           }
         }
 

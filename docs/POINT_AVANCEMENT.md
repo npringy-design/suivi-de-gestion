@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 27/06/2026
+
+- Écart VS N-1 : appairage des jours par semaine ISO + jour de semaine (au lieu de Nième occurrence dans le mois) ; total semaine calculé par différence des totaux réel/budget vs somme N-1 appairée (au lieu de déduction algébrique) — s'applique aux 4 colonnes : CA réalisé 118/119, couverts réalisés 123/124, CA budget 128/5, couverts budget 129/13. tsc OK.
+
 ## 26/06/2026
 
 - RecapAnnuel Réalisé : colonne "VAR vs Budget %" ajoutée après Tendance Annuel dans CA HT et COUVERTS (= cumul écarts / budget annuel, dynamique) — COLS_REALISE passe à 22 colonnes, getSectionValues et getTotalValues à 22 valeurs. tsc OK.
