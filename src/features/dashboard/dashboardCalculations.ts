@@ -522,9 +522,7 @@ export function computeDashboardData(
             }
           });
 
-          if (hasData) {
-            data[`${rIdx}-${cIdx}`] = colSum.toString();
-          }
+          data[`${rIdx}-${cIdx}`] = hasData ? colSum.toString() : '';
         });
 
         // Calculate averages for week
@@ -696,9 +694,7 @@ export function computeDashboardData(
           }
         });
 
-        if (hasData) {
-            data[`${monthTotalIdx}-${cIdx}`] = colSum.toString();
-        }
+        data[`${monthTotalIdx}-${cIdx}`] = hasData ? colSum.toString() : '';
       });
 
       const lastDay = allDays[allDays.length - 1];

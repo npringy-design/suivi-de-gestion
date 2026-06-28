@@ -355,13 +355,17 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       }
 
       // ── 23 valeurs ──────────────────────────────────────────────────────────
-      case 'cout_matiere': return [
-        fe(g(39)), fp(g(40)), fe(g(41)), fp(g(42)), fe(g(43)),
-        fe(g(45)), fe(g(46)), fe(g(47)), fe(g(48)),
-        fe(g(49)), fe(g(50)), fe(g(51)), fe(g(52)), fe(g(53)), fe(g(54)), fe(g(55)), fe(g(56)), fe(g(57)),
-        fe(g(58)), fe(g(59)), fp(g(60)),
-        '0,00 €', '0,00 €',
-      ];
+      case 'cout_matiere': {
+        const cumulHT = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 58)).reduce((a, b) => a + b, 0);
+        const ratioHT = ca > 0 ? g(58) / ca * 100 : 0;
+        return [
+          fe(g(39)), fp(g(40)), fe(g(41)), fp(g(42)), fe(g(43)),
+          fe(g(45)), fe(g(46)), fe(g(47)), fe(g(48)),
+          fe(g(49)), fe(g(50)), fe(g(51)), fe(g(52)), fe(g(53)), fe(g(54)), fe(g(55)), fe(g(56)), fe(g(57)),
+          fe(g(58)), fe(cumulHT), fp(ratioHT),
+          '0,00 €', '0,00 €',
+        ];
+      }
 
       // ── 32 (cuisine/salle) ou 22 (global) valeurs ────────────────────────
       case 'frais_personnel':
@@ -517,7 +521,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         fe(s(39)), '—', fe(s(41)), '—', fe(s(43)),
         fe(s(45)), fe(s(46)), fe(s(47)), fe(s(48)),
         fe(s(49)), fe(s(50)), fe(s(51)), fe(s(52)), fe(s(53)), fe(s(54)), fe(s(55)), fe(s(56)), fe(s(57)),
-        fe(s(58)), fe(s(59)), totalCA > 0 ? fp(s(58) / totalCA * 100) : '—',
+        fe(s(58)), fe(s(58)), totalCA > 0 ? fp(s(58) / totalCA * 100) : '—',
         '0,00 €', '0,00 €',
       ];
 

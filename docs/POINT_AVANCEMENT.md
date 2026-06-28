@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 28/06/2026
+
+- RecapAnnuel Coût Matière : 3 bugs corrigés — (1) données fantômes sur mois/semaines vides : week_total et month_total effacent maintenant les cellules quand hasData=false au lieu de conserver les valeurs stales ; (2) CUMUL HT calculé en progressif dans getSectionValues au lieu de lire col 59 (toujours 0) ; (3) Ratio calculé inline (totalHT/caRéalisé) au lieu de lire col 60 (parseMoneyValue échoue sur "xx%"). TOTAL row CUMUL = s(58). tsc OK.
+
 ## 27/06/2026
 
 - Écart VS N-1 : appairage des jours par semaine ISO + jour de semaine (au lieu de Nième occurrence dans le mois) ; total semaine calculé par différence des totaux réel/budget vs somme N-1 appairée (au lieu de déduction algébrique) — s'applique aux 4 colonnes : CA réalisé 118/119, couverts réalisés 123/124, CA budget 128/5, couverts budget 129/13. tsc OK.
