@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 28/06/2026 (import coût matière)
+
+- Import historique V25/V26 coût matière : correction de montants aberrants après import — `parseHistoricalBudgetCellNumber` et `parseHistoricalCostMatterCellNumber` ignorent désormais les cellules de type date (valeur `instanceof Date` ou `{formula, result: Date}`) avant le fallback `cell.text` qui pouvait convertir "01/12/2026 00:00:00.100" en ~10^14 ; garde-fou MAX_SUPPLIER_DAILY_AMOUNT = 500 000 € ajouté sur les deux parseurs. tsc OK.
+
 ## 28/06/2026
 
 - RecapAnnuel Coût Matière : 3 bugs corrigés — (1) données fantômes sur mois/semaines vides : week_total et month_total effacent maintenant les cellules quand hasData=false au lieu de conserver les valeurs stales ; (2) CUMUL HT calculé en progressif dans getSectionValues au lieu de lire col 59 (toujours 0) ; (3) Ratio calculé inline (totalHT/caRéalisé) au lieu de lire col 60 (parseMoneyValue échoue sur "xx%"). TOTAL row CUMUL = s(58). tsc OK.

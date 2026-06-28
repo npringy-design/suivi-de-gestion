@@ -16,15 +16,29 @@ export const parseHistoricalBudgetNumber = (value: unknown) => {
     if (typeof result === 'number') return Number.isFinite(result) ? result : 0;
   }
   const cleaned = String(value ?? '')
-    .replace(/\u00a0/g, ' ')
+    .replace(/ /g, ' ')
     .replace(/s/g, '')
     .replace(',', '.')
     .replace(/[^0-9.-]/g, '');
   return Number(cleaned) || 0;
 };
 
+// Retourne true si la cellule contient une date (valeur directe ou résultat de formule).
+// Les cellules date ne doivent jamais être interprétées comme des montants : leur cell.text
+// peut contenir une chaîne comme "01/12/2026 00:00:00.100" qui, après nettoyage,
+// produit un nombre aberrant (ex. 11220260000000100).
+const isCellDateType = (cell: Cell): boolean => {
+  if (cell.value instanceof Date) return true;
+  const v = cell.value;
+  if (v && typeof v === 'object' && 'result' in (v as object)) {
+    return (v as { result: unknown }).result instanceof Date;
+  }
+  return false;
+};
+
 export const parseHistoricalBudgetCellNumber = (cell: Cell | undefined) => {
   if (!cell) return 0;
+  if (isCellDateType(cell)) return 0;
   const raw = parseHistoricalBudgetNumber(cell.value);
   if (raw !== 0) return raw;
   return parseHistoricalBudgetNumber(cell.text);
@@ -114,7 +128,7 @@ export const rowHasHistoricalRealiseValues = (values: ReturnType<typeof getHisto
 
 export const normalizeHistoricalSupplierName = (value: unknown) => String(value ?? '')
   .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[̀-ͯ]/g, '')
   .replace(/&/g, 'ET')
   .replace(/[^A-Z0-9]+/gi, '')
   .toUpperCase();
@@ -186,22 +200,30 @@ export const getHistoricalCostMatterColumnMap = (sheet: Worksheet, range: XlRang
   return map;
 };
 
+// Montant max plausible par fournisseur par jour — garde-fou contre les formules aberrantes
+// ou cellules date interprétées comme montant.
+const MAX_SUPPLIER_DAILY_AMOUNT = 500000;
+
 export const parseHistoricalCostMatterCellNumber = (cell: Cell | undefined) => {
   if (!cell) return 0;
+  if (isCellDateType(cell)) return 0;
   const rawNumber = typeof cell.value === 'number' && Number.isFinite(cell.value)
     ? cell.value
     : parseHistoricalBudgetNumber(cell.value);
-  if (rawNumber !== 0) return rawNumber;
+  if (rawNumber !== 0) {
+    return Math.abs(rawNumber) > MAX_SUPPLIER_DAILY_AMOUNT ? 0 : rawNumber;
+  }
 
   const displayText = String(cell.text || cell.value || '')
-    .replace(/âˆ’|–|—/g, '-')
-    .replace(/\u00a0/g, ' ')
+    .replace(/−|–|—/g, '-')
+    .replace(/ /g, ' ')
     .trim();
   const compact = displayText.replace(/\s/g, '').replace(',', '.');
   const isNegative = /^-/.test(compact) || /-$/.test(compact) || /^\(.*\)$/.test(compact);
   const numericText = compact.replace(/[()-]/g, '').replace(/[^0-9.]/g, '');
   const displayNumber = Number(numericText) || 0;
-  return isNegative ? -Math.abs(displayNumber) : displayNumber;
+  const result = isNegative ? -Math.abs(displayNumber) : displayNumber;
+  return Math.abs(result) > MAX_SUPPLIER_DAILY_AMOUNT ? 0 : result;
 };
 
 export const getHistoricalCostMatterValues = (sheet: Worksheet, rowNumber: number, columnMap: Record<number, number>) => {
