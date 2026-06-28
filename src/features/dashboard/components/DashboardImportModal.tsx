@@ -141,6 +141,7 @@ export default function DashboardImportModal({
               <input
                 type="file"
                 accept=".pdf,.txt,text/plain,application/pdf"
+                multiple
                 onChange={handleSalaryPayrollImport}
                 style={{ fontSize: 13, color: '#0f172a' }}
               />

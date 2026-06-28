@@ -1385,50 +1385,62 @@ export function useDashboardImportHandlers({
   };
   
   const handleSalaryPayrollImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-  
-    setSalaryImportStatus('Lecture du PDF salaires...');
-  
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    setSalaryImportStatus(`Lecture de ${files.length} PDF salaires...`);
+
     try {
       const configuredPersonnel = personnelInfos.filter(item => item.nom.trim());
       if (configuredPersonnel.length === 0) {
         setSalaryImportStatus('Erreur : renseigne d abord la page Info personnel pour matcher les noms du PDF.');
         return;
       }
-  
-      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-      const text = isPdf ? await extractPdfLayoutText(file, undefined, false) : await file.text();
-      const payrollPeriod = getPayrollTargetPeriodFromText(text);
-      if (!payrollPeriod) {
-        setSalaryImportStatus('Erreur : le mois du PDF salaires n a pas pu etre detecte.');
-        return;
+
+      const results: string[] = [];
+      const errors: string[] = [];
+      let lastAppliedMonth: number | null = null;
+
+      for (const file of files) {
+        try {
+          const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+          const text = isPdf ? await extractPdfLayoutText(file, undefined, false) : await file.text();
+          const payrollPeriod = getPayrollTargetPeriodFromText(text);
+          if (!payrollPeriod) {
+            errors.push(`${file.name} : mois non détecté`);
+            continue;
+          }
+          const result = buildPayrollImportFromText(text, configuredPersonnel);
+          if (result.matches.length === 0) {
+            errors.push(`${file.name} : aucun salarié matché`);
+            continue;
+          }
+          const targetMonth = payrollPeriod.targetMonth;
+          const currentConfig = globalData[targetMonth]?.salariesConfig || { locked: false, categories: result.categories };
+          if (currentConfig.locked) {
+            errors.push(`${file.name} : mois ${payrollPeriod.targetLabel} verrouillé`);
+            continue;
+          }
+          updateSalariesConfig(targetMonth, { ...currentConfig, categories: result.categories });
+          lastAppliedMonth = targetMonth;
+          const unmatchedText = result.unmatched.length > 0 ? ` (${result.unmatched.length} non matché(s))` : '';
+          results.push(`${payrollPeriod.targetLabel} : ${result.matches.length} salarié(s)${unmatchedText}`);
+        } catch {
+          errors.push(`${file.name} : lecture impossible`);
+        }
       }
-      const result = buildPayrollImportFromText(text, configuredPersonnel);
-  
-      if (result.matches.length === 0) {
-        setSalaryImportStatus('Erreur : aucun salarie de la page Info personnel n a ete retrouve avec heures et cout global dans ce fichier.');
-        return;
+
+      if (lastAppliedMonth !== null) {
+        setMonth(lastAppliedMonth);
+        setSelectedMonth(lastAppliedMonth);
       }
-  
-      const targetMonth = payrollPeriod.targetMonth;
-      const currentConfig = globalData[targetMonth]?.salariesConfig || { locked: false, categories: result.categories };
-      if (currentConfig.locked) {
-        setSalaryImportStatus('Erreur : le mois est verrouille dans la configuration salaires.');
-        return;
-      }
-  
-      updateSalariesConfig(targetMonth, {
-        ...currentConfig,
-        categories: result.categories,
-      });
-  
-      const unmatchedText = result.unmatched.length > 0 ? ` ${result.unmatched.length} non matche(s).` : '';
-      setMonth(targetMonth);
-      setSelectedMonth(targetMonth);
-      setSalaryImportStatus(`${result.matches.length} salarie(s) importe(s). PDF ${payrollPeriod.sourceLabel} applique sur ${payrollPeriod.targetLabel}. Snapshot des taux sauvegarde, aucun import brut conserve.${unmatchedText}`);
+
+      const statusParts: string[] = [];
+      if (results.length > 0) statusParts.push(results.join(' | '));
+      if (errors.length > 0) statusParts.push(`Erreurs : ${errors.join(', ')}`);
+      setSalaryImportStatus(statusParts.join(' — ') || 'Aucun fichier traité.');
     } catch (error) {
-      setSalaryImportStatus(`Erreur : ${error instanceof Error ? error.message : "le PDF salaires n'a pas pu etre lu."}`);
+      setSalaryImportStatus(`Erreur : ${error instanceof Error ? error.message : "les PDF salaires n'ont pas pu être lus."}`);
     } finally {
       event.target.value = '';
     }
