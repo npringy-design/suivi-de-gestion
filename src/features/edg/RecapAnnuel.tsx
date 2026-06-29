@@ -168,7 +168,8 @@ const COLS_FP: ColDef[] = [
   { g: 'RÉALISER',   l: 'Total\nHeures',  bg: BG_FP,  w: 75 },
   { g: 'RÉALISER',   l: 'Coût\nGlobal',   bg: '#fff', w: 90 }, // col 87
   { g: 'RÉALISER',   l: 'Ratio %',        bg: '#fff', w: 70, threshold: 38 },
-  { g: 'RÉALISER',   l: 'VS Projection\n%', bg: BG_FG, w: 80, invertSign: true },
+  { g: 'RÉALISER',   l: 'VS Projection\n%', bg: BG_FG,  w: 80, invertSign: true },
+  { g: 'RÉALISER',   l: 'VS N-1\n%',        bg: BG_FG2, w: 80, invertSign: true },
 ];
 
 // Alias pour la section SECTIONS
@@ -233,7 +234,7 @@ const COLS_RESULTATS: ColDef[] = [
 interface RecapAnnuelProps { onBack: () => void; }
 
 export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
-  const { data, selectedYear, setSelectedYear } = useData();
+  const { data, allData, selectedYear, setSelectedYear } = useData();
   const YEAR = selectedYear;
   const MONTHS_SHORT = MONTHS_SHORT_LABELS.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [activeTab, setActiveTab] = useState<string>('budget');
@@ -247,6 +248,13 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     getFgCategoryTotal, sumFgCategory,
     caByMonth, totalCA,
   } = useRecapAnnuelData(data, YEAR);
+
+  // Données N-1 pour les frais personnel
+  const dataN1 = allData[YEAR - 1] ?? {};
+  const {
+    getVal: getValN1,
+    caByMonth: caByMonthN1,
+  } = useRecapAnnuelData(dataN1, YEAR - 1);
 
   // Mapping ordonné des 11 catégories FG → [box, colGroup]
   const FG_MAPPING: [number, number][] = [
@@ -367,23 +375,25 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 17 valeurs : 8 projection + 9 réaliser ──────────────────────────────
+      // ── 18 valeurs : 8 projection + 10 réaliser ─────────────────────────────
       case 'frais_personnel': {
         const rl = (lv: number) => getRealLevelHours(mi, lv);
         const pl = (lv: number) => getProjLevelHours(mi, lv);
-        const coutProj = g(72);
-        const coutReal = g(87);
-        const vsProj   = coutProj > 0 ? fp((coutReal - coutProj) / coutProj * 100) : '—';
-        const fmtRatio = (v: number) => `${v.toFixed(2)} %`;
+        const coutProj  = g(72);
+        const coutReal  = g(87);
+        const coutRealN1 = getValN1(mi, 87);
+        const vsProj    = coutProj > 0  ? fp((coutReal  - coutProj)   / coutProj   * 100) : '—';
+        const vsN1      = coutRealN1 > 0 ? fp((coutReal  - coutRealN1) / coutRealN1 * 100) : '—';
+        const fmtRatio  = (v: number) => `${v.toFixed(2)} %`;
         const ratioProj = ca > 0 ? fmtRatio(coutProj / ca * 100) : '—';
         const ratioReal = ca > 0 ? fmtRatio(coutReal / ca * 100) : '—';
         return [
           // Projection (8)
           fmtHeures(pl(0)), fmtHeures(pl(1)), fmtHeures(pl(2)), fmtHeures(pl(3)), fmtHeures(pl(4)),
           fmtHeures(getProjTotalHours(mi)), fe(coutProj), ratioProj,
-          // Réaliser (9)
+          // Réaliser (10)
           fmtHeures(rl(0)), fmtHeures(rl(1)), fmtHeures(rl(2)), fmtHeures(rl(3)), fmtHeures(rl(4)),
-          fmtHeures(getRealTotalHours(mi)), fe(coutReal), ratioReal, vsProj,
+          fmtHeures(getRealTotalHours(mi)), fe(coutReal), ratioReal, vsProj, vsN1,
         ];
       }
 
@@ -525,21 +535,23 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         '0,00 €', '0,00 €',
       ];
 
-      // ── 17 totaux : 8 projection + 9 réaliser ──────────────────────────────
+      // ── 18 totaux : 8 projection + 10 réaliser ─────────────────────────────
       case 'frais_personnel': {
-        const totalCoutProj = s(72);
-        const totalCoutReal = s(87);
+        const totalCoutProj  = s(72);
+        const totalCoutReal  = s(87);
+        const totalCoutRealN1 = Array.from({ length: 12 }, (_, i) => getValN1(i, 87)).reduce((a, b) => a + b, 0);
         const fmtRatioT = (v: number) => `${v.toFixed(2)} %`;
         const ratioProj = totalCA > 0 ? fmtRatioT(totalCoutProj / totalCA * 100) : '—';
         const ratioReal = totalCA > 0 ? fmtRatioT(totalCoutReal / totalCA * 100) : '—';
-        const vsProj    = totalCoutProj > 0 ? fp((totalCoutReal - totalCoutProj) / totalCoutProj * 100) : '—';
+        const vsProj    = totalCoutProj  > 0 ? fp((totalCoutReal - totalCoutProj)   / totalCoutProj   * 100) : '—';
+        const vsN1      = totalCoutRealN1 > 0 ? fp((totalCoutReal - totalCoutRealN1) / totalCoutRealN1 * 100) : '—';
         return [
           // Projection (8)
           fmtHeures(sumProjLevel(0)), fmtHeures(sumProjLevel(1)), fmtHeures(sumProjLevel(2)), fmtHeures(sumProjLevel(3)), fmtHeures(sumProjLevel(4)),
           fmtHeures(sumProjTotal()), fe(totalCoutProj), ratioProj,
-          // Réaliser (9)
+          // Réaliser (10)
           fmtHeures(sumRealLevel(0)), fmtHeures(sumRealLevel(1)), fmtHeures(sumRealLevel(2)), fmtHeures(sumRealLevel(3)), fmtHeures(sumRealLevel(4)),
-          fmtHeures(sumRealTotal()), fe(totalCoutReal), ratioReal, vsProj,
+          fmtHeures(sumRealTotal()), fe(totalCoutReal), ratioReal, vsProj, vsN1,
         ];
       }
 
