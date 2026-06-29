@@ -811,27 +811,26 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
               else grps.push({ g: c.g, count: 1 });
             });
             return (
-              <div key={label} style={{ marginBottom: 16, borderRadius: 4, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', border: '1px solid #D6D3D1' }}>
+              <div key={label} style={{ marginBottom: 32 }}>
+                <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#1C1917', marginBottom: 16, fontFamily: "Georgia, serif" }}>
+                  {label}
+                </h2>
+                <div style={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', border: '1px solid #D6D3D1' }}>
                 <table style={{ borderCollapse: 'collapse', background: '#fff', width: '100%', minWidth: 'max-content' }}>
                   <thead>
-                    <tr style={{ height: 34 }}>
-                      <th rowSpan={3} style={{ ...thBase, background: '#1C1917', color: '#fff', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: '2px solid #44403C', borderBottom: '2px solid #44403C', fontSize: 10, letterSpacing: '.1em' }}>
+                    <tr style={{ height: 40 }}>
+                      <th rowSpan={2} style={{ ...thBase, background: '#1C1917', color: '#fff', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: '2px solid #44403C', borderBottom: '2px solid #44403C', fontSize: 10, letterSpacing: '.1em' }}>
                         DATE
                       </th>
-                      <th colSpan={cols.length} style={{ ...thBase, background: '#1C1917', color: '#fff', top: 0, height: 34, fontSize: 11, fontWeight: 700, letterSpacing: '.15em', zIndex: 40 }}>
-                        {label.toUpperCase()}
-                      </th>
-                    </tr>
-                    <tr style={{ height: 28 }}>
                       {grps.map((gr, gi) => (
-                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: '#292524', color: '#D6D3D1', fontWeight: 700, top: 34, height: 28, fontSize: 9, letterSpacing: '.05em', zIndex: 40, borderBottom: '1px solid #44403C' }}>
+                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: '#1C1917', color: '#fff', fontWeight: 700, top: 0, height: 40, fontSize: 10, letterSpacing: '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? '1px solid #44403C' : undefined, borderBottom: '1px solid #44403C' }}>
                           {gr.g}
                         </th>
                       ))}
                     </tr>
                     <tr style={{ height: 32 }}>
                       {cols.map((c, ci) => (
-                        <th key={`col${ci}`} style={{ ...thBase, background: '#292524', color: '#A8A29E', fontWeight: 600, top: 62, height: 32, minWidth: c.w || 65, fontSize: 9, letterSpacing: '.04em', zIndex: 40, borderBottom: '2px solid #44403C' }}>
+                        <th key={`col${ci}`} style={{ ...thBase, background: '#292524', color: '#A8A29E', fontWeight: 600, top: 40, height: 32, minWidth: c.w || 65, fontSize: 9, letterSpacing: '.04em', zIndex: 40, borderBottom: '2px solid #44403C' }}>
                           {c.l}
                         </th>
                       ))}
@@ -912,6 +911,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                     </tr>
                   </tfoot>
                 </table>
+                </div>
               </div>
             );
           };
