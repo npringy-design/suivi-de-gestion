@@ -248,7 +248,14 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   const MONTHS_SHORT = MONTHS_SHORT_LABELS.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [activeTab, setActiveTab] = useState<string>('budget');
 
-  const { getVal, getFgTotal, getRaw, getLastDayVal, getHoursSum, sumHoursCol, caByMonth, totalCA } = useRecapAnnuelData(data, YEAR);
+  const {
+    getVal, getFgTotal, getRaw, getLastDayVal,
+    getRealLevelHours, getProjLevelHours,
+    getRealTotalHours, getProjTotalHours,
+    sumRealLevel, sumProjLevel, sumRealTotal, sumProjTotal,
+    sumCol, sumHoursCol,
+    caByMonth, totalCA,
+  } = useRecapAnnuelData(data, YEAR);
 
   // Détection schéma personnel (global = 5 cats unifiées, cuisine_salle = 10 cats)
   const personnelSchema = useMemo(() =>
@@ -265,10 +272,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     { key: 'frais_generaux',  label: 'Frais Généraux',    icon: '📋', accentBg: '#78350f', accentColor: '#fff', cols: COLS_FRAIS_GENERAUX },
     { key: 'resultats',       label: 'Résultats Annuels', icon: '🏆', accentBg: '#1e3a5f', accentColor: '#fff', cols: COLS_RESULTATS },
   ], [isGlobal]);
-
-  // Somme annuelle d'une colonne dashboard (mois 0–11)
-  const sumCol = (col: number) =>
-    Array.from({ length: 12 }, (_, mi) => getVal(mi, col)).reduce((a, b) => a + b, 0);
 
   // ─── Valeurs par mois ─────────────────────────────────────────────────────
   const getSectionValues = (sectionKey: string, mi: number): string[] => {
@@ -357,38 +360,19 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 22 (global) ou 22 (cuisine/salle fusionné) valeurs ──────────────
+      // ── 22 valeurs (identique global et cuisine/salle, niveaux fusionnés) ──
       case 'frais_personnel': {
-        const gh = (col: number) => getHoursSum(mi, col);
-        if (isGlobal) {
-          // 22 valeurs — schéma global (5 catégories unifiées, cols 130-134 proj / 135-139 réel)
-          return [
-            fe(g(87)), r(88), r(89), '—',
-            fmtHeures(gh(61)),
-            fmtHeures(gh(130)), fmtHeures(gh(131)), fmtHeures(gh(132)), fmtHeures(gh(133)), fmtHeures(gh(134)),
-            fe(g(72)),
-            fmtHeures(gh(76)),
-            fmtHeures(gh(135)), fmtHeures(gh(136)), fmtHeures(gh(137)), fmtHeures(gh(138)), fmtHeures(gh(139)),
-            fe(g(87)),
-            fmtHeures(gh(91)), r(92),
-            '—',
-            r(90),
-          ];
-        }
-        // 22 valeurs — schéma cuisine/salle, niveaux fusionnés (Cuisine+Salle)
+        const rl = (lv: number) => getRealLevelHours(mi, lv);
+        const pl = (lv: number) => getProjLevelHours(mi, lv);
         return [
           fe(g(87)), r(88), r(89), '—',
-          fmtHeures(gh(61)),
-          fmtHeures(gh(62) + gh(63)), fmtHeures(gh(64) + gh(65)),
-          fmtHeures(gh(66) + gh(67)), fmtHeures(gh(68) + gh(69)),
-          fmtHeures(gh(70) + gh(71)),
+          fmtHeures(getProjTotalHours(mi)),
+          fmtHeures(pl(0)), fmtHeures(pl(1)), fmtHeures(pl(2)), fmtHeures(pl(3)), fmtHeures(pl(4)),
           fe(g(72)),
-          fmtHeures(gh(76)),
-          fmtHeures(gh(77) + gh(78)), fmtHeures(gh(79) + gh(80)),
-          fmtHeures(gh(81) + gh(82)), fmtHeures(gh(83) + gh(84)),
-          fmtHeures(gh(85) + gh(86)),
+          fmtHeures(getRealTotalHours(mi)),
+          fmtHeures(rl(0)), fmtHeures(rl(1)), fmtHeures(rl(2)), fmtHeures(rl(3)), fmtHeures(rl(4)),
           fe(g(87)),
-          fmtHeures(gh(91)), r(92),
+          r(91), r(92),
           '—',
           r(90),
         ];
@@ -517,37 +501,18 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         '0,00 €', '0,00 €',
       ];
 
-      // ── 22 (global) ou 22 (cuisine/salle fusionné) totaux ─────────────
+      // ── 22 totaux (identique global et cuisine/salle, niveaux fusionnés) ──
       case 'frais_personnel': {
         const fpRatioAnnuel = totalCA > 0 ? fp(s(87) / totalCA * 100) : '—';
-        const sh = sumHoursCol;
-        if (isGlobal) {
-          return [
-            fe(s(87)), '—', fpRatioAnnuel, '—',
-            fmtHeures(sh(61)),
-            fmtHeures(sh(130)), fmtHeures(sh(131)), fmtHeures(sh(132)), fmtHeures(sh(133)), fmtHeures(sh(134)),
-            fe(s(72)),
-            fmtHeures(sh(76)),
-            fmtHeures(sh(135)), fmtHeures(sh(136)), fmtHeures(sh(137)), fmtHeures(sh(138)), fmtHeures(sh(139)),
-            fe(s(87)),
-            fmtHeures(sh(91)), '—',
-            '—',
-            '—',
-          ];
-        }
         return [
           fe(s(87)), '—', fpRatioAnnuel, '—',
-          fmtHeures(sh(61)),
-          fmtHeures(sh(62) + sh(63)), fmtHeures(sh(64) + sh(65)),
-          fmtHeures(sh(66) + sh(67)), fmtHeures(sh(68) + sh(69)),
-          fmtHeures(sh(70) + sh(71)),
+          fmtHeures(sumProjTotal()),
+          fmtHeures(sumProjLevel(0)), fmtHeures(sumProjLevel(1)), fmtHeures(sumProjLevel(2)), fmtHeures(sumProjLevel(3)), fmtHeures(sumProjLevel(4)),
           fe(s(72)),
-          fmtHeures(sh(76)),
-          fmtHeures(sh(77) + sh(78)), fmtHeures(sh(79) + sh(80)),
-          fmtHeures(sh(81) + sh(82)), fmtHeures(sh(83) + sh(84)),
-          fmtHeures(sh(85) + sh(86)),
+          fmtHeures(sumRealTotal()),
+          fmtHeures(sumRealLevel(0)), fmtHeures(sumRealLevel(1)), fmtHeures(sumRealLevel(2)), fmtHeures(sumRealLevel(3)), fmtHeures(sumRealLevel(4)),
           fe(s(87)),
-          fmtHeures(sh(91)), '—',
+          fmtHeures(sumHoursCol(91)), '—',
           '—',
           '—',
         ];
