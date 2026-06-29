@@ -101,39 +101,46 @@ export type BudgetColumnMap = {
   tmSoir: number;
 };
 
-const DEFAULT_BUDGET_COL_MAP: BudgetColumnMap = { couvertsMidi: 11, tmMidi: 12, couvertsSoir: 15, tmSoir: 16 };
-
-const normalizeHeader = (v: unknown) =>
-  String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-
-export const detectBudgetColumnMap = (sheet: Worksheet): BudgetColumnMap => {
-  const map: Partial<BudgetColumnMap> = {};
-  const maxHeaderRows = Math.min(sheet.rowCount, 15);
-
-  for (let rowNumber = 0; rowNumber < maxHeaderRows; rowNumber++) {
-    for (let col = 0; col < Math.min(sheet.columnCount, 60); col++) {
-      const cell = getHistoricalBudgetCell(sheet, rowNumber, col);
-      if (!cell) continue;
-      const h = normalizeHeader(cell.text || cell.value);
-      if (!h || h.length < 2) continue;
-
-      if (map.couvertsMidi === undefined && (h.includes('NB') || h.includes('COUVERTS') || h.includes('CVT')) && h.includes('MIDI')) map.couvertsMidi = col;
-      if (map.tmMidi === undefined && (h.includes('TM') || h.includes('TICKET') || h.includes('MOY')) && h.includes('MIDI')) map.tmMidi = col;
-      if (map.couvertsSoir === undefined && (h.includes('NB') || h.includes('COUVERTS') || h.includes('CVT')) && h.includes('SOIR')) map.couvertsSoir = col;
-      if (map.tmSoir === undefined && (h.includes('TM') || h.includes('TICKET') || h.includes('MOY')) && h.includes('SOIR')) map.tmSoir = col;
-    }
-    if (map.couvertsMidi !== undefined && map.tmMidi !== undefined && map.couvertsSoir !== undefined && map.tmSoir !== undefined) break;
-  }
-
-  return {
-    couvertsMidi: map.couvertsMidi ?? DEFAULT_BUDGET_COL_MAP.couvertsMidi,
-    tmMidi:       map.tmMidi       ?? DEFAULT_BUDGET_COL_MAP.tmMidi,
-    couvertsSoir: map.couvertsSoir ?? DEFAULT_BUDGET_COL_MAP.couvertsSoir,
-    tmSoir:       map.tmSoir       ?? DEFAULT_BUDGET_COL_MAP.tmSoir,
-  };
+// Colonnes candidates à tester par ordre de priorité pour chaque valeur
+// Plages basées sur les layouts constatés dans les fichiers 2025/2026
+const CANDIDATE_COLS = {
+  couvertsMidi: [11, 10, 12, 13, 9],
+  tmMidi:       [12, 11, 13, 14, 10],
+  couvertsSoir: [15, 14, 16, 17, 13],
+  tmSoir:       [16, 15, 17, 18, 14],
 };
 
-export const getHistoricalBudgetRowValues = (sheet: Worksheet, rowNumber: number, colMap: BudgetColumnMap = DEFAULT_BUDGET_COL_MAP) => {
+const isSaneTm        = (v: number) => v >= 5 && v <= 150;
+const isSaneCouverts  = (v: number) => v >= 0 && v <= 1000;
+
+// Cherche dans les lignes de données (non-total, avec date) les colonnes qui donnent des valeurs cohérentes
+export const detectBudgetColumnMap = (sheet: Worksheet): BudgetColumnMap => {
+  // Collecte jusqu'à 5 lignes de données pour tester les candidats
+  const sampleRows: number[] = [];
+  for (let r = 0; r < Math.min(sheet.rowCount, 60) && sampleRows.length < 5; r++) {
+    if (isHistoricalBudgetTotalRow(sheet, r)) continue;
+    const dateCell = getHistoricalBudgetCell(sheet, r, 0);
+    if (dateCell && parseHistoricalBudgetDate(dateCell.value)) sampleRows.push(r);
+  }
+  if (sampleRows.length === 0) return { couvertsMidi: 11, tmMidi: 12, couvertsSoir: 15, tmSoir: 16 };
+
+  const findCol = (candidates: number[], validator: (v: number) => boolean) => {
+    for (const col of candidates) {
+      const values = sampleRows.map(r => parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, r, col)));
+      const validCount = values.filter(v => validator(v) && v !== 0).length;
+      if (validCount >= Math.ceil(sampleRows.length / 2)) return col;
+    }
+    return candidates[0]; // fallback sur le premier candidat
+  };
+
+  const couvertsMidi = findCol(CANDIDATE_COLS.couvertsMidi, isSaneCouverts);
+  const tmMidi       = findCol(CANDIDATE_COLS.tmMidi,       isSaneTm);
+  const couvertsSoir = findCol(CANDIDATE_COLS.couvertsSoir, isSaneCouverts);
+  const tmSoir       = findCol(CANDIDATE_COLS.tmSoir,       isSaneTm);
+  return { couvertsMidi, tmMidi, couvertsSoir, tmSoir };
+};
+
+export const getHistoricalBudgetRowValues = (sheet: Worksheet, rowNumber: number, colMap: BudgetColumnMap = { couvertsMidi: 11, tmMidi: 12, couvertsSoir: 15, tmSoir: 16 }) => {
   if (rowNumber < 0 || isHistoricalBudgetTotalRow(sheet, rowNumber)) {
     return { couvertsMidi: 0, tmMidi: 0, couvertsSoir: 0, tmSoir: 0 };
   }
