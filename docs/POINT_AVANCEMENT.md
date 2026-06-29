@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 29/06/2026 (graphiques Budget)
+
+- RecapAnnuel Budget : deux graphiques recharts ajoutés sous le tableau — LineChart "Évolution du CA cumulé" (cumul + CA mensuel en pointillés) et PieChart donut "Répartition des couverts" (Midi/Soir) avec tuiles % + nb couverts. Affiché uniquement sur l'onglet Budget. tsc OK.
+
 ## 29/06/2026
 
 - RecapAnnuel reskin visuel : tabs intégrés dans le header (icônes SVG checkbox, actif #1e40af), pill blanche droite avec CA N-1 ; header tableau — ligne 1 #1e40af, groupes alternance #b4c6e7/#dbeafe, libellés #dbeafe/#1e40af ; colonne DATE sombre (#1e3a5f/#1e40af mois courant) ; tfoot #1e40af fond blanc texte ; AMBER et BG_YELL supprimées. tsc OK.
