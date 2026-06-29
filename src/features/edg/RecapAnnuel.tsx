@@ -164,12 +164,8 @@ const COLS_FP_PROJ = COLS_FP.slice(0, 8);
 const COLS_FP_REAL = COLS_FP.slice(8);
 
 const COLS_FRAIS_GENERAUX: ColDef[] = [
-  // 34 colonnes
-  { g: '',                            l: 'Frais Perso\nRéel Mois',      bg: BG_FG2, w: 80 }, // col 87
-  { g: '',                            l: "Ecart au\nBudget NB Heure",   bg: BG_FG,  w: 80 }, // col 91 (HH:MM)
-  { g: '',                            l: 'Ecart au\nBudget S/C%',       bg: BG_FG,  w: 70 }, // col 92 raw
-  { g: '',                            l: 'VAR VS N-1',                  bg: BG_HATCH, w: 65 }, // —
-  { g: 'Entretien &\nRéparation',     l: 'Montant HT', bg: BG_FG,  w: 80 }, // TODO: brancher par catégorie FG
+  // 30 colonnes
+  { g: 'Entretien &\nRéparation',     l: 'Montant HT', bg: BG_FG,  w: 80 },
   { g: 'Entretien &\nRéparation',     l: '% CA',       bg: BG_FP,  w: 55 },
   { g: 'Petit Matériel\n& Vaisselles', l: 'Montant HT', bg: BG_FG, w: 80 },
   { g: 'Petit Matériel\n& Vaisselles', l: '% CA',       bg: BG_FP, w: 55 },
@@ -375,12 +371,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 34 valeurs ──────────────────────────────────────────────────────────
+      // ── 30 valeurs ──────────────────────────────────────────────────────────
       case 'frais_generaux': return [
-        fe(g(87)),
-        fmtHeures(g(91)),
-        r(92),
-        '—',
         // 11 catégories × 2 colonnes (Montant HT + % CA)
         ...FG_MAPPING.flatMap(([box, colGroup]) => {
           const montant = getFgCategoryTotal(mi, box, colGroup);
@@ -522,11 +514,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 34 totaux ───────────────────────────────────────────────────────────
+      // ── 30 totaux ───────────────────────────────────────────────────────────
       case 'frais_generaux': return [
-        fe(s(87)),
-        fmtHeures(s(91)),
-        '—', '—',
         // 11 catégories × 2 colonnes (Montant HT + % CA)
         ...FG_MAPPING.flatMap(([box, colGroup]) => {
           const montant = sumFgCategory(box, colGroup);
