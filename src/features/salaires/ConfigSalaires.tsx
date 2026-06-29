@@ -27,6 +27,8 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0);
   const selectedMonth = MONTHS[selectedMonthIndex];
+  // État local pour la cellule en cours de saisie (évite la perte de la virgule pendant la frappe)
+  const [editingCell, setEditingCell] = useState<{ mi: number; cat: SalaryCategory; value: string } | null>(null);
   
   const emptySalarieRow = (): SalarieRow => ({ nom: '', heures: '', coutGlobal: '', provision: '', coutHoraire: '' });
   const emptyCategories = (): SalariesCategories => createEmptyPayrollCategories();
@@ -258,25 +260,33 @@ const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-
                       const rawVal = getTauxCible(i, cat.id);
                       const hasManual = rawVal !== '';
                       const calculated = getAverageForCategory(i, cat.id);
-                      // Valeur affichée : manuelle si saisie, sinon calculée depuis PDF, sinon vide
-                      const displayValue = hasManual
-                        ? rawVal
-                        : calculated > 0 ? calculated.toFixed(2).replace('.', ',') : '';
+                      const isEditing = editingCell?.mi === i && editingCell?.cat === cat.id;
+                      // Pendant la saisie : valeur locale brute ; sinon : manuelle > calculée > vide
+                      const displayValue = isEditing
+                        ? editingCell.value
+                        : hasManual ? rawVal : calculated > 0 ? calculated.toFixed(2).replace('.', ',') : '';
                       return (
                         <td key={cat.id} style={{ ...tdStyle, padding: '4px 6px', background: hasManual ? '#fefce8' : '#fff' }}>
                           <input
                             type="text"
                             inputMode="decimal"
                             value={displayValue}
-                            onChange={e => setTauxCible(i, cat.id, e.target.value)}
+                            onFocus={() => setEditingCell({ mi: i, cat: cat.id, value: displayValue })}
+                            onChange={e => setEditingCell({ mi: i, cat: cat.id, value: e.target.value })}
+                            onBlur={() => {
+                              if (editingCell?.mi === i && editingCell?.cat === cat.id) {
+                                setTauxCible(i, cat.id, editingCell.value);
+                                setEditingCell(null);
+                              }
+                            }}
                             style={{
                               ...inputStyle,
-                              border: hasManual ? '2px solid #f59e0b' : '1px solid transparent',
+                              border: isEditing ? '2px solid #3b82f6' : hasManual ? '2px solid #f59e0b' : '1px solid transparent',
                               borderRadius: 6,
                               padding: '5px 8px',
                               background: 'transparent',
-                              color: hasManual ? '#92400e' : '#475569',
-                              fontWeight: hasManual ? 700 : 600,
+                              color: isEditing ? '#1e293b' : hasManual ? '#92400e' : '#475569',
+                              fontWeight: hasManual || isEditing ? 700 : 600,
                             }}
                           />
                         </td>
