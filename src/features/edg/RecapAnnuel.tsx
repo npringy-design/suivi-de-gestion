@@ -20,6 +20,21 @@ const CA_N1_BY_MONTH = [
   150217.73,  // décembre
 ];
 const CA_N1 = CA_N1_BY_MONTH.reduce((a, b) => a + b, 0); // 1 371 692,28
+// Couverts réalisés N-1 (2025) par mois — source : feuille "Couverts Restaurant" 2025
+const CVTS_N1_BY_MONTH = [
+  3956,  // janvier
+  4863,  // février
+  4440,  // mars
+  4239,  // avril
+  4506,  // mai
+  4002,  // juin
+  4493,  // juillet
+  4604,  // août
+  3470,  // septembre
+  5082,  // octobre
+  4694,  // novembre
+  5989,  // décembre
+]; // total 54338
 const MONTHS_FULL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const MONTHS_SHORT_LABELS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const CONTRATS_FG = [
@@ -278,6 +293,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
       // ── 13 valeurs ──────────────────────────────────────────────────────────
       case 'budget': {
+        const cvtsN1    = CVTS_N1_BY_MONTH[mi] ?? 0;
         const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
         const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 10))).reduce((a, b) => a + b, 0);
         return [
@@ -293,7 +309,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(g(10))),
           fe(g(10) > 0 ? g(3) / g(10) : 0),
           String(cumulCvts),
-          '—',
+          fp(cvtsN1 > 0 ? ((g(10) - cvtsN1) / cvtsN1) * 100 : 0),
         ];
       }
 
@@ -435,7 +451,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(totalCvtsJour)),
           fe(totalCvtsJour > 0 ? totalCaJour / totalCvtsJour : 0),
           String(totalCumulCvts),
-          '—',
+          fp(54338 > 0 ? ((totalCvtsJour - 54338) / 54338) * 100 : 0),
         ];
       }
 
