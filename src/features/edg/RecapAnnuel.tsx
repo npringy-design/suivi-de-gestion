@@ -403,17 +403,23 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       ];
 
       // ── 12 valeurs ──────────────────────────────────────────────────────────
-      case 'resultats': return [
-        ca > 0 ? fe(ca) : '0,00 €',
-        '—',
-        ca > 0 ? fp(varP) : '—',
-        ca > 0 ? fe(ca - caN1) : '—',
-        '—',
-        ca > 0 ? String(Math.round(g(32))) : '—',
-        ca > 0 ? fe(g(30)) : '—',
-        '—',
-        '0,00 €', '0,00 €', '0,00 €', fe(g(58)),
-      ];
+      case 'resultats': {
+        const budgetCA   = g(3);
+        const cumulCA    = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i]).reduce((a, b) => a + b, 0);
+        const cumulCvts  = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 29))).reduce((a, b) => a + b, 0);
+        const tmAnnuel   = cumulCvts > 0 ? cumulCA / cumulCvts : 0;
+        return [
+          ca > 0 ? fe(ca) : '0,00 €',
+          fe(budgetCA),
+          ca > 0 ? fp(varP) : '—',
+          ca > 0 ? fe(ca - caN1) : '—',
+          ca > 0 ? fe(ca - budgetCA) : '—',
+          ca > 0 ? String(Math.round(g(32))) : '—',
+          ca > 0 ? fe(g(30)) : '—',
+          cumulCvts > 0 ? fe(tmAnnuel) : '—',
+          '0,00 €', '0,00 €', '0,00 €', fe(g(58)),
+        ];
+      }
 
       default: return [];
     }
@@ -553,15 +559,22 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       ];
 
       // ── 12 totaux ───────────────────────────────────────────────────────────
-      case 'resultats': return [
-        totalCA > 0 ? fe(totalCA) : '0,00 €',
-        '—',
-        fp(totalVarP),
-        fe(totalCA - CA_N1),
-        '—',
-        String(Math.round(s(32))), '—', '—',
-        '0,00 €', '0,00 €', '0,00 €', fe(s(58)),
-      ];
+      case 'resultats': {
+        const totalBudgetCA = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
+        const totalCvtsRes  = s(29);
+        const tmTotal       = totalCvtsRes > 0 ? totalCA / totalCvtsRes : 0;
+        return [
+          totalCA > 0 ? fe(totalCA) : '0,00 €',
+          fe(totalBudgetCA),
+          fp(totalVarP),
+          fe(totalCA - CA_N1),
+          fe(totalCA - totalBudgetCA),
+          String(Math.round(s(32))),
+          totalCvtsRes > 0 ? fe(totalCA / totalCvtsRes) : '—',
+          totalCvtsRes > 0 ? fe(tmTotal) : '—',
+          '0,00 €', '0,00 €', '0,00 €', fe(s(58)),
+        ];
+      }
 
       default: return [];
     }
