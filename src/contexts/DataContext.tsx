@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 
-import { fetchCloudAppBootstrap, fetchCloudMonth, isCloudSyncConfigured, saveCloudAppState, type CloudAppState } from '@/services/supabaseAppState';
+import { fetchCloudAppBootstrap, fetchCloudMonth, fetchCloudYearMonths, isCloudSyncConfigured, saveCloudAppState, type CloudAppState } from '@/services/supabaseAppState';
 import { normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
 import { parseMoneyValue } from '@/lib/money';
 
@@ -98,6 +98,7 @@ type DataContextType = {
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
   updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
   markMonthsAsLoaded: (year: number, months: number[]) => void;
+  loadYearFromCloud: (year: number) => Promise<void>;
   saveNow: () => Promise<void>;
   config2025: Config2025Data;
   updateConfig2025: (type: 'mensuel' | 'hebdo', index: number, field: string, value: string) => void;
@@ -595,6 +596,25 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     months.forEach(m => loadedCloudMonthKeysRef.current.add(cloudMonthKey(targetYear, m)));
   }, [cloudMonthKey]);
 
+  const loadYearFromCloud = useCallback(async (year: number) => {
+    if (!isCloudSyncConfigured || !cloudLoadedRef.current) return;
+    // Ne charger que si au moins un mois de l'année n'a pas encore été récupéré
+    const anyMissing = Array.from({ length: 12 }, (_, m) => m)
+      .some(m => !loadedCloudMonthKeysRef.current.has(cloudMonthKey(year, m)));
+    if (!anyMissing) return;
+    try {
+      const months = await fetchCloudYearMonths(year);
+      months.forEach(({ month, value }) => applyCloudMonth(year, month, value));
+      // Marquer les 12 mois comme tentés pour éviter les doubles appels
+      Array.from({ length: 12 }, (_, m) => m).forEach(m => {
+        loadedCloudMonthKeysRef.current.add(cloudMonthKey(year, m));
+      });
+      hideCloudWarning();
+    } catch (error) {
+      console.warn('Chargement année N-1 Supabase indisponible :', error);
+    }
+  }, [applyCloudMonth, cloudMonthKey, hideCloudWarning]);
+
   const saveNow = useCallback(async () => {
     if (!isCloudSyncConfigured || !cloudLoadedRef.current || !cloudBootstrapDoneRef.current) return;
     if (cloudSaveTimerRef.current) {
@@ -782,6 +802,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateSalariesConfig,
     updatePersonnelSchema,
     markMonthsAsLoaded,
+    loadYearFromCloud,
     saveNow,
     config2025,
     updateConfig2025,
@@ -819,6 +840,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateSalariesConfig,
     updatePersonnelSchema,
     markMonthsAsLoaded,
+    loadYearFromCloud,
     saveNow,
     config2025,
     updateConfig2025,

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
@@ -245,10 +245,15 @@ const COLS_SYNTHESE: ColDef[] = [
 interface RecapAnnuelProps { onBack: () => void; }
 
 export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
-  const { data, allData, selectedYear, setSelectedYear } = useData();
+  const { data, allData, selectedYear, setSelectedYear, loadYearFromCloud } = useData();
   const YEAR = selectedYear;
   const MONTHS_SHORT = MONTHS_SHORT_LABELS.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [activeTab, setActiveTab] = useState<string>('budget');
+
+  // Charge les mois N-1 depuis Supabase si l'autre utilisateur ne les a pas en local
+  useEffect(() => {
+    void loadYearFromCloud(YEAR - 1);
+  }, [YEAR, loadYearFromCloud]);
 
   const {
     getVal, getFgTotal, getRaw, getLastDayVal,

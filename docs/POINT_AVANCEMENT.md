@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 29/06/2026 (sync N-1 RecapAnnuel)
+
+- RecapAnnuel Frais Personnel VS N-1 : correction tirets chez les autres utilisateurs — le bootstrap Supabase ne chargeait que l'année/mois courant, laissant allData[YEAR-1] vide ; ajout de fetchCloudYearMonths (supabaseAppState) + loadYearFromCloud (DataContext) + useEffect dans RecapAnnuel qui charge les 12 mois N-1 au montage si manquants. tsc OK.
+
 ## 29/06/2026 (rendu final RecapAnnuel)
 
 - RecapAnnuel : suppression du donut camembert et de l'import recharts ; bloc budget simplifié en renderTable direct ; conteneur overflow:hidden ; wrapper table overflowX:auto + borderRadius 12 + ombre ; table borderCollapse:separate/width:max-content pour scroll horizontal propre sans compression des colonnes. tsc OK.

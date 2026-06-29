@@ -245,6 +245,27 @@ export const fetchCloudMonth = async (
   return fetchStateRecord(monthSegmentKey(year, month));
 };
 
+export const fetchCloudYearMonths = async (
+  year: string | number,
+): Promise<Array<{ month: number; value: unknown }>> => {
+  assertConfigured();
+  const manifest = await fetchSegmentManifest();
+  if (!manifest) return [];
+
+  const yearStr = String(year);
+  const monthRefs = (manifest.months || []).filter(m => m.year === yearStr);
+  if (monthRefs.length === 0) return [];
+
+  const rows = await Promise.all(
+    monthRefs.map(async ({ month }) => {
+      const row = await fetchStateRecord(monthSegmentKey(yearStr, month));
+      return row?.value != null ? { month: Number(month), value: row.value } : null;
+    }),
+  );
+
+  return rows.filter((r) => r !== null) as Array<{ month: number; value: unknown }>;
+};
+
 export const fetchCloudAppState = async (): Promise<CloudAppStateRecord | null> => {
   assertConfigured();
 
