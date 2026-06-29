@@ -57,8 +57,8 @@ const fmtHeures = (val: number): string => {
   return `${val < 0 ? '-' : ''}${h}h${String(m).padStart(2, '0')}`;
 };
 
-// threshold: colore la cellule rouge si valeur > value, vert sinon (pour les ratios %)
-type ColDef = { g: string; l: string; bg: string; w: number; threshold?: number };
+// threshold: rouge si valeur > value, vert sinon | invertSign: négatif=vert, positif=rouge, zéro=noir
+type ColDef = { g: string; l: string; bg: string; w: number; threshold?: number; invertSign?: boolean };
 
 // ─── Colonnes statiques ──────────────────────────────────────────────────────
 
@@ -153,7 +153,7 @@ const COLS_FP: ColDef[] = [
   { g: 'RÉALISER',   l: 'Total\nHeures',  bg: BG_FP,  w: 75 },
   { g: 'RÉALISER',   l: 'Coût\nGlobal',   bg: '#fff', w: 90 }, // col 87
   { g: 'RÉALISER',   l: 'Ratio %',        bg: '#fff', w: 70, threshold: 38 },
-  { g: 'RÉALISER',   l: 'VS Projection\n%', bg: BG_FG, w: 80 },
+  { g: 'RÉALISER',   l: 'VS Projection\n%', bg: BG_FG, w: 80, invertSign: true },
 ];
 
 // Alias pour la section SECTIONS
@@ -678,11 +678,14 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                             const isPos = typeof v === 'string' && v.startsWith('+');
                             let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : v === '—' || v === '' ? '#94a3b8' : '#334155';
                             let fontWeight: number = isNeg || isPos ? 700 : 500;
-                            if (colDef?.threshold !== undefined && v !== '—' && v !== '') {
+                            if (v !== '—' && v !== '') {
                               const num = parseFloat(v.replace(',', '.').replace('%', '').trim());
-                              if (isFinite(num)) {
+                              if (colDef?.threshold !== undefined && isFinite(num)) {
                                 color = num > colDef.threshold ? '#dc2626' : '#16a34a';
                                 fontWeight = 700;
+                              } else if (colDef?.invertSign && isFinite(num)) {
+                                color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : '#334155';
+                                fontWeight = num !== 0 ? 700 : 500;
                               }
                             }
                             return (
@@ -711,9 +714,13 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                         const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
                         const isPos = typeof v === 'string' && v.startsWith('+');
                         let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : '#713f12';
-                        if (colDef?.threshold !== undefined && v !== '—' && v !== '') {
+                        if (v !== '—' && v !== '') {
                           const num = parseFloat(v.replace(',', '.').replace('%', '').trim());
-                          if (isFinite(num)) color = num > colDef.threshold ? '#dc2626' : '#16a34a';
+                          if (colDef?.threshold !== undefined && isFinite(num)) {
+                            color = num > colDef.threshold ? '#dc2626' : '#16a34a';
+                          } else if (colDef?.invertSign && isFinite(num)) {
+                            color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : '#713f12';
+                          }
                         }
                         return (
                           <td key={ci} style={{
