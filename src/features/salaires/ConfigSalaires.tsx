@@ -258,29 +258,27 @@ const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-
                       const rawVal = getTauxCible(i, cat.id);
                       const hasManual = rawVal !== '';
                       const calculated = getAverageForCategory(i, cat.id);
+                      // Valeur affichée : manuelle si saisie, sinon calculée depuis PDF, sinon vide
+                      const displayValue = hasManual
+                        ? rawVal
+                        : calculated > 0 ? calculated.toFixed(2).replace('.', ',') : '';
                       return (
-                        <td key={cat.id} style={{ ...tdStyle, padding: '4px 6px', background: hasManual ? '#fefce8' : '#fffef0' }}>
+                        <td key={cat.id} style={{ ...tdStyle, padding: '4px 6px', background: hasManual ? '#fefce8' : '#fff' }}>
                           <input
                             type="text"
                             inputMode="decimal"
-                            value={rawVal}
+                            value={displayValue}
                             onChange={e => setTauxCible(i, cat.id, e.target.value)}
-                            placeholder={calculated > 0 ? calculated.toFixed(2).replace('.', ',') : '—'}
                             style={{
                               ...inputStyle,
-                              border: hasManual ? '2px solid #f59e0b' : '1px solid #e2e8f0',
+                              border: hasManual ? '2px solid #f59e0b' : '1px solid transparent',
                               borderRadius: 6,
                               padding: '5px 8px',
                               background: 'transparent',
-                              color: hasManual ? '#92400e' : '#94a3b8',
-                              fontWeight: hasManual ? 700 : 400,
+                              color: hasManual ? '#92400e' : '#475569',
+                              fontWeight: hasManual ? 700 : 600,
                             }}
                           />
-                          {!hasManual && calculated > 0 && (
-                            <div style={{ fontSize: 9, color: '#94a3b8', textAlign: 'center', marginTop: 2 }}>
-                              calc. : {calculated.toFixed(2).replace('.', ',')} €
-                            </div>
-                          )}
                         </td>
                       );
                     })}
