@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { MonthData } from '@/types/dataTypes';
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
-import { computeDashboardData } from '@/features/dashboard/dashboardCalculations';
+import { computeDashboardData, parsePayrollHourForCalculation } from '@/features/dashboard/dashboardCalculations';
 import { parseMoneyValue } from '@/lib/money';
 
 export function useRecapAnnuelData(data: Record<number, MonthData>, year: number) {
@@ -11,6 +11,7 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
     const monthCalcData: Record<string, string>[] = [];
     const monthTotalIndices: number[] = [];
     const monthLastDayIndices: number[] = [];
+    const monthDayIndicesArr: number[][] = [];
 
     for (let mi = 0; mi <= 11; mi++) {
       const monthData = data[mi];
@@ -31,10 +32,12 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       monthTotalIndices.push(rows.findIndex(r => r.type === 'month_total'));
       // Index du dernier jour du mois (type 'day')
       let lastDayIdx = -1;
-      for (let i = rows.length - 1; i >= 0; i--) {
-        if (rows[i].type === 'day') { lastDayIdx = i; break; }
+      const dayIndices: number[] = [];
+      for (let i = 0; i < rows.length; i++) {
+        if (rows[i].type === 'day') { dayIndices.push(i); lastDayIdx = i; }
       }
       monthLastDayIndices.push(lastDayIdx);
+      monthDayIndicesArr.push(dayIndices);
     }
 
     const getVal = (mi: number, col: number): number => {
@@ -62,9 +65,21 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       return parseMoneyValue(monthCalcData[mi][`${idx}-${col}`] ?? '0');
     };
 
+    // Somme des heures (format Xh YY) jour par jour pour une colonne donnée
+    const getHoursSum = (mi: number, col: number): number => {
+      const days = monthDayIndicesArr[mi] ?? [];
+      return days.reduce((sum, idx) => {
+        return sum + parsePayrollHourForCalculation(monthCalcData[mi][`${idx}-${col}`] ?? '');
+      }, 0);
+    };
+
+    // Somme annuelle des heures sur une colonne (12 mois)
+    const sumHoursCol = (col: number) =>
+      Array.from({ length: 12 }, (_, mi) => getHoursSum(mi, col)).reduce((a, b) => a + b, 0);
+
     const caByMonth = Array.from({ length: 12 }, (_, mi) => getVal(mi, 21));
     const totalCA = caByMonth.reduce((s, v) => s + v, 0);
 
-    return { getVal, getFgTotal, getRaw, getLastDayVal, caByMonth, totalCA };
+    return { getVal, getFgTotal, getRaw, getLastDayVal, getHoursSum, sumHoursCol, caByMonth, totalCA };
   }, [data, year]);
 }

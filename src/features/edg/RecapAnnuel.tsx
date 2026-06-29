@@ -132,36 +132,26 @@ const COLS_COUT_MATIERE: ColDef[] = [
   { g: '',                    l: 'Variation\nStock',     bg: '#fff', w: 75 }, // —
 ];
 
-// FP cuisine/salle — 32 colonnes
+// FP cuisine/salle — 27 colonnes (niveaux fusionnés Cuisine+Salle)
 const COLS_FP_CUISINE_SALLE: ColDef[] = [
   { g: '',                           l: 'Coût\nGlobal',             bg: '#fff', w: 75 }, // col 87
   { g: 'Productivité\nCible 50,00',  l: 'Productivité\nRéelle',     bg: '#fff', w: 70 }, // col 88
   { g: 'Budget FP\n35,00%',          l: 'Frais Perso\n%',           bg: '#fff', w: 70 }, // col 89
   { g: '',                           l: 'Ratio\nAnnuel %',          bg: '#fff', w: 65 }, // —
   { g: 'PROJECTION S/C\nSKELLO',    l: 'Total\nHeures',             bg: BG_FP,  w: 60 }, // col 61
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'Cadre\nCuisine',           bg: BG_FP,  w: 65 }, // col 62
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'Cadre\nSalle',             bg: BG_FP,  w: 65 }, // col 63
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'Maîtrise\nCuisine',        bg: BG_FP,  w: 70 }, // col 64
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'Maîtrise\nSalle',          bg: BG_FP,  w: 70 }, // col 65
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'NIV I-II\nCuisine',        bg: BG_FP,  w: 70 }, // col 66
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'NIV I-II\nSalle',          bg: BG_FP,  w: 70 }, // col 67
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'NIV III\nCuisine',         bg: BG_FP,  w: 70 }, // col 68
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'NIV III\nSalle',           bg: BG_FP,  w: 70 }, // col 69
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'Apprenti\nCuisine',        bg: BG_FP,  w: 70 }, // col 70
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'Apprenti\nSalle',          bg: BG_FP,  w: 70 }, // col 71
+  { g: 'PROJECTION S/C\nSKELLO',    l: 'Cadre',                    bg: BG_FP,  w: 65 }, // 62+63
+  { g: 'PROJECTION S/C\nSKELLO',    l: 'Maîtrise',                 bg: BG_FP,  w: 70 }, // 64+65
+  { g: 'PROJECTION S/C\nSKELLO',    l: 'NIV I-II',                 bg: BG_FP,  w: 70 }, // 66+67
+  { g: 'PROJECTION S/C\nSKELLO',    l: 'NIV III',                  bg: BG_FP,  w: 70 }, // 68+69
+  { g: 'PROJECTION S/C\nSKELLO',    l: 'Apprenti',                 bg: BG_FP,  w: 70 }, // 70+71
   { g: 'PROJECTION S/C\nSKELLO',    l: 'Coût\nGlobal',             bg: '#fff', w: 80 }, // col 72
   { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Total\nHeures',             bg: BG_FP,  w: 60 }, // col 76
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Cadre\nCuisine',            bg: BG_FP,  w: 60 }, // col 77
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Cadre\nSalle',              bg: BG_FP,  w: 60 }, // col 78
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Maîtrise\nCuisine',         bg: BG_FP,  w: 65 }, // col 79
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Maîtrise\nSalle',           bg: BG_FP,  w: 65 }, // col 80
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'NIV I-II\nCuisine',         bg: BG_FP,  w: 65 }, // col 81
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'NIV I-II\nSalle',           bg: BG_FP,  w: 65 }, // col 82
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'NIV III\nCuisine',          bg: BG_FP,  w: 65 }, // col 83
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'NIV III\nSalle',            bg: BG_FP,  w: 65 }, // col 84
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Apprenti\nCuisine',         bg: BG_FP,  w: 65 }, // col 85
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Apprenti\nSalle',           bg: BG_FP,  w: 65 }, // col 86
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'FP Réel\nMois',             bg: '#fff', w: 80 }, // col 87
+  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Cadre',                    bg: BG_FP,  w: 60 }, // 77+78
+  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Maîtrise',                 bg: BG_FP,  w: 65 }, // 79+80
+  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'NIV I-II',                 bg: BG_FP,  w: 65 }, // 81+82
+  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'NIV III',                  bg: BG_FP,  w: 65 }, // 83+84
+  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Apprenti',                 bg: BG_FP,  w: 65 }, // 85+86
+  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Coût Global\nRéel',        bg: '#fff', w: 80 }, // col 87
   { g: '',                           l: "Ecart Budget\nNB d'Heure", bg: BG_FG,  w: 80 }, // col 91
   { g: '',                           l: 'Ecart Budget\nS/C%',       bg: BG_FG,  w: 70 }, // col 92
   { g: '',                           l: 'VAR VS N-1',               bg: BG_HATCH, w: 65 }, // —
@@ -187,7 +177,7 @@ const COLS_FP_GLOBAL: ColDef[] = [
   { g: 'FRAIS PERSONNEL\nREALISE', l: 'NIV I-II',                 bg: BG_FP,  w: 65 }, // col 137
   { g: 'FRAIS PERSONNEL\nREALISE', l: 'NIV III',                  bg: BG_FP,  w: 65 }, // col 138
   { g: 'FRAIS PERSONNEL\nREALISE', l: 'Apprenti',                 bg: BG_FP,  w: 65 }, // col 139
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'FP Réel\nMois',            bg: '#fff', w: 80 }, // col 87
+  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Coût Global\nRéel',         bg: '#fff', w: 80 }, // col 87
   { g: '',                          l: "Ecart Budget\nNB d'Heure", bg: BG_FG,  w: 80 }, // col 91
   { g: '',                          l: 'Ecart Budget\nS/C%',       bg: BG_FG,  w: 70 }, // col 92
   { g: '',                          l: 'VAR VS N-1',               bg: BG_HATCH, w: 65 }, // —
@@ -258,7 +248,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   const MONTHS_SHORT = MONTHS_SHORT_LABELS.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [activeTab, setActiveTab] = useState<string>('budget');
 
-  const { getVal, getFgTotal, getRaw, getLastDayVal, caByMonth, totalCA } = useRecapAnnuelData(data, YEAR);
+  const { getVal, getFgTotal, getRaw, getLastDayVal, getHoursSum, sumHoursCol, caByMonth, totalCA } = useRecapAnnuelData(data, YEAR);
 
   // Détection schéma personnel (global = 5 cats unifiées, cuisine_salle = 10 cats)
   const personnelSchema = useMemo(() =>
@@ -367,40 +357,42 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 32 (cuisine/salle) ou 22 (global) valeurs ────────────────────────
-      case 'frais_personnel':
+      // ── 22 (global) ou 22 (cuisine/salle fusionné) valeurs ──────────────
+      case 'frais_personnel': {
+        const gh = (col: number) => getHoursSum(mi, col);
         if (isGlobal) {
           // 22 valeurs — schéma global (5 catégories unifiées, cols 130-134 proj / 135-139 réel)
           return [
             fe(g(87)), r(88), r(89), '—',
-            fmtHeures(g(61)),
-            fmtHeures(g(130)), fmtHeures(g(131)), fmtHeures(g(132)), fmtHeures(g(133)), fmtHeures(g(134)),
+            fmtHeures(gh(61)),
+            fmtHeures(gh(130)), fmtHeures(gh(131)), fmtHeures(gh(132)), fmtHeures(gh(133)), fmtHeures(gh(134)),
             fe(g(72)),
-            fmtHeures(g(76)),
-            fmtHeures(g(135)), fmtHeures(g(136)), fmtHeures(g(137)), fmtHeures(g(138)), fmtHeures(g(139)),
+            fmtHeures(gh(76)),
+            fmtHeures(gh(135)), fmtHeures(gh(136)), fmtHeures(gh(137)), fmtHeures(gh(138)), fmtHeures(gh(139)),
             fe(g(87)),
-            fmtHeures(g(91)), r(92),
+            fmtHeures(gh(91)), r(92),
             '—',
             r(90),
           ];
         }
-        // 32 valeurs — schéma cuisine/salle (10 catégories, cols 62-71 proj / 77-86 réel)
+        // 22 valeurs — schéma cuisine/salle, niveaux fusionnés (Cuisine+Salle)
         return [
           fe(g(87)), r(88), r(89), '—',
-          fmtHeures(g(61)),
-          fmtHeures(g(62)), fmtHeures(g(63)), fmtHeures(g(64)), fmtHeures(g(65)),
-          fmtHeures(g(66)), fmtHeures(g(67)), fmtHeures(g(68)), fmtHeures(g(69)),
-          fmtHeures(g(70)), fmtHeures(g(71)),
+          fmtHeures(gh(61)),
+          fmtHeures(gh(62) + gh(63)), fmtHeures(gh(64) + gh(65)),
+          fmtHeures(gh(66) + gh(67)), fmtHeures(gh(68) + gh(69)),
+          fmtHeures(gh(70) + gh(71)),
           fe(g(72)),
-          fmtHeures(g(76)),
-          fmtHeures(g(77)), fmtHeures(g(78)), fmtHeures(g(79)), fmtHeures(g(80)),
-          fmtHeures(g(81)), fmtHeures(g(82)), fmtHeures(g(83)), fmtHeures(g(84)),
-          fmtHeures(g(85)), fmtHeures(g(86)),
+          fmtHeures(gh(76)),
+          fmtHeures(gh(77) + gh(78)), fmtHeures(gh(79) + gh(80)),
+          fmtHeures(gh(81) + gh(82)), fmtHeures(gh(83) + gh(84)),
+          fmtHeures(gh(85) + gh(86)),
           fe(g(87)),
-          fmtHeures(g(91)), r(92),
+          fmtHeures(gh(91)), r(92),
           '—',
           r(90),
         ];
+      }
 
       // ── 34 valeurs ──────────────────────────────────────────────────────────
       case 'frais_generaux': return [
@@ -525,36 +517,37 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         '0,00 €', '0,00 €',
       ];
 
-      // ── 32 (cuisine/salle) ou 22 (global) totaux ─────────────────────────
+      // ── 22 (global) ou 22 (cuisine/salle fusionné) totaux ─────────────
       case 'frais_personnel': {
         const fpRatioAnnuel = totalCA > 0 ? fp(s(87) / totalCA * 100) : '—';
+        const sh = sumHoursCol;
         if (isGlobal) {
           return [
             fe(s(87)), '—', fpRatioAnnuel, '—',
-            fmtHeures(s(61)),
-            fmtHeures(s(130)), fmtHeures(s(131)), fmtHeures(s(132)), fmtHeures(s(133)), fmtHeures(s(134)),
+            fmtHeures(sh(61)),
+            fmtHeures(sh(130)), fmtHeures(sh(131)), fmtHeures(sh(132)), fmtHeures(sh(133)), fmtHeures(sh(134)),
             fe(s(72)),
-            fmtHeures(s(76)),
-            fmtHeures(s(135)), fmtHeures(s(136)), fmtHeures(s(137)), fmtHeures(s(138)), fmtHeures(s(139)),
+            fmtHeures(sh(76)),
+            fmtHeures(sh(135)), fmtHeures(sh(136)), fmtHeures(sh(137)), fmtHeures(sh(138)), fmtHeures(sh(139)),
             fe(s(87)),
-            fmtHeures(s(91)), '—',
+            fmtHeures(sh(91)), '—',
             '—',
             '—',
           ];
         }
         return [
           fe(s(87)), '—', fpRatioAnnuel, '—',
-          fmtHeures(s(61)),
-          fmtHeures(s(62)), fmtHeures(s(63)), fmtHeures(s(64)), fmtHeures(s(65)),
-          fmtHeures(s(66)), fmtHeures(s(67)), fmtHeures(s(68)), fmtHeures(s(69)),
-          fmtHeures(s(70)), fmtHeures(s(71)),
+          fmtHeures(sh(61)),
+          fmtHeures(sh(62) + sh(63)), fmtHeures(sh(64) + sh(65)),
+          fmtHeures(sh(66) + sh(67)), fmtHeures(sh(68) + sh(69)),
+          fmtHeures(sh(70) + sh(71)),
           fe(s(72)),
-          fmtHeures(s(76)),
-          fmtHeures(s(77)), fmtHeures(s(78)), fmtHeures(s(79)), fmtHeures(s(80)),
-          fmtHeures(s(81)), fmtHeures(s(82)), fmtHeures(s(83)), fmtHeures(s(84)),
-          fmtHeures(s(85)), fmtHeures(s(86)),
+          fmtHeures(sh(76)),
+          fmtHeures(sh(77) + sh(78)), fmtHeures(sh(79) + sh(80)),
+          fmtHeures(sh(81) + sh(82)), fmtHeures(sh(83) + sh(84)),
+          fmtHeures(sh(85) + sh(86)),
           fe(s(87)),
-          fmtHeures(s(91)), '—',
+          fmtHeures(sh(91)), '—',
           '—',
           '—',
         ];
