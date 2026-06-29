@@ -47,7 +47,6 @@ const CONTRATS_FG = [
 ];
 
 const NAV    = '#1e293b';
-const AMBER  = '#f59e0b';
 const BG_DATE  = '#1e293b';
 const BG_BUDG  = '#fff2cc';
 const BG_REAL2 = '#b4c6e7';
@@ -59,7 +58,6 @@ const BG_FG    = '#fef3c7';
 const BG_FG2   = '#fce4d6';
 const BG_RES   = '#fef9e7';
 const BG_HATCH = '#e2e8f0';
-const BG_YELL  = '#fef08a';
 
 const fe = formatEuroSymbol;
 const fp = formatPercentSigned;
@@ -735,22 +733,51 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#eff6ff!important}`}</style>
 
       {/* HEADER */}
-      <header style={{ background: NAV, height: 52, padding: '0 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#94a3b8', cursor: 'pointer', background: 'none', border: 'none', padding: '6px 0', fontSize: 12, fontWeight: 700, fontFamily: 'inherit', transition: 'color .2s', textTransform: 'uppercase', letterSpacing: '.05em' }}
+      <header style={{ background: NAV, height: 56, padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, gap: 12 }}>
+        {/* Gauche : Retour Accueil */}
+        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#94a3b8', cursor: 'pointer', background: 'none', border: 'none', padding: '6px 0', fontSize: 12, fontWeight: 700, fontFamily: 'inherit', transition: 'color .2s', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}
           onMouseEnter={e => (e.currentTarget.style.color = '#fff')} onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
           Retour Accueil
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ color: '#fff', fontSize: 15, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase' }}>
-            📋 Récapitulatif Annuel
-          </div>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+        {/* Centre : tabs intégrés */}
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: 1, justifyContent: 'center' }}>
+          {SECTIONS.map(sec => {
+            const isActive = activeTab === sec.key;
+            return (
+              <button key={sec.key} onClick={() => setActiveTab(sec.key)} style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                background: isActive ? '#1e40af' : 'transparent',
+                border: 'none',
+                transition: 'all .15s',
+              }}>
+                {isActive ? (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <rect x="1" y="1" width="14" height="14" rx="2.5" fill="white" stroke="white" strokeWidth="1.5"/>
+                    <path d="M4.5 8l2.5 2.5 4.5-4.5" stroke="#1e40af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <rect x="1" y="1" width="14" height="14" rx="2.5" stroke="#94a3b8" strokeWidth="1.5" fill="none"/>
+                  </svg>
+                )}
+                <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? '#fff' : '#94a3b8', letterSpacing: '.02em', lineHeight: 1.3 }}>
+                  {sec.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Droite : sélecteur année + pill */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
             {[YEAR - 1, YEAR, YEAR + 1].map(y => (
               <button key={y} onClick={() => setSelectedYear(y)} style={{
-                padding: '3px 10px', borderRadius: 6, border: '1px solid',
-                fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all .15s',
+                padding: '3px 9px', borderRadius: 6, border: '1px solid',
+                fontFamily: 'inherit', fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .15s',
                 background: y === YEAR ? '#f59e0b' : 'transparent',
                 borderColor: y === YEAR ? '#f59e0b' : '#475569',
                 color: y === YEAR ? '#1e293b' : '#94a3b8',
@@ -759,39 +786,11 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
               </button>
             ))}
           </div>
-        </div>
-
-        <div style={{ background: '#f59e0b18', border: '1px solid #f59e0b30', borderRadius: 6, padding: '4px 14px', color: AMBER, fontSize: 11, fontWeight: 700, letterSpacing: '.04em' }}>
-          BURO MONTE &nbsp;·&nbsp; CA N-1 : {fe(CA_N1)}
+          <div style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 20, padding: '4px 14px', color: '#e2e8f0', fontSize: 11, fontWeight: 700, letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
+            {YEAR}&nbsp;<span style={{ color: '#475569' }}>|</span>&nbsp;Bureau Monte – {fe(CA_N1)}
+          </div>
         </div>
       </header>
-
-      {/* BARRE D'ONGLETS */}
-      <div style={{ padding: '12px 28px', display: 'flex', gap: 8, background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center', flexShrink: 0 }}>
-        {SECTIONS.map(sec => {
-          const isActive = activeTab === sec.key;
-          return (
-            <button key={sec.key} onClick={() => setActiveTab(sec.key)} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '9px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
-              background: isActive ? sec.accentBg : '#f8fafc',
-              border: `1.5px solid ${isActive ? sec.accentBg : '#e2e8f0'}`,
-              boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
-              transition: 'all .15s',
-            }}>
-              <span style={{ fontSize: 14 }}>{sec.icon}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? sec.accentColor : '#334155', letterSpacing: '.02em', lineHeight: 1.3 }}>
-                {sec.label}
-              </span>
-              {isActive && (
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 2 }}>
-                  <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
-            </button>
-          );
-        })}
-      </div>
 
       {/* TABLEAU */}
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
@@ -819,15 +818,15 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                       <th rowSpan={3} style={{ ...thBase, background: BG_DATE, color: '#fff', minWidth: 82, left: 0, top: 0, zIndex: 60, borderRight: '3px solid #475569', borderBottom: '3px solid #475569' }}>
                         DATE
                       </th>
-                      <th colSpan={cols.length} style={{ ...thBase, background: accentBg, color: accentColor, top: 0, height: 30, fontSize: 11, zIndex: 40 }}>
-                        {icon} {label.toUpperCase()}
+                      <th colSpan={cols.length} style={{ ...thBase, background: '#1e40af', color: '#fff', top: 0, height: 30, fontSize: 11, zIndex: 40 }}>
+                        {label.toUpperCase()}
                       </th>
                     </tr>
                     <tr style={{ height: 30 }}>
                       {grps.map((gr, gi) => {
                         const offset = grps.slice(0, gi).reduce((a, x) => a + x.count, 0);
                         return (
-                          <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: cols[offset].bg, color: '#1e293b', top: 30, height: 30, fontSize: 9, zIndex: 40, borderBottom: '1px solid #94a3b8' }}>
+                          <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: gi % 2 === 0 ? '#b4c6e7' : '#dbeafe', color: '#1e40af', fontWeight: 700, top: 30, height: 30, fontSize: 9, zIndex: 40, borderBottom: '1px solid #94a3b8' }}>
                             {gr.g}
                           </th>
                         );
@@ -835,7 +834,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                     </tr>
                     <tr style={{ height: 60 }}>
                       {cols.map((c, ci) => (
-                        <th key={`col${ci}`} style={{ ...thBase, background: c.bg, color: '#374151', top: 60, height: 60, minWidth: c.w || 65, fontSize: 9, zIndex: 40, borderBottom: '3px solid #374151' }}>
+                        <th key={`col${ci}`} style={{ ...thBase, background: '#dbeafe', color: '#1e40af', fontWeight: 700, top: 60, height: 60, minWidth: c.w || 65, fontSize: 9, zIndex: 40, borderBottom: '3px solid #374151' }}>
                           {c.l}
                         </th>
                       ))}
@@ -847,7 +846,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                       const isCurrent = mi === new Date().getMonth() && YEAR === new Date().getFullYear();
                       return (
                         <tr key={mi} className="rr" style={{ background: isCurrent ? '#eff6ff' : (mi % 2 === 0 ? '#fff' : '#f8fafc') }}>
-                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isCurrent ? '#dbeafe' : '#f1f5f9', fontWeight: isCurrent ? 800 : 600, fontSize: 11, color: '#1e293b', borderRight: '3px solid #475569', minWidth: 82, textAlign: 'left', paddingLeft: 8 }}>
+                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isCurrent ? '#1e40af' : '#1e3a5f', fontWeight: 700, fontSize: 11, color: '#fff', borderRight: '3px solid #475569', minWidth: 82, textAlign: 'left', paddingLeft: 8 }}>
                             {MONTHS_SHORT[mi]}
                           </td>
                           {vals.map((v, ci) => {
@@ -884,28 +883,28 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: BG_YELL, fontWeight: 800, fontSize: 12, color: '#713f12', borderRight: '3px solid #ca8a04', borderTop: '2px solid #ca8a04', textAlign: 'left', paddingLeft: 8 }}>
+                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: '#1e293b', fontWeight: 800, fontSize: 12, color: '#fff', borderRight: '3px solid #475569', borderTop: '2px solid #1e40af', textAlign: 'left', paddingLeft: 8 }}>
                         TOTAL
                       </td>
                       {totalVals.map((v, ci) => {
                         const colDef = cols[ci];
                         const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
                         const isPos = typeof v === 'string' && v.startsWith('+');
-                        let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : '#713f12';
+                        let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : '#fff';
                         if (v !== '—' && v !== '') {
                           const num = parseFloat(v.replace(',', '.').replace('%', '').trim());
                           if (colDef?.threshold !== undefined && isFinite(num)) {
                             color = num > colDef.threshold ? '#dc2626' : '#16a34a';
                           } else if (colDef?.invertSign && isFinite(num)) {
-                            color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : '#713f12';
+                            color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : '#fff';
                           }
                         }
                         return (
                           <td key={ci} style={{
-                            ...tdBase, background: BG_YELL,
+                            ...tdBase, background: '#1e40af',
                             fontWeight: 800, fontSize: 11,
                             color,
-                            borderTop: '2px solid #ca8a04',
+                            borderTop: '2px solid #1e40af',
                           }}>
                             {v}
                           </td>

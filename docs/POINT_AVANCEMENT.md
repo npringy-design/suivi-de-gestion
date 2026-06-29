@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 29/06/2026
+
+- RecapAnnuel reskin visuel : tabs intégrés dans le header (icônes SVG checkbox, actif #1e40af), pill blanche droite avec CA N-1 ; header tableau — ligne 1 #1e40af, groupes alternance #b4c6e7/#dbeafe, libellés #dbeafe/#1e40af ; colonne DATE sombre (#1e3a5f/#1e40af mois courant) ; tfoot #1e40af fond blanc texte ; AMBER et BG_YELL supprimées. tsc OK.
+
 ## 28/06/2026 (import coût matière)
 
 - Import historique V25/V26 coût matière : correction de montants aberrants après import — `parseHistoricalBudgetCellNumber` et `parseHistoricalCostMatterCellNumber` ignorent désormais les cellules de type date (valeur `instanceof Date` ou `{formula, result: Date}`) avant le fallback `cell.text` qui pouvait convertir "01/12/2026 00:00:00.100" en ~10^14 ; garde-fou MAX_SUPPLIER_DAILY_AMOUNT = 500 000 € ajouté sur les deux parseurs. tsc OK.
