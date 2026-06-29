@@ -132,38 +132,35 @@ const COLS_COUT_MATIERE: ColDef[] = [
   { g: '',                    l: 'Variation\nStock',     bg: '#fff', w: 75 }, // —
 ];
 
-// Frais Personnel — Tableau 1 : Projection S/C Skello (7 colonnes, identique global et cuisine/salle)
-const COLS_FP_PROJ: ColDef[] = [
-  { g: 'PROJECTION S/C\nSKELLO', l: 'Total\nHeures',  bg: BG_FP,  w: 70 },
-  { g: 'PROJECTION S/C\nSKELLO', l: 'Cadre',          bg: BG_FP,  w: 70 },
-  { g: 'PROJECTION S/C\nSKELLO', l: 'Maîtrise',       bg: BG_FP,  w: 70 },
-  { g: 'PROJECTION S/C\nSKELLO', l: 'NIV I-II',       bg: BG_FP,  w: 70 },
-  { g: 'PROJECTION S/C\nSKELLO', l: 'NIV III',        bg: BG_FP,  w: 70 },
-  { g: 'PROJECTION S/C\nSKELLO', l: 'Apprenti',       bg: BG_FP,  w: 70 },
-  { g: 'PROJECTION S/C\nSKELLO', l: 'Coût\nGlobal',   bg: '#fff', w: 85 }, // col 72
+// Frais Personnel — un seul tableau : PROJECTION (8 cols) + REALISER (9 cols)
+const COLS_FP: ColDef[] = [
+  // ── PROJECTION ────────────────────────────────────────────────────────────
+  { g: 'PROJECTION', l: 'Cadre',          bg: BG_FP,  w: 70 },
+  { g: 'PROJECTION', l: 'Maîtrise',       bg: BG_FP,  w: 70 },
+  { g: 'PROJECTION', l: 'NIV I-II',       bg: BG_FP,  w: 70 },
+  { g: 'PROJECTION', l: 'NIV III',        bg: BG_FP,  w: 70 },
+  { g: 'PROJECTION', l: 'Apprenti',       bg: BG_FP,  w: 70 },
+  { g: 'PROJECTION', l: 'Total\nHeures',  bg: BG_FP,  w: 75 },
+  { g: 'PROJECTION', l: 'Coût\nGlobal',   bg: '#fff', w: 90 }, // col 72
+  { g: 'PROJECTION', l: 'Ratio %',        bg: '#fff', w: 70 }, // col 89 vs proj
+  // ── RÉALISER ──────────────────────────────────────────────────────────────
+  { g: 'RÉALISER',   l: 'Cadre',          bg: BG_FP,  w: 70 },
+  { g: 'RÉALISER',   l: 'Maîtrise',       bg: BG_FP,  w: 70 },
+  { g: 'RÉALISER',   l: 'NIV I-II',       bg: BG_FP,  w: 70 },
+  { g: 'RÉALISER',   l: 'NIV III',        bg: BG_FP,  w: 70 },
+  { g: 'RÉALISER',   l: 'Apprenti',       bg: BG_FP,  w: 70 },
+  { g: 'RÉALISER',   l: 'Total\nHeures',  bg: BG_FP,  w: 75 },
+  { g: 'RÉALISER',   l: 'Coût\nGlobal',   bg: '#fff', w: 90 }, // col 87
+  { g: 'RÉALISER',   l: 'Ratio %',        bg: '#fff', w: 70 }, // col 88/89
+  { g: 'RÉALISER',   l: 'VS Projection\n%', bg: BG_FG, w: 80 },
 ];
 
-// Frais Personnel — Tableau 2 : Réalisé (14 colonnes)
-const COLS_FP_REAL: ColDef[] = [
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Total\nHeures',          bg: BG_FP,    w: 70 },
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Cadre',                  bg: BG_FP,    w: 70 },
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Maîtrise',               bg: BG_FP,    w: 70 },
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'NIV I-II',               bg: BG_FP,    w: 70 },
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'NIV III',                bg: BG_FP,    w: 70 },
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Apprenti',               bg: BG_FP,    w: 70 },
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Coût Global\nRéel',      bg: '#fff',   w: 90 }, // col 87
-  { g: 'Productivité\nCible 50,00', l: 'Productivité\nRéelle',  bg: '#fff',   w: 70 }, // col 88
-  { g: 'Budget FP\n35,00%',         l: 'Frais Perso\n%',        bg: '#fff',   w: 70 }, // col 89
-  { g: '',                          l: 'Ratio\nAnnuel %',       bg: '#fff',   w: 70 },
-  { g: 'ÉCARTS',                    l: "NB d'Heure\nvs Budget", bg: BG_FG,    w: 85 }, // col 91
-  { g: 'ÉCARTS',                    l: 'S/C%\nvs Budget',       bg: BG_FG,    w: 70 }, // col 92
-  { g: 'ÉCARTS',                    l: 'VAR\nvs N-1',           bg: BG_HATCH, w: 65 },
-  { g: '',                          l: 'Ratio\nHebdo %',        bg: '#fff',   w: 70 }, // col 90
-];
-
-// Alias pour la section SECTIONS (utilise COLS_FP_PROJ comme référence, non utilisé pour le rendu)
-const COLS_FP_CUISINE_SALLE = COLS_FP_PROJ;
-const COLS_FP_GLOBAL        = COLS_FP_PROJ;
+// Alias pour la section SECTIONS
+const COLS_FP_CUISINE_SALLE = COLS_FP;
+const COLS_FP_GLOBAL        = COLS_FP;
+// Conservés pour le rendu double (non utilisés en mode tableau unique)
+const COLS_FP_PROJ = COLS_FP.slice(0, 8);
+const COLS_FP_REAL = COLS_FP.slice(8);
 
 const COLS_FRAIS_GENERAUX: ColDef[] = [
   // 34 colonnes
@@ -341,20 +338,22 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 21 valeurs : 7 proj + 14 réel ──────────────────────────────────────
+      // ── 17 valeurs : 8 projection + 9 réaliser ──────────────────────────────
       case 'frais_personnel': {
         const rl = (lv: number) => getRealLevelHours(mi, lv);
         const pl = (lv: number) => getProjLevelHours(mi, lv);
+        const coutProj = g(72);
+        const coutReal = g(87);
+        const vsProj   = coutProj > 0 ? fp((coutReal - coutProj) / coutProj * 100) : '—';
+        const ratioProj = ca > 0 ? fp(coutProj / ca * 100) : '—';
+        const ratioReal = ca > 0 ? fp(coutReal / ca * 100) : '—';
         return [
-          // Projection (7)
-          fmtHeures(getProjTotalHours(mi)),
+          // Projection (8)
           fmtHeures(pl(0)), fmtHeures(pl(1)), fmtHeures(pl(2)), fmtHeures(pl(3)), fmtHeures(pl(4)),
-          fe(g(72)),
-          // Réalisé (14)
-          fmtHeures(getRealTotalHours(mi)),
+          fmtHeures(getProjTotalHours(mi)), fe(coutProj), ratioProj,
+          // Réaliser (9)
           fmtHeures(rl(0)), fmtHeures(rl(1)), fmtHeures(rl(2)), fmtHeures(rl(3)), fmtHeures(rl(4)),
-          fe(g(87)), r(88), r(89), '—',
-          r(91), r(92), '—', r(90),
+          fmtHeures(getRealTotalHours(mi)), fe(coutReal), ratioReal, vsProj,
         ];
       }
 
@@ -481,19 +480,20 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         '0,00 €', '0,00 €',
       ];
 
-      // ── 21 totaux : 7 proj + 14 réel ───────────────────────────────────────
+      // ── 17 totaux : 8 projection + 9 réaliser ──────────────────────────────
       case 'frais_personnel': {
-        const fpRatioAnnuel = totalCA > 0 ? fp(s(87) / totalCA * 100) : '—';
+        const totalCoutProj = s(72);
+        const totalCoutReal = s(87);
+        const ratioProj = totalCA > 0 ? fp(totalCoutProj / totalCA * 100) : '—';
+        const ratioReal = totalCA > 0 ? fp(totalCoutReal / totalCA * 100) : '—';
+        const vsProj    = totalCoutProj > 0 ? fp((totalCoutReal - totalCoutProj) / totalCoutProj * 100) : '—';
         return [
-          // Projection (7)
-          fmtHeures(sumProjTotal()),
+          // Projection (8)
           fmtHeures(sumProjLevel(0)), fmtHeures(sumProjLevel(1)), fmtHeures(sumProjLevel(2)), fmtHeures(sumProjLevel(3)), fmtHeures(sumProjLevel(4)),
-          fe(s(72)),
-          // Réalisé (14)
-          fmtHeures(sumRealTotal()),
+          fmtHeures(sumProjTotal()), fe(totalCoutProj), ratioProj,
+          // Réaliser (9)
           fmtHeures(sumRealLevel(0)), fmtHeures(sumRealLevel(1)), fmtHeures(sumRealLevel(2)), fmtHeures(sumRealLevel(3)), fmtHeures(sumRealLevel(4)),
-          fe(s(87)), '—', fpRatioAnnuel, '—',
-          fmtHeures(sumHoursCol(91)), '—', '—', '—',
+          fmtHeures(sumRealTotal()), fe(totalCoutReal), ratioReal, vsProj,
         ];
       }
 
@@ -728,23 +728,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                   COLS_REALISE.slice(11), 'Couverts Restaurant', '📊', '#1e40af', '#fff',
                   (mi) => getSectionValues('realise', mi).slice(11),
                   totals.slice(11),
-                )}
-              </>
-            );
-          }
-          if (activeTab === 'frais_personnel') {
-            const totals = getTotalValues('frais_personnel');
-            return (
-              <>
-                {renderTable(
-                  COLS_FP_PROJ, 'Projection S/C Skello', '👥', '#7c2d12', '#fff',
-                  (mi) => getSectionValues('frais_personnel', mi).slice(0, 7),
-                  totals.slice(0, 7),
-                )}
-                {renderTable(
-                  COLS_FP_REAL, 'Frais Personnel Réalisé', '👥', '#7c2d12', '#fff',
-                  (mi) => getSectionValues('frais_personnel', mi).slice(7),
-                  totals.slice(7),
                 )}
               </>
             );
