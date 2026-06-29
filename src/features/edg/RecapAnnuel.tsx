@@ -221,9 +221,10 @@ const COLS_SYNTHESE: ColDef[] = [
   { g: 'CHIFFRE D\'AFFAIRES', l: 'CA\nBudget',         bg: BG_BUDG,  w: 95  },
   { g: 'CHIFFRE D\'AFFAIRES', l: 'VAR %\nvs N-1',      bg: BG_HATCH, w: 80  },
   { g: 'CHIFFRE D\'AFFAIRES', l: 'VAR %\nvs Budget',   bg: BG_HATCH, w: 80  },
-  // ── COUVERTS (4 cols) ───────────────────────────────────────────────────────
+  // ── COUVERTS (5 cols) ───────────────────────────────────────────────────────
   { g: 'COUVERTS',            l: 'NB\nCouverts',       bg: BG_BUDG,  w: 75  },
   { g: 'COUVERTS',            l: 'VAR %\nvs N-1',      bg: BG_HATCH, w: 80  },
+  { g: 'COUVERTS',            l: 'VAR %\nvs Budget',   bg: BG_HATCH, w: 80  },
   { g: 'COUVERTS',            l: 'Ticket\nMoyen HT',   bg: BG_BUDG,  w: 85  },
   { g: 'COUVERTS',            l: 'VAR TM %\nvs N-1',   bg: BG_HATCH, w: 85  },
   // ── COÛT MATIÈRE (3 cols) ───────────────────────────────────────────────────
@@ -436,14 +437,16 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
       // ── 18 valeurs synthèse ─────────────────────────────────────────────────
       case 'synthese': {
-        if (ca === 0) return Array(18).fill('—');
+        if (ca === 0) return Array(19).fill('—');
         // CA
         const budgetCA    = g(3);
         const varBudP     = budgetCA > 0 ? ((ca - budgetCA) / budgetCA) * 100 : 0;
         // Couverts
         const nbCvts      = Math.round(g(29));
+        const nbCvtsBud   = Math.round(g(10));
         const nbCvtsN1    = CVTS_N1_BY_MONTH[mi] ?? 0;
         const varCvtsN1   = nbCvtsN1 > 0 ? ((nbCvts - nbCvtsN1) / nbCvtsN1) * 100 : 0;
+        const varCvtsBud  = nbCvtsBud > 0 ? ((nbCvts - nbCvtsBud) / nbCvtsBud) * 100 : 0;
         const tmHT        = nbCvts > 0 ? ca / nbCvts : 0;
         const tmN1        = nbCvtsN1 > 0 ? caN1 / nbCvtsN1 : 0;
         const varTmN1     = tmN1 > 0 ? ((tmHT - tmN1) / tmN1) * 100 : 0;
@@ -471,8 +474,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         return [
           // CA (4)
           fe(ca), fe(budgetCA), fp(varP), fp(varBudP),
-          // Couverts (4)
-          String(nbCvts), fp(varCvtsN1), fe(tmHT), fp(varTmN1),
+          // Couverts (5)
+          String(nbCvts), fp(varCvtsN1), fp(varCvtsBud), fe(tmHT), fp(varTmN1),
           // Coût Matière (3)
           fe(totalAchats), `${ratioAchats.toFixed(2)} %`, varRatioAchats,
           // Frais Personnel (4)
@@ -663,8 +666,10 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const varBudYtd       = totalBudgetCA > 0 ? ((totalCA - totalBudgetCA) / totalBudgetCA) * 100 : 0;
         // Couverts
         const totalCvts       = ytd(i => Math.round(getVal(i, 29)));
+        const totalCvtsBud    = ytd(i => Math.round(getVal(i, 10)));
         const totalCvtsN1Ytd  = ytd(i => CVTS_N1_BY_MONTH[i] ?? 0);
         const varCvtsN1       = totalCvtsN1Ytd > 0 ? ((totalCvts - totalCvtsN1Ytd) / totalCvtsN1Ytd) * 100 : 0;
+        const varCvtsBud      = totalCvtsBud  > 0 ? ((totalCvts - totalCvtsBud)    / totalCvtsBud)    * 100 : 0;
         const tmHT            = totalCvts > 0 ? totalCA / totalCvts : 0;
         const tmN1            = totalCvtsN1Ytd > 0 ? totalCaN1Ytd / totalCvtsN1Ytd : 0;
         const varTmN1         = tmN1 > 0 ? ((tmHT - tmN1) / tmN1) * 100 : 0;
@@ -688,7 +693,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const ratioFG         = totalCA > 0 ? (totalFgt / totalCA) * 100 : 0;
         return [
           totalCA > 0 ? fe(totalCA) : '0,00 €', fe(totalBudgetCA), fp(varPYtd), fp(varBudYtd),
-          String(totalCvts), fp(varCvtsN1), fe(tmHT), fp(varTmN1),
+          String(totalCvts), fp(varCvtsN1), fp(varCvtsBud), fe(tmHT), fp(varTmN1),
           fe(totalAchats), `${ratioAchats.toFixed(2)} %`, varRatioAchats,
           fe(totalCoutReal), `${ratioFP.toFixed(2)} %`, varRatioFPProj, varRatioFPN1,
           totalFgt > 0 ? fe(totalFgt) : '0,00 €', `${ratioFG.toFixed(2)} %`, '—',
