@@ -57,7 +57,8 @@ const fmtHeures = (val: number): string => {
   return `${val < 0 ? '-' : ''}${h}h${String(m).padStart(2, '0')}`;
 };
 
-type ColDef = { g: string; l: string; bg: string; w: number };
+// threshold: colore la cellule rouge si valeur > value, vert sinon (pour les ratios %)
+type ColDef = { g: string; l: string; bg: string; w: number; threshold?: number };
 
 // ─── Colonnes statiques ──────────────────────────────────────────────────────
 
@@ -142,7 +143,7 @@ const COLS_FP: ColDef[] = [
   { g: 'PROJECTION', l: 'Apprenti',       bg: BG_FP,  w: 70 },
   { g: 'PROJECTION', l: 'Total\nHeures',  bg: BG_FP,  w: 75 },
   { g: 'PROJECTION', l: 'Coût\nGlobal',   bg: '#fff', w: 90 }, // col 72
-  { g: 'PROJECTION', l: 'Ratio %',        bg: '#fff', w: 70 }, // col 89 vs proj
+  { g: 'PROJECTION', l: 'Ratio %',        bg: '#fff', w: 70, threshold: 38 },
   // ── RÉALISER ──────────────────────────────────────────────────────────────
   { g: 'RÉALISER',   l: 'Cadre',          bg: BG_FP,  w: 70 },
   { g: 'RÉALISER',   l: 'Maîtrise',       bg: BG_FP,  w: 70 },
@@ -151,7 +152,7 @@ const COLS_FP: ColDef[] = [
   { g: 'RÉALISER',   l: 'Apprenti',       bg: BG_FP,  w: 70 },
   { g: 'RÉALISER',   l: 'Total\nHeures',  bg: BG_FP,  w: 75 },
   { g: 'RÉALISER',   l: 'Coût\nGlobal',   bg: '#fff', w: 90 }, // col 87
-  { g: 'RÉALISER',   l: 'Ratio %',        bg: '#fff', w: 70 }, // col 88/89
+  { g: 'RÉALISER',   l: 'Ratio %',        bg: '#fff', w: 70, threshold: 38 },
   { g: 'RÉALISER',   l: 'VS Projection\n%', bg: BG_FG, w: 80 },
 ];
 
@@ -345,8 +346,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const coutProj = g(72);
         const coutReal = g(87);
         const vsProj   = coutProj > 0 ? fp((coutReal - coutProj) / coutProj * 100) : '—';
-        const ratioProj = ca > 0 ? fp(coutProj / ca * 100) : '—';
-        const ratioReal = ca > 0 ? fp(coutReal / ca * 100) : '—';
+        const fmtRatio = (v: number) => `${v.toFixed(2)} %`;
+        const ratioProj = ca > 0 ? fmtRatio(coutProj / ca * 100) : '—';
+        const ratioReal = ca > 0 ? fmtRatio(coutReal / ca * 100) : '—';
         return [
           // Projection (8)
           fmtHeures(pl(0)), fmtHeures(pl(1)), fmtHeures(pl(2)), fmtHeures(pl(3)), fmtHeures(pl(4)),
@@ -484,8 +486,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       case 'frais_personnel': {
         const totalCoutProj = s(72);
         const totalCoutReal = s(87);
-        const ratioProj = totalCA > 0 ? fp(totalCoutProj / totalCA * 100) : '—';
-        const ratioReal = totalCA > 0 ? fp(totalCoutReal / totalCA * 100) : '—';
+        const fmtRatioT = (v: number) => `${v.toFixed(2)} %`;
+        const ratioProj = totalCA > 0 ? fmtRatioT(totalCoutProj / totalCA * 100) : '—';
+        const ratioReal = totalCA > 0 ? fmtRatioT(totalCoutReal / totalCA * 100) : '—';
         const vsProj    = totalCoutProj > 0 ? fp((totalCoutReal - totalCoutProj) / totalCoutProj * 100) : '—';
         return [
           // Projection (8)
@@ -673,12 +676,21 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                             const colDef = cols[ci];
                             const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
                             const isPos = typeof v === 'string' && v.startsWith('+');
+                            let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : v === '—' || v === '' ? '#94a3b8' : '#334155';
+                            let fontWeight: number = isNeg || isPos ? 700 : 500;
+                            if (colDef?.threshold !== undefined && v !== '—' && v !== '') {
+                              const num = parseFloat(v.replace(',', '.').replace('%', '').trim());
+                              if (isFinite(num)) {
+                                color = num > colDef.threshold ? '#dc2626' : '#16a34a';
+                                fontWeight = 700;
+                              }
+                            }
                             return (
                               <td key={ci} style={{
                                 ...tdBase,
                                 background: colDef?.bg ?? '#fff',
-                                color: isNeg ? '#dc2626' : isPos ? '#16a34a' : v === '—' || v === '' ? '#94a3b8' : '#334155',
-                                fontWeight: isNeg || isPos ? 700 : 500,
+                                color,
+                                fontWeight,
                                 minWidth: colDef?.w ?? 65,
                               }}>
                                 {v}
@@ -695,13 +707,19 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                         TOTAL
                       </td>
                       {totalVals.map((v, ci) => {
+                        const colDef = cols[ci];
                         const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
                         const isPos = typeof v === 'string' && v.startsWith('+');
+                        let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : '#713f12';
+                        if (colDef?.threshold !== undefined && v !== '—' && v !== '') {
+                          const num = parseFloat(v.replace(',', '.').replace('%', '').trim());
+                          if (isFinite(num)) color = num > colDef.threshold ? '#dc2626' : '#16a34a';
+                        }
                         return (
                           <td key={ci} style={{
                             ...tdBase, background: BG_YELL,
                             fontWeight: 800, fontSize: 11,
-                            color: isNeg ? '#dc2626' : isPos ? '#16a34a' : '#713f12',
+                            color,
                             borderTop: '2px solid #ca8a04',
                           }}>
                             {v}
