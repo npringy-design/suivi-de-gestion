@@ -735,7 +735,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   return (
     <div style={{ height: '100vh', background: '#FAFAF9', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#FEF3C7!important}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#EEF2FF!important}`}</style>
 
       {/* HEADER */}
       <header style={{ background: '#1C1917', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, height: 'auto', minHeight: 64 }}>
@@ -815,15 +815,15 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                 <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#1C1917', marginBottom: 16, fontFamily: "Georgia, serif" }}>
                   {label}
                 </h2>
-                <div style={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', border: '1px solid #D6D3D1' }}>
-                <table style={{ borderCollapse: 'collapse', background: '#fff', width: '100%', minWidth: 'max-content' }}>
+                <div style={{ borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', border: '1px solid #D6D3D1' }}>
+                <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: '100%', minWidth: 'max-content' }}>
                   <thead>
                     <tr style={{ height: 40 }}>
-                      <th rowSpan={2} style={{ ...thBase, background: '#1C1917', color: '#fff', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: '2px solid #44403C', borderBottom: '2px solid #44403C', fontSize: 10, letterSpacing: '.1em' }}>
+                      <th rowSpan={2} style={{ ...thBase, background: '#1C1917', color: '#fff', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: '2px solid #44403C', borderBottom: '2px solid #44403C', fontSize: 10, letterSpacing: '.1em', borderTopLeftRadius: 8 }}>
                         DATE
                       </th>
                       {grps.map((gr, gi) => (
-                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: '#1C1917', color: '#fff', fontWeight: 700, top: 0, height: 40, fontSize: 10, letterSpacing: '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? '1px solid #44403C' : undefined, borderBottom: '1px solid #44403C' }}>
+                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: '#1C1917', color: '#fff', fontWeight: 700, top: 0, height: 40, fontSize: 10, letterSpacing: '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? '1px solid #44403C' : undefined, borderBottom: '1px solid #44403C', borderTopRightRadius: gi === grps.length - 1 ? 8 : undefined }}>
                           {gr.g}
                         </th>
                       ))}
@@ -861,10 +861,14 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                                 fontWeight = num !== 0 ? 700 : 500;
                               }
                             }
+                            let colCount = 0;
+                            let groupIdx = 0;
+                            for (let g = 0; g < grps.length; g++) { colCount += grps[g].count; if (ci < colCount) { groupIdx = g; break; } }
+                            const cellBg = activeTab === 'budget' ? (groupIdx % 2 === 0 ? '#fff' : '#f4f4f3') : (colDef?.bg ?? '#fff');
                             return (
                               <td key={ci} style={{
                                 ...tdBase,
-                                background: colDef?.bg ?? '#fff',
+                                background: cellBg,
                                 color,
                                 fontWeight,
                                 minWidth: colDef?.w ?? 65,
@@ -881,7 +885,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: '#1C1917', fontWeight: 800, fontSize: 12, color: '#fff', borderRight: '2px solid #44403C', borderTop: '2px solid #44403C', textAlign: 'left', paddingLeft: 10, letterSpacing: '.1em' }}>
+                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: '#1C1917', fontWeight: 800, fontSize: 12, color: '#fff', borderRight: '2px solid #44403C', borderTop: '2px solid #44403C', textAlign: 'left', paddingLeft: 10, letterSpacing: '.1em', borderBottomLeftRadius: 8 }}>
                         TOTAL
                       </td>
                       {totalVals.map((v, ci) => {
@@ -903,6 +907,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                             fontWeight: 700, fontSize: 11,
                             color,
                             borderTop: '2px solid #44403C',
+                            borderBottomRightRadius: ci === totalVals.length - 1 ? 8 : undefined,
                           }}>
                             {v}
                           </td>

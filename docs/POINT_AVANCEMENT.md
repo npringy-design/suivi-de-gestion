@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 29/06/2026 (corrections visuelles RecapAnnuel)
+
+- RecapAnnuel : (1) fond des cellules de données onglet Budget — alternance blanc/#f4f4f3 par groupe au lieu de BG_BUDG jaune ; (2) hover .rr passe de jaune (#FEF3C7) à indigo (#EEF2FF) ; (3) borderRadius 8 sur le wrapper card + borderCollapse:separate/borderSpacing:0 + coins manuels sur DATE th (top-left), dernier groupe th (top-right), TOTAL td (bottom-left), dernière td tfoot (bottom-right). tsc OK. build OK. 81 tests OK.
+
 ## 29/06/2026 (reskin RecapAnnuel maquette stone)
 
 - RecapAnnuel reskin visuel maquette : header fond #1C1917, tabs déplacés en barre blanche séparée (border-bottom amber actif, texte only sans icônes SVG), sélecteur années amber dans le header, bloc droite "Buro Monte" deux lignes ; thead fond #1C1917/#292524 uniforme (plus d'alternance bleue), colonne DATE sticky #1C1917 fond white, données zebra #fff/#FAFAF9 jaune très clair sur mois courant, tfoot #1C1917 avec fallback couleur #D6D3D1 ; footer texte #A8A29E. tsc OK. build OK. 81 tests OK.
