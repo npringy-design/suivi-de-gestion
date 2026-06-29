@@ -819,18 +819,18 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                 <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: '100%', minWidth: 'max-content' }}>
                   <thead>
                     <tr style={{ height: 40 }}>
-                      <th rowSpan={2} style={{ ...thBase, background: '#1C1917', color: '#fff', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: '2px solid #44403C', borderBottom: '2px solid #44403C', fontSize: 10, letterSpacing: '.1em', borderTopLeftRadius: 8 }}>
+                      <th rowSpan={2} style={{ ...thBase, background: accentBg, color: accentColor, minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: '2px solid rgba(0,0,0,0.2)', borderBottom: '2px solid rgba(0,0,0,0.2)', fontSize: 10, letterSpacing: '.1em', borderTopLeftRadius: 8 }}>
                         DATE
                       </th>
                       {grps.map((gr, gi) => (
-                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: '#1C1917', color: '#fff', fontWeight: 700, top: 0, height: 40, fontSize: 10, letterSpacing: '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? '1px solid #44403C' : undefined, borderBottom: '1px solid #44403C', borderTopRightRadius: gi === grps.length - 1 ? 8 : undefined }}>
+                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: accentBg, color: accentColor, fontWeight: 700, top: 0, height: 40, fontSize: 10, letterSpacing: '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? '1px solid rgba(0,0,0,0.15)' : undefined, borderBottom: '1px solid rgba(0,0,0,0.15)', borderTopRightRadius: gi === grps.length - 1 ? 8 : undefined }}>
                           {gr.g}
                         </th>
                       ))}
                     </tr>
                     <tr style={{ height: 32 }}>
                       {cols.map((c, ci) => (
-                        <th key={`col${ci}`} style={{ ...thBase, background: '#292524', color: '#A8A29E', fontWeight: 600, top: 40, height: 32, minWidth: c.w || 65, fontSize: 9, letterSpacing: '.04em', zIndex: 40, borderBottom: '2px solid #44403C' }}>
+                        <th key={`col${ci}`} style={{ ...thBase, background: accentBg, filter: 'brightness(0.75)', color: 'rgba(255,255,255,0.75)', fontWeight: 600, top: 40, height: 32, minWidth: c.w || 65, fontSize: 9, letterSpacing: '.04em', zIndex: 40, borderBottom: '2px solid rgba(0,0,0,0.2)' }}>
                           {c.l}
                         </th>
                       ))}
@@ -841,8 +841,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                       const vals = getVals(mi);
                       const isCurrent = mi === new Date().getMonth() && YEAR === new Date().getFullYear();
                       return (
-                        <tr key={mi} className="rr" style={{ background: isCurrent ? '#FEF9C3' : (mi % 2 === 0 ? '#fff' : '#FAFAF9') }}>
-                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isCurrent ? '#292524' : '#1C1917', fontWeight: 700, fontSize: 11, color: '#fff', borderRight: '2px solid #44403C', minWidth: 90, textAlign: 'left', paddingLeft: 10 }}>
+                        <tr key={mi} className="rr" style={{ background: isCurrent ? '#f0f4ff' : (mi % 2 === 0 ? '#fff' : '#f8f8f7') }}>
+                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: accentBg, opacity: isCurrent ? 0.82 : 1, fontWeight: 700, fontSize: 11, color: '#fff', borderRight: '2px solid rgba(0,0,0,0.2)', minWidth: 90, textAlign: 'left', paddingLeft: 10 }}>
                             {MONTHS_SHORT[mi]}
                           </td>
                           {vals.map((v, ci) => {
@@ -861,14 +861,10 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                                 fontWeight = num !== 0 ? 700 : 500;
                               }
                             }
-                            let colCount = 0;
-                            let groupIdx = 0;
-                            for (let g = 0; g < grps.length; g++) { colCount += grps[g].count; if (ci < colCount) { groupIdx = g; break; } }
-                            const cellBg = activeTab === 'budget' ? (groupIdx % 2 === 0 ? '#fff' : '#f4f4f3') : (colDef?.bg ?? '#fff');
                             return (
                               <td key={ci} style={{
                                 ...tdBase,
-                                background: cellBg,
+                                background: isCurrent ? '#f0f4ff' : (mi % 2 === 0 ? '#fff' : '#f8f8f7'),
                                 color,
                                 fontWeight,
                                 minWidth: colDef?.w ?? 65,
@@ -885,28 +881,28 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: '#1C1917', fontWeight: 800, fontSize: 12, color: '#fff', borderRight: '2px solid #44403C', borderTop: '2px solid #44403C', textAlign: 'left', paddingLeft: 10, letterSpacing: '.1em', borderBottomLeftRadius: 8 }}>
+                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: accentBg, fontWeight: 800, fontSize: 12, color: '#fff', borderRight: '2px solid rgba(0,0,0,0.2)', borderTop: '2px solid rgba(0,0,0,0.2)', textAlign: 'left', paddingLeft: 10, letterSpacing: '.1em', borderBottomLeftRadius: 8 }}>
                         TOTAL
                       </td>
                       {totalVals.map((v, ci) => {
                         const colDef = cols[ci];
                         const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
                         const isPos = typeof v === 'string' && v.startsWith('+');
-                        let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : '#D6D3D1';
+                        let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : 'rgba(255,255,255,0.85)';
                         if (v !== '—' && v !== '') {
                           const num = parseFloat(v.replace(',', '.').replace('%', '').trim());
                           if (colDef?.threshold !== undefined && isFinite(num)) {
                             color = num > colDef.threshold ? '#dc2626' : '#16a34a';
                           } else if (colDef?.invertSign && isFinite(num)) {
-                            color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : '#D6D3D1';
+                            color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : 'rgba(255,255,255,0.85)';
                           }
                         }
                         return (
                           <td key={ci} style={{
-                            ...tdBase, background: '#1C1917',
+                            ...tdBase, background: accentBg,
                             fontWeight: 700, fontSize: 11,
                             color,
-                            borderTop: '2px solid #44403C',
+                            borderTop: '2px solid rgba(0,0,0,0.15)',
                             borderBottomRightRadius: ci === totalVals.length - 1 ? 8 : undefined,
                           }}>
                             {v}
