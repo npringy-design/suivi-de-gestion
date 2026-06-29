@@ -177,11 +177,12 @@ const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-
     return val && val > 0 ? String(val).replace('.', ',') : '';
   };
 
-  const setTauxCible = (cat: SalaryCategory, raw: string) => {
+  const setTauxCible = (mi: number, cat: SalaryCategory, raw: string) => {
+    // Accepte virgule ou point comme séparateur décimal
     const val = parseFloat(raw.replace(',', '.')) || 0;
-    const currentConfig = getCurrentConfig(selectedMonthIndex);
+    const currentConfig = getCurrentConfig(mi);
     const tauxCibles = { ...(currentConfig.tauxCibles ?? {}), [cat]: val };
-    updateSalariesConfig(selectedMonthIndex, { ...currentConfig, tauxCibles });
+    updateSalariesConfig(mi, { ...currentConfig, tauxCibles });
   };
 
   const propagateTauxCibles = () => {
@@ -193,30 +194,24 @@ const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-
     }
   };
 
-  const renderTauxHorairesTable = () => {
-    const categories = CATEGORIES_LIST;
+  // Valeur à afficher dans le tableau : manuelle si saisie, sinon calculée depuis bulletins
+  const getDisplayTaux = (mi: number, cat: SalaryCategory): number => {
+    const manual = data[mi]?.salariesConfig?.tauxCibles?.[cat];
+    if (manual && manual > 0) return manual;
+    return getAverageForCategory(mi, cat);
+  };
 
+  const renderTauxHorairesTable = () => {
     return (
       <>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '12px 24px', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1px solid #e2e8f0' }}>
             <label htmlFor="config-salaires-month" style={{ fontSize: 14, fontWeight: 700, color: '#475569' }}>Mois en cours :</label>
-            <select 
+            <select
               id="config-salaires-month"
-              value={selectedMonthIndex} 
+              value={selectedMonthIndex}
               onChange={e => setSelectedMonthIndex(parseInt(e.target.value))}
-              style={{ 
-                padding: '8px 16px', 
-                borderRadius: 8, 
-                border: '1px solid #cbd5e1', 
-                background: '#f8fafc',
-                fontSize: 15,
-                fontWeight: 700,
-                color: NAV,
-                outline: 'none',
-                cursor: 'pointer',
-                boxShadow: 'inset 0 1px 2px rgba(0,0,0,.05)'
-              }}
+              style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 15, fontWeight: 700, color: NAV, outline: 'none', cursor: 'pointer', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.05)' }}
             >
               {MONTHS.map((m, idx) => (
                 <option key={m} value={idx}>{m}</option>
@@ -226,145 +221,101 @@ const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-
         </div>
 
         <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.04)', marginBottom: 32 }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: NAV, textTransform: 'uppercase', letterSpacing: '.03em' }}>
-              Configuration Taux Horaires
-            </h2>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: NAV, textTransform: 'uppercase', letterSpacing: '.03em' }}>
+                Configuration Taux Horaires
+              </h2>
+              <p style={{ margin: '4px 0 0', fontSize: 11, color: '#64748b' }}>
+                Saisir manuellement le taux €/h par niveau et par mois (virgule ou point acceptés). Si vide, le taux calculé depuis les bulletins est utilisé.
+              </p>
+            </div>
+            <button
+              onClick={propagateTauxCibles}
+              style={{ background: '#f59e0b', color: '#1c1917', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 11, fontWeight: 800, cursor: 'pointer', letterSpacing: '.02em', whiteSpace: 'nowrap' }}
+            >
+              Appliquer à tous les mois →
+            </button>
           </div>
           <div style={{ overflowX: 'auto', padding: '20px' }}>
             <table style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', maxWidth: '1000px' }}>
-            <thead>
-              <tr>
-                <th style={{ ...thStyle, background: 'transparent', border: 'none' }}></th>
-                {categories.map(cat => (
-                  <th key={cat.id} style={{ ...thStyle, background: '#fce4d6', color: '#9a3412' }}>{cat.label}</th>
+              <thead>
+                <tr>
+                  <th style={{ ...thStyle, background: 'transparent', border: 'none' }}></th>
+                  {CATEGORIES_LIST.map(cat => (
+                    <th key={cat.id} style={{ ...thStyle, background: '#fce4d6', color: '#9a3412' }}>{cat.label}</th>
+                  ))}
+                  <th style={{ ...thStyle, background: '#f8fafc', width: 100 }}>VERROUILLER</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MONTHS.map((month, i) => (
+                  <tr key={month}>
+                    <td style={{ ...tdStyle, background: i % 2 === 0 ? '#fff' : '#f1f5f9', fontWeight: 700, textAlign: 'center', color: '#64748b' }}>
+                      {month}
+                    </td>
+                    {CATEGORIES_LIST.map(cat => {
+                      const rawVal = getTauxCible(i, cat.id);
+                      const hasManual = rawVal !== '';
+                      const calculated = getAverageForCategory(i, cat.id);
+                      return (
+                        <td key={cat.id} style={{ ...tdStyle, padding: '4px 6px', background: hasManual ? '#fefce8' : '#fffef0' }}>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={rawVal}
+                            onChange={e => setTauxCible(i, cat.id, e.target.value)}
+                            placeholder={calculated > 0 ? calculated.toFixed(2).replace('.', ',') : '—'}
+                            style={{
+                              ...inputStyle,
+                              border: hasManual ? '2px solid #f59e0b' : '1px solid #e2e8f0',
+                              borderRadius: 6,
+                              padding: '5px 8px',
+                              background: 'transparent',
+                              color: hasManual ? '#92400e' : '#94a3b8',
+                              fontWeight: hasManual ? 700 : 400,
+                            }}
+                          />
+                          {!hasManual && calculated > 0 && (
+                            <div style={{ fontSize: 9, color: '#94a3b8', textAlign: 'center', marginTop: 2 }}>
+                              calc. : {calculated.toFixed(2).replace('.', ',')} €
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td style={{ ...tdStyle, background: i % 2 === 0 ? '#fff' : '#f1f5f9' }}>
+                      <input
+                        type="checkbox"
+                        checked={isMonthLocked(i)}
+                        onChange={() => toggleLock(i)}
+                        style={{ cursor: 'pointer', width: 16, height: 16, accentColor: '#ef4444' }}
+                      />
+                    </td>
+                  </tr>
                 ))}
-                <th style={{ ...thStyle, background: '#f8fafc', width: '100px' }}>VERROUILLER</th>
-              </tr>
-            </thead>
-            <tbody>
-              {MONTHS.map((month, i) => (
-                <tr key={month}>
-                  <td style={{ ...tdStyle, background: i % 2 === 0 ? '#fff' : '#f1f5f9', fontWeight: 700, textAlign: 'center', color: '#64748b' }}>
-                    {month}
-                  </td>
-                  {categories.map(cat => {
-                    const avg = getAverageForCategory(i, cat.id);
+                <tr>
+                  <td style={{ ...tdStyle, background: '#fef08a', fontWeight: 800, color: '#854d0e' }}>MOYENNE</td>
+                  {CATEGORIES_LIST.map(cat => {
+                    let total = 0;
+                    let count = 0;
+                    MONTHS.forEach((_, idx) => {
+                      const v = getDisplayTaux(idx, cat.id);
+                      if (v > 0) { total += v; count++; }
+                    });
+                    const avg = count > 0 ? total / count : 0;
                     return (
-                      <td key={cat.id} style={{ ...tdStyle, background: '#fffef0', fontWeight: 600, color: '#475569' }}>
+                      <td key={cat.id} style={{ ...tdStyle, background: '#fef08a', fontWeight: 800 }}>
                         {avg > 0 ? formatCurrency(avg) : '-'}
                       </td>
                     );
                   })}
-                  <td style={{ ...tdStyle, background: i % 2 === 0 ? '#fff' : '#f1f5f9' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={isMonthLocked(i)} 
-                      onChange={() => toggleLock(i)}
-                      style={{ cursor: 'pointer', width: 16, height: 16, accentColor: '#ef4444' }}
-                    />
-                  </td>
+                  <td style={{ ...tdStyle, background: '#fef08a' }}></td>
                 </tr>
-              ))}
-              <tr>
-                <td style={{ ...tdStyle, background: '#fef08a', fontWeight: 800, color: '#854d0e' }}>MOYENNE</td>
-                {categories.map(cat => {
-                  let total = 0;
-                  let count = 0;
-                  MONTHS.forEach((m, idx) => {
-                    const avg = getAverageForCategory(idx, cat.id);
-                    if (avg > 0) {
-                      total += avg;
-                      count += 1;
-                    }
-                  });
-                  const overallAvg = count > 0 ? total / count : 0;
-                  return (
-                    <td key={cat.id} style={{ ...tdStyle, background: '#fef08a', fontWeight: 800 }}>
-                      {overallAvg > 0 ? formatCurrency(overallAvg) : '-'}
-                    </td>
-                  );
-                })}
-                <td style={{ ...tdStyle, background: '#fef08a' }}></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ── Taux horaires cibles ── */}
-      <div style={{ background: '#fff', borderRadius: 12, border: '2px solid #f59e0b', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.04)', marginBottom: 32 }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #fde68a', background: '#fefce8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.03em' }}>
-              Taux Horaires Cibles (€/h)
-            </h2>
-            <p style={{ margin: '4px 0 0', fontSize: 11, color: '#b45309' }}>
-              Saisir le coût horaire réel chargé par niveau. Ces taux remplacent le calcul automatique depuis les bulletins de paie.
-            </p>
+              </tbody>
+            </table>
           </div>
-          <button
-            onClick={propagateTauxCibles}
-            style={{ background: '#f59e0b', color: '#1c1917', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 11, fontWeight: 800, cursor: 'pointer', letterSpacing: '.02em' }}
-          >
-            Appliquer à tous les mois →
-          </button>
         </div>
-        <div style={{ padding: 20 }}>
-          <table style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', maxWidth: '900px' }}>
-            <thead>
-              <tr>
-                <th style={{ ...thStyle, background: 'transparent', border: 'none', width: 120 }}>MOIS</th>
-                {CATEGORIES_LIST.map(cat => (
-                  <th key={cat.id} style={{ ...thStyle, background: '#fce4d6', color: '#9a3412' }}>{cat.label}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {MONTHS.map((month, mi) => (
-                <tr key={month} style={{ background: mi === selectedMonthIndex ? '#eff6ff' : mi % 2 === 0 ? '#fff' : '#f8fafc' }}>
-                  <td style={{ ...tdStyle, fontWeight: mi === selectedMonthIndex ? 800 : 600, color: mi === selectedMonthIndex ? '#1e40af' : '#64748b' }}>
-                    {month}
-                  </td>
-                  {CATEGORIES_LIST.map(cat => {
-                    const calculated = getAverageForCategory(mi, cat.id);
-                    const cibleRaw = getTauxCible(mi, cat.id);
-                    const cibleVal = parseFloat(cibleRaw.replace(',', '.')) || 0;
-                    const isActive = cibleVal > 0;
-                    return (
-                      <td key={cat.id} style={{ ...tdStyle, padding: '4px 6px', position: 'relative' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <input
-                            value={mi === selectedMonthIndex ? cibleRaw : (getTauxCible(mi, cat.id) || '')}
-                            onChange={e => mi === selectedMonthIndex ? setTauxCible(cat.id, e.target.value) : undefined}
-                            readOnly={mi !== selectedMonthIndex}
-                            placeholder={calculated > 0 ? calculated.toFixed(2).replace('.', ',') : '—'}
-                            style={{
-                              ...inputStyle,
-                              border: isActive ? '2px solid #f59e0b' : '1px solid #e2e8f0',
-                              borderRadius: 6,
-                              padding: '4px 6px',
-                              background: isActive ? '#fefce8' : '#f8fafc',
-                              color: isActive ? '#92400e' : '#94a3b8',
-                              fontWeight: isActive ? 700 : 400,
-                              cursor: mi !== selectedMonthIndex ? 'default' : 'text',
-                            }}
-                          />
-                          {calculated > 0 && (
-                            <span style={{ fontSize: 9, color: '#94a3b8', textAlign: 'center' }}>
-                              calculé : {calculated.toFixed(2).replace('.', ',')} €
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
       </>
     );
   };
