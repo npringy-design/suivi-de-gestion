@@ -38,6 +38,9 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { getValidAccessToken } from '@/services/supabaseAuth';
 import { getDashboardRowIndices } from '@/lib/utils';
+import { buildMonthRows } from '@/features/dashboard/dashboardRows';
+import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
+import { computeDashboardData } from '@/features/dashboard/dashboardCalculations';
 
 type IconComponent = ComponentType<{ className?: string }>;
 
@@ -630,22 +633,28 @@ export default function Home() {
 
   const payrollCostBubble = useMemo(() => {
     const monthData = data?.[month];
-    const dashboard = monthData?.dashboard || {};
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const now = new Date();
     const isSelectedCurrentMonth = now.getFullYear() === year && now.getMonth() === month;
     const referenceDay = isSelectedCurrentMonth ? Math.min(now.getDate(), daysInMonth) : daysInMonth;
 
-    const parseValue = parseMoneyValue;
+    // Calcule les données complètes du mois (cols 87/89 sont calculées, jamais stockées en brut)
+    const rows = buildMonthRows(year, month);
+    const dynamicColumns = buildDynamicColumns(monthData?.salariesConfig?.categories, {} as Record<number, string>);
+    const computed = computeDashboardData(
+      monthData?.dashboard ?? {},
+      rows,
+      dynamicColumns,
+      monthData?.salariesConfig?.categories,
+      monthData?.personnelSchema,
+    );
 
     const dayStats = (day: number) => {
       const rowIndex = dashboardRowIndices[day];
       if (typeof rowIndex !== 'number') return { ca: 0, cost: 0 };
       const rowKey = String(rowIndex) + '-';
-      const ca = [17, 18, 19, 20].reduce((sum, col) => sum + parseValue(dashboard[rowKey + String(col)]), 0);
-      const costFromComplete = parseValue(dashboard[rowKey + '87']);
-      const ratioFromComplete = parseValue(dashboard[rowKey + '89']);
-      const cost = costFromComplete > 0 ? costFromComplete : (ca > 0 && ratioFromComplete > 0 ? (ca * ratioFromComplete) / 100 : 0);
+      const ca = [17, 18, 19, 20].reduce((sum, col) => sum + parseMoneyValue(computed[rowKey + String(col)]), 0);
+      const cost = parseMoneyValue(computed[rowKey + '87']);
       return { ca, cost };
     };
 
