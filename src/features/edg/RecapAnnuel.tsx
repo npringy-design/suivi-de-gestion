@@ -293,7 +293,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(g(10))),
           fe(g(10) > 0 ? g(3) / g(10) : 0),
           String(cumulCvts),
-          fp(caN1 > 0 ? ((g(3) - caN1) / caN1) * 100 : 0),
+          '—',
         ];
       }
 
@@ -390,10 +390,12 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       case 'resultats': return [
         ca > 0 ? fe(ca) : '0,00 €',
         '—',
-        fp(varP),
-        fe(ca - caN1),
+        ca > 0 ? fp(varP) : '—',
+        ca > 0 ? fe(ca - caN1) : '—',
         '—',
-        String(Math.round(g(32))), fe(g(30)), '—',
+        ca > 0 ? String(Math.round(g(32))) : '—',
+        ca > 0 ? fe(g(30)) : '—',
+        '—',
         '0,00 €', '0,00 €', '0,00 €', fe(g(58)),
       ];
 
@@ -433,7 +435,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(totalCvtsJour)),
           fe(totalCvtsJour > 0 ? totalCaJour / totalCvtsJour : 0),
           String(totalCumulCvts),
-          fp(totalVarBudget),
+          '—',
         ];
       }
 
