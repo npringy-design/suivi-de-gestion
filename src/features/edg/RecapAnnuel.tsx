@@ -457,47 +457,52 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
       // ── 22 totaux ───────────────────────────────────────────────────────────
       case 'realise': {
+        // Réalisé YTD (mois avec données uniquement)
+        const hasData = (mi: number) => caByMonth[mi] > 0;
         const totalCaMidi   = s(18);
         const totalCaSoir   = s(19);
         const totalCaJour   = s(21);
-        const totalBudMidi  = s(0);
-        const totalBudSoir  = s(1);
-        const totalBudJour  = s(3);
         const totalCvtsMidi = s(25);
         const totalCvtsSoir = s(27);
         const totalCvtsJour = s(29);
-        const totalBudCvtsMidi = s(6);
-        const totalBudCvtsSoir = s(8);
-        const totalBudCvtsJour = s(10);
-        const ecartCaJourPct   = totalBudJour    > 0 ? ((totalCaJour   - totalBudJour)    / totalBudJour)    * 100 : 0;
-        const ecartCvtsJourPct = totalBudCvtsJour > 0 ? ((totalCvtsJour - totalBudCvtsJour) / totalBudCvtsJour) * 100 : 0;
+        // Budget YTD = uniquement les mois qui ont du réalisé (comparaison à date)
+        const ytd = (col: number) => Array.from({ length: 12 }, (_, mi) => hasData(mi) ? getVal(mi, col) : 0).reduce((a, b) => a + b, 0);
+        const totalBudMidiYtd   = ytd(0);
+        const totalBudSoirYtd   = ytd(1);
+        const totalBudJourYtd   = ytd(3);
+        const totalBudCvtsMidiYtd = ytd(6);
+        const totalBudCvtsSoirYtd = ytd(8);
+        const totalBudCvtsJourYtd = ytd(10);
+        const ecartCaJourPct   = totalBudJourYtd    > 0 ? ((totalCaJour   - totalBudJourYtd)    / totalBudJourYtd)    * 100 : 0;
+        const ecartCvtsJourPct = totalBudCvtsJourYtd > 0 ? ((totalCvtsJour - totalBudCvtsJourYtd) / totalBudCvtsJourYtd) * 100 : 0;
+        // Tendance et budget annuel complet (projection fin d'année)
         const tBudgetAnnuel     = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
         const tBudgetCvtsAnnuel = Array.from({ length: 12 }, (_, i) => getVal(i, 10)).reduce((a, b) => a + b, 0);
-        const tCumulEcartCA   = Array.from({ length: 12 }, (_, i) => caByMonth[i] > 0 ? getVal(i, 22) : 0).reduce((a, b) => a + b, 0);
-        const tCumulEcartCvts = Array.from({ length: 12 }, (_, i) => caByMonth[i] > 0 ? (getVal(i, 29) - getVal(i, 10)) : 0).reduce((a, b) => a + b, 0);
-        const tTendanceCA   = tBudgetAnnuel     + tCumulEcartCA;
+        const tCumulEcartCA   = Array.from({ length: 12 }, (_, i) => hasData(i) ? getVal(i, 22) : 0).reduce((a, b) => a + b, 0);
+        const tCumulEcartCvts = Array.from({ length: 12 }, (_, i) => hasData(i) ? (getVal(i, 29) - getVal(i, 10)) : 0).reduce((a, b) => a + b, 0);
+        const tTendanceCA   = tBudgetAnnuel   + tCumulEcartCA;
         const tTendanceCvts = tBudgetCvtsAnnuel + tCumulEcartCvts;
         return [
           // CA HT — 10 valeurs
           fe(s(17)),
           fe(totalCaMidi),
-          fe(totalCaMidi - totalBudMidi),
+          fe(totalCaMidi - totalBudMidiYtd),
           fe(totalCaSoir),
-          fe(totalCaSoir - totalBudSoir),
+          fe(totalCaSoir - totalBudSoirYtd),
           fe(totalCaJour),
-          fe(totalCaJour - totalBudJour),
-          fp(ecartCaJourPct),
+          fe(totalCaJour - totalBudJourYtd),   // écart vs budget à date
+          fp(ecartCaJourPct),                  // % vs budget à date
           fe(totalCaJour),
           fe(tTendanceCA),
           fp(tBudgetAnnuel > 0 ? (tCumulEcartCA / tBudgetAnnuel) * 100 : 0),
           // COUVERTS — 11 valeurs
           String(Math.round(totalCvtsMidi)),
-          String(Math.round(totalCvtsMidi - totalBudCvtsMidi)),
+          String(Math.round(totalCvtsMidi - totalBudCvtsMidiYtd)),
           String(Math.round(totalCvtsSoir)),
-          String(Math.round(totalCvtsSoir - totalBudCvtsSoir)),
+          String(Math.round(totalCvtsSoir - totalBudCvtsSoirYtd)),
           String(Math.round(totalCvtsJour)),
           fe(totalCvtsJour > 0 ? totalCaJour / totalCvtsJour : 0),
-          String(Math.round(totalCvtsJour - totalBudCvtsJour)),
+          String(Math.round(totalCvtsJour - totalBudCvtsJourYtd)),
           fp(ecartCvtsJourPct),
           String(Math.round(totalCvtsJour)),
           String(Math.round(tTendanceCvts)),
