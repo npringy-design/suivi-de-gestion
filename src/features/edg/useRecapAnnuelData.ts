@@ -38,6 +38,8 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
         dynamicColumns,
         monthData?.salariesConfig?.categories,
         schema,
+        undefined,
+        monthData?.salariesConfig?.tauxCibles,
       );
       monthCalcData.push(calculatedData);
       monthTotalIndices.push(rows.findIndex(r => r.type === 'month_total'));

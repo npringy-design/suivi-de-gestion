@@ -346,7 +346,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       n1Rows.push({ type: 'month_total', label: '' });
       nMinus1Data = { cellData: mergedCellData, rows: n1Rows };
     }
-    return computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, globalData[month]?.personnelSchema, nMinus1Data);
+    return computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, globalData[month]?.personnelSchema, nMinus1Data, globalData[month]?.salariesConfig?.tauxCibles);
   }, [cellData, globalData[month]?.salariesConfig, globalData[month]?.personnelSchema, allData[year - 1]?.[month], allData[month === 11 ? year : year - 1]?.[month === 11 ? 0 : month + 1]]);
 
   const todayMarker = useMemo(() => {

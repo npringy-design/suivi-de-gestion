@@ -647,6 +647,8 @@ export default function Home() {
       dynamicColumns,
       monthData?.salariesConfig?.categories,
       monthData?.personnelSchema,
+      undefined,
+      monthData?.salariesConfig?.tauxCibles,
     );
 
     const dayStats = (day: number) => {

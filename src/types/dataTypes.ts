@@ -177,6 +177,7 @@ export type SalarieRow = {
 export type MonthDataSalariesConfig = {
   locked: boolean;
   categories: Record<string, SalarieRow[]>;
+  tauxCibles?: Record<string, number>; // taux horaire cible €/h par catégorie (cadre, maitrise, niv12, niv3, apprenti)
 };
 
 export type PersonnelSchema = 'global' | 'cuisine_salle';

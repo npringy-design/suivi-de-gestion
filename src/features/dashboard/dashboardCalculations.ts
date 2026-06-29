@@ -137,6 +137,7 @@ export function computeDashboardData(
   salariesConfig: Record<string, SalarieRow[]> | undefined,
   personnelSchema?: PersonnelSchema,
   nMinus1Data?: { cellData: Record<string, string>; rows: DashboardRow[] },
+  tauxCibles?: Record<string, number>,
 ): Record<string, string> {
     const data: Record<string, string> = { ...cellData };
     const isGlobalSchema = personnelSchema === 'global';
@@ -356,31 +357,44 @@ export function computeDashboardData(
         let coutGlobalProj = 0;
         let hasProjData = false;
         
-        const getAvgRate = (category: string, department: 'cuisine' | 'salle') => {
+        // Taux moyen pour un département donné, avec fallback sur tous les employés
+        // si aucun employé n'est enregistré dans ce département
+        const getAvgRate = (category: string, department?: 'cuisine' | 'salle') => {
           if (!salariesConfig) return 0;
           const rows = salariesConfig[category] || [];
-          return averagePayrollRate(rows, department, category);
+          if (!department) return averagePayrollRate(rows, undefined, category);
+          const rate = averagePayrollRate(rows, department, category);
+          // Fallback : si aucun employé dans ce département, utiliser tous les employés
+          return rate > 0 ? rate : averagePayrollRate(rows, undefined, category);
+        };
+
+        // Taux effectif : taux cible saisi manuellement en priorité, sinon taux calculé depuis bulletins
+        const getRate = (category: string, department?: 'cuisine' | 'salle'): number => {
+          const cible = tauxCibles?.[category];
+          if (cible && cible > 0) return cible;
+          return getAvgRate(category, department);
         };
 
         const projRates = [
-          getAvgRate('cadre', 'cuisine'),
-          getAvgRate('cadre', 'salle'),
-          getAvgRate('maitrise', 'cuisine'),
-          getAvgRate('maitrise', 'salle'),
-          getAvgRate('niv12', 'cuisine'),
-          getAvgRate('niv12', 'salle'),
-          getAvgRate('niv3', 'cuisine'),
-          getAvgRate('niv3', 'salle'),
-          getAvgRate('apprenti', 'cuisine'),
-          getAvgRate('apprenti', 'salle')
+          getRate('cadre', 'cuisine'),
+          getRate('cadre', 'salle'),
+          getRate('maitrise', 'cuisine'),
+          getRate('maitrise', 'salle'),
+          getRate('niv12', 'cuisine'),
+          getRate('niv12', 'salle'),
+          getRate('niv3', 'cuisine'),
+          getRate('niv3', 'salle'),
+          getRate('apprenti', 'cuisine'),
+          getRate('apprenti', 'salle'),
         ];
 
+        // Mode global : pas de filtre par département — tous les employés de la catégorie
         const projGlobalRates = [
-          getAvgRate('cadre', 'cuisine'),
-          getAvgRate('maitrise', 'cuisine'),
-          getAvgRate('niv12', 'cuisine'),
-          getAvgRate('niv3', 'cuisine'),
-          getAvgRate('apprenti', 'cuisine'),
+          getRate('cadre'),
+          getRate('maitrise'),
+          getRate('niv12'),
+          getRate('niv3'),
+          getRate('apprenti'),
         ];
 
         const isGlobalSchema = personnelSchema === 'global';

@@ -164,15 +164,38 @@ const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-
     fontFamily: 'inherit',
   };
 
+  const CATEGORIES_LIST: Array<{ id: SalaryCategory; label: string }> = [
+    { id: 'cadre', label: 'CADRE' },
+    { id: 'maitrise', label: 'MAITRISE' },
+    { id: 'niv12', label: 'NIV I ET II' },
+    { id: 'niv3', label: 'NIV III' },
+    { id: 'apprenti', label: 'APPRENTI' },
+  ];
+
+  const getTauxCible = (monthIdx: number, cat: SalaryCategory): string => {
+    const val = data[monthIdx]?.salariesConfig?.tauxCibles?.[cat];
+    return val && val > 0 ? String(val).replace('.', ',') : '';
+  };
+
+  const setTauxCible = (cat: SalaryCategory, raw: string) => {
+    const val = parseFloat(raw.replace(',', '.')) || 0;
+    const currentConfig = getCurrentConfig(selectedMonthIndex);
+    const tauxCibles = { ...(currentConfig.tauxCibles ?? {}), [cat]: val };
+    updateSalariesConfig(selectedMonthIndex, { ...currentConfig, tauxCibles });
+  };
+
+  const propagateTauxCibles = () => {
+    const ref = getCurrentConfig(selectedMonthIndex).tauxCibles ?? {};
+    for (let mi = 0; mi <= 11; mi++) {
+      if (mi === selectedMonthIndex) continue;
+      const cfg = getCurrentConfig(mi);
+      updateSalariesConfig(mi, { ...cfg, tauxCibles: { ...ref } });
+    }
+  };
+
   const renderTauxHorairesTable = () => {
-    const categories: Array<{ id: SalaryCategory; label: string }> = [
-      { id: 'cadre', label: 'CADRE' },
-      { id: 'maitrise', label: 'MAITRISE' },
-      { id: 'niv12', label: 'NIV I ET II' },
-      { id: 'niv3', label: 'NIV III' },
-      { id: 'apprenti', label: 'APPRENTI' }
-    ];
-    
+    const categories = CATEGORIES_LIST;
+
     return (
       <>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
@@ -264,6 +287,80 @@ const formatCurrency = (v: number) => v === 0 ? '-' : new Intl.NumberFormat('fr-
                 })}
                 <td style={{ ...tdStyle, background: '#fef08a' }}></td>
               </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Taux horaires cibles ── */}
+      <div style={{ background: '#fff', borderRadius: 12, border: '2px solid #f59e0b', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.04)', marginBottom: 32 }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #fde68a', background: '#fefce8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.03em' }}>
+              Taux Horaires Cibles (€/h)
+            </h2>
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: '#b45309' }}>
+              Saisir le coût horaire réel chargé par niveau. Ces taux remplacent le calcul automatique depuis les bulletins de paie.
+            </p>
+          </div>
+          <button
+            onClick={propagateTauxCibles}
+            style={{ background: '#f59e0b', color: '#1c1917', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 11, fontWeight: 800, cursor: 'pointer', letterSpacing: '.02em' }}
+          >
+            Appliquer à tous les mois →
+          </button>
+        </div>
+        <div style={{ padding: 20 }}>
+          <table style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', maxWidth: '900px' }}>
+            <thead>
+              <tr>
+                <th style={{ ...thStyle, background: 'transparent', border: 'none', width: 120 }}>MOIS</th>
+                {CATEGORIES_LIST.map(cat => (
+                  <th key={cat.id} style={{ ...thStyle, background: '#fce4d6', color: '#9a3412' }}>{cat.label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {MONTHS.map((month, mi) => (
+                <tr key={month} style={{ background: mi === selectedMonthIndex ? '#eff6ff' : mi % 2 === 0 ? '#fff' : '#f8fafc' }}>
+                  <td style={{ ...tdStyle, fontWeight: mi === selectedMonthIndex ? 800 : 600, color: mi === selectedMonthIndex ? '#1e40af' : '#64748b' }}>
+                    {month}
+                  </td>
+                  {CATEGORIES_LIST.map(cat => {
+                    const calculated = getAverageForCategory(mi, cat.id);
+                    const cibleRaw = getTauxCible(mi, cat.id);
+                    const cibleVal = parseFloat(cibleRaw.replace(',', '.')) || 0;
+                    const isActive = cibleVal > 0;
+                    return (
+                      <td key={cat.id} style={{ ...tdStyle, padding: '4px 6px', position: 'relative' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <input
+                            value={mi === selectedMonthIndex ? cibleRaw : (getTauxCible(mi, cat.id) || '')}
+                            onChange={e => mi === selectedMonthIndex ? setTauxCible(cat.id, e.target.value) : undefined}
+                            readOnly={mi !== selectedMonthIndex}
+                            placeholder={calculated > 0 ? calculated.toFixed(2).replace('.', ',') : '—'}
+                            style={{
+                              ...inputStyle,
+                              border: isActive ? '2px solid #f59e0b' : '1px solid #e2e8f0',
+                              borderRadius: 6,
+                              padding: '4px 6px',
+                              background: isActive ? '#fefce8' : '#f8fafc',
+                              color: isActive ? '#92400e' : '#94a3b8',
+                              fontWeight: isActive ? 700 : 400,
+                              cursor: mi !== selectedMonthIndex ? 'default' : 'text',
+                            }}
+                          />
+                          {calculated > 0 && (
+                            <span style={{ fontSize: 9, color: '#94a3b8', textAlign: 'center' }}>
+                              calculé : {calculated.toFixed(2).replace('.', ',')} €
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
