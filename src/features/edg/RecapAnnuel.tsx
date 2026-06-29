@@ -404,19 +404,19 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
       // ── 12 valeurs ──────────────────────────────────────────────────────────
       case 'resultats': {
-        const budgetCA   = g(3);
-        const cumulCA    = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i]).reduce((a, b) => a + b, 0);
-        const cumulCvts  = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 29))).reduce((a, b) => a + b, 0);
-        const tmAnnuel   = cumulCvts > 0 ? cumulCA / cumulCvts : 0;
+        if (ca === 0) return Array(12).fill('—');
+        const budgetCA  = g(3);
+        const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i]).reduce((a, b) => a + b, 0);
+        const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 29))).reduce((a, b) => a + b, 0);
         return [
-          ca > 0 ? fe(ca) : '0,00 €',
+          fe(ca),
           fe(budgetCA),
-          ca > 0 ? fp(varP) : '—',
-          ca > 0 ? fe(ca - caN1) : '—',
-          ca > 0 ? fe(ca - budgetCA) : '—',
-          ca > 0 ? String(Math.round(g(32))) : '—',
-          ca > 0 ? fe(g(30)) : '—',
-          cumulCvts > 0 ? fe(tmAnnuel) : '—',
+          fp(varP),
+          fe(ca - caN1),
+          fe(ca - budgetCA),
+          String(Math.round(g(32))),
+          fe(g(30)),
+          cumulCvts > 0 ? fe(cumulCA / cumulCvts) : '—',
           '0,00 €', '0,00 €', '0,00 €', fe(g(58)),
         ];
       }
@@ -558,20 +558,25 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ...CONTRATS_FG.map(c => fe(c.montant)),
       ];
 
-      // ── 12 totaux ───────────────────────────────────────────────────────────
+      // ── 12 totaux (YTD uniquement — mois avec données) ──────────────────────
       case 'resultats': {
-        const totalBudgetCA = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
-        const totalCvtsRes  = s(29);
-        const tmTotal       = totalCvtsRes > 0 ? totalCA / totalCvtsRes : 0;
+        const hasData = (mi: number) => caByMonth[mi] > 0;
+        // Budget YTD = seulement les mois réalisés (comparaison à date)
+        const totalBudgetCA = Array.from({ length: 12 }, (_, i) => hasData(i) ? getVal(i, 3) : 0).reduce((a, b) => a + b, 0);
+        // N-1 YTD = seulement les mois réalisés
+        const totalCaN1Ytd  = Array.from({ length: 12 }, (_, i) => hasData(i) ? (CA_N1_BY_MONTH[i] ?? 0) : 0).reduce((a, b) => a + b, 0);
+        const totalVarPYtd  = totalCaN1Ytd > 0 ? ((totalCA - totalCaN1Ytd) / totalCaN1Ytd) * 100 : 0;
+        const totalCvtsRes  = Array.from({ length: 12 }, (_, i) => hasData(i) ? Math.round(getVal(i, 29)) : 0).reduce((a, b) => a + b, 0);
+        const totalCvtsJour = Array.from({ length: 12 }, (_, i) => hasData(i) ? Math.round(getVal(i, 32)) : 0).reduce((a, b) => a + b, 0);
         return [
           totalCA > 0 ? fe(totalCA) : '0,00 €',
           fe(totalBudgetCA),
-          fp(totalVarP),
-          fe(totalCA - CA_N1),
+          fp(totalVarPYtd),
+          fe(totalCA - totalCaN1Ytd),
           fe(totalCA - totalBudgetCA),
-          String(Math.round(s(32))),
+          String(totalCvtsJour),
           totalCvtsRes > 0 ? fe(totalCA / totalCvtsRes) : '—',
-          totalCvtsRes > 0 ? fe(tmTotal) : '—',
+          totalCvtsRes > 0 ? fe(totalCA / totalCvtsRes) : '—',
           '0,00 €', '0,00 €', '0,00 €', fe(s(58)),
         ];
       }
