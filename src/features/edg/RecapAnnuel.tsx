@@ -1,8 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import {
-  CartesianGrid, Cell, Line, LineChart, Pie, PieChart,
-  ResponsiveContainer, Tooltip, XAxis, YAxis,
-} from 'recharts';
+import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 
 import { useData } from '@/contexts/DataContext';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
@@ -797,7 +794,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       </header>
 
       {/* TABLEAU */}
-      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: '16px 20px 20px 20px', display: 'flex', flexDirection: 'column' }}>
         {(() => {
           const renderTable = (
             cols: ColDef[],
@@ -815,8 +812,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
               else grps.push({ g: c.g, count: 1 });
             });
             return (
-              <div key={label} style={{ marginBottom: 16, overflow: 'auto' }}>
-                <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff' }}>
+              <div key={label} style={{ marginBottom: 16, overflow: 'auto', width: '100%' }}>
+                <table style={{ borderCollapse: 'collapse', background: '#fff', width: '100%' }}>
                   <thead>
                     <tr style={{ height: 30 }}>
                       <th rowSpan={3} style={{ ...thBase, background: BG_DATE, color: '#fff', minWidth: 82, left: 0, top: 0, zIndex: 60, borderRight: '3px solid #475569', borderBottom: '3px solid #475569' }}>
@@ -922,15 +919,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           };
 
           if (activeTab === 'budget') {
-            const lineData = MONTHS_FULL.map((_, mi) => {
-              const monthCA = getVal(mi, 3);
-              const cumul = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
-              return {
-                mois: MONTHS_SHORT_LABELS[mi],
-                'CA mensuel': monthCA > 0 ? Math.round(monthCA) : null,
-                'Cumul CA':   cumul  > 0 ? Math.round(cumul)  : null,
-              };
-            });
             const totalCvtsMidi = sumCol(6);
             const totalCvtsSoir = sumCol(8);
             const totalCvts = totalCvtsMidi + totalCvtsSoir;
@@ -949,33 +937,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                   getTotalValues(activeSection.key),
                 )}
                 <div style={{ display: 'flex', gap: 14, marginTop: 4, flexWrap: 'wrap' }}>
-                  {/* Ligne : Évolution CA cumulé */}
-                  <div style={{ flex: 2, minWidth: 320, background: '#fff', borderRadius: 12, border: '1px solid #e4e8ef', padding: '14px 16px' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#1a202c', marginBottom: 2 }}>Évolution du CA cumulé</div>
-                    <div style={{ fontSize: 10.5, color: '#64748b', marginBottom: 12 }}>Budget {YEAR} — progression mensuelle</div>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <LineChart data={lineData} margin={{ top: 4, right: 16, bottom: 0, left: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f2f7" />
-                        <XAxis dataKey="mois" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} />
-                        <Tooltip
-                          formatter={(v) => [typeof v === 'number' ? fe(v) : '—', '']}
-                          labelStyle={{ fontSize: 11, fontWeight: 600 }}
-                          contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e4e8ef', boxShadow: '0 4px 12px rgba(0,0,0,.06)' }}
-                        />
-                        <Line type="monotone" dataKey="Cumul CA" stroke="#1a6fdb" strokeWidth={2.5} dot={{ fill: '#1a6fdb', r: 4, strokeWidth: 0 }} activeDot={{ r: 6, strokeWidth: 0 }} connectNulls={false} />
-                        <Line type="monotone" dataKey="CA mensuel" stroke="#93c5fd" strokeWidth={1.5} strokeDasharray="4 3" dot={false} connectNulls={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                    <div style={{ display: 'flex', gap: 16, marginTop: 8, paddingLeft: 4 }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
-                        <span style={{ width: 10, height: 3, borderRadius: 2, background: '#1a6fdb', display: 'inline-block' }} />Cumul CA
-                      </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
-                        <span style={{ width: 10, height: 2, borderRadius: 2, background: '#93c5fd', display: 'inline-block', borderTop: '2px dashed #93c5fd' }} />CA mensuel
-                      </span>
-                    </div>
-                  </div>
                   {/* Donut : Répartition des couverts */}
                   <div style={{ flex: 1, minWidth: 200, background: '#fff', borderRadius: 12, border: '1px solid #e4e8ef', padding: '14px 16px', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#1a202c', marginBottom: 2 }}>Répartition des couverts</div>
@@ -985,10 +946,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                         <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={72} paddingAngle={3} dataKey="value">
                           {pieData.map((_, idx) => <Cell key={idx} fill={PIE_COLORS[idx]} />)}
                         </Pie>
-                        <Tooltip
-                          formatter={(v, name) => [typeof v === 'number' ? new Intl.NumberFormat('fr-FR').format(v) : '—', String(name)]}
-                          contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e4e8ef' }}
-                        />
                       </PieChart>
                     </ResponsiveContainer>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>

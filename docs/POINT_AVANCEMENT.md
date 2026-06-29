@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 29/06/2026 (nettoyage RecapAnnuel)
+
+- RecapAnnuel : suppression du LineChart (lineData, CartesianGrid, XAxis, YAxis, Tooltip) ; import recharts réduit à Cell/Pie/PieChart/ResponsiveContainer ; tableau pleine largeur (borderCollapse collapse, width 100%, wrapper width 100%) ; conteneur principal flex-column. tsc OK.
+
 ## 29/06/2026 (graphiques Budget)
 
 - RecapAnnuel Budget : deux graphiques recharts ajoutés sous le tableau — LineChart "Évolution du CA cumulé" (cumul + CA mensuel en pointillés) et PieChart donut "Répartition des couverts" (Midi/Soir) avec tuiles % + nb couverts. Affiché uniquement sur l'onglet Budget. tsc OK.
