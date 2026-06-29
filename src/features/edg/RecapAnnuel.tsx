@@ -233,8 +233,24 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     getRealTotalHours, getProjTotalHours,
     sumRealLevel, sumProjLevel, sumRealTotal, sumProjTotal,
     sumCol, sumHoursCol,
+    getFgCategoryTotal, sumFgCategory,
     caByMonth, totalCA,
   } = useRecapAnnuelData(data, YEAR);
+
+  // Mapping ordonné des 11 catégories FG → [box, colGroup]
+  const FG_MAPPING: [number, number][] = [
+    [0, 0], // Entretien & Réparation
+    [1, 0], // Petit Matériel & Vaisselles
+    [2, 0], // Tenue du Personnel
+    [3, 0], // Animation
+    [0, 1], // Ecolab / Diversey
+    [1, 1], // HACCP Divers
+    [2, 1], // Matériel Bureau
+    [3, 1], // Frais de Transports
+    [0, 2], // Marketing Local
+    [2, 2], // Énergie
+    [3, 2], // Divers
+  ];
 
   // Détection schéma personnel (global = 5 cats unifiées, cuisine_salle = 10 cats)
   const personnelSchema = useMemo(() =>
@@ -365,8 +381,14 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         fmtHeures(g(91)),
         r(92),
         '—',
-        // TODO: brancher par catégorie FG (11 sous-catégories × 2 = 22 colonnes)
-        ...Array<string>(22).fill('—'),
+        // 11 catégories × 2 colonnes (Montant HT + % CA)
+        ...FG_MAPPING.flatMap(([box, colGroup]) => {
+          const montant = getFgCategoryTotal(mi, box, colGroup);
+          return [
+            montant > 0 ? fe(montant) : '—',
+            montant > 0 && ca > 0 ? `${((montant / ca) * 100).toFixed(2)} %` : '—',
+          ];
+        }),
         fgt > 0 ? fe(fgt) : '0,00 €',
         ca > 0 && fgt > 0 ? `${((fgt / ca) * 100).toFixed(2)} %` : '—',
         ...CONTRATS_FG.map(c => isJan ? fe(c.montant) : ''),
@@ -505,7 +527,14 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         fe(s(87)),
         fmtHeures(s(91)),
         '—', '—',
-        ...Array<string>(22).fill('—'),
+        // 11 catégories × 2 colonnes (Montant HT + % CA)
+        ...FG_MAPPING.flatMap(([box, colGroup]) => {
+          const montant = sumFgCategory(box, colGroup);
+          return [
+            montant > 0 ? fe(montant) : '—',
+            montant > 0 && totalCA > 0 ? `${((montant / totalCA) * 100).toFixed(2)} %` : '—',
+          ];
+        }),
         totalFgt > 0 ? fe(totalFgt) : '0,00 €',
         totalCA > 0 && totalFgt > 0 ? `${((totalFgt / totalCA) * 100).toFixed(2)} %` : '—',
         ...CONTRATS_FG.map(c => fe(c.montant)),

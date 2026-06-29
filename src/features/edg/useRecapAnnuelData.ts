@@ -143,6 +143,12 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
         }, 0)
       ).reduce((a, b) => a + b, 0);
 
+    const getFgCategoryTotal = (mi: number, box: number, colGroup: number): number =>
+      parseMoneyValue(monthCalcData[mi][`fg-total-${box}-${colGroup}`] ?? '0');
+
+    const sumFgCategory = (box: number, colGroup: number) =>
+      Array.from({ length: 12 }, (_, mi) => getFgCategoryTotal(mi, box, colGroup)).reduce((a, b) => a + b, 0);
+
     const caByMonth = Array.from({ length: 12 }, (_, mi) => getVal(mi, 21));
     const totalCA = caByMonth.reduce((s, v) => s + v, 0);
 
@@ -152,6 +158,7 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       getRealTotalHours, getProjTotalHours,
       sumRealLevel, sumProjLevel, sumRealTotal, sumProjTotal,
       sumCol, sumHoursCol,
+      getFgCategoryTotal, sumFgCategory,
       caByMonth, totalCA,
     };
   }, [data, year]);
