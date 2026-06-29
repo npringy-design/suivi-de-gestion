@@ -32,6 +32,7 @@ import {
   extractHistoricalFraisGeneraux,
   getHistoricalBudgetCell,
   getHistoricalBudgetRowValues,
+  detectBudgetColumnMap,
   getHistoricalCostMatterColumnMap,
   getHistoricalCostMatterValues,
   getHistoricalRealiseRowValues,
@@ -305,7 +306,8 @@ export function useDashboardImportHandlers({
         const range = { rowCount: sheet.rowCount, columnCount: sheet.columnCount };
         const costMatterColumnMap = getHistoricalCostMatterColumnMap(sheet, range);
         const payrollColumnMaps = getHistoricalPayrollColumnMaps(sheet, range);
-  
+        const budgetColMap = detectBudgetColumnMap(sheet);
+
         for (let rowNumber = 0; rowNumber <= range.rowCount - 1; rowNumber += 1) {
           const dateCell = getHistoricalBudgetCell(sheet, rowNumber, 0);
           const parsedDate = parseHistoricalBudgetCellDate(dateCell);
@@ -322,8 +324,8 @@ export function useDashboardImportHandlers({
           const day = parsedDate.getDate();
           const rowIndex = getDashboardRowIndexForDay(year, monthIndex, day);
           if (rowIndex < 0) continue;
-  
-          const values = getHistoricalBudgetRowValues(sheet, rowNumber);
+
+          const values = getHistoricalBudgetRowValues(sheet, rowNumber, budgetColMap);
 
           const couvertsMidi = values.couvertsMidi;
           const tmMidi = values.tmMidi;

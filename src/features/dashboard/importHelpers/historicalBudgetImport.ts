@@ -94,14 +94,53 @@ export const isHistoricalBudgetTotalRow = (sheet: Worksheet, rowNumber: number) 
   return label.includes('TOTAL') || label.includes('SEMAINE') || label.includes('CUMUL');
 };
 
-export const getHistoricalBudgetRowValues = (sheet: Worksheet, rowNumber: number) => {
+export type BudgetColumnMap = {
+  couvertsMidi: number;
+  tmMidi: number;
+  couvertsSoir: number;
+  tmSoir: number;
+};
+
+const DEFAULT_BUDGET_COL_MAP: BudgetColumnMap = { couvertsMidi: 11, tmMidi: 12, couvertsSoir: 15, tmSoir: 16 };
+
+const normalizeHeader = (v: unknown) =>
+  String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+export const detectBudgetColumnMap = (sheet: Worksheet): BudgetColumnMap => {
+  const map: Partial<BudgetColumnMap> = {};
+  const maxHeaderRows = Math.min(sheet.rowCount, 15);
+
+  for (let rowNumber = 0; rowNumber < maxHeaderRows; rowNumber++) {
+    for (let col = 0; col < Math.min(sheet.columnCount, 60); col++) {
+      const cell = getHistoricalBudgetCell(sheet, rowNumber, col);
+      if (!cell) continue;
+      const h = normalizeHeader(cell.text || cell.value);
+      if (!h || h.length < 2) continue;
+
+      if (map.couvertsMidi === undefined && (h.includes('NB') || h.includes('COUVERTS') || h.includes('CVT')) && h.includes('MIDI')) map.couvertsMidi = col;
+      if (map.tmMidi === undefined && (h.includes('TM') || h.includes('TICKET') || h.includes('MOY')) && h.includes('MIDI')) map.tmMidi = col;
+      if (map.couvertsSoir === undefined && (h.includes('NB') || h.includes('COUVERTS') || h.includes('CVT')) && h.includes('SOIR')) map.couvertsSoir = col;
+      if (map.tmSoir === undefined && (h.includes('TM') || h.includes('TICKET') || h.includes('MOY')) && h.includes('SOIR')) map.tmSoir = col;
+    }
+    if (map.couvertsMidi !== undefined && map.tmMidi !== undefined && map.couvertsSoir !== undefined && map.tmSoir !== undefined) break;
+  }
+
+  return {
+    couvertsMidi: map.couvertsMidi ?? DEFAULT_BUDGET_COL_MAP.couvertsMidi,
+    tmMidi:       map.tmMidi       ?? DEFAULT_BUDGET_COL_MAP.tmMidi,
+    couvertsSoir: map.couvertsSoir ?? DEFAULT_BUDGET_COL_MAP.couvertsSoir,
+    tmSoir:       map.tmSoir       ?? DEFAULT_BUDGET_COL_MAP.tmSoir,
+  };
+};
+
+export const getHistoricalBudgetRowValues = (sheet: Worksheet, rowNumber: number, colMap: BudgetColumnMap = DEFAULT_BUDGET_COL_MAP) => {
   if (rowNumber < 0 || isHistoricalBudgetTotalRow(sheet, rowNumber)) {
     return { couvertsMidi: 0, tmMidi: 0, couvertsSoir: 0, tmSoir: 0 };
   }
-  const couvertsMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 11));
-  const tmMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 12));
-  const couvertsSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 15));
-  const tmSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, 16));
+  const couvertsMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, colMap.couvertsMidi));
+  const tmMidi       = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, colMap.tmMidi));
+  const couvertsSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, colMap.couvertsSoir));
+  const tmSoir       = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, colMap.tmSoir));
   return { couvertsMidi, tmMidi, couvertsSoir, tmSoir };
 };
 
