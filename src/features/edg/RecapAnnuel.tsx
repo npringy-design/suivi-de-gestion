@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 
 import { useData } from '@/contexts/DataContext';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
@@ -794,7 +793,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       </header>
 
       {/* TABLEAU */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '16px 20px 20px 20px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, overflow: 'hidden', padding: '16px 20px 20px 20px' }}>
         {(() => {
           const renderTable = (
             cols: ColDef[],
@@ -812,8 +811,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
               else grps.push({ g: c.g, count: 1 });
             });
             return (
-              <div key={label} style={{ marginBottom: 16, overflow: 'auto', width: '100%' }}>
-                <table style={{ borderCollapse: 'collapse', background: '#fff', width: '100%' }}>
+              <div key={label} style={{ marginBottom: 16, overflowX: 'auto', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+                <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: 'max-content', borderRadius: 12, overflow: 'hidden' }}>
                   <thead>
                     <tr style={{ height: 30 }}>
                       <th rowSpan={3} style={{ ...thBase, background: BG_DATE, color: '#fff', minWidth: 82, left: 0, top: 0, zIndex: 60, borderRight: '3px solid #475569', borderBottom: '3px solid #475569' }}>
@@ -919,50 +918,10 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           };
 
           if (activeTab === 'budget') {
-            const totalCvtsMidi = sumCol(6);
-            const totalCvtsSoir = sumCol(8);
-            const totalCvts = totalCvtsMidi + totalCvtsSoir;
-            const pieData = [
-              { name: 'Midi', value: Math.round(totalCvtsMidi) },
-              { name: 'Soir', value: Math.round(totalCvtsSoir) },
-            ];
-            const PIE_COLORS = ['#1a6fdb', '#f07820'];
-            const pctMidi = totalCvts > 0 ? Math.round(totalCvtsMidi / totalCvts * 100) : 0;
-            const pctSoir = 100 - pctMidi;
-            return (
-              <>
-                {renderTable(
-                  activeSection.cols, activeSection.label, activeSection.icon, activeSection.accentBg, activeSection.accentColor,
-                  (mi) => getSectionValues(activeSection.key, mi),
-                  getTotalValues(activeSection.key),
-                )}
-                <div style={{ display: 'flex', gap: 14, marginTop: 4, flexWrap: 'wrap' }}>
-                  {/* Donut : Répartition des couverts */}
-                  <div style={{ flex: 1, minWidth: 200, background: '#fff', borderRadius: 12, border: '1px solid #e4e8ef', padding: '14px 16px', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#1a202c', marginBottom: 2 }}>Répartition des couverts</div>
-                    <div style={{ fontSize: 10.5, color: '#64748b', marginBottom: 8 }}>Midi vs Soir — Budget {YEAR}</div>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <PieChart>
-                        <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={72} paddingAngle={3} dataKey="value">
-                          {pieData.map((_, idx) => <Cell key={idx} fill={PIE_COLORS[idx]} />)}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-                      <div style={{ background: '#e8f1fd', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
-                        <div style={{ fontSize: 9.5, color: '#1a6fdb', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em' }}>Midi</div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: '#0f4a9c', lineHeight: 1.2 }}>{pctMidi} %</div>
-                        <div style={{ fontSize: 10, color: '#3b82f6' }}>{new Intl.NumberFormat('fr-FR').format(Math.round(totalCvtsMidi))} cvts</div>
-                      </div>
-                      <div style={{ background: '#fff3e8', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
-                        <div style={{ fontSize: 9.5, color: '#c05c10', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em' }}>Soir</div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: '#9a3d05', lineHeight: 1.2 }}>{pctSoir} %</div>
-                        <div style={{ fontSize: 10, color: '#ea580c' }}>{new Intl.NumberFormat('fr-FR').format(Math.round(totalCvtsSoir))} cvts</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
+            return renderTable(
+              activeSection.cols, activeSection.label, activeSection.icon, activeSection.accentBg, activeSection.accentColor,
+              (mi) => getSectionValues(activeSection.key, mi),
+              getTotalValues(activeSection.key),
             );
           }
 

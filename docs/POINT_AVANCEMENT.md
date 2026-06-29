@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 29/06/2026 (rendu final RecapAnnuel)
+
+- RecapAnnuel : suppression du donut camembert et de l'import recharts ; bloc budget simplifié en renderTable direct ; conteneur overflow:hidden ; wrapper table overflowX:auto + borderRadius 12 + ombre ; table borderCollapse:separate/width:max-content pour scroll horizontal propre sans compression des colonnes. tsc OK.
+
 ## 29/06/2026 (nettoyage RecapAnnuel)
 
 - RecapAnnuel : suppression du LineChart (lineData, CartesianGrid, XAxis, YAxis, Tooltip) ; import recharts réduit à Cell/Pie/PieChart/ResponsiveContainer ; tableau pleine largeur (borderCollapse collapse, width 100%, wrapper width 100%) ; conteneur principal flex-column. tsc OK.
