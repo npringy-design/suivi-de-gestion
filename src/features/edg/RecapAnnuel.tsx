@@ -132,57 +132,38 @@ const COLS_COUT_MATIERE: ColDef[] = [
   { g: '',                    l: 'Variation\nStock',     bg: '#fff', w: 75 }, // —
 ];
 
-// FP cuisine/salle — 27 colonnes (niveaux fusionnés Cuisine+Salle)
-const COLS_FP_CUISINE_SALLE: ColDef[] = [
-  { g: '',                           l: 'Coût\nGlobal',             bg: '#fff', w: 75 }, // col 87
-  { g: 'Productivité\nCible 50,00',  l: 'Productivité\nRéelle',     bg: '#fff', w: 70 }, // col 88
-  { g: 'Budget FP\n35,00%',          l: 'Frais Perso\n%',           bg: '#fff', w: 70 }, // col 89
-  { g: '',                           l: 'Ratio\nAnnuel %',          bg: '#fff', w: 65 }, // —
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'Total\nHeures',             bg: BG_FP,  w: 60 }, // col 61
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'Cadre',                    bg: BG_FP,  w: 65 }, // 62+63
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'Maîtrise',                 bg: BG_FP,  w: 70 }, // 64+65
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'NIV I-II',                 bg: BG_FP,  w: 70 }, // 66+67
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'NIV III',                  bg: BG_FP,  w: 70 }, // 68+69
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'Apprenti',                 bg: BG_FP,  w: 70 }, // 70+71
-  { g: 'PROJECTION S/C\nSKELLO',    l: 'Coût\nGlobal',             bg: '#fff', w: 80 }, // col 72
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Total\nHeures',             bg: BG_FP,  w: 60 }, // col 76
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Cadre',                    bg: BG_FP,  w: 60 }, // 77+78
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Maîtrise',                 bg: BG_FP,  w: 65 }, // 79+80
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'NIV I-II',                 bg: BG_FP,  w: 65 }, // 81+82
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'NIV III',                  bg: BG_FP,  w: 65 }, // 83+84
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Apprenti',                 bg: BG_FP,  w: 65 }, // 85+86
-  { g: 'FRAIS PERSONNEL\nREALISE',  l: 'Coût Global\nRéel',        bg: '#fff', w: 80 }, // col 87
-  { g: '',                           l: "Ecart Budget\nNB d'Heure", bg: BG_FG,  w: 80 }, // col 91
-  { g: '',                           l: 'Ecart Budget\nS/C%',       bg: BG_FG,  w: 70 }, // col 92
-  { g: '',                           l: 'VAR VS N-1',               bg: BG_HATCH, w: 65 }, // —
-  { g: '',                           l: 'Ratio\nHebdo %',           bg: '#fff', w: 65 }, // col 90
+// Frais Personnel — Tableau 1 : Projection S/C Skello (7 colonnes, identique global et cuisine/salle)
+const COLS_FP_PROJ: ColDef[] = [
+  { g: 'PROJECTION S/C\nSKELLO', l: 'Total\nHeures',  bg: BG_FP,  w: 70 },
+  { g: 'PROJECTION S/C\nSKELLO', l: 'Cadre',          bg: BG_FP,  w: 70 },
+  { g: 'PROJECTION S/C\nSKELLO', l: 'Maîtrise',       bg: BG_FP,  w: 70 },
+  { g: 'PROJECTION S/C\nSKELLO', l: 'NIV I-II',       bg: BG_FP,  w: 70 },
+  { g: 'PROJECTION S/C\nSKELLO', l: 'NIV III',        bg: BG_FP,  w: 70 },
+  { g: 'PROJECTION S/C\nSKELLO', l: 'Apprenti',       bg: BG_FP,  w: 70 },
+  { g: 'PROJECTION S/C\nSKELLO', l: 'Coût\nGlobal',   bg: '#fff', w: 85 }, // col 72
 ];
 
-// FP global — 22 colonnes (5 catégories unifiées)
-const COLS_FP_GLOBAL: ColDef[] = [
-  { g: '',                          l: 'Coût\nGlobal',             bg: '#fff', w: 75 }, // col 87
-  { g: 'Productivité\nCible 50,00', l: 'Productivité\nRéelle',     bg: '#fff', w: 70 }, // col 88
-  { g: 'Budget FP\n35,00%',         l: 'Frais Perso\n%',           bg: '#fff', w: 70 }, // col 89
-  { g: '',                          l: 'Ratio\nAnnuel %',          bg: '#fff', w: 65 }, // —
-  { g: 'PROJECTION S/C\nSKELLO',   l: 'Total\nHeures',             bg: BG_FP,  w: 60 }, // col 61
-  { g: 'PROJECTION S/C\nSKELLO',   l: 'Cadre',                    bg: BG_FP,  w: 65 }, // col 130
-  { g: 'PROJECTION S/C\nSKELLO',   l: 'Maîtrise',                 bg: BG_FP,  w: 70 }, // col 131
-  { g: 'PROJECTION S/C\nSKELLO',   l: 'NIV I-II',                 bg: BG_FP,  w: 70 }, // col 132
-  { g: 'PROJECTION S/C\nSKELLO',   l: 'NIV III',                  bg: BG_FP,  w: 70 }, // col 133
-  { g: 'PROJECTION S/C\nSKELLO',   l: 'Apprenti',                 bg: BG_FP,  w: 70 }, // col 134
-  { g: 'PROJECTION S/C\nSKELLO',   l: 'Coût\nGlobal',             bg: '#fff', w: 80 }, // col 72
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Total\nHeures',             bg: BG_FP,  w: 60 }, // col 76
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Cadre',                    bg: BG_FP,  w: 60 }, // col 135
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Maîtrise',                 bg: BG_FP,  w: 65 }, // col 136
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'NIV I-II',                 bg: BG_FP,  w: 65 }, // col 137
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'NIV III',                  bg: BG_FP,  w: 65 }, // col 138
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Apprenti',                 bg: BG_FP,  w: 65 }, // col 139
-  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Coût Global\nRéel',         bg: '#fff', w: 80 }, // col 87
-  { g: '',                          l: "Ecart Budget\nNB d'Heure", bg: BG_FG,  w: 80 }, // col 91
-  { g: '',                          l: 'Ecart Budget\nS/C%',       bg: BG_FG,  w: 70 }, // col 92
-  { g: '',                          l: 'VAR VS N-1',               bg: BG_HATCH, w: 65 }, // —
-  { g: '',                          l: 'Ratio\nHebdo %',           bg: '#fff', w: 65 }, // col 90
+// Frais Personnel — Tableau 2 : Réalisé (14 colonnes)
+const COLS_FP_REAL: ColDef[] = [
+  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Total\nHeures',          bg: BG_FP,    w: 70 },
+  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Cadre',                  bg: BG_FP,    w: 70 },
+  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Maîtrise',               bg: BG_FP,    w: 70 },
+  { g: 'FRAIS PERSONNEL\nREALISE', l: 'NIV I-II',               bg: BG_FP,    w: 70 },
+  { g: 'FRAIS PERSONNEL\nREALISE', l: 'NIV III',                bg: BG_FP,    w: 70 },
+  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Apprenti',               bg: BG_FP,    w: 70 },
+  { g: 'FRAIS PERSONNEL\nREALISE', l: 'Coût Global\nRéel',      bg: '#fff',   w: 90 }, // col 87
+  { g: 'Productivité\nCible 50,00', l: 'Productivité\nRéelle',  bg: '#fff',   w: 70 }, // col 88
+  { g: 'Budget FP\n35,00%',         l: 'Frais Perso\n%',        bg: '#fff',   w: 70 }, // col 89
+  { g: '',                          l: 'Ratio\nAnnuel %',       bg: '#fff',   w: 70 },
+  { g: 'ÉCARTS',                    l: "NB d'Heure\nvs Budget", bg: BG_FG,    w: 85 }, // col 91
+  { g: 'ÉCARTS',                    l: 'S/C%\nvs Budget',       bg: BG_FG,    w: 70 }, // col 92
+  { g: 'ÉCARTS',                    l: 'VAR\nvs N-1',           bg: BG_HATCH, w: 65 },
+  { g: '',                          l: 'Ratio\nHebdo %',        bg: '#fff',   w: 70 }, // col 90
 ];
+
+// Alias pour la section SECTIONS (utilise COLS_FP_PROJ comme référence, non utilisé pour le rendu)
+const COLS_FP_CUISINE_SALLE = COLS_FP_PROJ;
+const COLS_FP_GLOBAL        = COLS_FP_PROJ;
 
 const COLS_FRAIS_GENERAUX: ColDef[] = [
   // 34 colonnes
@@ -360,21 +341,20 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 22 valeurs (identique global et cuisine/salle, niveaux fusionnés) ──
+      // ── 21 valeurs : 7 proj + 14 réel ──────────────────────────────────────
       case 'frais_personnel': {
         const rl = (lv: number) => getRealLevelHours(mi, lv);
         const pl = (lv: number) => getProjLevelHours(mi, lv);
         return [
-          fe(g(87)), r(88), r(89), '—',
+          // Projection (7)
           fmtHeures(getProjTotalHours(mi)),
           fmtHeures(pl(0)), fmtHeures(pl(1)), fmtHeures(pl(2)), fmtHeures(pl(3)), fmtHeures(pl(4)),
           fe(g(72)),
+          // Réalisé (14)
           fmtHeures(getRealTotalHours(mi)),
           fmtHeures(rl(0)), fmtHeures(rl(1)), fmtHeures(rl(2)), fmtHeures(rl(3)), fmtHeures(rl(4)),
-          fe(g(87)),
-          r(91), r(92),
-          '—',
-          r(90),
+          fe(g(87)), r(88), r(89), '—',
+          r(91), r(92), '—', r(90),
         ];
       }
 
@@ -501,20 +481,19 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         '0,00 €', '0,00 €',
       ];
 
-      // ── 22 totaux (identique global et cuisine/salle, niveaux fusionnés) ──
+      // ── 21 totaux : 7 proj + 14 réel ───────────────────────────────────────
       case 'frais_personnel': {
         const fpRatioAnnuel = totalCA > 0 ? fp(s(87) / totalCA * 100) : '—';
         return [
-          fe(s(87)), '—', fpRatioAnnuel, '—',
+          // Projection (7)
           fmtHeures(sumProjTotal()),
           fmtHeures(sumProjLevel(0)), fmtHeures(sumProjLevel(1)), fmtHeures(sumProjLevel(2)), fmtHeures(sumProjLevel(3)), fmtHeures(sumProjLevel(4)),
           fe(s(72)),
+          // Réalisé (14)
           fmtHeures(sumRealTotal()),
           fmtHeures(sumRealLevel(0)), fmtHeures(sumRealLevel(1)), fmtHeures(sumRealLevel(2)), fmtHeures(sumRealLevel(3)), fmtHeures(sumRealLevel(4)),
-          fe(s(87)),
-          fmtHeures(sumHoursCol(91)), '—',
-          '—',
-          '—',
+          fe(s(87)), '—', fpRatioAnnuel, '—',
+          fmtHeures(sumHoursCol(91)), '—', '—', '—',
         ];
       }
 
@@ -749,6 +728,23 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                   COLS_REALISE.slice(11), 'Couverts Restaurant', '📊', '#1e40af', '#fff',
                   (mi) => getSectionValues('realise', mi).slice(11),
                   totals.slice(11),
+                )}
+              </>
+            );
+          }
+          if (activeTab === 'frais_personnel') {
+            const totals = getTotalValues('frais_personnel');
+            return (
+              <>
+                {renderTable(
+                  COLS_FP_PROJ, 'Projection S/C Skello', '👥', '#7c2d12', '#fff',
+                  (mi) => getSectionValues('frais_personnel', mi).slice(0, 7),
+                  totals.slice(0, 7),
+                )}
+                {renderTable(
+                  COLS_FP_REAL, 'Frais Personnel Réalisé', '👥', '#7c2d12', '#fff',
+                  (mi) => getSectionValues('frais_personnel', mi).slice(7),
+                  totals.slice(7),
                 )}
               </>
             );
