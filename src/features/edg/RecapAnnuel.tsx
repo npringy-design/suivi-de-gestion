@@ -734,71 +734,66 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   }, [activeSection]);
 
   return (
-    <div style={{ height: '100vh', background: '#f1f5f9', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden', maxWidth: '100vw' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#eff6ff!important}`}</style>
+    <div style={{ height: '100vh', background: '#FAFAF9', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#FEF3C7!important}`}</style>
 
       {/* HEADER */}
-      <header style={{ background: NAV, height: 56, padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, gap: 12 }}>
+      <header style={{ background: '#1C1917', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, height: 'auto', minHeight: 64 }}>
         {/* Gauche : Retour Accueil */}
-        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#94a3b8', cursor: 'pointer', background: 'none', border: 'none', padding: '6px 0', fontSize: 12, fontWeight: 700, fontFamily: 'inherit', transition: 'color .2s', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#fff')} onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#A8A29E', cursor: 'pointer', background: 'none', border: 'none', padding: '6px 0', fontSize: 11, fontWeight: 700, fontFamily: 'inherit', transition: 'color .2s', textTransform: 'uppercase', letterSpacing: '.1em', flexShrink: 0 }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#F59E0B')} onMouseLeave={e => (e.currentTarget.style.color = '#A8A29E')}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
           Retour Accueil
         </button>
 
-        {/* Centre : tabs intégrés */}
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: 1, justifyContent: 'center' }}>
-          {SECTIONS.map(sec => {
-            const isActive = activeTab === sec.key;
-            return (
-              <button key={sec.key} onClick={() => setActiveTab(sec.key)} style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-                background: isActive ? '#1e40af' : 'transparent',
-                border: 'none',
-                transition: 'all .15s',
-              }}>
-                {isActive ? (
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <rect x="1" y="1" width="14" height="14" rx="2.5" fill="white" stroke="white" strokeWidth="1.5"/>
-                    <path d="M4.5 8l2.5 2.5 4.5-4.5" stroke="#1e40af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <rect x="1" y="1" width="14" height="14" rx="2.5" stroke="#94a3b8" strokeWidth="1.5" fill="none"/>
-                  </svg>
-                )}
-                <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? '#fff' : '#94a3b8', letterSpacing: '.02em', lineHeight: 1.3 }}>
-                  {sec.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Droite : sélecteur année + pill */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+        {/* Centre : titre + sélecteur années */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
+          <div style={{ color: '#fff', fontSize: 13, fontWeight: 300, letterSpacing: '.2em', textTransform: 'uppercase', marginBottom: 8 }}>Récapitulatif Annuel</div>
+          <div style={{ display: 'flex', gap: 4 }}>
             {[YEAR - 1, YEAR, YEAR + 1].map(y => (
               <button key={y} onClick={() => setSelectedYear(y)} style={{
-                padding: '3px 9px', borderRadius: 6, border: '1px solid',
-                fontFamily: 'inherit', fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .15s',
-                background: y === YEAR ? '#f59e0b' : 'transparent',
-                borderColor: y === YEAR ? '#f59e0b' : '#475569',
-                color: y === YEAR ? '#1e293b' : '#94a3b8',
+                border: y === YEAR ? '1px solid #f59e0b' : '1px solid #57534e',
+                color: y === YEAR ? '#f59e0b' : '#a8a29e',
+                background: y === YEAR ? 'rgba(245,158,11,0.1)' : 'transparent',
+                borderRadius: 2, padding: '2px 12px', fontSize: 11, fontWeight: 600,
+                letterSpacing: '.1em', cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
               }}>
                 {y}
               </button>
             ))}
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 20, padding: '4px 14px', color: '#e2e8f0', fontSize: 11, fontWeight: 700, letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
-            {YEAR}&nbsp;<span style={{ color: '#475569' }}>|</span>&nbsp;Bureau Monte – {fe(CA_N1)}
-          </div>
+        </div>
+
+        {/* Droite : Buro Monte + CA N-1 */}
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 10, color: '#A8A29E', letterSpacing: '.1em', textTransform: 'uppercase' }}>Buro Monte</div>
+          <div style={{ fontSize: 11, color: '#F59E0B', fontWeight: 600 }}>{'CA N-1 : ' + fe(CA_N1)}</div>
         </div>
       </header>
 
+      {/* TABS */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #E7E5E4', padding: '0 24px', display: 'flex', flexShrink: 0 }}>
+        {SECTIONS.map(sec => {
+          const isActive = activeTab === sec.key;
+          return (
+            <button key={sec.key} onClick={() => setActiveTab(sec.key)} style={{
+              padding: '14px 20px', fontSize: 13, fontWeight: isActive ? 600 : 500,
+              letterSpacing: '.03em', fontFamily: 'inherit', background: 'none', border: 'none',
+              borderBottom: isActive ? '2px solid #f59e0b' : '2px solid transparent',
+              marginBottom: '-1px', cursor: 'pointer', transition: 'all .15s', whiteSpace: 'nowrap',
+              color: isActive ? '#92400e' : '#78716c',
+            }}
+            onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#1c1917'; }}
+            onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = '#78716c'; }}
+            >
+              {sec.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* TABLEAU */}
-      <div style={{ flex: 1, overflow: 'hidden', padding: '16px 20px 20px 20px' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
         {(() => {
           const renderTable = (
             cols: ColDef[],
@@ -816,30 +811,27 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
               else grps.push({ g: c.g, count: 1 });
             });
             return (
-              <div key={label} style={{ marginBottom: 16, overflowX: 'auto', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
-                <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: 'max-content', borderRadius: 12, overflow: 'hidden' }}>
+              <div key={label} style={{ marginBottom: 16, borderRadius: 4, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', border: '1px solid #D6D3D1' }}>
+                <table style={{ borderCollapse: 'collapse', background: '#fff', width: '100%', minWidth: 'max-content' }}>
                   <thead>
-                    <tr style={{ height: 30 }}>
-                      <th rowSpan={3} style={{ ...thBase, background: BG_DATE, color: '#fff', minWidth: 82, left: 0, top: 0, zIndex: 60, borderRight: '3px solid #475569', borderBottom: '3px solid #475569' }}>
+                    <tr style={{ height: 34 }}>
+                      <th rowSpan={3} style={{ ...thBase, background: '#1C1917', color: '#fff', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: '2px solid #44403C', borderBottom: '2px solid #44403C', fontSize: 10, letterSpacing: '.1em' }}>
                         DATE
                       </th>
-                      <th colSpan={cols.length} style={{ ...thBase, background: '#1e40af', color: '#fff', top: 0, height: 30, fontSize: 11, zIndex: 40 }}>
+                      <th colSpan={cols.length} style={{ ...thBase, background: '#1C1917', color: '#fff', top: 0, height: 34, fontSize: 11, fontWeight: 700, letterSpacing: '.15em', zIndex: 40 }}>
                         {label.toUpperCase()}
                       </th>
                     </tr>
-                    <tr style={{ height: 30 }}>
-                      {grps.map((gr, gi) => {
-                        const offset = grps.slice(0, gi).reduce((a, x) => a + x.count, 0);
-                        return (
-                          <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: gi % 2 === 0 ? '#b4c6e7' : '#dbeafe', color: '#1e40af', fontWeight: 700, top: 30, height: 30, fontSize: 9, zIndex: 40, borderBottom: '1px solid #94a3b8' }}>
-                            {gr.g}
-                          </th>
-                        );
-                      })}
+                    <tr style={{ height: 28 }}>
+                      {grps.map((gr, gi) => (
+                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: '#292524', color: '#D6D3D1', fontWeight: 700, top: 34, height: 28, fontSize: 9, letterSpacing: '.05em', zIndex: 40, borderBottom: '1px solid #44403C' }}>
+                          {gr.g}
+                        </th>
+                      ))}
                     </tr>
-                    <tr style={{ height: 60 }}>
+                    <tr style={{ height: 32 }}>
                       {cols.map((c, ci) => (
-                        <th key={`col${ci}`} style={{ ...thBase, background: '#dbeafe', color: '#1e40af', fontWeight: 700, top: 60, height: 60, minWidth: c.w || 65, fontSize: 9, zIndex: 40, borderBottom: '3px solid #374151' }}>
+                        <th key={`col${ci}`} style={{ ...thBase, background: '#292524', color: '#A8A29E', fontWeight: 600, top: 62, height: 32, minWidth: c.w || 65, fontSize: 9, letterSpacing: '.04em', zIndex: 40, borderBottom: '2px solid #44403C' }}>
                           {c.l}
                         </th>
                       ))}
@@ -850,8 +842,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                       const vals = getVals(mi);
                       const isCurrent = mi === new Date().getMonth() && YEAR === new Date().getFullYear();
                       return (
-                        <tr key={mi} className="rr" style={{ background: isCurrent ? '#eff6ff' : (mi % 2 === 0 ? '#fff' : '#f8fafc') }}>
-                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isCurrent ? '#1e40af' : '#1e3a5f', fontWeight: 700, fontSize: 11, color: '#fff', borderRight: '3px solid #475569', minWidth: 82, textAlign: 'left', paddingLeft: 8 }}>
+                        <tr key={mi} className="rr" style={{ background: isCurrent ? '#FEF9C3' : (mi % 2 === 0 ? '#fff' : '#FAFAF9') }}>
+                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isCurrent ? '#292524' : '#1C1917', fontWeight: 700, fontSize: 11, color: '#fff', borderRight: '2px solid #44403C', minWidth: 90, textAlign: 'left', paddingLeft: 10 }}>
                             {MONTHS_SHORT[mi]}
                           </td>
                           {vals.map((v, ci) => {
@@ -877,6 +869,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                                 color,
                                 fontWeight,
                                 minWidth: colDef?.w ?? 65,
+                                borderBottom: '1px solid #E7E5E4',
+                                borderRight: '1px solid #E7E5E4',
                               }}>
                                 {v}
                               </td>
@@ -888,28 +882,28 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: '#1e293b', fontWeight: 800, fontSize: 12, color: '#fff', borderRight: '3px solid #475569', borderTop: '2px solid #1e40af', textAlign: 'left', paddingLeft: 8 }}>
+                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: '#1C1917', fontWeight: 800, fontSize: 12, color: '#fff', borderRight: '2px solid #44403C', borderTop: '2px solid #44403C', textAlign: 'left', paddingLeft: 10, letterSpacing: '.1em' }}>
                         TOTAL
                       </td>
                       {totalVals.map((v, ci) => {
                         const colDef = cols[ci];
                         const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
                         const isPos = typeof v === 'string' && v.startsWith('+');
-                        let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : '#fff';
+                        let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : '#D6D3D1';
                         if (v !== '—' && v !== '') {
                           const num = parseFloat(v.replace(',', '.').replace('%', '').trim());
                           if (colDef?.threshold !== undefined && isFinite(num)) {
                             color = num > colDef.threshold ? '#dc2626' : '#16a34a';
                           } else if (colDef?.invertSign && isFinite(num)) {
-                            color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : '#fff';
+                            color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : '#D6D3D1';
                           }
                         }
                         return (
                           <td key={ci} style={{
-                            ...tdBase, background: '#1e40af',
-                            fontWeight: 800, fontSize: 11,
+                            ...tdBase, background: '#1C1917',
+                            fontWeight: 700, fontSize: 11,
                             color,
-                            borderTop: '2px solid #1e40af',
+                            borderTop: '2px solid #44403C',
                           }}>
                             {v}
                           </td>
@@ -955,9 +949,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         })()}
       </div>
 
-      <footer style={{ padding: '10px 28px', borderTop: '1px solid #e2e8f0', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <span style={{ color: '#94a3b8', fontSize: 9, letterSpacing: '.06em', textTransform: 'uppercase' }}>IDM Restauration Groupe — Buro Monte</span>
-        <span style={{ color: '#cbd5e1', fontSize: 9 }}>Récapitulatif Annuel · {YEAR} · {activeSection.label}</span>
+      <footer style={{ padding: '10px 24px', borderTop: '1px solid #E7E5E4', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <span style={{ color: '#A8A29E', fontSize: 10, letterSpacing: '.06em', textTransform: 'uppercase' }}>IDM Restauration Groupe — Buro Monte</span>
+        <span style={{ color: '#A8A29E', fontSize: 10, letterSpacing: '.06em' }}>Récapitulatif Annuel · {YEAR} · {activeSection.label}</span>
       </footer>
     </div>
   );

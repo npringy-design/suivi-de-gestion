@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 29/06/2026 (reskin RecapAnnuel maquette stone)
+
+- RecapAnnuel reskin visuel maquette : header fond #1C1917, tabs déplacés en barre blanche séparée (border-bottom amber actif, texte only sans icônes SVG), sélecteur années amber dans le header, bloc droite "Buro Monte" deux lignes ; thead fond #1C1917/#292524 uniforme (plus d'alternance bleue), colonne DATE sticky #1C1917 fond white, données zebra #fff/#FAFAF9 jaune très clair sur mois courant, tfoot #1C1917 avec fallback couleur #D6D3D1 ; footer texte #A8A29E. tsc OK. build OK. 81 tests OK.
+
 ## 29/06/2026 (sync N-1 RecapAnnuel)
 
 - RecapAnnuel Frais Personnel VS N-1 : correction tirets chez les autres utilisateurs — le bootstrap Supabase ne chargeait que l'année/mois courant, laissant allData[YEAR-1] vide ; ajout de fetchCloudYearMonths (supabaseAppState) + loadYearFromCloud (DataContext) + useEffect dans RecapAnnuel qui charge les 12 mois N-1 au montage si manquants. tsc OK.
