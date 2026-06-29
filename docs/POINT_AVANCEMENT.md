@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 29/06/2026 (palette section RecapAnnuel)
+
+- RecapAnnuel : map ACCENT_PALE par accentBg (6 sections) ; ligne groupes reste accentBg plein ; ligne libellés passe à paleBg + texte #374151 (plus de filter:brightness) ; DATE sticky accentBg uniforme, fontWeight 800 + boxShadow inset blanc sur mois courant ; cellules données blanc/#f8f8f7 zebrées (#f8fafc mois courant) sans aucune couleur colDef.bg. tsc OK. build OK. 81 tests OK.
+
 ## 29/06/2026 (couleurs accentBg RecapAnnuel)
 
 - RecapAnnuel : header tableau (DATE th, groupes th, libellés th, tfoot) utilise désormais accentBg/accentColor propre à chaque section au lieu du noir fixe #1C1917 ; libellés colonnes assombris via filter:brightness(0.75) ; cellules tbody uniformisées blanc/#f8f8f7 zebrées (bleu pâle #f0f4ff sur mois courant) sans colDef.bg ; DATE sticky accentBg avec opacity 0.82 sur mois courant ; bordures intérieures en rgba pour s'adapter à toutes les couleurs d'accent. tsc OK. build OK. 81 tests OK.
