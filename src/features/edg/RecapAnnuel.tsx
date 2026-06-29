@@ -215,20 +215,27 @@ const COLS_FRAIS_GENERAUX: ColDef[] = [
   { g: 'CONTRAT FG\nANNUEL',         l: 'Eeworx',           bg: '#f0fdf4', w: 70 },
 ];
 
-const COLS_RESULTATS: ColDef[] = [
-  // 12 colonnes
-  { g: 'CA',      l: 'CA HT Réalisé',          bg: BG_RES, w: 100 }, // caByMonth
-  { g: 'CA',      l: 'CA Budget',               bg: BG_RES, w: 90  }, // —
-  { g: 'CA',      l: 'VAR % N-1',               bg: BG_RES, w: 80  }, // calc local
-  { g: 'CA',      l: 'Différence N-1',          bg: BG_RES, w: 95  }, // calc local
-  { g: 'CA',      l: 'Diff. Budget',            bg: BG_RES, w: 90  }, // —
-  { g: 'TICKETS', l: 'Couverts\nAnnuel',        bg: BG_BUDG, w: 75  }, // col 32 cumul
-  { g: 'TICKETS', l: 'Moy Cvts\n/jour',         bg: BG_BUDG, w: 70  }, // col 30
-  { g: 'TICKETS', l: 'TM\nAnnuel',              bg: BG_BUDG, w: 70  }, // —
-  { g: 'MARGE',   l: 'Stock\nInitial',          bg: BG_CM,   w: 80  }, // —
-  { g: 'MARGE',   l: 'Stock\nFinal',            bg: BG_CM,   w: 80  }, // —
-  { g: 'MARGE',   l: 'Variation\nStock',        bg: BG_CM,   w: 80  }, // —
-  { g: 'MARGE',   l: 'Total Achat\nHors Metro', bg: BG_CM,   w: 95  }, // col 58
+const COLS_SYNTHESE: ColDef[] = [
+  // ── CA ──────────────────────────────────────────────────────────────────────
+  { g: 'CA',               l: 'CA HT\nRéalisé',       bg: BG_RES,  w: 105 },
+  { g: 'CA',               l: 'CA\nBudget',            bg: BG_BUDG, w: 95  },
+  { g: 'CA',               l: 'VAR %\nN-1',            bg: BG_HATCH,w: 75  },
+  { g: 'CA',               l: 'VAR %\nBudget',         bg: BG_HATCH,w: 75  },
+  // ── COUVERTS ────────────────────────────────────────────────────────────────
+  { g: 'COUVERTS',         l: 'NB\nCouverts',          bg: BG_BUDG, w: 75  },
+  { g: 'COUVERTS',         l: 'Ticket\nMoyen HT',      bg: BG_BUDG, w: 80  },
+  { g: 'COUVERTS',         l: 'VAR %\nN-1',            bg: BG_HATCH,w: 75  },
+  // ── COÛT MATIÈRE ────────────────────────────────────────────────────────────
+  { g: 'COÛT MATIÈRE',     l: 'Total\nAchats HT',      bg: BG_CM,   w: 100 },
+  { g: 'COÛT MATIÈRE',     l: 'Ratio\n% CA',           bg: BG_CM2,  w: 70  },
+  // ── FRAIS PERSONNEL ─────────────────────────────────────────────────────────
+  { g: 'FRAIS PERSONNEL',  l: 'Coût\nGlobal',          bg: BG_FP,   w: 100 },
+  { g: 'FRAIS PERSONNEL',  l: 'Ratio\n% CA',           bg: '#fff',  w: 70, threshold: 38 },
+  { g: 'FRAIS PERSONNEL',  l: 'VS\nProjection %',      bg: BG_FG,   w: 85, invertSign: true },
+  { g: 'FRAIS PERSONNEL',  l: 'VS\nN-1 %',             bg: BG_FG2,  w: 80, invertSign: true },
+  // ── FRAIS GÉNÉRAUX ──────────────────────────────────────────────────────────
+  { g: 'FRAIS GÉNÉRAUX',   l: 'Total FG\nHors Contrat',bg: BG_FG,   w: 105 },
+  { g: 'FRAIS GÉNÉRAUX',   l: 'Ratio\n% CA',           bg: BG_FP,   w: 70  },
 ];
 
 // ─── Composant ───────────────────────────────────────────────────────────────
@@ -286,7 +293,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     { key: 'cout_matiere',    label: 'Coût Matière',      icon: '🛒', accentBg: '#166534', accentColor: '#fff', cols: COLS_COUT_MATIERE },
     { key: 'frais_personnel', label: 'Frais Personnel',   icon: '👥', accentBg: '#7c2d12', accentColor: '#fff', cols: isGlobal ? COLS_FP_GLOBAL : COLS_FP_CUISINE_SALLE },
     { key: 'frais_generaux',  label: 'Frais Généraux',    icon: '📋', accentBg: '#78350f', accentColor: '#fff', cols: COLS_FRAIS_GENERAUX },
-    { key: 'resultats',       label: 'Résultats Annuels', icon: '🏆', accentBg: '#1e3a5f', accentColor: '#fff', cols: COLS_RESULTATS },
+    { key: 'synthese',         label: 'Synthèse',          icon: '🏆', accentBg: '#1e3a5f', accentColor: '#fff', cols: COLS_SYNTHESE },
   ], [isGlobal]);
 
   // ─── Valeurs par mois ─────────────────────────────────────────────────────
@@ -424,22 +431,31 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ...CONTRATS_FG.map(c => isJan ? fe(c.montant) : ''),
       ];
 
-      // ── 12 valeurs ──────────────────────────────────────────────────────────
-      case 'resultats': {
-        if (ca === 0) return Array(12).fill('—');
-        const budgetCA  = g(3);
-        const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i]).reduce((a, b) => a + b, 0);
-        const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 29))).reduce((a, b) => a + b, 0);
+      // ── 15 valeurs synthèse ─────────────────────────────────────────────────
+      case 'synthese': {
+        if (ca === 0) return Array(15).fill('—');
+        const budgetCA   = g(3);
+        const varBudP    = budgetCA > 0 ? ((ca - budgetCA) / budgetCA) * 100 : 0;
+        const nbCvts     = Math.round(g(29));
+        const tmHT       = nbCvts > 0 ? ca / nbCvts : 0;
+        const nbCvtsN1   = CVTS_N1_BY_MONTH[mi] ?? 0;
+        const varCvtsN1  = nbCvtsN1 > 0 ? ((nbCvts - nbCvtsN1) / nbCvtsN1) * 100 : 0;
+        const totalAchats = g(58);
+        const ratioAchats = ca > 0 ? (totalAchats / ca) * 100 : 0;
+        const coutProj   = g(72);
+        const coutReal   = g(87);
+        const coutRealN1 = getValN1(mi, 87);
+        const ratioFP    = ca > 0 ? (coutReal / ca) * 100 : 0;
+        const vsProjFP   = coutProj   > 0 ? fp((coutReal - coutProj)   / coutProj   * 100) : '—';
+        const vsN1FP     = coutRealN1 > 0 ? fp((coutReal - coutRealN1) / coutRealN1 * 100) : '—';
+        const fgt        = getFgTotal(mi);
+        const ratioFG    = ca > 0 ? (fgt / ca) * 100 : 0;
         return [
-          fe(ca),
-          fe(budgetCA),
-          fp(varP),
-          fe(ca - caN1),
-          fe(ca - budgetCA),
-          String(Math.round(g(32))),
-          fe(g(30)),
-          cumulCvts > 0 ? fe(cumulCA / cumulCvts) : '—',
-          '0,00 €', '0,00 €', '0,00 €', fe(g(58)),
+          fe(ca), fe(budgetCA), fp(varP), fp(varBudP),
+          String(nbCvts), fe(tmHT), fp(varCvtsN1),
+          fe(totalAchats), `${ratioAchats.toFixed(2)} %`,
+          fe(coutReal), `${ratioFP.toFixed(2)} %`, vsProjFP, vsN1FP,
+          fgt > 0 ? fe(fgt) : '0,00 €', `${ratioFG.toFixed(2)} %`,
         ];
       }
 
@@ -610,6 +626,36 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           totalCvtsRes > 0 ? fe(totalCA / totalCvtsRes) : '—',
           totalCvtsRes > 0 ? fe(totalCA / totalCvtsRes) : '—',
           '0,00 €', '0,00 €', '0,00 €', fe(s(58)),
+        ];
+      }
+
+      // ── 15 totaux synthèse (YTD) ─────────────────────────────────────────────
+      case 'synthese': {
+        const hasData = (i: number) => caByMonth[i] > 0;
+        const totalBudgetCA  = Array.from({ length: 12 }, (_, i) => hasData(i) ? getVal(i, 3) : 0).reduce((a, b) => a + b, 0);
+        const totalCaN1Ytd   = Array.from({ length: 12 }, (_, i) => hasData(i) ? (CA_N1_BY_MONTH[i] ?? 0) : 0).reduce((a, b) => a + b, 0);
+        const varPYtd        = totalCaN1Ytd  > 0 ? ((totalCA - totalCaN1Ytd)  / totalCaN1Ytd)  * 100 : 0;
+        const varBudYtd      = totalBudgetCA > 0 ? ((totalCA - totalBudgetCA) / totalBudgetCA) * 100 : 0;
+        const totalCvts      = Array.from({ length: 12 }, (_, i) => hasData(i) ? Math.round(getVal(i, 29)) : 0).reduce((a, b) => a + b, 0);
+        const totalCvtsN1Ytd = Array.from({ length: 12 }, (_, i) => hasData(i) ? (CVTS_N1_BY_MONTH[i] ?? 0) : 0).reduce((a, b) => a + b, 0);
+        const varCvtsN1      = totalCvtsN1Ytd > 0 ? ((totalCvts - totalCvtsN1Ytd) / totalCvtsN1Ytd) * 100 : 0;
+        const tmHT           = totalCvts > 0 ? totalCA / totalCvts : 0;
+        const totalAchats    = s(58);
+        const ratioAchats    = totalCA > 0 ? (totalAchats / totalCA) * 100 : 0;
+        const totalCoutProj  = Array.from({ length: 12 }, (_, i) => hasData(i) ? getVal(i, 72) : 0).reduce((a, b) => a + b, 0);
+        const totalCoutReal  = s(87);
+        const totalCoutRN1   = Array.from({ length: 12 }, (_, i) => hasData(i) ? getValN1(i, 87) : 0).reduce((a, b) => a + b, 0);
+        const ratioFP        = totalCA > 0 ? (totalCoutReal / totalCA) * 100 : 0;
+        const vsProjFP       = totalCoutProj > 0 ? fp((totalCoutReal - totalCoutProj) / totalCoutProj * 100) : '—';
+        const vsN1FP         = totalCoutRN1  > 0 ? fp((totalCoutReal - totalCoutRN1)  / totalCoutRN1  * 100) : '—';
+        const totalFgt       = Array.from({ length: 12 }, (_, i) => hasData(i) ? getFgTotal(i) : 0).reduce((a, b) => a + b, 0);
+        const ratioFG        = totalCA > 0 ? (totalFgt / totalCA) * 100 : 0;
+        return [
+          totalCA > 0 ? fe(totalCA) : '0,00 €', fe(totalBudgetCA), fp(varPYtd), fp(varBudYtd),
+          String(totalCvts), fe(tmHT), fp(varCvtsN1),
+          fe(totalAchats), `${ratioAchats.toFixed(2)} %`,
+          fe(totalCoutReal), `${ratioFP.toFixed(2)} %`, vsProjFP, vsN1FP,
+          totalFgt > 0 ? fe(totalFgt) : '0,00 €', `${ratioFG.toFixed(2)} %`,
         ];
       }
 
