@@ -312,13 +312,6 @@ export function useDashboardImportHandlers({
           const dateCell = getHistoricalBudgetCell(sheet, rowNumber, 0);
           const parsedDate = parseHistoricalBudgetCellDate(dateCell);
           if (!parsedDate) continue;
-          // Ne retenir que les lignes dont la date est issue d'une formule Excel.
-          // Les dates statiques (sans formule) sont des en-têtes de feuille, pas des lignes journalières.
-          const cellValue = dateCell?.value;
-          const isFormulaCell = cellValue != null
-            && typeof cellValue === 'object'
-            && 'result' in (cellValue as object);
-          if (!isFormulaCell) continue;
           scannedDateRows += 1;
           if (parsedDate.getFullYear() !== year || parsedDate.getMonth() !== monthIndex) continue;
           const day = parsedDate.getDate();
