@@ -395,8 +395,8 @@ export function useDashboardImportHandlers({
       updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle');
     });
     historicalBudgetPreviews.forEach(item => {
-      updateDashboard(item.month, item.rowIndex + '-0', '');
-      updateDashboard(item.month, item.rowIndex + '-1', '');
+      updateDashboard(item.month, item.rowIndex + '-0', item.caMidi > 0 ? formatImportedNumber(item.caMidi) : '');
+      updateDashboard(item.month, item.rowIndex + '-1', item.caSoir > 0 ? formatImportedNumber(item.caSoir) : '');
       updateDashboard(item.month, item.rowIndex + '-2', '');
       updateDashboard(item.month, item.rowIndex + '-6', formatImportedNumber(item.couvertsMidi, 0));
       updateDashboard(item.month, item.rowIndex + '-7', formatImportedNumber(item.tmMidi));
