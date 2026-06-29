@@ -1,4 +1,4 @@
-import type { Worksheet, Cell } from 'exceljs';
+﻿import type { Worksheet, Cell } from 'exceljs';
 
 export type XlRange = { rowCount: number; columnCount: number };
 
@@ -16,7 +16,7 @@ export const parseHistoricalBudgetNumber = (value: unknown) => {
     if (typeof result === 'number') return Number.isFinite(result) ? result : 0;
   }
   const cleaned = String(value ?? '')
-    .replace(/ /g, ' ')
+    .replace(/\s+/g, '')
     .replace(/s/g, '')
     .replace(',', '.')
     .replace(/[^0-9.-]/g, '');
@@ -262,7 +262,7 @@ export const parseHistoricalCostMatterCellNumber = (cell: Cell | undefined) => {
 
   const displayText = String(cell.text || cell.value || '')
     .replace(/−|–|—/g, '-')
-    .replace(/ /g, ' ')
+    .replace(/\s+/g, '')
     .trim();
   const compact = displayText.replace(/\s/g, '').replace(',', '.');
   const isNegative = /^-/.test(compact) || /-$/.test(compact) || /^\(.*\)$/.test(compact);

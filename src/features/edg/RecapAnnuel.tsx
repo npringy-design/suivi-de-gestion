@@ -457,7 +457,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(totalCvtsJour)),
           fe(totalCvtsJour > 0 ? totalCaJour / totalCvtsJour : 0),
           String(totalCumulCvts),
-          fp(54338 > 0 ? ((totalCvtsJour - 54338) / 54338) * 100 : 0),
+          fp(((totalCvtsJour - 54338) / 54338) * 100),
         ];
       }
 
