@@ -21,6 +21,64 @@ const handleChunkLoadError = (reason: unknown) => {
   window.location.reload();
 };
 
+const parseBudgetInteger = (value: string) => {
+  const normalized = value.replace(/\s/g, '').replace(/[^\d,-]/g, '').replace(',', '.');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const normalizeAnnualBudgetRecap = () => {
+  const tables = Array.from(document.querySelectorAll('table'));
+  const budgetTable = tables.find((table) => {
+    const firstGroup = table.tHead?.rows[0]?.cells[1];
+    const headerText = table.tHead?.textContent ?? '';
+    return firstGroup?.textContent?.trim() === 'CA'
+      && firstGroup.getAttribute('colspan') === '5'
+      && headerText.includes('COUVERT')
+      && headerText.includes('VAR');
+  });
+
+  if (!budgetTable) return;
+
+  const bodyRows = Array.from(budgetTable.tBodies[0]?.rows ?? []);
+  const totalRow = budgetTable.tFoot?.rows[0];
+  if (!totalRow || bodyRows.length === 0) return;
+
+  const lastMonthRow = [...bodyRows].reverse().find((row) => {
+    const caJour = row.cells[3]?.textContent?.trim() ?? '';
+    return caJour !== '' && caJour !== '0,00 €' && caJour !== '—';
+  });
+
+  if (lastMonthRow) {
+    const lastCaVariation = lastMonthRow.cells[5]?.textContent?.trim() ?? '';
+    const lastCouvertsVariation = lastMonthRow.cells[13]?.textContent?.trim() ?? '';
+
+    if (lastCaVariation && totalRow.cells[5]?.textContent !== lastCaVariation) {
+      totalRow.cells[5].textContent = lastCaVariation;
+    }
+
+    if (lastCouvertsVariation && totalRow.cells[13]?.textContent !== lastCouvertsVariation) {
+      totalRow.cells[13].textContent = lastCouvertsVariation;
+    }
+  }
+
+  const cumulativeCovers = bodyRows.reduce((sum, row) => (
+    sum + parseBudgetInteger(row.cells[12]?.textContent ?? '')
+  ), 0);
+  const cumulativeCoversText = String(Math.round(cumulativeCovers));
+
+  if (cumulativeCovers > 0 && totalRow.cells[12]?.textContent !== cumulativeCoversText) {
+    totalRow.cells[12].textContent = cumulativeCoversText;
+  }
+};
+
+const startAnnualBudgetRecapNormalizer = () => {
+  const run = () => window.requestAnimationFrame(normalizeAnnualBudgetRecap);
+  run();
+  const observer = new MutationObserver(run);
+  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+};
+
 window.addEventListener('unhandledrejection', (event) => handleChunkLoadError(event.reason));
 window.addEventListener('error', (event) => handleChunkLoadError(event.error ?? event.message));
 
@@ -28,3 +86,4 @@ window.addEventListener('error', (event) => handleChunkLoadError(event.error ?? 
 window.setTimeout(() => sessionStorage.removeItem(RELOAD_FLAG), 5000);
 
 createRoot(document.getElementById('root')!).render(<App />);
+startAnnualBudgetRecapNormalizer();
