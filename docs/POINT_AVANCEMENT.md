@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 30/06/2026 (dégradé doux RecapAnnuel)
+
+- RecapAnnuel : fonction tint() locale (hex→rgba) ; thead ligne 1 (DATE + groupes) en linear-gradient 135° tint(accentBg, 0.85→0.65→0.45), texte #0f172a ; ligne libellés en tint(accentBg, 0.16), texte #334155 ; DATE sticky tbody même dégradé (0.30→0.16→#f8fafc, 0.45→0.28→#f1f5f9 mois courant) ; bordures internes via tint ; ACCENT_PALE et paleBg supprimés (inutilisés) ; tfoot conserve accentBg plein. tsc OK. build OK. 81 tests OK.
+
 ## 29/06/2026 (palette section RecapAnnuel)
 
 - RecapAnnuel : map ACCENT_PALE par accentBg (6 sections) ; ligne groupes reste accentBg plein ; ligne libellés passe à paleBg + texte #374151 (plus de filter:brightness) ; DATE sticky accentBg uniforme, fontWeight 800 + boxShadow inset blanc sur mois courant ; cellules données blanc/#f8f8f7 zebrées (#f8fafc mois courant) sans aucune couleur colDef.bg. tsc OK. build OK. 81 tests OK.

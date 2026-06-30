@@ -733,13 +733,13 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     return result;
   }, [activeSection]);
 
-  const ACCENT_PALE: Record<string, string> = {
-    '#92400e': '#fef3c7',
-    '#1e40af': '#dbeafe',
-    '#166534': '#dcfce7',
-    '#7c2d12': '#fee2e2',
-    '#78350f': '#ffedd5',
-    '#1e3a5f': '#e0e7ff',
+  const tint = (hex: string, opacity: number) => {
+    const normalized = hex.replace('#', '');
+    const bigint = parseInt(normalized, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
   return (
@@ -813,7 +813,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
             getVals: (mi: number) => string[],
             totalVals: string[],
           ) => {
-            const paleBg = ACCENT_PALE[accentBg] ?? '#f1f5f9';
             const grps: { g: string; count: number }[] = [];
             cols.forEach(c => {
               const last = grps[grps.length - 1];
@@ -829,18 +828,18 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                 <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: '100%', minWidth: 'max-content' }}>
                   <thead>
                     <tr style={{ height: 40 }}>
-                      <th rowSpan={2} style={{ ...thBase, background: accentBg, color: accentColor, minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: '2px solid rgba(0,0,0,0.2)', borderBottom: '2px solid rgba(0,0,0,0.2)', fontSize: 10, letterSpacing: '.1em', borderTopLeftRadius: 8 }}>
+                      <th rowSpan={2} style={{ ...thBase, background: `linear-gradient(135deg, ${tint(accentBg, 0.85)} 0%, ${tint(accentBg, 0.65)} 48%, ${tint(accentBg, 0.45)} 100%)`, color: '#0f172a', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: `1px solid ${tint(accentBg, 0.34)}`, borderBottom: `1px solid ${tint(accentBg, 0.34)}`, fontSize: 10, letterSpacing: '.1em', borderTopLeftRadius: 8 }}>
                         DATE
                       </th>
                       {grps.map((gr, gi) => (
-                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: accentBg, color: accentColor, fontWeight: 700, top: 0, height: 40, fontSize: 10, letterSpacing: '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? '1px solid rgba(0,0,0,0.2)' : undefined, borderBottom: '2px solid rgba(0,0,0,0.2)', borderTopRightRadius: gi === grps.length - 1 ? 8 : undefined }}>
+                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: `linear-gradient(135deg, ${tint(accentBg, 0.85)} 0%, ${tint(accentBg, 0.65)} 48%, ${tint(accentBg, 0.45)} 100%)`, color: '#0f172a', fontWeight: 700, top: 0, height: 40, fontSize: 10, letterSpacing: '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? `1px solid ${tint(accentBg, 0.34)}` : undefined, borderBottom: `1px solid ${tint(accentBg, 0.34)}`, borderTopRightRadius: gi === grps.length - 1 ? 8 : undefined }}>
                           {gr.g}
                         </th>
                       ))}
                     </tr>
                     <tr style={{ height: 32 }}>
                       {cols.map((c, ci) => (
-                        <th key={`col${ci}`} style={{ ...thBase, background: paleBg, color: '#374151', fontWeight: 700, top: 40, height: 32, minWidth: c.w || 65, fontSize: 9, letterSpacing: '.04em', zIndex: 40, borderBottom: '2px solid rgba(0,0,0,0.12)', borderRight: '1px solid rgba(0,0,0,0.08)' }}>
+                        <th key={`col${ci}`} style={{ ...thBase, background: tint(accentBg, 0.16), color: '#334155', fontWeight: 700, top: 40, height: 32, minWidth: c.w || 65, fontSize: 9, letterSpacing: '.04em', zIndex: 40, borderBottom: `2px solid ${tint(accentBg, 0.34)}`, borderRight: `1px solid ${tint(accentBg, 0.20)}` }}>
                           {c.l}
                         </th>
                       ))}
@@ -852,7 +851,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                       const isCurrent = mi === new Date().getMonth() && YEAR === new Date().getFullYear();
                       return (
                         <tr key={mi} className="rr" style={{ background: isCurrent ? '#f8fafc' : (mi % 2 === 0 ? '#ffffff' : '#f8f8f7') }}>
-                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: accentBg, fontWeight: isCurrent ? 800 : 700, fontSize: 11, color: '#fff', borderRight: '2px solid rgba(0,0,0,0.2)', minWidth: 90, textAlign: 'left', paddingLeft: 10, boxShadow: isCurrent ? 'inset 3px 0 0 rgba(255,255,255,0.4)' : undefined }}>
+                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isCurrent ? `linear-gradient(135deg, ${tint(accentBg, 0.45)} 0%, ${tint(accentBg, 0.28)} 48%, #f1f5f9 100%)` : `linear-gradient(135deg, ${tint(accentBg, 0.30)} 0%, ${tint(accentBg, 0.16)} 48%, #f8fafc 100%)`, fontWeight: isCurrent ? 800 : 700, fontSize: 11, color: '#0f172a', borderRight: `1px solid ${tint(accentBg, 0.34)}`, minWidth: 90, textAlign: 'left', paddingLeft: 10 }}>
                             {MONTHS_SHORT[mi]}
                           </td>
                           {vals.map((v, ci) => {
