@@ -744,7 +744,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   return (
     <div style={{ height: '100vh', background: '#FAFAF9', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#EEF2FF!important}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#EEF2FF!important} .tbl-scroll::-webkit-scrollbar{height:5px} .tbl-scroll::-webkit-scrollbar-track{background:transparent} .tbl-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.18);border-radius:4px} .tbl-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.32)} .tbl-scroll{scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.18) transparent}`}</style>
 
       {/* HEADER */}
       <header style={{ background: '#1C1917', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, height: 'auto', minHeight: 64 }}>
@@ -824,8 +824,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                 <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#1C1917', marginBottom: 16, fontFamily: "Georgia, serif" }}>
                   {label}
                 </h2>
-                <div style={{ borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', border: '1px solid #D6D3D1' }}>
-                <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: '100%', minWidth: 'max-content' }}>
+                <div className="tbl-scroll" style={{ borderRadius: 8, overflowX: 'auto', overflowY: 'visible', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', border: '1px solid #D6D3D1' }}>
+                <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: 'max-content', minWidth: '100%' }}>
                   <thead>
                     <tr style={{ height: 40 }}>
                       <th rowSpan={2} style={{ ...thBase, background: accentBg, color: accentColor, minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: '1px solid rgba(0,0,0,0.15)', borderBottom: '1px solid rgba(0,0,0,0.15)', fontSize: 10, letterSpacing: '.1em', borderTopLeftRadius: 8 }}>
