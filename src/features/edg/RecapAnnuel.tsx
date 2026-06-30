@@ -742,26 +742,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
-  const BUDGET_HEADER_GRADIENT = 'linear-gradient(180deg, #FFE3AA 0%, #F5B44B 58%, #E59422 100%)';
-  const BUDGET_SUBHEADER_GRADIENT = 'linear-gradient(180deg, #FFF4D8 0%, #FFD58A 100%)';
-  const BUDGET_TOTAL_GRADIENT = 'linear-gradient(180deg, #F2A93D 0%, #D98216 58%, #B95F0C 100%)';
-  const BUDGET_BODY_BORDER = '#E8EDF4';
-  const BUDGET_ROW_ALT = '#FAFBFD';
-  const BUDGET_TEXT = '#1F3A5B';
-  const BUDGET_HEADER_TEXT = '#5F3407';
-
-  const sectionChrome = (accentBg: string, isBudgetTable: boolean) => {
-    if (isBudgetTable) {
-      return {
-        headerBg: BUDGET_HEADER_GRADIENT,
-        subHeaderBg: BUDGET_SUBHEADER_GRADIENT,
-        totalBg: BUDGET_TOTAL_GRADIENT,
-        headerColor: BUDGET_HEADER_TEXT,
-        subHeaderColor: '#613A0B',
-        headerBorder: 'rgba(141, 81, 12, 0.18)',
-        headerDivider: 'rgba(255,255,255,0.38)',
-      };
-    }
+  const sectionChrome = (accentBg: string) => {
     return {
       headerBg: `linear-gradient(180deg, ${tint(accentBg, 0.18)} 0%, ${tint(accentBg, 0.12)} 100%)`,
       subHeaderBg: `linear-gradient(180deg, ${tint(accentBg, 0.10)} 0%, ${tint(accentBg, 0.06)} 100%)`,
@@ -775,7 +756,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   return (
     <div style={{ height: '100vh', background: '#FAFAF9', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#EEF2FF!important} .rr-budget:hover td{background:#F7FAFC!important} .tbl-scroll::-webkit-scrollbar{height:5px} .tbl-scroll::-webkit-scrollbar-track{background:transparent} .tbl-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.18);border-radius:4px} .tbl-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.32)} .tbl-scroll{scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.18) transparent}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#EEF2FF!important} .tbl-scroll::-webkit-scrollbar{height:5px} .tbl-scroll::-webkit-scrollbar-track{background:transparent} .tbl-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.18);border-radius:4px} .tbl-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.32)} .tbl-scroll{scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.18) transparent}`}</style>
 
       {/* HEADER */}
       <header style={{ background: '#1C1917', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, height: 'auto', minHeight: 64 }}>
@@ -844,8 +825,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
             getVals: (mi: number) => string[],
             totalVals: string[],
           ) => {
-            const isBudgetTable = activeTab === 'budget';
-            const chrome = sectionChrome(accentBg, isBudgetTable);
+            const chrome = sectionChrome(accentBg);
             const grps: { g: string; count: number }[] = [];
             cols.forEach(c => {
               const last = grps[grps.length - 1];
@@ -857,22 +837,22 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                 <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#1C1917', marginBottom: 16, fontFamily: "Georgia, serif" }}>
                   {label}
                 </h2>
-                <div className="tbl-scroll" style={{ borderRadius: isBudgetTable ? 10 : 8, overflowX: 'auto', overflowY: 'visible', boxShadow: isBudgetTable ? '0 2px 7px rgba(31,41,55,0.08)' : '0 2px 8px rgba(0,0,0,0.10)', border: isBudgetTable ? '1px solid #E4E9F1' : '1px solid #D6D3D1' }}>
+                <div className="tbl-scroll" style={{ borderRadius: 8, overflowX: 'auto', overflowY: 'visible', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', border: '1px solid #D6D3D1' }}>
                 <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: 'max-content', minWidth: '100%' }}>
                   <thead>
-                    <tr style={{ height: isBudgetTable ? 34 : 36 }}>
+                    <tr style={{ height: 36 }}>
                       {grps.map((gr, gi) => (
-                        <th key={`g${gi}`} colSpan={gi === 0 ? gr.count + 1 : gr.count} style={{ ...thBase, background: chrome.headerBg, color: chrome.headerColor, fontWeight: 800, top: 0, height: isBudgetTable ? 34 : 36, fontSize: isBudgetTable ? 12 : 11, letterSpacing: '0', zIndex: 40, borderRight: gi < grps.length - 1 ? `1px solid ${chrome.headerDivider}` : undefined, borderBottom: `1px solid ${chrome.headerBorder}`, borderTopLeftRadius: gi === 0 ? (isBudgetTable ? 10 : 8) : undefined, borderTopRightRadius: gi === grps.length - 1 ? (isBudgetTable ? 10 : 8) : undefined, padding: isBudgetTable ? '4px 8px' : '5px 8px' }}>
+                        <th key={`g${gi}`} colSpan={gi === 0 ? gr.count + 1 : gr.count} style={{ ...thBase, background: chrome.headerBg, color: chrome.headerColor, fontWeight: 800, top: 0, height: 36, fontSize: 11, letterSpacing: '0', zIndex: 40, borderRight: gi < grps.length - 1 ? `1px solid ${chrome.headerDivider}` : undefined, borderBottom: `1px solid ${chrome.headerBorder}`, borderTopLeftRadius: gi === 0 ? 8 : undefined, borderTopRightRadius: gi === grps.length - 1 ? 8 : undefined, padding: '5px 8px' }}>
                           {gr.g}
                         </th>
                       ))}
                     </tr>
-                    <tr style={{ height: isBudgetTable ? 34 : 32 }}>
-                      <th style={{ ...thBase, background: chrome.subHeaderBg, color: chrome.subHeaderColor, fontWeight: 800, top: isBudgetTable ? 34 : 36, height: isBudgetTable ? 34 : 32, minWidth: 90, left: 0, zIndex: 60, fontSize: isBudgetTable ? 12 : 10, letterSpacing: '0', borderBottom: `1px solid ${chrome.headerBorder}`, borderRight: `1px solid ${chrome.headerDivider}`, padding: isBudgetTable ? '4px 8px' : '5px 8px' }}>
+                    <tr style={{ height: 32 }}>
+                      <th style={{ ...thBase, background: chrome.subHeaderBg, color: chrome.subHeaderColor, fontWeight: 800, top: 36, height: 32, minWidth: 90, left: 0, zIndex: 60, fontSize: 10, letterSpacing: '0', borderBottom: `1px solid ${chrome.headerBorder}`, borderRight: `1px solid ${chrome.headerDivider}`, padding: '5px 8px' }}>
                         DATE
                       </th>
                       {cols.map((c, ci) => (
-                        <th key={`col${ci}`} style={{ ...thBase, background: chrome.subHeaderBg, color: chrome.subHeaderColor, fontWeight: 800, top: isBudgetTable ? 34 : 36, height: isBudgetTable ? 34 : 32, minWidth: c.w || 65, fontSize: isBudgetTable ? 12 : 9, letterSpacing: '0', zIndex: 40, borderBottom: `1px solid ${chrome.headerBorder}`, borderRight: `1px solid ${chrome.headerDivider}`, padding: isBudgetTable ? '4px 8px' : '5px 8px' }}>
+                        <th key={`col${ci}`} style={{ ...thBase, background: chrome.subHeaderBg, color: chrome.subHeaderColor, fontWeight: 800, top: 36, height: 32, minWidth: c.w || 65, fontSize: 9, letterSpacing: '0', zIndex: 40, borderBottom: `1px solid ${chrome.headerBorder}`, borderRight: `1px solid ${chrome.headerDivider}`, padding: '5px 8px' }}>
                           {c.l}
                         </th>
                       ))}
@@ -883,15 +863,15 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                       const vals = getVals(mi);
                       const isCurrent = mi === new Date().getMonth() && YEAR === new Date().getFullYear();
                       return (
-                        <tr key={mi} className={isBudgetTable ? 'rr-budget' : 'rr'} style={{ background: isCurrent ? '#f8fafc' : (mi % 2 === 0 ? '#ffffff' : (isBudgetTable ? BUDGET_ROW_ALT : '#f8f8f7')) }}>
-                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isBudgetTable ? (isCurrent ? '#FEF3C7' : (mi % 2 === 0 ? '#fff' : BUDGET_ROW_ALT)) : (isCurrent ? `linear-gradient(135deg, ${tint(accentBg, 0.45)} 0%, ${tint(accentBg, 0.28)} 48%, #f1f5f9 100%)` : `linear-gradient(135deg, ${tint(accentBg, 0.30)} 0%, ${tint(accentBg, 0.16)} 48%, #f8fafc 100%)`), fontWeight: isCurrent ? 800 : 700, fontSize: isBudgetTable ? 13 : 11, color: '#0f172a', borderRight: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : `1px solid ${tint(accentBg, 0.34)}`, borderBottom: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : tdBase.border, minWidth: 90, textAlign: 'left', paddingLeft: isBudgetTable ? 16 : 10, paddingTop: isBudgetTable ? 8 : 6, paddingBottom: isBudgetTable ? 8 : 6 }}>
+                        <tr key={mi} className="rr" style={{ background: isCurrent ? '#f8fafc' : (mi % 2 === 0 ? '#ffffff' : '#f8f8f7') }}>
+                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isCurrent ? `linear-gradient(135deg, ${tint(accentBg, 0.45)} 0%, ${tint(accentBg, 0.28)} 48%, #f1f5f9 100%)` : `linear-gradient(135deg, ${tint(accentBg, 0.30)} 0%, ${tint(accentBg, 0.16)} 48%, #f8fafc 100%)`, fontWeight: isCurrent ? 800 : 700, fontSize: 11, color: '#0f172a', borderRight: `1px solid ${tint(accentBg, 0.34)}`, borderBottom: tdBase.border, minWidth: 90, textAlign: 'left', paddingLeft: 10, paddingTop: 6, paddingBottom: 6 }}>
                             {MONTHS_SHORT[mi]}
                           </td>
                           {vals.map((v, ci) => {
                             const colDef = cols[ci];
                             const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
                             const isPos = typeof v === 'string' && v.startsWith('+');
-                            let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : v === '—' || v === '' ? '#94a3b8' : (isBudgetTable ? BUDGET_TEXT : '#334155');
+                            let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : v === '—' || v === '' ? '#94a3b8' : '#334155';
                             let fontWeight: number = isNeg || isPos ? 700 : 500;
                             if (v !== '—' && v !== '') {
                               const num = parseFloat(v.replace(',', '.').replace('%', '').trim());
@@ -906,14 +886,12 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                             return (
                               <td key={ci} style={{
                                 ...tdBase,
-                                background: isCurrent ? '#f8fafc' : (mi % 2 === 0 ? '#ffffff' : (isBudgetTable ? BUDGET_ROW_ALT : '#f8f8f7')),
+                                background: isCurrent ? '#f8fafc' : (mi % 2 === 0 ? '#ffffff' : '#f8f8f7'),
                                 color,
                                 fontWeight,
                                 minWidth: colDef?.w ?? 65,
-                                fontSize: isBudgetTable ? 13 : tdBase.fontSize,
-                                padding: isBudgetTable ? '8px 10px' : tdBase.padding,
-                                borderBottom: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : '1px solid #E7E5E4',
-                                borderRight: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : '1px solid #E7E5E4',
+                                borderBottom: '1px solid #E7E5E4',
+                                borderRight: '1px solid #E7E5E4',
                               }}>
                                 {v}
                               </td>
@@ -925,7 +903,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: chrome.totalBg, fontWeight: 800, fontSize: isBudgetTable ? 13 : 12, color: '#fff', borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.10)' : `1px solid ${tint(accentBg, 0.22)}`, borderTop: isBudgetTable ? '1px solid rgba(0,0,0,0.10)' : `1px solid ${tint(accentBg, 0.26)}`, textAlign: 'left', paddingLeft: isBudgetTable ? 16 : 10, paddingTop: isBudgetTable ? 10 : 6, paddingBottom: isBudgetTable ? 10 : 6, letterSpacing: isBudgetTable ? '0' : '.1em', borderBottomLeftRadius: isBudgetTable ? 10 : 8 }}>
+                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: chrome.totalBg, fontWeight: 800, fontSize: 12, color: '#fff', borderRight: `1px solid ${tint(accentBg, 0.22)}`, borderTop: `1px solid ${tint(accentBg, 0.26)}`, textAlign: 'left', paddingLeft: 10, paddingTop: 6, paddingBottom: 6, letterSpacing: '.1em', borderBottomLeftRadius: 8 }}>
                         TOTAL
                       </td>
                       {totalVals.map((v, ci) => {
@@ -945,12 +923,11 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                         return (
                           <td key={ci} style={{
                             ...tdBase, background: chrome.totalBg,
-                            fontWeight: isBudgetTable ? 800 : 700, fontSize: isBudgetTable ? 13 : 11,
+                            fontWeight: 700, fontSize: 11,
                             color: needsTotalSignal ? undefined : color,
-                            padding: isBudgetTable ? '10px 10px' : tdBase.padding,
-                            borderTop: isBudgetTable ? '1px solid rgba(0,0,0,0.10)' : `1px solid ${tint(accentBg, 0.26)}`,
-                            borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.10)' : `1px solid ${tint(accentBg, 0.22)}`,
-                            borderBottomRightRadius: ci === totalVals.length - 1 ? (isBudgetTable ? 10 : 8) : undefined,
+                            borderTop: `1px solid ${tint(accentBg, 0.26)}`,
+                            borderRight: `1px solid ${tint(accentBg, 0.22)}`,
+                            borderBottomRightRadius: ci === totalVals.length - 1 ? 8 : undefined,
                           }}>
                             {needsTotalSignal ? (
                               <span style={{
