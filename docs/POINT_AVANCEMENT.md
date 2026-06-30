@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 30/06/2026 (palette dégradé Budget)
+
+- RecapAnnuel Budget : palette dédiée BUDGET_HEADER_GRADIENT (#B8763A→#9A5E28), BUDGET_SUBHEADER_BG (#C98848), BUDGET_TOTAL_GRADIENT (#6B3C14→#B8763A) ; appliqués conditionnellement via activeTab==='budget' sur thead ligne 1, libellés colonnes, DATE sticky tbody et tfoot ; toutes les autres sections inchangées. tsc OK. build OK. 81 tests OK.
+
 ## 30/06/2026 (couleur Budget + thead uniforme)
 
 - RecapAnnuel : accentBg Budget #92400e → #d97706 (jaune-orangé) ; ligne 1 thead (DATE + groupes) passe de linear-gradient à accentBg plein uni, bordures rgba(0,0,0,0.15) ; reste du dégradé doux (ligne libellés tint 0.16, DATE sticky, tfoot) inchangé. tsc OK. build OK. 81 tests OK.
