@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 30/06/2026 (couleur Budget + thead uniforme)
+
+- RecapAnnuel : accentBg Budget #92400e → #d97706 (jaune-orangé) ; ligne 1 thead (DATE + groupes) passe de linear-gradient à accentBg plein uni, bordures rgba(0,0,0,0.15) ; reste du dégradé doux (ligne libellés tint 0.16, DATE sticky, tfoot) inchangé. tsc OK. build OK. 81 tests OK.
+
 ## 30/06/2026 (dégradé doux RecapAnnuel)
 
 - RecapAnnuel : fonction tint() locale (hex→rgba) ; thead ligne 1 (DATE + groupes) en linear-gradient 135° tint(accentBg, 0.85→0.65→0.45), texte #0f172a ; ligne libellés en tint(accentBg, 0.16), texte #334155 ; DATE sticky tbody même dégradé (0.30→0.16→#f8fafc, 0.45→0.28→#f1f5f9 mois courant) ; bordures internes via tint ; ACCENT_PALE et paleBg supprimés (inutilisés) ; tfoot conserve accentBg plein. tsc OK. build OK. 81 tests OK.

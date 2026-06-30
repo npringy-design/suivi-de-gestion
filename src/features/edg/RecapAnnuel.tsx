@@ -295,7 +295,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   // Sections avec cols FP dynamiques selon schéma
   const SECTIONS = useMemo(() => [
-    { key: 'budget',          label: 'Budget',            icon: '🎯', accentBg: '#92400e', accentColor: '#fff', cols: COLS_BUDGET },
+    { key: 'budget',          label: 'Budget',            icon: '🎯', accentBg: '#d97706', accentColor: '#fff', cols: COLS_BUDGET },
     { key: 'realise',         label: 'Réalisé',           icon: '📊', accentBg: '#1e40af', accentColor: '#fff', cols: COLS_REALISE },
     { key: 'cout_matiere',    label: 'Coût Matière',      icon: '🛒', accentBg: '#166534', accentColor: '#fff', cols: COLS_COUT_MATIERE },
     { key: 'frais_personnel', label: 'Frais Personnel',   icon: '👥', accentBg: '#7c2d12', accentColor: '#fff', cols: isGlobal ? COLS_FP_GLOBAL : COLS_FP_CUISINE_SALLE },
@@ -828,11 +828,11 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                 <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: '100%', minWidth: 'max-content' }}>
                   <thead>
                     <tr style={{ height: 40 }}>
-                      <th rowSpan={2} style={{ ...thBase, background: `linear-gradient(135deg, ${tint(accentBg, 0.85)} 0%, ${tint(accentBg, 0.65)} 48%, ${tint(accentBg, 0.45)} 100%)`, color: '#0f172a', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: `1px solid ${tint(accentBg, 0.34)}`, borderBottom: `1px solid ${tint(accentBg, 0.34)}`, fontSize: 10, letterSpacing: '.1em', borderTopLeftRadius: 8 }}>
+                      <th rowSpan={2} style={{ ...thBase, background: accentBg, color: accentColor, minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: '1px solid rgba(0,0,0,0.15)', borderBottom: '1px solid rgba(0,0,0,0.15)', fontSize: 10, letterSpacing: '.1em', borderTopLeftRadius: 8 }}>
                         DATE
                       </th>
                       {grps.map((gr, gi) => (
-                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: `linear-gradient(135deg, ${tint(accentBg, 0.85)} 0%, ${tint(accentBg, 0.65)} 48%, ${tint(accentBg, 0.45)} 100%)`, color: '#0f172a', fontWeight: 700, top: 0, height: 40, fontSize: 10, letterSpacing: '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? `1px solid ${tint(accentBg, 0.34)}` : undefined, borderBottom: `1px solid ${tint(accentBg, 0.34)}`, borderTopRightRadius: gi === grps.length - 1 ? 8 : undefined }}>
+                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: accentBg, color: accentColor, fontWeight: 700, top: 0, height: 40, fontSize: 10, letterSpacing: '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? '1px solid rgba(0,0,0,0.15)' : undefined, borderBottom: '1px solid rgba(0,0,0,0.15)', borderTopRightRadius: gi === grps.length - 1 ? 8 : undefined }}>
                           {gr.g}
                         </th>
                       ))}
