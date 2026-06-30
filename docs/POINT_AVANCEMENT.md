@@ -7,6 +7,8 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ## 30/06/2026 (DATE tbody Budget neutre)
 
+- RecapAnnuel Budget : alignement visuel du tableau sur la maquette Base44 — en-tête brun dégradé, sous-en-tête caramel, cellule DATE en ligne de libellés, corps plus aéré, bordures fines et total brun dégradé ; colonnes et calculs inchangés. tsc OK.
+
 - RecapAnnuel Budget : cellule DATE sticky tbody passe de BUDGET_HEADER_GRADIENT (brun) à fond neutre — blanc/#faf8f5 zebrée, jaune #fef3c7 sur mois courant ; texte #0f172a, borderRight #e7e5e4 ; thead et tfoot inchangés. tsc OK. build OK. 81 tests OK.
 
 ## 30/06/2026 (palette dégradé Budget)

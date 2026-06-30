@@ -77,19 +77,19 @@ type ColDef = { g: string; l: string; bg: string; w: number; threshold?: number;
 
 const COLS_BUDGET: ColDef[] = [
   // 13 colonnes — CA Limo (col 2) + groupe LIMONADE (cols 14-16) + VAE exclus
-  { g: 'CA',             l: 'CA HT\nMidi',         bg: BG_BUDG,  w: 70 }, // col 0
-  { g: 'CA',             l: 'CA HT\nSoir',         bg: BG_BUDG,  w: 70 }, // col 1
-  { g: 'CA',             l: 'CA HT\nJour',         bg: BG_BUDG,  w: 75 }, // col 3
-  { g: 'CA',             l: 'Cumul\nDepuis le 01', bg: BG_BUDG,  w: 80 }, // col 4 (last day)
-  { g: 'CA',             l: 'VAR\nVS N-1',         bg: BG_HATCH, w: 65 }, // calc local
-  { g: 'COUVERT\nMIDI',  l: 'NB CVTS',             bg: BG_BUDG,  w: 65 }, // col 6
-  { g: 'COUVERT\nMIDI',  l: 'CVTS MOY HT',         bg: BG_BUDG,  w: 75 }, // CA Midi / NB Midi
-  { g: 'COUVERT\nSOIR',  l: 'NB CVTS',             bg: BG_BUDG,  w: 65 }, // col 8
-  { g: 'COUVERT\nSOIR',  l: 'CVTS MOY HT',         bg: BG_BUDG,  w: 75 }, // CA Soir / NB Soir
-  { g: 'COUVERT\nJOUR',  l: 'NB CVTS',             bg: BG_BUDG,  w: 65 }, // col 10
-  { g: 'COUVERT\nJOUR',  l: 'CVTS MOY',            bg: BG_BUDG,  w: 65 }, // CA Jour / NB Jour
-  { g: 'COUVERT\nJOUR',  l: 'CVTS CUMUL',          bg: BG_BUDG,  w: 75 }, // col 12 (last day)
-  { g: 'COUVERT\nJOUR',  l: 'VAR VS N-1',          bg: BG_HATCH, w: 65 }, // calc local
+  { g: 'CA',            l: 'CA HT MIDI',        bg: BG_BUDG,  w: 70 }, // col 0
+  { g: 'CA',            l: 'CA HT SOIR',        bg: BG_BUDG,  w: 70 }, // col 1
+  { g: 'CA',            l: 'CA HT JOUR',        bg: BG_BUDG,  w: 75 }, // col 3
+  { g: 'CA',            l: 'CUMUL DEPUIS LE 01', bg: BG_BUDG,  w: 80 }, // col 4 (last day)
+  { g: 'CA',            l: 'VAR VS N-1',        bg: BG_HATCH, w: 65 }, // calc local
+  { g: 'COUVERT MIDI',  l: 'NB CVTS',           bg: BG_BUDG,  w: 65 }, // col 6
+  { g: 'COUVERT MIDI',  l: 'CVTS MOY HT',       bg: BG_BUDG,  w: 75 }, // CA Midi / NB Midi
+  { g: 'COUVERT SOIR',  l: 'NB CVTS',           bg: BG_BUDG,  w: 65 }, // col 8
+  { g: 'COUVERT SOIR',  l: 'CVTS MOY HT',       bg: BG_BUDG,  w: 75 }, // CA Soir / NB Soir
+  { g: 'COUVERT JOUR',  l: 'NB CVTS',           bg: BG_BUDG,  w: 65 }, // col 10
+  { g: 'COUVERT JOUR',  l: 'CVTS MOY',          bg: BG_BUDG,  w: 65 }, // CA Jour / NB Jour
+  { g: 'COUVERT JOUR',  l: 'CVTS CUMUL',        bg: BG_BUDG,  w: 75 }, // col 12 (last day)
+  { g: 'COUVERT JOUR',  l: 'VAR VS N-1',        bg: BG_HATCH, w: 65 }, // calc local
 ];
 
 const COLS_REALISE: ColDef[] = [
@@ -742,13 +742,16 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
-  const BUDGET_HEADER_GRADIENT = 'linear-gradient(135deg, #B8763A 0%, #9A5E28 100%)';
-  const BUDGET_SUBHEADER_BG = '#C98848';
-  const BUDGET_TOTAL_GRADIENT = 'linear-gradient(to right, #5C3010 0%, #8B5A2B 45%, #B8763A 80%, #C8903A 100%)';
+  const BUDGET_HEADER_GRADIENT = 'linear-gradient(180deg, #B8763A 0%, #9A5E28 100%)';
+  const BUDGET_SUBHEADER_BG = '#C28A4C';
+  const BUDGET_TOTAL_GRADIENT = 'linear-gradient(90deg, #744616 0%, #8A5A2B 48%, #B8763A 100%)';
+  const BUDGET_BODY_BORDER = '#EDF1F6';
+  const BUDGET_ROW_ALT = '#FBFCFE';
+  const BUDGET_TEXT = '#1F3A5B';
 
   return (
     <div style={{ height: '100vh', background: '#FAFAF9', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#EEF2FF!important} .tbl-scroll::-webkit-scrollbar{height:5px} .tbl-scroll::-webkit-scrollbar-track{background:transparent} .tbl-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.18);border-radius:4px} .tbl-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.32)} .tbl-scroll{scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.18) transparent}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap'); *{box-sizing:border-box} button{outline:none} .rr:hover td{background:#EEF2FF!important} .rr-budget:hover td{background:#F7FAFC!important} .tbl-scroll::-webkit-scrollbar{height:5px} .tbl-scroll::-webkit-scrollbar-track{background:transparent} .tbl-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.18);border-radius:4px} .tbl-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.32)} .tbl-scroll{scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.18) transparent}`}</style>
 
       {/* HEADER */}
       <header style={{ background: '#1C1917', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, height: 'auto', minHeight: 64 }}>
@@ -817,6 +820,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
             getVals: (mi: number) => string[],
             totalVals: string[],
           ) => {
+            const isBudgetTable = activeTab === 'budget';
             const grps: { g: string; count: number }[] = [];
             cols.forEach(c => {
               const last = grps[grps.length - 1];
@@ -825,25 +829,32 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
             });
             return (
               <div key={label} style={{ marginBottom: 32 }}>
-                <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#1C1917', marginBottom: 16, fontFamily: "Georgia, serif" }}>
-                  {label}
-                </h2>
-                <div className="tbl-scroll" style={{ borderRadius: 8, overflowX: 'auto', overflowY: 'visible', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', border: '1px solid #D6D3D1' }}>
+                {!isBudgetTable && (
+                  <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#1C1917', marginBottom: 16, fontFamily: "Georgia, serif" }}>
+                    {label}
+                  </h2>
+                )}
+                <div className="tbl-scroll" style={{ borderRadius: isBudgetTable ? 10 : 8, overflowX: 'auto', overflowY: 'visible', boxShadow: isBudgetTable ? '0 3px 10px rgba(31,41,55,0.10)' : '0 2px 8px rgba(0,0,0,0.10)', border: isBudgetTable ? '1px solid #E4E9F1' : '1px solid #D6D3D1' }}>
                 <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: 'max-content', minWidth: '100%' }}>
                   <thead>
-                    <tr style={{ height: 40 }}>
-                      <th rowSpan={2} style={{ ...thBase, background: activeTab === 'budget' ? BUDGET_HEADER_GRADIENT : accentBg, color: '#fff', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: '1px solid rgba(0,0,0,0.15)', borderBottom: '1px solid rgba(0,0,0,0.15)', fontSize: 10, letterSpacing: '.1em', borderTopLeftRadius: 8 }}>
-                        DATE
+                    <tr style={{ height: isBudgetTable ? 46 : 40 }}>
+                      <th rowSpan={isBudgetTable ? 1 : 2} style={{ ...thBase, background: isBudgetTable ? BUDGET_HEADER_GRADIENT : accentBg, color: '#fff', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(0,0,0,0.15)', borderBottom: isBudgetTable ? '1px solid rgba(0,0,0,0.10)' : '1px solid rgba(0,0,0,0.15)', fontSize: isBudgetTable ? 12 : 10, letterSpacing: isBudgetTable ? '0' : '.1em', borderTopLeftRadius: isBudgetTable ? 10 : 8, height: isBudgetTable ? 46 : undefined }}>
+                        {isBudgetTable ? '' : 'DATE'}
                       </th>
                       {grps.map((gr, gi) => (
-                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: activeTab === 'budget' ? BUDGET_HEADER_GRADIENT : accentBg, color: '#fff', fontWeight: 700, top: 0, height: 40, fontSize: 10, letterSpacing: '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? '1px solid rgba(0,0,0,0.15)' : undefined, borderBottom: '1px solid rgba(0,0,0,0.15)', borderTopRightRadius: gi === grps.length - 1 ? 8 : undefined }}>
+                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: isBudgetTable ? BUDGET_HEADER_GRADIENT : accentBg, color: '#fff', fontWeight: isBudgetTable ? 800 : 700, top: 0, height: isBudgetTable ? 46 : 40, fontSize: isBudgetTable ? 13 : 10, letterSpacing: isBudgetTable ? '0' : '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? (isBudgetTable ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(0,0,0,0.15)') : undefined, borderBottom: isBudgetTable ? '1px solid rgba(0,0,0,0.10)' : '1px solid rgba(0,0,0,0.15)', borderTopRightRadius: gi === grps.length - 1 ? (isBudgetTable ? 10 : 8) : undefined }}>
                           {gr.g}
                         </th>
                       ))}
                     </tr>
-                    <tr style={{ height: 32 }}>
+                    <tr style={{ height: isBudgetTable ? 44 : 32 }}>
+                      {isBudgetTable && (
+                        <th style={{ ...thBase, background: BUDGET_SUBHEADER_BG, color: '#fff', fontWeight: 800, top: 46, height: 44, minWidth: 90, left: 0, zIndex: 60, fontSize: 13, letterSpacing: '0', borderBottom: '1px solid rgba(0,0,0,0.08)', borderRight: '1px solid rgba(255,255,255,0.16)' }}>
+                          DATE
+                        </th>
+                      )}
                       {cols.map((c, ci) => (
-                        <th key={`col${ci}`} style={{ ...thBase, background: activeTab === 'budget' ? BUDGET_SUBHEADER_BG : tint(accentBg, 0.16), color: activeTab === 'budget' ? '#fff' : '#334155', fontWeight: 700, top: 40, height: 32, minWidth: c.w || 65, fontSize: 9, letterSpacing: '.04em', zIndex: 40, borderBottom: activeTab === 'budget' ? '2px solid rgba(0,0,0,0.15)' : `2px solid ${tint(accentBg, 0.34)}`, borderRight: activeTab === 'budget' ? '1px solid rgba(0,0,0,0.10)' : `1px solid ${tint(accentBg, 0.20)}` }}>
+                        <th key={`col${ci}`} style={{ ...thBase, background: isBudgetTable ? BUDGET_SUBHEADER_BG : tint(accentBg, 0.16), color: isBudgetTable ? '#fff' : '#334155', fontWeight: isBudgetTable ? 800 : 700, top: isBudgetTable ? 46 : 40, height: isBudgetTable ? 44 : 32, minWidth: c.w || 65, fontSize: isBudgetTable ? 13 : 9, letterSpacing: isBudgetTable ? '0' : '.04em', zIndex: 40, borderBottom: isBudgetTable ? '1px solid rgba(0,0,0,0.08)' : `2px solid ${tint(accentBg, 0.34)}`, borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.16)' : `1px solid ${tint(accentBg, 0.20)}` }}>
                           {c.l}
                         </th>
                       ))}
@@ -854,15 +865,15 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                       const vals = getVals(mi);
                       const isCurrent = mi === new Date().getMonth() && YEAR === new Date().getFullYear();
                       return (
-                        <tr key={mi} className="rr" style={{ background: isCurrent ? '#f8fafc' : (mi % 2 === 0 ? '#ffffff' : '#f8f8f7') }}>
-                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: activeTab === 'budget' ? (isCurrent ? '#fef3c7' : (mi % 2 === 0 ? '#fff' : '#faf8f5')) : (isCurrent ? `linear-gradient(135deg, ${tint(accentBg, 0.45)} 0%, ${tint(accentBg, 0.28)} 48%, #f1f5f9 100%)` : `linear-gradient(135deg, ${tint(accentBg, 0.30)} 0%, ${tint(accentBg, 0.16)} 48%, #f8fafc 100%)`), fontWeight: isCurrent ? 800 : 700, fontSize: 11, color: activeTab === 'budget' ? '#0f172a' : '#0f172a', borderRight: activeTab === 'budget' ? '1px solid #e7e5e4' : `1px solid ${tint(accentBg, 0.34)}`, minWidth: 90, textAlign: 'left', paddingLeft: 10 }}>
+                        <tr key={mi} className={isBudgetTable ? 'rr-budget' : 'rr'} style={{ background: isCurrent ? '#f8fafc' : (mi % 2 === 0 ? '#ffffff' : (isBudgetTable ? BUDGET_ROW_ALT : '#f8f8f7')) }}>
+                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isBudgetTable ? (isCurrent ? '#FEF3C7' : (mi % 2 === 0 ? '#fff' : BUDGET_ROW_ALT)) : (isCurrent ? `linear-gradient(135deg, ${tint(accentBg, 0.45)} 0%, ${tint(accentBg, 0.28)} 48%, #f1f5f9 100%)` : `linear-gradient(135deg, ${tint(accentBg, 0.30)} 0%, ${tint(accentBg, 0.16)} 48%, #f8fafc 100%)`), fontWeight: isCurrent ? 800 : 700, fontSize: isBudgetTable ? 14 : 11, color: '#0f172a', borderRight: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : `1px solid ${tint(accentBg, 0.34)}`, borderBottom: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : tdBase.border, minWidth: 90, textAlign: 'left', paddingLeft: isBudgetTable ? 18 : 10, paddingTop: isBudgetTable ? 15 : 6, paddingBottom: isBudgetTable ? 15 : 6 }}>
                             {MONTHS_SHORT[mi]}
                           </td>
                           {vals.map((v, ci) => {
                             const colDef = cols[ci];
                             const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
                             const isPos = typeof v === 'string' && v.startsWith('+');
-                            let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : v === '—' || v === '' ? '#94a3b8' : '#334155';
+                            let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : v === '—' || v === '' ? '#94a3b8' : (isBudgetTable ? BUDGET_TEXT : '#334155');
                             let fontWeight: number = isNeg || isPos ? 700 : 500;
                             if (v !== '—' && v !== '') {
                               const num = parseFloat(v.replace(',', '.').replace('%', '').trim());
@@ -877,12 +888,14 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                             return (
                               <td key={ci} style={{
                                 ...tdBase,
-                                background: isCurrent ? '#f8fafc' : (mi % 2 === 0 ? '#ffffff' : '#f8f8f7'),
+                                background: isCurrent ? '#f8fafc' : (mi % 2 === 0 ? '#ffffff' : (isBudgetTable ? BUDGET_ROW_ALT : '#f8f8f7')),
                                 color,
                                 fontWeight,
                                 minWidth: colDef?.w ?? 65,
-                                borderBottom: '1px solid #E7E5E4',
-                                borderRight: '1px solid #E7E5E4',
+                                fontSize: isBudgetTable ? 14 : tdBase.fontSize,
+                                padding: isBudgetTable ? '15px 16px' : tdBase.padding,
+                                borderBottom: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : '1px solid #E7E5E4',
+                                borderRight: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : '1px solid #E7E5E4',
                               }}>
                                 {v}
                               </td>
@@ -894,7 +907,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: activeTab === 'budget' ? BUDGET_TOTAL_GRADIENT : accentBg, fontWeight: 800, fontSize: 12, color: '#fff', borderRight: '2px solid rgba(0,0,0,0.2)', borderTop: '2px solid rgba(0,0,0,0.2)', textAlign: 'left', paddingLeft: 10, letterSpacing: '.1em', borderBottomLeftRadius: 8 }}>
+                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isBudgetTable ? BUDGET_TOTAL_GRADIENT : accentBg, fontWeight: 800, fontSize: isBudgetTable ? 14 : 12, color: '#fff', borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.14)' : '2px solid rgba(0,0,0,0.2)', borderTop: isBudgetTable ? '1px solid rgba(0,0,0,0.12)' : '2px solid rgba(0,0,0,0.2)', textAlign: 'left', paddingLeft: isBudgetTable ? 18 : 10, paddingTop: isBudgetTable ? 16 : 6, paddingBottom: isBudgetTable ? 16 : 6, letterSpacing: isBudgetTable ? '0' : '.1em', borderBottomLeftRadius: isBudgetTable ? 10 : 8 }}>
                         TOTAL
                       </td>
                       {totalVals.map((v, ci) => {
@@ -912,11 +925,13 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                         }
                         return (
                           <td key={ci} style={{
-                            ...tdBase, background: activeTab === 'budget' ? BUDGET_TOTAL_GRADIENT : accentBg,
-                            fontWeight: 700, fontSize: 11,
+                            ...tdBase, background: isBudgetTable ? BUDGET_TOTAL_GRADIENT : accentBg,
+                            fontWeight: isBudgetTable ? 800 : 700, fontSize: isBudgetTable ? 14 : 11,
                             color,
-                            borderTop: '2px solid rgba(0,0,0,0.15)',
-                            borderBottomRightRadius: ci === totalVals.length - 1 ? 8 : undefined,
+                            padding: isBudgetTable ? '16px 16px' : tdBase.padding,
+                            borderTop: isBudgetTable ? '1px solid rgba(0,0,0,0.12)' : '2px solid rgba(0,0,0,0.15)',
+                            borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.12)' : tdBase.border,
+                            borderBottomRightRadius: ci === totalVals.length - 1 ? (isBudgetTable ? 10 : 8) : undefined,
                           }}>
                             {v}
                           </td>
