@@ -27,21 +27,47 @@ const parseBudgetInteger = (value: string) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const normalizeAnnualBudgetRecap = () => {
+const findAnnualBudgetTable = () => {
   const tables = Array.from(document.querySelectorAll('table'));
-  const budgetTable = tables.find((table) => {
-    const firstGroup = table.tHead?.rows[0]?.cells[1];
-    const headerText = table.tHead?.textContent ?? '';
-    return firstGroup?.textContent?.trim() === 'CA'
-      && firstGroup.getAttribute('colspan') === '5'
-      && headerText.includes('COUVERT')
-      && headerText.includes('VAR');
+  return tables.find((table) => {
+    const headerRows = table.tHead?.rows;
+    if (!headerRows || headerRows.length < 2) return false;
+
+    const groupText = headerRows[0]?.textContent?.replace(/\s+/g, ' ').toUpperCase() ?? '';
+    const columnText = headerRows[1]?.textContent?.replace(/\s+/g, ' ').toUpperCase() ?? '';
+
+    return groupText.includes('CA')
+      && groupText.includes('COUVERT')
+      && columnText.includes('CUMUL')
+      && columnText.includes('VAR')
+      && columnText.includes('NB CVTS');
   });
+};
 
-  if (!budgetTable) return;
+const splitBudgetVariationHeader = (table: HTMLTableElement) => {
+  const firstRow = table.tHead?.rows[0];
+  if (!firstRow) return;
 
-  const bodyRows = Array.from(budgetTable.tBodies[0]?.rows ?? []);
-  const totalRow = budgetTable.tFoot?.rows[0];
+  const headerCells = Array.from(firstRow.cells);
+  const alreadySplit = headerCells.some((cell) => cell.textContent?.trim().toUpperCase() === 'VARIATION');
+  if (alreadySplit) return;
+
+  const caHeader = headerCells.find((cell) => (
+    cell.textContent?.trim().toUpperCase() === 'CA' && cell.colSpan === 5
+  ));
+  if (!caHeader) return;
+
+  caHeader.colSpan = 4;
+  const variationHeader = caHeader.cloneNode(false) as HTMLTableCellElement;
+  variationHeader.textContent = 'VARIATION';
+  variationHeader.colSpan = 1;
+  variationHeader.style.borderTopRightRadius = '';
+  caHeader.after(variationHeader);
+};
+
+const normalizeAnnualBudgetTotals = (table: HTMLTableElement) => {
+  const bodyRows = Array.from(table.tBodies[0]?.rows ?? []);
+  const totalRow = table.tFoot?.rows[0];
   if (!totalRow || bodyRows.length === 0) return;
 
   const lastMonthRow = [...bodyRows].reverse().find((row) => {
@@ -72,11 +98,20 @@ const normalizeAnnualBudgetRecap = () => {
   }
 };
 
+const normalizeAnnualBudgetRecap = () => {
+  const budgetTable = findAnnualBudgetTable();
+  if (!budgetTable) return;
+
+  splitBudgetVariationHeader(budgetTable);
+  normalizeAnnualBudgetTotals(budgetTable);
+};
+
 const startAnnualBudgetRecapNormalizer = () => {
   const run = () => window.requestAnimationFrame(normalizeAnnualBudgetRecap);
   run();
   const observer = new MutationObserver(run);
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  window.setInterval(run, 500);
 };
 
 window.addEventListener('unhandledrejection', (event) => handleChunkLoadError(event.reason));
