@@ -17,4 +17,38 @@
   h2[style*="Georgia"] {
     display: none;
   }
+
+  /* RecapAnnuel Budget : sépare visuellement la colonne VAR VS N-1 du groupe CA. */
+  thead tr:first-child th:nth-child(2)[colspan="5"] {
+    color: transparent !important;
+    position: sticky;
+  }
+
+  thead tr:first-child th:nth-child(2)[colspan="5"]::before,
+  thead tr:first-child th:nth-child(2)[colspan="5"]::after {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    pointer-events: none;
+  }
+
+  thead tr:first-child th:nth-child(2)[colspan="5"]::before {
+    content: "CA";
+    left: 0;
+    width: 80%;
+    border-right: 1px solid rgba(255, 255, 255, 0.45);
+  }
+
+  thead tr:first-child th:nth-child(2)[colspan="5"]::after {
+    content: "VARIATION";
+    left: 80%;
+    width: 20%;
+  }
 }
