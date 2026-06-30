@@ -742,11 +742,11 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
-  const BUDGET_HEADER_GRADIENT = 'linear-gradient(180deg, #B8763A 0%, #9A5E28 100%)';
-  const BUDGET_SUBHEADER_BG = '#C28A4C';
-  const BUDGET_TOTAL_GRADIENT = 'linear-gradient(90deg, #744616 0%, #8A5A2B 48%, #B8763A 100%)';
-  const BUDGET_BODY_BORDER = '#EDF1F6';
-  const BUDGET_ROW_ALT = '#FBFCFE';
+  const BUDGET_HEADER_GRADIENT = 'linear-gradient(180deg, #B77A3D 0%, #A36A31 52%, #8F5925 100%)';
+  const BUDGET_SUBHEADER_GRADIENT = 'linear-gradient(180deg, #C79356 0%, #BC8549 100%)';
+  const BUDGET_TOTAL_GRADIENT = 'linear-gradient(180deg, #A36E38 0%, #8B5A2B 54%, #754818 100%)';
+  const BUDGET_BODY_BORDER = '#E8EDF4';
+  const BUDGET_ROW_ALT = '#FAFBFD';
   const BUDGET_TEXT = '#1F3A5B';
 
   return (
@@ -809,7 +809,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       </div>
 
       {/* TABLEAU */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: activeTab === 'budget' ? '8px 16px 12px' : '24px' }}>
         {(() => {
           const renderTable = (
             cols: ColDef[],
@@ -834,27 +834,27 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                     {label}
                   </h2>
                 )}
-                <div className="tbl-scroll" style={{ borderRadius: isBudgetTable ? 10 : 8, overflowX: 'auto', overflowY: 'visible', boxShadow: isBudgetTable ? '0 3px 10px rgba(31,41,55,0.10)' : '0 2px 8px rgba(0,0,0,0.10)', border: isBudgetTable ? '1px solid #E4E9F1' : '1px solid #D6D3D1' }}>
+                <div className="tbl-scroll" style={{ borderRadius: isBudgetTable ? 10 : 8, overflowX: 'auto', overflowY: 'visible', boxShadow: isBudgetTable ? '0 2px 7px rgba(31,41,55,0.08)' : '0 2px 8px rgba(0,0,0,0.10)', border: isBudgetTable ? '1px solid #E4E9F1' : '1px solid #D6D3D1' }}>
                 <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: 'max-content', minWidth: '100%' }}>
                   <thead>
-                    <tr style={{ height: isBudgetTable ? 46 : 40 }}>
-                      <th rowSpan={isBudgetTable ? 1 : 2} style={{ ...thBase, background: isBudgetTable ? BUDGET_HEADER_GRADIENT : accentBg, color: '#fff', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(0,0,0,0.15)', borderBottom: isBudgetTable ? '1px solid rgba(0,0,0,0.10)' : '1px solid rgba(0,0,0,0.15)', fontSize: isBudgetTable ? 12 : 10, letterSpacing: isBudgetTable ? '0' : '.1em', borderTopLeftRadius: isBudgetTable ? 10 : 8, height: isBudgetTable ? 46 : undefined }}>
+                    <tr style={{ height: isBudgetTable ? 34 : 40 }}>
+                      <th rowSpan={isBudgetTable ? 1 : 2} style={{ ...thBase, background: isBudgetTable ? BUDGET_HEADER_GRADIENT : accentBg, color: '#fff', minWidth: 90, left: 0, top: 0, zIndex: 60, borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.15)', borderBottom: isBudgetTable ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.15)', fontSize: isBudgetTable ? 12 : 10, letterSpacing: isBudgetTable ? '0' : '.1em', borderTopLeftRadius: isBudgetTable ? 10 : 8, height: isBudgetTable ? 34 : undefined, padding: isBudgetTable ? '4px 8px' : thBase.padding }}>
                         {isBudgetTable ? '' : 'DATE'}
                       </th>
                       {grps.map((gr, gi) => (
-                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: isBudgetTable ? BUDGET_HEADER_GRADIENT : accentBg, color: '#fff', fontWeight: isBudgetTable ? 800 : 700, top: 0, height: isBudgetTable ? 46 : 40, fontSize: isBudgetTable ? 13 : 10, letterSpacing: isBudgetTable ? '0' : '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? (isBudgetTable ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(0,0,0,0.15)') : undefined, borderBottom: isBudgetTable ? '1px solid rgba(0,0,0,0.10)' : '1px solid rgba(0,0,0,0.15)', borderTopRightRadius: gi === grps.length - 1 ? (isBudgetTable ? 10 : 8) : undefined }}>
+                        <th key={`g${gi}`} colSpan={gr.count} style={{ ...thBase, background: isBudgetTable ? BUDGET_HEADER_GRADIENT : accentBg, color: '#fff', fontWeight: isBudgetTable ? 800 : 700, top: 0, height: isBudgetTable ? 34 : 40, fontSize: isBudgetTable ? 12 : 10, letterSpacing: isBudgetTable ? '0' : '.12em', zIndex: 40, borderRight: gi < grps.length - 1 ? (isBudgetTable ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.15)') : undefined, borderBottom: isBudgetTable ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.15)', borderTopRightRadius: gi === grps.length - 1 ? (isBudgetTable ? 10 : 8) : undefined, padding: isBudgetTable ? '4px 8px' : thBase.padding }}>
                           {gr.g}
                         </th>
                       ))}
                     </tr>
-                    <tr style={{ height: isBudgetTable ? 44 : 32 }}>
+                    <tr style={{ height: isBudgetTable ? 34 : 32 }}>
                       {isBudgetTable && (
-                        <th style={{ ...thBase, background: BUDGET_SUBHEADER_BG, color: '#fff', fontWeight: 800, top: 46, height: 44, minWidth: 90, left: 0, zIndex: 60, fontSize: 13, letterSpacing: '0', borderBottom: '1px solid rgba(0,0,0,0.08)', borderRight: '1px solid rgba(255,255,255,0.16)' }}>
+                        <th style={{ ...thBase, background: BUDGET_SUBHEADER_GRADIENT, color: '#fff', fontWeight: 800, top: 34, height: 34, minWidth: 90, left: 0, zIndex: 60, fontSize: 12, letterSpacing: '0', borderBottom: '1px solid rgba(0,0,0,0.06)', borderRight: '1px solid rgba(255,255,255,0.10)', padding: '4px 8px' }}>
                           DATE
                         </th>
                       )}
                       {cols.map((c, ci) => (
-                        <th key={`col${ci}`} style={{ ...thBase, background: isBudgetTable ? BUDGET_SUBHEADER_BG : tint(accentBg, 0.16), color: isBudgetTable ? '#fff' : '#334155', fontWeight: isBudgetTable ? 800 : 700, top: isBudgetTable ? 46 : 40, height: isBudgetTable ? 44 : 32, minWidth: c.w || 65, fontSize: isBudgetTable ? 13 : 9, letterSpacing: isBudgetTable ? '0' : '.04em', zIndex: 40, borderBottom: isBudgetTable ? '1px solid rgba(0,0,0,0.08)' : `2px solid ${tint(accentBg, 0.34)}`, borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.16)' : `1px solid ${tint(accentBg, 0.20)}` }}>
+                        <th key={`col${ci}`} style={{ ...thBase, background: isBudgetTable ? BUDGET_SUBHEADER_GRADIENT : tint(accentBg, 0.16), color: isBudgetTable ? '#fff' : '#334155', fontWeight: isBudgetTable ? 800 : 700, top: isBudgetTable ? 34 : 40, height: isBudgetTable ? 34 : 32, minWidth: c.w || 65, fontSize: isBudgetTable ? 12 : 9, letterSpacing: isBudgetTable ? '0' : '.04em', zIndex: 40, borderBottom: isBudgetTable ? '1px solid rgba(0,0,0,0.06)' : `2px solid ${tint(accentBg, 0.34)}`, borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.10)' : `1px solid ${tint(accentBg, 0.20)}`, padding: isBudgetTable ? '4px 8px' : thBase.padding }}>
                           {c.l}
                         </th>
                       ))}
@@ -866,7 +866,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                       const isCurrent = mi === new Date().getMonth() && YEAR === new Date().getFullYear();
                       return (
                         <tr key={mi} className={isBudgetTable ? 'rr-budget' : 'rr'} style={{ background: isCurrent ? '#f8fafc' : (mi % 2 === 0 ? '#ffffff' : (isBudgetTable ? BUDGET_ROW_ALT : '#f8f8f7')) }}>
-                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isBudgetTable ? (isCurrent ? '#FEF3C7' : (mi % 2 === 0 ? '#fff' : BUDGET_ROW_ALT)) : (isCurrent ? `linear-gradient(135deg, ${tint(accentBg, 0.45)} 0%, ${tint(accentBg, 0.28)} 48%, #f1f5f9 100%)` : `linear-gradient(135deg, ${tint(accentBg, 0.30)} 0%, ${tint(accentBg, 0.16)} 48%, #f8fafc 100%)`), fontWeight: isCurrent ? 800 : 700, fontSize: isBudgetTable ? 14 : 11, color: '#0f172a', borderRight: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : `1px solid ${tint(accentBg, 0.34)}`, borderBottom: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : tdBase.border, minWidth: 90, textAlign: 'left', paddingLeft: isBudgetTable ? 18 : 10, paddingTop: isBudgetTable ? 15 : 6, paddingBottom: isBudgetTable ? 15 : 6 }}>
+                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isBudgetTable ? (isCurrent ? '#FEF3C7' : (mi % 2 === 0 ? '#fff' : BUDGET_ROW_ALT)) : (isCurrent ? `linear-gradient(135deg, ${tint(accentBg, 0.45)} 0%, ${tint(accentBg, 0.28)} 48%, #f1f5f9 100%)` : `linear-gradient(135deg, ${tint(accentBg, 0.30)} 0%, ${tint(accentBg, 0.16)} 48%, #f8fafc 100%)`), fontWeight: isCurrent ? 800 : 700, fontSize: isBudgetTable ? 13 : 11, color: '#0f172a', borderRight: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : `1px solid ${tint(accentBg, 0.34)}`, borderBottom: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : tdBase.border, minWidth: 90, textAlign: 'left', paddingLeft: isBudgetTable ? 16 : 10, paddingTop: isBudgetTable ? 8 : 6, paddingBottom: isBudgetTable ? 8 : 6 }}>
                             {MONTHS_SHORT[mi]}
                           </td>
                           {vals.map((v, ci) => {
@@ -892,8 +892,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                                 color,
                                 fontWeight,
                                 minWidth: colDef?.w ?? 65,
-                                fontSize: isBudgetTable ? 14 : tdBase.fontSize,
-                                padding: isBudgetTable ? '15px 16px' : tdBase.padding,
+                                fontSize: isBudgetTable ? 13 : tdBase.fontSize,
+                                padding: isBudgetTable ? '8px 10px' : tdBase.padding,
                                 borderBottom: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : '1px solid #E7E5E4',
                                 borderRight: isBudgetTable ? `1px solid ${BUDGET_BODY_BORDER}` : '1px solid #E7E5E4',
                               }}>
@@ -907,7 +907,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isBudgetTable ? BUDGET_TOTAL_GRADIENT : accentBg, fontWeight: 800, fontSize: isBudgetTable ? 14 : 12, color: '#fff', borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.14)' : '2px solid rgba(0,0,0,0.2)', borderTop: isBudgetTable ? '1px solid rgba(0,0,0,0.12)' : '2px solid rgba(0,0,0,0.2)', textAlign: 'left', paddingLeft: isBudgetTable ? 18 : 10, paddingTop: isBudgetTable ? 16 : 6, paddingBottom: isBudgetTable ? 16 : 6, letterSpacing: isBudgetTable ? '0' : '.1em', borderBottomLeftRadius: isBudgetTable ? 10 : 8 }}>
+                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: isBudgetTable ? BUDGET_TOTAL_GRADIENT : accentBg, fontWeight: 800, fontSize: isBudgetTable ? 13 : 12, color: '#fff', borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.10)' : '2px solid rgba(0,0,0,0.2)', borderTop: isBudgetTable ? '1px solid rgba(0,0,0,0.10)' : '2px solid rgba(0,0,0,0.2)', textAlign: 'left', paddingLeft: isBudgetTable ? 16 : 10, paddingTop: isBudgetTable ? 10 : 6, paddingBottom: isBudgetTable ? 10 : 6, letterSpacing: isBudgetTable ? '0' : '.1em', borderBottomLeftRadius: isBudgetTable ? 10 : 8 }}>
                         TOTAL
                       </td>
                       {totalVals.map((v, ci) => {
@@ -926,11 +926,11 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                         return (
                           <td key={ci} style={{
                             ...tdBase, background: isBudgetTable ? BUDGET_TOTAL_GRADIENT : accentBg,
-                            fontWeight: isBudgetTable ? 800 : 700, fontSize: isBudgetTable ? 14 : 11,
+                            fontWeight: isBudgetTable ? 800 : 700, fontSize: isBudgetTable ? 13 : 11,
                             color,
-                            padding: isBudgetTable ? '16px 16px' : tdBase.padding,
-                            borderTop: isBudgetTable ? '1px solid rgba(0,0,0,0.12)' : '2px solid rgba(0,0,0,0.15)',
-                            borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.12)' : tdBase.border,
+                            padding: isBudgetTable ? '10px 10px' : tdBase.padding,
+                            borderTop: isBudgetTable ? '1px solid rgba(0,0,0,0.10)' : '2px solid rgba(0,0,0,0.15)',
+                            borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.10)' : tdBase.border,
                             borderBottomRightRadius: ci === totalVals.length - 1 ? (isBudgetTable ? 10 : 8) : undefined,
                           }}>
                             {v}
