@@ -411,7 +411,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         return [
           // Projection (8)
           fmtHeures(pl(0)), fmtHeures(pl(1)), fmtHeures(pl(2)), fmtHeures(pl(3)), fmtHeures(pl(4)),
-          fmtHeures(getProjTotalHours(mi)), fe(coutProj), ca > 0 ? fmtRatio(ratioProj) : '—',
+          fmtHeures(getProjTotalHours(mi)), ca > 0 ? fe(coutProj) : '—', ca > 0 ? fmtRatio(ratioProj) : '—',
           // Réaliser (12) — tout à — si pas de données
           hasData ? fmtHeures(rl(0)) : '—', hasData ? fmtHeures(rl(1)) : '—',
           hasData ? fmtHeures(rl(2)) : '—', hasData ? fmtHeures(rl(3)) : '—',
@@ -919,7 +919,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                             color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : 'rgba(255,255,255,0.85)';
                           }
                         }
-                        const needsTotalSignal = isNeg || isPos;
+                        const needsTotalSignal = color === '#dc2626' || color === '#16a34a';
+                        const badgeIsRed = color === '#dc2626';
                         return (
                           <td key={ci} style={{
                             ...tdBase, background: chrome.totalBg,
@@ -937,8 +938,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                                 minHeight: 22,
                                 padding: '2px 8px',
                                 borderRadius: 999,
-                                background: isNeg ? 'rgba(254, 242, 242, 0.94)' : 'rgba(240, 253, 244, 0.94)',
-                                border: isNeg ? '1px solid rgba(248, 113, 113, 0.45)' : '1px solid rgba(74, 222, 128, 0.45)',
+                                background: badgeIsRed ? 'rgba(254, 242, 242, 0.94)' : 'rgba(240, 253, 244, 0.94)',
+                                border: badgeIsRed ? '1px solid rgba(248, 113, 113, 0.45)' : '1px solid rgba(74, 222, 128, 0.45)',
                                 color,
                                 fontWeight: 900,
                                 lineHeight: 1.15,

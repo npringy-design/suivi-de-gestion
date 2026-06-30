@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 30/06/2026 (Pastille tfoot + fe(coutProj))
+
+- RecapAnnuel : (1) `needsTotalSignal` dans le tfoot déclenche désormais la pastille sur toutes les valeurs rouges/vertes (threshold, invertSign, signe textuel) — `isNeg`/`isPos` remplacés par `color === '#dc2626' || color === '#16a34a'` ; (2) `fe(coutProj)` conditionné par `ca > 0` comme `fmtRatio(ratioProj)` — affiche `—` pour les mois sans données. tsc OK, 81 tests OK.
+
 ## 30/06/2026 (Unification style tous onglets)
 
 - RecapAnnuel : suppression de la branche `isBudgetTable` et des 7 constantes `BUDGET_*` — tous les onglets utilisent désormais le même chrome générique basé sur `accentBg`. Pastilles signées conservées. tsc OK, 81 tests OK.
