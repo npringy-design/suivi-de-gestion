@@ -11,10 +11,3 @@
     );
   }
 }
-
-@layer components {
-  /* RecapAnnuel : masque le grand titre interne du tableau pour coller au rendu compact validé. */
-  h2[style*="Georgia"] {
-    display: none;
-  }
-}
