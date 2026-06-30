@@ -298,7 +298,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     { key: 'budget',          label: 'Budget',            icon: '🎯', accentBg: '#d97706', accentColor: '#fff', cols: COLS_BUDGET },
     { key: 'realise',         label: 'Réalisé',           icon: '📊', accentBg: '#1e40af', accentColor: '#fff', cols: COLS_REALISE },
     { key: 'cout_matiere',    label: 'Coût Matière',      icon: '🛒', accentBg: '#166534', accentColor: '#fff', cols: COLS_COUT_MATIERE },
-    { key: 'frais_personnel', label: 'Frais Personnel',   icon: '👥', accentBg: '#7c2d12', accentColor: '#fff', cols: isGlobal ? COLS_FP_GLOBAL : COLS_FP_CUISINE_SALLE },
+    { key: 'frais_personnel', label: 'Frais Personnel',   icon: '👥', accentBg: '#9333ea', accentColor: '#fff', cols: isGlobal ? COLS_FP_GLOBAL : COLS_FP_CUISINE_SALLE },
     { key: 'frais_generaux',  label: 'Frais Généraux',    icon: '📋', accentBg: '#78350f', accentColor: '#fff', cols: COLS_FRAIS_GENERAUX },
     { key: 'synthese',         label: 'Synthèse',          icon: '🏆', accentBg: '#1e3a5f', accentColor: '#fff', cols: COLS_SYNTHESE },
   ], [isGlobal]);
@@ -869,7 +869,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                           </td>
                           {vals.map((v, ci) => {
                             const colDef = cols[ci];
-                            const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
+                            const isNeg = typeof v === 'string' && v.startsWith('-') && v !== '—';
                             const isPos = typeof v === 'string' && v.startsWith('+');
                             let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : v === '—' || v === '' ? '#94a3b8' : '#334155';
                             let fontWeight: number = isNeg || isPos ? 700 : 500;
@@ -908,7 +908,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                       </td>
                       {totalVals.map((v, ci) => {
                         const colDef = cols[ci];
-                        const isNeg = typeof v === 'string' && v.startsWith('-') && (v.includes('%') || v.includes('€') || v.includes('h')) && v !== '—';
+                        const isNeg = typeof v === 'string' && v.startsWith('-') && v !== '—';
                         const isPos = typeof v === 'string' && v.startsWith('+');
                         let color = isNeg ? '#dc2626' : isPos ? '#16a34a' : 'rgba(255,255,255,0.85)';
                         if (v !== '—' && v !== '') {

@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 30/06/2026 (isNeg sans unité + accent Frais Personnel violet)
+
+- RecapAnnuel : (1) détection `isNeg` simplifiée en `v.startsWith('-') && v !== '—'` (suppression contrainte `%`/`€`/`h`) dans tbody et tfoot — les écarts numériques bruts de Couverts Restaurant passent en rouge comme CA HT ; (2) `accentBg` de `frais_personnel` changé de `#7c2d12` à `#9333ea`. tsc OK, 81 tests OK.
+
 ## 30/06/2026 (Pastille tfoot + fe(coutProj))
 
 - RecapAnnuel : (1) `needsTotalSignal` dans le tfoot déclenche désormais la pastille sur toutes les valeurs rouges/vertes (threshold, invertSign, signe textuel) — `isNeg`/`isPos` remplacés par `color === '#dc2626' || color === '#16a34a'` ; (2) `fe(coutProj)` conditionné par `ca > 0` comme `fmtRatio(ratioProj)` — affiche `—` pour les mois sans données. tsc OK, 81 tests OK.
