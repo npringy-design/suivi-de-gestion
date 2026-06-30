@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 30/06/2026 (DATE tbody Budget neutre)
+
+- RecapAnnuel Budget : cellule DATE sticky tbody passe de BUDGET_HEADER_GRADIENT (brun) à fond neutre — blanc/#faf8f5 zebrée, jaune #fef3c7 sur mois courant ; texte #0f172a, borderRight #e7e5e4 ; thead et tfoot inchangés. tsc OK. build OK. 81 tests OK.
+
 ## 30/06/2026 (palette dégradé Budget)
 
 - RecapAnnuel Budget : palette dédiée BUDGET_HEADER_GRADIENT (#B8763A→#9A5E28), BUDGET_SUBHEADER_BG (#C98848), BUDGET_TOTAL_GRADIENT (#6B3C14→#B8763A) ; appliqués conditionnellement via activeTab==='budget' sur thead ligne 1, libellés colonnes, DATE sticky tbody et tfoot ; toutes les autres sections inchangées. tsc OK. build OK. 81 tests OK.

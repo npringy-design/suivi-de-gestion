@@ -855,7 +855,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                       const isCurrent = mi === new Date().getMonth() && YEAR === new Date().getFullYear();
                       return (
                         <tr key={mi} className="rr" style={{ background: isCurrent ? '#f8fafc' : (mi % 2 === 0 ? '#ffffff' : '#f8f8f7') }}>
-                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: activeTab === 'budget' ? BUDGET_HEADER_GRADIENT : (isCurrent ? `linear-gradient(135deg, ${tint(accentBg, 0.45)} 0%, ${tint(accentBg, 0.28)} 48%, #f1f5f9 100%)` : `linear-gradient(135deg, ${tint(accentBg, 0.30)} 0%, ${tint(accentBg, 0.16)} 48%, #f8fafc 100%)`), fontWeight: isCurrent ? 800 : 700, fontSize: 11, color: activeTab === 'budget' ? '#fff' : '#0f172a', borderRight: activeTab === 'budget' ? '1px solid rgba(0,0,0,0.15)' : `1px solid ${tint(accentBg, 0.34)}`, minWidth: 90, textAlign: 'left', paddingLeft: 10 }}>
+                          <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 20, background: activeTab === 'budget' ? (isCurrent ? '#fef3c7' : (mi % 2 === 0 ? '#fff' : '#faf8f5')) : (isCurrent ? `linear-gradient(135deg, ${tint(accentBg, 0.45)} 0%, ${tint(accentBg, 0.28)} 48%, #f1f5f9 100%)` : `linear-gradient(135deg, ${tint(accentBg, 0.30)} 0%, ${tint(accentBg, 0.16)} 48%, #f8fafc 100%)`), fontWeight: isCurrent ? 800 : 700, fontSize: 11, color: activeTab === 'budget' ? '#0f172a' : '#0f172a', borderRight: activeTab === 'budget' ? '1px solid #e7e5e4' : `1px solid ${tint(accentBg, 0.34)}`, minWidth: 90, textAlign: 'left', paddingLeft: 10 }}>
                             {MONTHS_SHORT[mi]}
                           </td>
                           {vals.map((v, ci) => {
