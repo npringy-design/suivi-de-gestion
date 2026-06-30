@@ -833,7 +833,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       </div>
 
       {/* TABLEAU */}
-      <div style={{ flex: 1, overflow: 'auto', padding: activeTab === 'budget' ? '8px 16px 12px' : '24px' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
         {(() => {
           const renderTable = (
             cols: ColDef[],
@@ -854,11 +854,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
             });
             return (
               <div key={label} style={{ marginBottom: 32 }}>
-                {!isBudgetTable && (
-                  <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#1C1917', marginBottom: 16, fontFamily: "Georgia, serif" }}>
-                    {label}
-                  </h2>
-                )}
+                <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#1C1917', marginBottom: 16, fontFamily: "Georgia, serif" }}>
+                  {label}
+                </h2>
                 <div className="tbl-scroll" style={{ borderRadius: isBudgetTable ? 10 : 8, overflowX: 'auto', overflowY: 'visible', boxShadow: isBudgetTable ? '0 2px 7px rgba(31,41,55,0.08)' : '0 2px 8px rgba(0,0,0,0.10)', border: isBudgetTable ? '1px solid #E4E9F1' : '1px solid #D6D3D1' }}>
                 <table style={{ borderCollapse: 'separate', borderSpacing: 0, background: '#fff', width: 'max-content', minWidth: '100%' }}>
                   <thead>
@@ -943,17 +941,34 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                             color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : 'rgba(255,255,255,0.85)';
                           }
                         }
+                        const needsTotalSignal = isNeg || isPos;
                         return (
                           <td key={ci} style={{
                             ...tdBase, background: chrome.totalBg,
                             fontWeight: isBudgetTable ? 800 : 700, fontSize: isBudgetTable ? 13 : 11,
-                            color,
+                            color: needsTotalSignal ? undefined : color,
                             padding: isBudgetTable ? '10px 10px' : tdBase.padding,
                             borderTop: isBudgetTable ? '1px solid rgba(0,0,0,0.10)' : `1px solid ${tint(accentBg, 0.26)}`,
                             borderRight: isBudgetTable ? '1px solid rgba(255,255,255,0.10)' : `1px solid ${tint(accentBg, 0.22)}`,
                             borderBottomRightRadius: ci === totalVals.length - 1 ? (isBudgetTable ? 10 : 8) : undefined,
                           }}>
-                            {v}
+                            {needsTotalSignal ? (
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minHeight: 22,
+                                padding: '2px 8px',
+                                borderRadius: 999,
+                                background: isNeg ? 'rgba(254, 242, 242, 0.94)' : 'rgba(240, 253, 244, 0.94)',
+                                border: isNeg ? '1px solid rgba(248, 113, 113, 0.45)' : '1px solid rgba(74, 222, 128, 0.45)',
+                                color,
+                                fontWeight: 900,
+                                lineHeight: 1.15,
+                              }}>
+                                {v}
+                              </span>
+                            ) : v}
                           </td>
                         );
                       })}

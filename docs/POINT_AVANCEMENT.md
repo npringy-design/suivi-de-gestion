@@ -7,7 +7,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ## 30/06/2026 (DATE tbody Budget neutre)
 
-- RecapAnnuel : correction du reskin des tableaux — cellule d'en-tête isolée fusionnée visuellement avec le premier groupe, Budget en palette jaune-orangé, bandeaux/traits/total harmonisés sur les autres onglets ; colonnes et calculs inchangés. tsc OK.
+- RecapAnnuel : correction du reskin des tableaux — cellule d'en-tête isolée fusionnée visuellement avec le premier groupe, Budget réaligné sur la même taille/titre que les autres onglets, palette jaune-orangé, totaux +/- en pastilles contrastées ; colonnes et calculs inchangés. tsc OK.
 
 - RecapAnnuel Budget : cellule DATE sticky tbody passe de BUDGET_HEADER_GRADIENT (brun) à fond neutre — blanc/#faf8f5 zebrée, jaune #fef3c7 sur mois courant ; texte #0f172a, borderRight #e7e5e4 ; thead et tfoot inchangés. tsc OK. build OK. 81 tests OK.
 
