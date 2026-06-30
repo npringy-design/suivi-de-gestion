@@ -71,7 +71,7 @@ const fmtHeures = (val: number): string => {
 };
 
 // threshold: rouge si valeur > value, vert sinon | invertSign: négatif=vert, positif=rouge, zéro=noir
-type ColDef = { g: string; l: string; bg: string; w: number; threshold?: number; invertSign?: boolean };
+type ColDef = { g: string; l: string; bg: string; w: number; threshold?: number; invertSign?: boolean; signColor?: boolean };
 
 // ─── Colonnes statiques ──────────────────────────────────────────────────────
 
@@ -96,23 +96,23 @@ const COLS_REALISE: ColDef[] = [
   // CA HT — 10 colonnes
   { g: 'CA HT', l: 'CA HT\nVAE',               bg: BG_REAL2, w: 75 }, // col 17
   { g: 'CA HT', l: 'CA HT\nMidi',               bg: BG_REAL2, w: 75 }, // col 18
-  { g: 'CA HT', l: 'Ecart vs\nBudget Midi',      bg: '#fff',   w: 75 }, // g(18)-g(0)
+  { g: 'CA HT', l: 'Ecart vs\nBudget Midi',      bg: '#fff',   w: 75, signColor: true }, // g(18)-g(0)
   { g: 'CA HT', l: 'CA HT\nSoir',               bg: BG_REAL2, w: 75 }, // col 19
-  { g: 'CA HT', l: 'Ecart vs\nBudget Soir',      bg: '#fff',   w: 75 }, // g(19)-g(1)
+  { g: 'CA HT', l: 'Ecart vs\nBudget Soir',      bg: '#fff',   w: 75, signColor: true }, // g(19)-g(1)
   { g: 'CA HT', l: 'CA HT\nJour',               bg: BG_REAL2, w: 80 }, // col 21
-  { g: 'CA HT', l: 'Ecart Budget\nJour Valeur',  bg: '#fff',   w: 80 }, // col 22
+  { g: 'CA HT', l: 'Ecart Budget\nJour Valeur',  bg: '#fff',   w: 80, signColor: true }, // col 22
   { g: 'CA HT', l: 'Ecart Budget\nJour %',       bg: BG_HATCH, w: 70 }, // calc local
   { g: 'CA HT', l: 'Cumul\nAnnuel',              bg: BG_REAL2, w: 85 }, // sum col 21 jan→mois
   { g: 'CA HT', l: 'Tendance\nAnnuel',           bg: '#fff',   w: 75 }, // progressive
   { g: 'CA HT', l: 'VAR vs\nBudget %',          bg: BG_HATCH, w: 70 }, // tendanceCA vs budgetAnnuel
   // COUVERTS RESTAURANT — 11 colonnes (même disposition que CA HT)
   { g: 'COUVERTS\nRESTAURANT', l: 'Midi\nNB CVTS',          bg: BG_REAL2, w: 65 }, // col 25
-  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart vs\nBudget Midi',  bg: '#fff',   w: 70 }, // g(25)-g(6)
+  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart vs\nBudget Midi',  bg: '#fff',   w: 70, signColor: true }, // g(25)-g(6)
   { g: 'COUVERTS\nRESTAURANT', l: 'Soir\nNB CVTS',          bg: BG_REAL2, w: 65 }, // col 27
-  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart vs\nBudget Soir',  bg: '#fff',   w: 70 }, // g(27)-g(8)
+  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart vs\nBudget Soir',  bg: '#fff',   w: 70, signColor: true }, // g(27)-g(8)
   { g: 'COUVERTS\nRESTAURANT', l: 'Jour\nNB CVTS',          bg: BG_REAL2, w: 65 }, // col 29
   { g: 'COUVERTS\nRESTAURANT', l: 'Jour\nMoy HT',           bg: BG_REAL2, w: 65 }, // col 30
-  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart Budget\nJour NB',  bg: '#fff',   w: 70 }, // g(29)-g(10)
+  { g: 'COUVERTS\nRESTAURANT', l: 'Ecart Budget\nJour NB',  bg: '#fff',   w: 70, signColor: true }, // g(29)-g(10)
   { g: 'COUVERTS\nRESTAURANT', l: 'Ecart Budget\nJour %',   bg: BG_HATCH, w: 65 }, // calc local
   { g: 'COUVERTS\nRESTAURANT', l: 'Cumul\nAnnuel',          bg: BG_REAL2, w: 75 }, // sum col 29 jan→mois
   { g: 'COUVERTS\nRESTAURANT', l: 'Tendance\nAnnuel',       bg: '#fff',   w: 85 }, // progressive
@@ -383,11 +383,18 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const cumulHT = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 58)).reduce((a, b) => a + b, 0);
         const ratioHT = ca > 0 ? g(58) / ca * 100 : 0;
         return [
-          fe(g(39)), fp(g(40)), fe(g(41)), fp(g(42)), fe(g(43)),
-          fe(g(45)), fe(g(46)), fe(g(47)), fe(g(48)),
-          fe(g(49)), fe(g(50)), fe(g(51)), fe(g(52)), fe(g(53)), fe(g(54)), fe(g(55)), fe(g(56)), fe(g(57)),
-          fe(g(58)), fe(cumulHT), fp(ratioHT),
-          '0,00 €', '0,00 €',
+          g(39) > 0 ? fe(g(39)) : '—', g(39) > 0 ? fp(g(40)) : '—',
+          g(41) > 0 ? fe(g(41)) : '—', g(41) > 0 ? fp(g(42)) : '—',
+          g(43) > 0 ? fe(g(43)) : '—',
+          g(45) > 0 ? fe(g(45)) : '—', g(46) > 0 ? fe(g(46)) : '—',
+          g(47) > 0 ? fe(g(47)) : '—', g(48) > 0 ? fe(g(48)) : '—',
+          g(49) > 0 ? fe(g(49)) : '—', g(50) > 0 ? fe(g(50)) : '—',
+          g(51) > 0 ? fe(g(51)) : '—', g(52) > 0 ? fe(g(52)) : '—',
+          g(53) > 0 ? fe(g(53)) : '—', g(54) > 0 ? fe(g(54)) : '—',
+          g(55) > 0 ? fe(g(55)) : '—', g(56) > 0 ? fe(g(56)) : '—', g(57) > 0 ? fe(g(57)) : '—',
+          g(58) > 0 ? fe(g(58)) : '—', cumulHT > 0 ? fe(cumulHT) : '—',
+          ca > 0 && g(58) > 0 ? fp(ratioHT) : '—',
+          '—', '—',
         ];
       }
 
@@ -881,6 +888,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                               } else if (colDef?.invertSign && isFinite(num)) {
                                 color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : '#334155';
                                 fontWeight = num !== 0 ? 700 : 500;
+                              } else if (colDef?.signColor && isFinite(num)) {
+                                color = num > 0 ? '#16a34a' : num < 0 ? '#dc2626' : '#334155';
+                                fontWeight = num !== 0 ? 700 : 500;
                               }
                             }
                             return (
@@ -917,6 +927,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                             color = num > colDef.threshold ? '#dc2626' : '#16a34a';
                           } else if (colDef?.invertSign && isFinite(num)) {
                             color = num < 0 ? '#16a34a' : num > 0 ? '#dc2626' : 'rgba(255,255,255,0.85)';
+                          } else if (colDef?.signColor && isFinite(num)) {
+                            color = num > 0 ? '#16a34a' : num < 0 ? '#dc2626' : 'rgba(255,255,255,0.85)';
                           }
                         }
                         const needsTotalSignal = color === '#dc2626' || color === '#16a34a';

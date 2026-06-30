@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 30/06/2026 (signColor écarts + tirets Coût Matière)
+
+- RecapAnnuel : (1) ajout `signColor?: boolean` sur ColDef, appliqué aux 6 colonnes écart valeur brute (CA HT + Couverts) — les positifs s'affichent en vert avec badge comme les négatifs ; (2) `getSectionValues` cout_matiere : toutes les valeurs à zéro retournent `—` au lieu de `0,00 €` / `+0.00%`. tsc OK, 81 tests OK.
+
 ## 30/06/2026 (isNeg sans unité + accent Frais Personnel violet)
 
 - RecapAnnuel : (1) détection `isNeg` simplifiée en `v.startsWith('-') && v !== '—'` (suppression contrainte `%`/`€`/`h`) dans tbody et tfoot — les écarts numériques bruts de Couverts Restaurant passent en rouge comme CA HT ; (2) `accentBg` de `frais_personnel` changé de `#7c2d12` à `#9333ea`. tsc OK, 81 tests OK.
