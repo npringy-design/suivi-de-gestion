@@ -744,7 +744,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   const BUDGET_HEADER_GRADIENT = 'linear-gradient(135deg, #B8763A 0%, #9A5E28 100%)';
   const BUDGET_SUBHEADER_BG = '#C98848';
-  const BUDGET_TOTAL_GRADIENT = 'linear-gradient(135deg, #6B3C14 0%, #B8763A 100%)';
+  const BUDGET_TOTAL_GRADIENT = 'linear-gradient(to right, #5C3010 0%, #8B5A2B 45%, #B8763A 80%, #C8903A 100%)';
 
   return (
     <div style={{ height: '100vh', background: '#FAFAF9', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
