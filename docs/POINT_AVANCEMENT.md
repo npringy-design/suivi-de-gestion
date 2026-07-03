@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 03/07/2026 (fix Ratio Perso/Cuisine Coût Matière)
+
+- RecapAnnuel Coût Matière : Ratio Perso/Ratio Cuisine affichaient toujours +0,00% — `fp(g(40))`/`fp(g(42))` lisaient des colonnes déjà formatées en `"xx%"` que `parseMoneyValue` ne sait pas parser. Remplacé par calcul local `g(39)/ca*100` et `g(41)/ca*100`, sur le modèle de `ratioHT`. tsc OK, 81 tests OK.
+
 ## 30/06/2026 (signColor écarts + tirets Coût Matière)
 
 - RecapAnnuel : (1) ajout `signColor?: boolean` sur ColDef, appliqué aux 6 colonnes écart valeur brute (CA HT + Couverts) — les positifs s'affichent en vert avec badge comme les négatifs ; (2) `getSectionValues` cout_matiere : toutes les valeurs à zéro retournent `—` au lieu de `0,00 €` / `+0.00%`. tsc OK, 81 tests OK.

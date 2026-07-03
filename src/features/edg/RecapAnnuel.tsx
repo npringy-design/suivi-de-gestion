@@ -382,9 +382,11 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       case 'cout_matiere': {
         const cumulHT = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 58)).reduce((a, b) => a + b, 0);
         const ratioHT = ca > 0 ? g(58) / ca * 100 : 0;
+        const ratioPerso   = ca > 0 ? g(39) / ca * 100 : 0;
+        const ratioCuisine = ca > 0 ? g(41) / ca * 100 : 0;
         return [
-          g(39) > 0 ? fe(g(39)) : '—', g(39) > 0 ? fp(g(40)) : '—',
-          g(41) > 0 ? fe(g(41)) : '—', g(41) > 0 ? fp(g(42)) : '—',
+          g(39) > 0 ? fe(g(39)) : '—', g(39) > 0 && ca > 0 ? fp(ratioPerso) : '—',
+          g(41) > 0 ? fe(g(41)) : '—', g(41) > 0 && ca > 0 ? fp(ratioCuisine) : '—',
           g(43) > 0 ? fe(g(43)) : '—',
           g(45) > 0 ? fe(g(45)) : '—', g(46) > 0 ? fe(g(46)) : '—',
           g(47) > 0 ? fe(g(47)) : '—', g(48) > 0 ? fe(g(48)) : '—',
