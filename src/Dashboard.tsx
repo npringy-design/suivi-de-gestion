@@ -1054,7 +1054,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           ) : tableViewMode === 'ANALYSE' ? (
             React.createElement(DashboardAnalysisView, { rows, calculatedData, salariesConfig: globalData[month]?.salariesConfig?.categories, isMobile })
           ) : (
-          <div style={{ flex: 1, background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.10)', overflow: 'hidden', border: '1px solid #D6D3D1', display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
                 <table id="dashboard-table" style={{ borderCollapse: 'separate', borderSpacing: 0, width: 'max-content', minWidth: '100%' }}>
                 <DashboardTableHeader

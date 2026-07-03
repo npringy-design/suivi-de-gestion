@@ -1,7 +1,7 @@
 import React from 'react';
 
 import type { VisibleDashboardColumn } from '@/features/dashboard/dashboardTypes';
-import { accentForGroup, sectionChrome, strongGradient } from '@/lib/tableChrome';
+import { accentForGroup, sectionChrome, tint } from '@/lib/tableChrome';
 
 type GroupItem = { name: string; colspan: number; bg: string };
 type SubGroupItem = { name: string; group: string; colspan: number; bg: string };
@@ -39,31 +39,35 @@ export default function DashboardTableHeader({
   otherGroups,
   updatePurchaseSupplierName,
 }: DashboardTableHeaderProps) {
+  const chrome = sectionChrome(accent);
+  const previsionsChrome = sectionChrome('#d97706');
+  const realiseChrome = sectionChrome('#1e40af');
+  const gestionChrome = sectionChrome('#166534');
   return (
     <thead>
       {/* ── ROW 1 : super-sections ── */}
       <tr style={{ height: 30 }}>
-        <th rowSpan={4} style={{ ...thBase, background: '#1C1917', color: '#fff', minWidth: isMobile ? 120 : 160, left: 0, top: 0, zIndex: 60, borderRight: '2px solid #475569', borderBottom: '3px solid #374151', padding: isMobile ? '8px 6px' : '16px 12px', verticalAlign: 'middle' }}>
+        <th rowSpan={4} style={{ ...thBase, background: chrome.subHeaderBg, color: chrome.subHeaderColor, minWidth: isMobile ? 120 : 160, left: 0, top: 0, zIndex: 60, borderRight: `2px solid ${chrome.headerDivider}`, borderBottom: `1px solid ${chrome.headerBorder}`, padding: isMobile ? '8px 6px' : '16px 12px', verticalAlign: 'middle' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, height: '100%' }}>
-            <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '0.15em', color: '#f8fafc' }}>DATE</span>
-            <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '100%', boxSizing: 'border-box' }}>
-              <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Buro Monte</span>
-              <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 800, whiteSpace: 'nowrap' }}>CA N-1 : 159 802 €</span>
+            <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '0.15em', color: chrome.subHeaderColor }}>DATE</span>
+            <div style={{ background: tint(accent, 0.12), border: `1px solid ${tint(accent, 0.3)}`, borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '100%', boxSizing: 'border-box' }}>
+              <span style={{ fontSize: 10, color: '#78716c', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Buro Monte</span>
+              <span style={{ fontSize: 12, color: accent, fontWeight: 800, whiteSpace: 'nowrap' }}>CA N-1 : 159 802 €</span>
             </div>
           </div>
         </th>
         {previsionsColspan > 0 && (
-          <th colSpan={previsionsColspan} style={{ ...thBase, background: strongGradient('#d97706'), color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '3px solid #475569', borderBottom: '2px solid #94a3b8' }}>
+          <th colSpan={previsionsColspan} style={{ ...thBase, background: previsionsChrome.headerBg, color: previsionsChrome.headerColor, top: 0, height: 30, zIndex: 40, borderRight: `3px solid ${previsionsChrome.headerDivider}`, borderBottom: `1px solid ${previsionsChrome.headerBorder}` }}>
             PRÉVISIONS
           </th>
         )}
         {realiseColspan > 0 && (
-          <th colSpan={realiseColspan} style={{ ...thBase, background: strongGradient('#1e40af'), color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '3px solid #475569', borderBottom: '2px solid #94a3b8' }}>
+          <th colSpan={realiseColspan} style={{ ...thBase, background: realiseChrome.headerBg, color: realiseChrome.headerColor, top: 0, height: 30, zIndex: 40, borderRight: `3px solid ${realiseChrome.headerDivider}`, borderBottom: `1px solid ${realiseChrome.headerBorder}` }}>
             {activeTab === 'REALISE' && tableViewMode === 'COMPLET' ? 'RÉALISÉ' : 'RÉALISÉ & ÉVÉNEMENTS'}
           </th>
         )}
         {otherGroups.reduce((a, g) => a + g.colspan, 0) > 0 && (
-          <th colSpan={otherGroups.reduce((a, g) => a + g.colspan, 0)} style={{ ...thBase, background: strongGradient('#166534'), color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #94a3b8' }}>
+          <th colSpan={otherGroups.reduce((a, g) => a + g.colspan, 0)} style={{ ...thBase, background: gestionChrome.headerBg, color: gestionChrome.headerColor, top: 0, height: 30, zIndex: 40, borderRight: '1px solid #cbd5e1', borderBottom: `1px solid ${gestionChrome.headerBorder}` }}>
             GESTION &amp; AUTRES
           </th>
         )}
