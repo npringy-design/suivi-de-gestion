@@ -1,6 +1,7 @@
 import React from 'react';
 
 import type { VisibleDashboardColumn } from '@/features/dashboard/dashboardTypes';
+import { sectionChrome, strongGradient } from '@/lib/tableChrome';
 
 type GroupItem = { name: string; colspan: number; bg: string };
 type SubGroupItem = { name: string; group: string; colspan: number; bg: string };
@@ -11,7 +12,7 @@ type DashboardTableHeaderProps = {
   subGroups: SubGroupItem[];
   isEndOfMajorSection: boolean[];
   isEndOfSection: boolean[];
-  getBgColor: (bgClass: string) => string;
+  accent: string;
   thBase: React.CSSProperties;
   activeTab: string;
   tableViewMode: string;
@@ -28,7 +29,7 @@ export default function DashboardTableHeader({
   subGroups,
   isEndOfMajorSection,
   isEndOfSection,
-  getBgColor,
+  accent,
   thBase,
   activeTab,
   tableViewMode,
@@ -38,11 +39,12 @@ export default function DashboardTableHeader({
   otherGroups,
   updatePurchaseSupplierName,
 }: DashboardTableHeaderProps) {
+  const chrome = sectionChrome(accent);
   return (
     <thead>
       {/* ── ROW 1 : super-sections ── */}
       <tr style={{ height: 30 }}>
-        <th rowSpan={4} style={{ ...thBase, background: '#1e293b', color: '#fff', minWidth: isMobile ? 120 : 160, left: 0, top: 0, zIndex: 60, borderRight: '2px solid #475569', borderBottom: '3px solid #374151', padding: isMobile ? '8px 6px' : '16px 12px', verticalAlign: 'middle' }}>
+        <th rowSpan={4} style={{ ...thBase, background: '#1C1917', color: '#fff', minWidth: isMobile ? 120 : 160, left: 0, top: 0, zIndex: 60, borderRight: '2px solid #475569', borderBottom: '3px solid #374151', padding: isMobile ? '8px 6px' : '16px 12px', verticalAlign: 'middle' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, height: '100%' }}>
             <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '0.15em', color: '#f8fafc' }}>DATE</span>
             <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '100%', boxSizing: 'border-box' }}>
@@ -52,17 +54,17 @@ export default function DashboardTableHeader({
           </div>
         </th>
         {previsionsColspan > 0 && (
-          <th colSpan={previsionsColspan} style={{ ...thBase, background: '#92400e', color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '3px solid #475569', borderBottom: '2px solid #94a3b8' }}>
+          <th colSpan={previsionsColspan} style={{ ...thBase, background: strongGradient('#d97706'), color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '3px solid #475569', borderBottom: '2px solid #94a3b8' }}>
             PRÉVISIONS
           </th>
         )}
         {realiseColspan > 0 && (
-          <th colSpan={realiseColspan} style={{ ...thBase, background: '#1e40af', color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '3px solid #475569', borderBottom: '2px solid #94a3b8' }}>
+          <th colSpan={realiseColspan} style={{ ...thBase, background: strongGradient('#1e40af'), color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '3px solid #475569', borderBottom: '2px solid #94a3b8' }}>
             {activeTab === 'REALISE' && tableViewMode === 'COMPLET' ? 'RÉALISÉ' : 'RÉALISÉ & ÉVÉNEMENTS'}
           </th>
         )}
         {otherGroups.reduce((a, g) => a + g.colspan, 0) > 0 && (
-          <th colSpan={otherGroups.reduce((a, g) => a + g.colspan, 0)} style={{ ...thBase, background: '#166534', color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #94a3b8' }}>
+          <th colSpan={otherGroups.reduce((a, g) => a + g.colspan, 0)} style={{ ...thBase, background: strongGradient('#166534'), color: '#fff', top: 0, height: 30, zIndex: 40, borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #94a3b8' }}>
             GESTION &amp; AUTRES
           </th>
         )}
@@ -77,7 +79,7 @@ export default function DashboardTableHeader({
           const isMajorEnd = isEndOfMajorSection[colCount - 1];
 
           return (
-            <th key={`g-${i}`} colSpan={g.colspan} style={{ ...thBase, background: getBgColor(g.bg), color: '#1e293b', top: 30, height: 30, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : '2px solid #94a3b8', borderBottom: '1px solid #94a3b8' }}>
+            <th key={`g-${i}`} colSpan={g.colspan} style={{ ...thBase, background: chrome.headerBg, color: chrome.headerColor, top: 30, height: 30, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : `2px solid ${chrome.headerDivider}`, borderBottom: `1px solid ${chrome.headerBorder}` }}>
               {!isEvt ? g.name : ''}
             </th>
           );
@@ -93,7 +95,7 @@ export default function DashboardTableHeader({
           const isMajorEnd = isEndOfMajorSection[colCount - 1];
 
           return (
-            <th key={`sg-${i}`} colSpan={sg.colspan} style={{ ...thBase, background: getBgColor(sg.bg), color: '#374151', top: 60, height: 30, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : '2px solid #94a3b8', borderBottom: '1px solid #94a3b8' }}>
+            <th key={`sg-${i}`} colSpan={sg.colspan} style={{ ...thBase, background: chrome.subHeaderBg, color: chrome.subHeaderColor, top: 60, height: 30, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : `2px solid ${chrome.headerDivider}`, borderBottom: `1px solid ${chrome.headerBorder}` }}>
               {!isEvt ? sg.name : ''}
             </th>
           );
@@ -113,7 +115,7 @@ export default function DashboardTableHeader({
           const minW = isRmLabel ? 180 : isRmValue ? 100 : 65;
 
           return (
-            <th key={`c-${i}`} style={{ ...thBase, background: getBgColor(c[3]), color: '#374151', top: 90, height: 60, minWidth: minW, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : isSectionEnd ? '2px solid #94a3b8' : '1px solid #cbd5e1', borderBottom: '3px solid #374151' }}>
+            <th key={`c-${i}`} style={{ ...thBase, background: chrome.subHeaderBg, color: chrome.subHeaderColor, top: 90, height: 60, minWidth: minW, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : isSectionEnd ? '2px solid #94a3b8' : `1px solid ${chrome.headerDivider}`, borderBottom: '3px solid #374151' }}>
               {isEditableSupplierHeader ? (
                 <input
                   value={c[2]}

@@ -4,6 +4,7 @@ import DashboardAnalysisView from '@/pages/DashboardAnalysisView';
 import { useData, type SalarieRow } from '@/contexts/DataContext';
 import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import { parseMoneyValue } from '@/lib/money';
+import { tint } from '@/lib/tableChrome';
 
 // ── Modèle Dashboard extrait (types, colonnes, configuration statique) ────────
 import type {
@@ -710,15 +711,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     renderDashboardPersonnelTable(rows, isMobile)
   );
 
-  const tint = (hex: string, opacity: number) => {
-    const normalized = hex.replace('#', '');
-    const bigint = parseInt(normalized, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  };
-
   const sidebarTheme = 'linear-gradient(180deg,#07111f 0%,#0a2430 48%,#073d43 100%)';
   const sidebarThemeWide = 'linear-gradient(135deg,#07111f 0%,#0a2430 46%,#073d43 100%)';
   const weatherTheme = 'linear-gradient(135deg,#052a34 0%,#0a4d58 52%,#0d6b6f 100%)';
@@ -815,6 +807,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   // Colour palette used consistently in the header/footer
   const HEADER_BG     = '#1e293b';   // slate-800 — cohérent NAV
   const ACCENT_GOLD   = '#f59e0b';   // amber-500 — cohérent RecapAnnuel
+  // Accent de la vue complète : même palette que les onglets du Récap Annuel
+  const completAccent = activeTab === 'PREVISIONS' ? '#d97706' : '#1e40af';
   const ACCENT_GREEN  = '#10b981';   // emerald-500
   const SECTION_BLUE  = '#3b82f6';   // blue-500
   const SECTION_YELLOW= '#fff2cc';   // jaune pâle budget
@@ -829,13 +823,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     fontWeight: 700,
     textTransform: 'uppercase', letterSpacing: '.03em',
     textAlign: 'center', whiteSpace: 'pre-line', lineHeight: 1.25,
-  };
-
-  const getBgColor = (bgClass: string) => {
-    if (bgClass === 'bg-hatched') return '#e2e8f0';
-    if (bgClass === 'bg-white') return '#ffffff';
-    if (bgClass.startsWith('bg-[')) return bgClass.slice(4, -1);
-    return bgClass;
   };
 
   const handleExport = async () => {
@@ -1076,7 +1063,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   subGroups={subGroups}
                   isEndOfMajorSection={isEndOfMajorSection}
                   isEndOfSection={isEndOfSection}
-                  getBgColor={getBgColor}
+                  accent={completAccent}
                   thBase={thBase}
                   activeTab={activeTab}
                   tableViewMode={tableViewMode}
@@ -1105,6 +1092,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   month={month}
                   updateDashboard={updateDashboard}
                   fgBoxNames={fgBoxNames}
+                  accent={completAccent}
                   ACCENT_GOLD={ACCENT_GOLD}
                   HEADER_BG={HEADER_BG}
                 />

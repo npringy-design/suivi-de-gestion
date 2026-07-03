@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
+import { sectionChrome, tint } from '@/lib/tableChrome';
 import { useRecapAnnuelData } from './useRecapAnnuelData';
 
 // CA Réalisé N-1 (2025) par mois — source : feuille "Variation 2025"
@@ -742,27 +743,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     });
     return result;
   }, [activeSection]);
-
-  const tint = (hex: string, opacity: number) => {
-    const normalized = hex.replace('#', '');
-    const bigint = parseInt(normalized, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  };
-
-  const sectionChrome = (accentBg: string) => {
-    return {
-      headerBg: `linear-gradient(180deg, ${tint(accentBg, 0.18)} 0%, ${tint(accentBg, 0.12)} 100%)`,
-      subHeaderBg: `linear-gradient(180deg, ${tint(accentBg, 0.10)} 0%, ${tint(accentBg, 0.06)} 100%)`,
-      totalBg: `linear-gradient(180deg, ${tint(accentBg, 0.92)} 0%, ${accentBg} 100%)`,
-      headerColor: '#1f2937',
-      subHeaderColor: '#334155',
-      headerBorder: tint(accentBg, 0.18),
-      headerDivider: tint(accentBg, 0.16),
-    };
-  };
 
   return (
     <div style={{ height: '100vh', background: '#FAFAF9', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

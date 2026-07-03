@@ -4,6 +4,7 @@ import type { DashboardRow, VisibleDashboardColumn } from '@/features/dashboard/
 import { editableCols } from '@/features/dashboard/dashboardStaticConfig';
 import { formatValue, getFgBoxLayout } from '@/features/dashboard/dashboardCalculations';
 import { parseMoneyValue } from '@/lib/money';
+import { sectionChrome, tint } from '@/lib/tableChrome';
 import DebouncedInput from '@/features/dashboard/components/DebouncedInput';
 
 type DragState = { rIdx: number; cIdx: number; endRow: number; value: string };
@@ -27,6 +28,7 @@ type DashboardTableBodyProps = {
   month: number;
   updateDashboard: (month: number, key: string, value: string) => void;
   fgBoxNames: string[][];
+  accent: string;
   ACCENT_GOLD: string;
   HEADER_BG: string;
 };
@@ -50,9 +52,11 @@ export default function DashboardTableBody({
   month,
   updateDashboard,
   fgBoxNames,
+  accent,
   ACCENT_GOLD,
   HEADER_BG,
 }: DashboardTableBodyProps) {
+  const chrome = sectionChrome(accent);
   return (
 <tbody>
   {rows.map((row, rIdx) => {
@@ -107,27 +111,33 @@ export default function DashboardTableBody({
     }
     
     let rowClasses = 'transition-colors hover:bg-blue-50/30';
-    if (isTotalRow) rowClasses = 'font-bold bg-slate-100 hover:bg-slate-200/80';
-    if (isMonthTotal) rowClasses = 'font-bold bg-amber-50 hover:bg-amber-100/80';
-    if (isTodayRow) rowClasses = 'transition-colors bg-blue-50 hover:bg-blue-100/70';
+    let rowStyle: React.CSSProperties | undefined;
+    if (isTotalRow) { rowClasses = 'font-bold'; rowStyle = { background: tint(accent, 0.07) }; }
+    if (isMonthTotal) { rowClasses = 'font-bold'; rowStyle = { background: tint(accent, 0.12) }; }
+    if (isTodayRow) { rowClasses = 'transition-colors'; rowStyle = { background: tint(accent, 0.06) }; }
 
     let rowBorderClasses = '';
     if (isTotalRow) rowBorderClasses = 'border-y-2 border-y-slate-400';
-    if (isMonthTotal) rowBorderClasses = 'border-y-2 border-y-amber-500';
-    if (isTodayRow) rowBorderClasses = 'border-y-2 border-y-blue-300';
+    if (isMonthTotal) rowBorderClasses = 'border-y-2';
+    if (isTodayRow) rowBorderClasses = 'border-y-2';
 
-    let dateCellBg = 'bg-[#ffffff] text-slate-600';
-    if (isTotalRow) dateCellBg = 'bg-[#f1f5f9] text-slate-800 font-bold';
-    else if (isMonthTotal) dateCellBg = 'bg-[#fffbeb] text-amber-900 font-bold';
-    else if (isTodayRow) dateCellBg = 'bg-blue-600 text-white font-black';
-    else if (row.isPublicHoliday) dateCellBg = 'bg-red-100 text-red-800 font-bold';
-    else if (row.isCustomEvent) dateCellBg = 'bg-green-200 text-green-900 font-bold';
-    else if (row.isSchoolHoliday) dateCellBg = 'bg-blue-200 text-blue-900 font-bold';
-    else if (row.isWeekend) dateCellBg = 'bg-[#f8fafc] text-slate-400 italic';
+    // Colonne DATE : dégradé teinté façon Récap Annuel pour les jours normaux ;
+    // les codes couleur métier (férié, événement, vacances, week-end) sont conservés.
+    // Fond blanc opaque en couche de base : la cellule est sticky, un rgba seul laisserait
+    // transparaître les colonnes qui défilent dessous.
+    let dateCellBg = 'text-slate-700';
+    let dateCellStyle: React.CSSProperties | undefined = { background: `linear-gradient(135deg, ${tint(accent, 0.26)} 0%, ${tint(accent, 0.12)} 48%, #fafaf9 100%), #ffffff` };
+    if (isTotalRow) { dateCellBg = 'text-slate-900 font-bold'; dateCellStyle = { background: `linear-gradient(${tint(accent, 0.18)}, ${tint(accent, 0.18)}), #ffffff` }; }
+    else if (isMonthTotal) { dateCellBg = 'text-white font-bold'; dateCellStyle = { background: `${chrome.totalBg}, #ffffff`, borderTopColor: tint(accent, 0.65), borderBottomColor: tint(accent, 0.65) }; }
+    else if (isTodayRow) { dateCellBg = 'text-white font-black'; dateCellStyle = { background: `${chrome.totalBg}, #ffffff`, borderTopColor: tint(accent, 0.65), borderBottomColor: tint(accent, 0.65) }; }
+    else if (row.isPublicHoliday) { dateCellBg = 'bg-red-100 text-red-800 font-bold'; dateCellStyle = undefined; }
+    else if (row.isCustomEvent) { dateCellBg = 'bg-green-200 text-green-900 font-bold'; dateCellStyle = undefined; }
+    else if (row.isSchoolHoliday) { dateCellBg = 'bg-blue-200 text-blue-900 font-bold'; dateCellStyle = undefined; }
+    else if (row.isWeekend) { dateCellBg = 'bg-[#f8fafc] text-slate-400 italic'; dateCellStyle = undefined; }
 
     return (
-      <tr key={`r-${rIdx}`} className={rowClasses}>
-        <td className={[
+      <tr key={`r-${rIdx}`} className={rowClasses} style={rowStyle}>
+        <td style={dateCellStyle} className={[
           'sticky left-0 z-30 px-3 py-1.5 text-right font-medium whitespace-nowrap',
           'border-r-[2px] border-r-slate-600',
           'border-b border-b-slate-100',
@@ -167,9 +177,9 @@ export default function DashboardTableBody({
           else                      cellBorderClasses += ' border-r border-r-slate-200';
           
           if (isTotalRow)    cellBorderClasses += ' border-y-2 border-y-slate-400';
-          if (isMonthTotal) cellBorderClasses += ' border-y-2 border-y-amber-500';
+          if (isMonthTotal) cellBorderClasses += ' border-y-2';
 
-          let textColorClass = isMonthTotal ? 'text-amber-900' : 'text-slate-800';
+          let textColorClass = isMonthTotal ? 'text-slate-900' : 'text-slate-800';
           const isVarianceCol = c[1].includes('ECART') || c[2].includes('ECART') || [22, 31, 33, 117, 122, 118, 119, 123, 124, 128, 129, 141, 142].includes(originalCIdx);
           if ((c[2] === 'ECART AU\nBUDGET\nJOUR' || isVarianceCol) && val !== '') {
             const numVal = parseMoneyValue(val);
@@ -190,8 +200,8 @@ export default function DashboardTableBody({
                 const totalVal = calculatedData[`${rIdx}-fraisGenerauxTotal`] || '0,00 €';
                 return (
                   <td key={`c-${rIdx}-${cIdx}`} colSpan={fgColSpan}
-                    className="text-center font-black text-sm py-2 px-4 uppercase tracking-widest border-y-2 border-y-amber-500 border-r-[3px] border-r-slate-600"
-                    style={{ background: ACCENT_GOLD, color: HEADER_BG }}>
+                    className="text-center font-black text-sm py-2 px-4 uppercase tracking-widest border-y-2 border-r-[3px] border-r-slate-600"
+                    style={{ background: chrome.totalBg, color: '#fff', borderTopColor: tint(accent, 0.65), borderBottomColor: tint(accent, 0.65) }}>
                     TOTAL FRAIS GÉNÉRAUX : {totalVal}
                   </td>
                 );
@@ -486,7 +496,7 @@ export default function DashboardTableBody({
             <td
               key={`c-${rIdx}-${cIdx}`}
               className={`p-0 ${cellBg} ${cellBorderClasses} relative text-center`}
-              style={isDragOver ? { background: '#dcfce7', outline: '1px solid #16a34a' } : undefined}
+              style={isDragOver ? { background: '#dcfce7', outline: '1px solid #16a34a' } : isMonthTotal ? { borderTopColor: tint(accent, 0.65), borderBottomColor: tint(accent, 0.65) } : undefined}
               onMouseEnter={() => dragState && row.type === 'day' && handleDragMove(rIdx)}
             >
               {!isHatched && !isReadOnly ? (

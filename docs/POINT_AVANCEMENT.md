@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 03/07/2026 (reskin vue complète suivi quotidien)
+
+- Vue complète du suivi quotidien alignée sur l'habillage du Récap Annuel (visuel uniquement, aucun calcul touché) : `tint`/`sectionChrome`/`strongGradient` extraits dans `src/lib/tableChrome.ts` (RecapAnnuel et Dashboard importent désormais le même habillage) ; en-tête 4 niveaux en dégradés teintés par onglet (Prévisions #d97706, Réalisé #1e40af — même palette que le récap), super-sections en dégradé plein, bloc DATE #1C1917 ; colonne DATE sticky en dégradé teinté avec base blanche opaque (anti-transparence au scroll), codes couleur métier conservés (férié/événement/vacances/week-end) ; jour courant et ligne TOTAL mois en accent plein texte blanc ; totaux semaine en tint léger ; bandeau TOTAL FRAIS GÉNÉRAUX en accent. Vues Saisie et Analyse inchangées, récap mail non touché. tsc OK, eslint OK, 81 tests OK, build OK.
+
 ## 03/07/2026 (fiabilisation sync Supabase — commit 1e98b67)
 
 - Audit complet puis fiabilisation de la synchronisation Supabase : (1) `saveCloudAppState` ne pousse plus que les snapshots modifiés dans la session (`dirtyMonths` + `dirtySegments`) — un mois localStorage jamais resynchronisé ne peut plus écraser les saisies d'un autre poste ; (2) token de session utilisateur envoyé sur toutes les requêtes `app_state` (policies RLS `to authenticated`) ; (3) RAZ locale provisoire strictement locale (ne vide plus les segments cloud, recharger restaure depuis Supabase) ; (4) flush de la sauvegarde débouncée sur `visibilitychange`/`pagehide` ; (5) `saveNow` attend le flush React avant de capturer le snapshot (imports Excel). tsc OK, eslint OK, 81 tests OK, build OK.
