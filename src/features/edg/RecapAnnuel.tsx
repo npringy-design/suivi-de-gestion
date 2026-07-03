@@ -353,10 +353,17 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       // ── 22 valeurs ──────────────────────────────────────────────────────────
       case 'realise': {
         const isEmpty = ca === 0;
+        const mp = monthProration(mi);
+        const budMidi     = g(0)  * mp;
+        const budSoir     = g(1)  * mp;
+        const budJour     = g(3)  * mp;
+        const budCvtsMidi = g(6)  * mp;
+        const budCvtsSoir = g(8)  * mp;
+        const budCvtsJour = g(10) * mp;
         const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i]).reduce((a, b) => a + b, 0);
         const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 29))).reduce((a, b) => a + b, 0);
-        const ecartCaJourPct   = !isEmpty && g(3) > 0  ? ((g(21) - g(3))  / g(3))  * 100 : 0;
-        const ecartCvtsJourPct = !isEmpty && g(10) > 0 ? ((g(29) - g(10)) / g(10)) * 100 : 0;
+        const ecartCaJourPct   = !isEmpty && budJour > 0     ? ((g(21) - budJour)     / budJour)     * 100 : 0;
+        const ecartCvtsJourPct = !isEmpty && budCvtsJour > 0 ? ((g(29) - budCvtsJour) / budCvtsJour) * 100 : 0;
         const budgetAnnuel     = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
         const budgetCvtsAnnuel = Array.from({ length: 12 }, (_, i) => getVal(i, 10)).reduce((a, b) => a + b, 0);
         const cumulEcartCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? (getVal(i, 21) - getVal(i, 3) * monthProration(i)) : 0).reduce((a, b) => a + b, 0);
@@ -367,23 +374,23 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           // CA HT — 10 valeurs
           isEmpty ? '—' : fe(g(17)),
           isEmpty ? '—' : fe(g(18)),
-          isEmpty ? '—' : fe(g(18) - g(0)),
+          isEmpty ? '—' : fe(g(18) - budMidi),
           isEmpty ? '—' : fe(g(19)),
-          isEmpty ? '—' : fe(g(19) - g(1)),
+          isEmpty ? '—' : fe(g(19) - budSoir),
           isEmpty ? '—' : fe(g(21)),
-          isEmpty ? '—' : fe(g(22)),
+          isEmpty ? '—' : fe(g(21) - budJour),
           isEmpty ? '—' : fp(ecartCaJourPct),
           isEmpty ? '—' : fe(cumulCA),
           isEmpty ? '—' : fe(tendanceCA),
           isEmpty ? '—' : fp(budgetAnnuel > 0 ? (cumulEcartCA / budgetAnnuel) * 100 : 0),
           // COUVERTS — 11 valeurs
           isEmpty ? '—' : String(Math.round(g(25))),
-          isEmpty ? '—' : String(Math.round(g(25) - g(6))),
+          isEmpty ? '—' : String(Math.round(g(25) - budCvtsMidi)),
           isEmpty ? '—' : String(Math.round(g(27))),
-          isEmpty ? '—' : String(Math.round(g(27) - g(8))),
+          isEmpty ? '—' : String(Math.round(g(27) - budCvtsSoir)),
           isEmpty ? '—' : String(Math.round(g(29))),
           isEmpty ? '—' : fe(g(30)),
-          isEmpty ? '—' : String(Math.round(g(29) - g(10))),
+          isEmpty ? '—' : String(Math.round(g(29) - budCvtsJour)),
           isEmpty ? '—' : fp(ecartCvtsJourPct),
           isEmpty ? '—' : String(cumulCvts),
           isEmpty ? '—' : String(Math.round(tendanceCvts)),
