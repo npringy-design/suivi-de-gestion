@@ -1,8 +1,22 @@
+import { getValidAccessToken } from '@/services/supabaseAuth';
+
 export type CloudAppState = {
   allData?: unknown;
   config2025?: unknown;
   customEvents?: unknown;
   personnelInfos?: unknown;
+};
+
+export type CloudSaveOptions = {
+  // Clés "annee:mois" modifiées localement depuis la dernière sauvegarde.
+  // Seuls ces snapshots mensuels sont poussés : un mois jamais resynchronisé
+  // depuis le cloud ne doit pas écraser la version d'un autre poste.
+  dirtyMonths?: ReadonlySet<string>;
+  dirtySegments?: {
+    config2025?: boolean;
+    customEvents?: boolean;
+    personnelInfos?: boolean;
+  };
 };
 
 export type CloudAppStateRecord = {
@@ -47,13 +61,18 @@ let manifestCache: CloudSegmentManifest | null | undefined;
 
 export const isCloudSyncConfigured = Boolean(rawSupabaseUrl && supabaseAnonKey);
 
-const buildHeaders = () => {
+const buildHeaders = async () => {
   const requestHeaders: Record<string, string> = {
     apikey: supabaseAnonKey,
     'Content-Type': 'application/json',
   };
 
-  if (isLegacyJwtKey) {
+  // Les policies RLS de suivi_gestion_app_state sont "to authenticated" :
+  // le token de session utilisateur est obligatoire pour lire/écrire.
+  const accessToken = await getValidAccessToken().catch(() => null);
+  if (accessToken) {
+    requestHeaders.Authorization = `Bearer ${accessToken}`;
+  } else if (isLegacyJwtKey) {
     requestHeaders.Authorization = `Bearer ${supabaseAnonKey}`;
   }
 
@@ -119,7 +138,7 @@ const mergeMonthRefs = (
 
 const fetchStateRecord = async <T = unknown>(key: string): Promise<CloudSegmentRecord<T> | null> => {
   const url = `${appStateUrl()}?key=eq.${encodeURIComponent(key)}&select=value,updated_at&limit=1`;
-  const response = await fetch(url, { headers: buildHeaders() });
+  const response = await fetch(url, { headers: await buildHeaders() });
 
   if (!response.ok) {
     throw new Error(`Lecture Supabase impossible (${response.status})${await readError(response)}`);
@@ -283,7 +302,7 @@ const saveStateRecord = async (key: string, value: unknown): Promise<CloudSegmen
   const response = await fetch(`${appStateUrl()}?on_conflict=key&select=value,updated_at`, {
     method: 'POST',
     headers: {
-      ...buildHeaders(),
+      ...(await buildHeaders()),
       Prefer: 'resolution=merge-duplicates,return=representation',
     },
     body: JSON.stringify({ key, value }),
@@ -301,18 +320,26 @@ const saveStateRecord = async (key: string, value: unknown): Promise<CloudSegmen
   return rows[0] || null;
 };
 
-export const saveCloudAppState = async (value: CloudAppState): Promise<CloudAppStateRecord | null> => {
+export const saveCloudAppState = async (value: CloudAppState, options?: CloudSaveOptions): Promise<CloudAppStateRecord | null> => {
   assertConfigured();
 
   const allData = value.allData && typeof value.allData === 'object'
     ? value.allData as Record<string, Record<string, unknown>>
     : {};
 
+  // Sans options : sauvegarde complète (amorçage initial du cloud).
+  // Avec options : seuls les snapshots marqués modifiés sont poussés.
+  const shouldSaveMonth = (year: string, month: string) =>
+    !options?.dirtyMonths || options.dirtyMonths.has(`${year}:${month}`);
+  const shouldSaveSegment = (segment: 'config2025' | 'customEvents' | 'personnelInfos') =>
+    !options?.dirtySegments || options.dirtySegments[segment] === true;
+
   const monthEntries = Object.entries(allData).flatMap(([year, months]) => {
     if (!months || typeof months !== 'object') return [];
     return Object.entries(months as Record<string, unknown>)
       .filter(([, monthValue]) => monthValue && typeof monthValue === 'object')
-      .map(([month, monthValue]) => ({ year: String(year), month: String(month), value: monthValue }));
+      .map(([month, monthValue]) => ({ year: String(year), month: String(month), value: monthValue }))
+      .filter(item => shouldSaveMonth(item.year, item.month));
   });
 
   const config2025 = value.config2025 && typeof value.config2025 === 'object' ? value.config2025 : {};
@@ -327,9 +354,9 @@ export const saveCloudAppState = async (value: CloudAppState): Promise<CloudAppS
 
   await Promise.all(monthEntries.map(item => saveStateRecord(monthSegmentKey(item.year, item.month), item.value)));
   await Promise.all([
-    saveStateRecord(configSegmentKey, config2025),
-    saveStateRecord(customEventsSegmentKey, customEvents),
-    saveStateRecord(personnelInfosSegmentKey, personnelInfos),
+    shouldSaveSegment('config2025') ? saveStateRecord(configSegmentKey, config2025) : Promise.resolve(null),
+    shouldSaveSegment('customEvents') ? saveStateRecord(customEventsSegmentKey, customEvents) : Promise.resolve(null),
+    shouldSaveSegment('personnelInfos') ? saveStateRecord(personnelInfosSegmentKey, personnelInfos) : Promise.resolve(null),
   ]);
 
   const manifest: CloudSegmentManifest = {

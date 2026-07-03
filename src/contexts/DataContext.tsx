@@ -155,6 +155,15 @@ const loadFromStorage = (): Record<number, Record<number, MonthData>> => {
 
 const saveToStorage = (data: Record<number, Record<number, MonthData>>) => saveJson(STORAGE_KEY_V2, data);
 
+const EMPTY_YEAR_DATA: Record<number, MonthData> = {};
+
+type CloudSnapshot = {
+  allData: Record<number, Record<number, MonthData>>;
+  config2025: Config2025Data;
+  customEvents: CustomEvent[];
+  personnelInfos: PersonnelInfo[];
+};
+
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
@@ -165,7 +174,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [customEvents, setCustomEvents] = useState<CustomEvent[]>(() => loadJson(CUSTOM_EVENTS_STORAGE_KEY, []));
   const [personnelInfos, setPersonnelInfos] = useState<PersonnelInfo[]>(() => loadJson(PERSONNEL_INFOS_STORAGE_KEY, []));
 
-  const data = allData[selectedYear] || {};
+  const data = allData[selectedYear] || EMPTY_YEAR_DATA;
 
   const cloudLoadedRef = useRef(!isCloudSyncConfigured);
   const cloudBootstrapDoneRef = useRef(!isCloudSyncConfigured);
@@ -174,8 +183,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const loadedCloudMonthKeysRef = useRef<Set<string>>(new Set());
   const initialCloudYearRef = useRef(selectedYear);
   const initialCloudMonthRef = useRef(selectedMonth);
+  // Snapshots "annee:mois" modifiés localement : seuls ces mois sont poussés vers Supabase,
+  // pour ne jamais écraser avec des données localStorage périmées les saisies d'un autre poste.
+  const dirtyMonthKeysRef = useRef<Set<string>>(new Set());
+  const dirtySegmentsRef = useRef({ config2025: false, customEvents: false, personnelInfos: false });
+  const latestSnapshotRef = useRef<CloudSnapshot>({ allData, config2025, customEvents, personnelInfos });
 
-  const updateDataForYear = useCallback((updater: (prevYearData: Record<number, MonthData>) => Record<number, MonthData>) => {
+  const updateDataForYear = useCallback((month: number, updater: (prevYearData: Record<number, MonthData>) => Record<number, MonthData>) => {
+    dirtyMonthKeysRef.current.add(selectedYear + ':' + month);
     setAllData(prev => ({
       ...prev,
       [selectedYear]: updater(prev[selectedYear] || {}),
@@ -363,7 +378,25 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [applyCloudMonth, cloudErrorMessage, cloudMonthKey, hideCloudWarning, selectedMonth, selectedYear, showCloudWarning]);
 
+  // Ne pousse vers Supabase que les snapshots (mois/segments) réellement modifiés
+  // dans cette session, puis les retire de la liste des éléments à sauvegarder.
+  const performCloudSave = useCallback(async () => {
+    const dirtyMonths = new Set(dirtyMonthKeysRef.current);
+    const dirtySegments = { ...dirtySegmentsRef.current };
+    const hasDirtySegment = dirtySegments.config2025 || dirtySegments.customEvents || dirtySegments.personnelInfos;
+    if (dirtyMonths.size === 0 && !hasDirtySegment) return;
+
+    await saveCloudAppState(latestSnapshotRef.current, { dirtyMonths, dirtySegments });
+
+    dirtyMonths.forEach(key => dirtyMonthKeysRef.current.delete(key));
+    (['config2025', 'customEvents', 'personnelInfos'] as const).forEach(segment => {
+      if (dirtySegments[segment]) dirtySegmentsRef.current[segment] = false;
+    });
+  }, []);
+
   useEffect(() => {
+    latestSnapshotRef.current = { allData, config2025, customEvents, personnelInfos };
+
     if (!isCloudSyncConfigured || !cloudLoadedRef.current || !cloudBootstrapDoneRef.current) return;
     if (cloudApplyingRef.current) {
       cloudApplyingRef.current = false;
@@ -374,10 +407,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       window.clearTimeout(cloudSaveTimerRef.current);
     }
 
-    const snapshot = { allData, config2025, customEvents, personnelInfos };
     cloudSaveTimerRef.current = window.setTimeout(async () => {
       try {
-        await saveCloudAppState(snapshot);
+        await performCloudSave();
         hideCloudWarning();
       } catch (error) {
         console.warn('Sauvegarde Supabase indisponible :', error);
@@ -390,17 +422,45 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         window.clearTimeout(cloudSaveTimerRef.current);
       }
     };
-  }, [allData, config2025, customEvents, personnelInfos, cloudErrorMessage, hideCloudWarning, showCloudWarning]);
+  }, [allData, config2025, customEvents, personnelInfos, cloudErrorMessage, hideCloudWarning, performCloudSave, showCloudWarning]);
+
+  // Fermeture ou bascule d'onglet : flush immédiat de la sauvegarde débouncée
+  // pour ne pas perdre la dernière saisie (le débounce est de 900 ms).
+  useEffect(() => {
+    if (!isCloudSyncConfigured) return;
+
+    const flushPendingSave = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'hidden') return;
+      if (!cloudLoadedRef.current || !cloudBootstrapDoneRef.current) return;
+      if (cloudSaveTimerRef.current) {
+        window.clearTimeout(cloudSaveTimerRef.current);
+        cloudSaveTimerRef.current = null;
+      }
+      performCloudSave().catch(error => {
+        console.warn('Sauvegarde Supabase a la fermeture impossible :', error);
+      });
+    };
+
+    document.addEventListener('visibilitychange', flushPendingSave);
+    window.addEventListener('pagehide', flushPendingSave);
+    return () => {
+      document.removeEventListener('visibilitychange', flushPendingSave);
+      window.removeEventListener('pagehide', flushPendingSave);
+    };
+  }, [performCloudSave]);
 
   const addCustomEvent = useCallback((event: CustomEvent) => {
+    dirtySegmentsRef.current.customEvents = true;
     setCustomEvents(prev => [...prev, event]);
   }, []);
 
   const removeCustomEvent = useCallback((id: string) => {
+    dirtySegmentsRef.current.customEvents = true;
     setCustomEvents(prev => prev.filter(e => e.id !== id));
   }, []);
 
   const updatePersonnelInfos = useCallback((rows: PersonnelInfo[]) => {
+    dirtySegmentsRef.current.personnelInfos = true;
     setPersonnelInfos(rows);
   }, []);
 
@@ -408,12 +468,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     channelKey: K,
     defaultDayData: DailyChannelValue<K>,
   ) => (month: number, day: number, field: keyof DailyChannelValue<K>, value: string) => {
-    updateDataForYear(prev => updateDailyChannelData(prev, month, day, channelKey, defaultDayData, field, value));
+    updateDataForYear(month, prev => updateDailyChannelData(prev, month, day, channelKey, defaultDayData, field, value));
   }, [updateDataForYear]);
 
   const updateTheorique = useCallback((month: number, day: number, field: keyof DayDataTheorique, value: string | number) => {
     const stored = field === 'commentaire' ? String(value) : parseMoneyValue(value);
-    updateDataForYear(prev => {
+    updateDataForYear(month, prev => {
       const monthData = normalizeMonthData(prev[month]);
       const dayData = monthData.theorique[day] || DEFAULT_THEORIQUE_DAY;
       return {
@@ -432,42 +492,42 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const updateNepting = useCallback((month: number, day: number, field: keyof DayDataNepting, value: string | number) => {
     const NUMERIC: (keyof DayDataNepting)[] = ['saisie_reel_nepting', 'pourboire_sunday'];
     const stored = NUMERIC.includes(field) ? parseMoneyValue(value) : String(value);
-    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'nepting', DEFAULT_NEPTING_DAY, field, stored));
+    updateDataForYear(month, prev => updateDailyChannelData(prev, month, day, 'nepting', DEFAULT_NEPTING_DAY, field, stored));
   }, [updateDataForYear]);
   const updateEspeces = useCallback((month: number, day: number, field: keyof DayDataEspeces, value: string | number) => {
     const NUMERIC: (keyof DayDataEspeces)[] = ['mis_au_coffre', 'pieces'];
     const stored = NUMERIC.includes(field) ? parseMoneyValue(value) : String(value);
-    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'especes', DEFAULT_ESPECES_DAY, field, stored));
+    updateDataForYear(month, prev => updateDailyChannelData(prev, month, day, 'especes', DEFAULT_ESPECES_DAY, field, stored));
   }, [updateDataForYear]);
   const updateConecs = useCallback((month: number, day: number, field: keyof DayDataConecs, value: string | number) => {
     const stored = field === 'conecs_reel_nepting' ? parseMoneyValue(value) : String(value);
-    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'conecs', DEFAULT_CONECS_DAY, field, stored));
+    updateDataForYear(month, prev => updateDailyChannelData(prev, month, day, 'conecs', DEFAULT_CONECS_DAY, field, stored));
   }, [updateDataForYear]);
   const updateSunday = useCallback((month: number, day: number, field: keyof DayDataSunday, value: string | number) => {
     const stored = field === 'reel' ? parseMoneyValue(value) : String(value);
-    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'sunday', DEFAULT_REEL_DAY, field, stored));
+    updateDataForYear(month, prev => updateDailyChannelData(prev, month, day, 'sunday', DEFAULT_REEL_DAY, field, stored));
   }, [updateDataForYear]);
   const updateUber = useCallback((month: number, day: number, field: keyof DayDataUber, value: string | number) => {
     const stored = field === 'reel' ? parseMoneyValue(value) : String(value);
-    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'uber', DEFAULT_REEL_DAY, field, stored));
+    updateDataForYear(month, prev => updateDailyChannelData(prev, month, day, 'uber', DEFAULT_REEL_DAY, field, stored));
   }, [updateDataForYear]);
   const updateAmexAncv = useCallback((month: number, day: number, field: keyof DayDataAmexAncv, value: string | number) => {
     const stored = field === 'reel_nepting' ? parseMoneyValue(value) : String(value);
-    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'amexAncv', DEFAULT_AMEX_ANCV_DAY, field, stored));
+    updateDataForYear(month, prev => updateDailyChannelData(prev, month, day, 'amexAncv', DEFAULT_AMEX_ANCV_DAY, field, stored));
   }, [updateDataForYear]);
   const updateDeliveroo = useCallback((month: number, day: number, field: keyof DayDataDeliveroo, value: string | number) => {
     const stored = field === 'reel' ? parseMoneyValue(value) : String(value);
-    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'deliveroo', DEFAULT_REEL_DAY, field, stored));
+    updateDataForYear(month, prev => updateDailyChannelData(prev, month, day, 'deliveroo', DEFAULT_REEL_DAY, field, stored));
   }, [updateDataForYear]);
   const updateClickCollect = useCallback((month: number, day: number, field: keyof DayDataClickCollect, value: string | number) => {
     const stored = field === 'reel' ? parseMoneyValue(value) : String(value);
-    updateDataForYear(prev => updateDailyChannelData(prev, month, day, 'clickCollect', DEFAULT_REEL_DAY, field, stored));
+    updateDataForYear(month, prev => updateDailyChannelData(prev, month, day, 'clickCollect', DEFAULT_REEL_DAY, field, stored));
   }, [updateDataForYear]);
 
   const updateAncvPapiers = useCallback((month: number, day: number, field: keyof DayDataAncvPapiers, value: string | number) => {
     const NUMERIC: (keyof DayDataAncvPapiers)[] = ['montant_total', 'total_enveloppes_ancv'];
     const stored = NUMERIC.includes(field) ? parseMoneyValue(value) : String(value);
-    updateDataForYear(prev => {
+    updateDataForYear(month, prev => {
       const monthData = normalizeMonthData(prev[month]);
       const dayData = monthData.ancvPapiers[day] || DEFAULT_ANCV_PAPIERS_DAY;
       return {
@@ -485,7 +545,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const updateAncvLigne = useCallback((month: number, day: number, index: number, field: keyof AncvEntry, value: string) => {
     const NUM_ROWS = 8;
-    updateDataForYear(prev => {
+    updateDataForYear(month, prev => {
       const monthData = normalizeMonthData(prev[month]);
       const existing = monthData.ancvPapiers[day] || DEFAULT_ANCV_PAPIERS_DAY;
       const lignes: AncvEntry[] = existing.lignes
@@ -521,7 +581,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const updateSaisieTR = useCallback((month: number, day: number, provider: keyof DayDataSaisieTR, index: number, field: keyof TrEntry, value: string | number) => {
     const stored = field === 'valeur' ? parseMoneyValue(value) : String(value);
-    updateDataForYear(prev => {
+    updateDataForYear(month, prev => {
       const monthData = normalizeMonthData(prev[month]);
       const defaultEntries = Array(8).fill({ valeur: 0, nombre: '' });
       const dayData = monthData.saisieTR[day] || {
@@ -550,7 +610,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [updateDataForYear]);
 
   const updateVisuTRPapiers = useCallback((month: number, day: number, field: keyof DayDataVisuTRPapiers, value: string) => {
-    updateDataForYear(prev => {
+    updateDataForYear(month, prev => {
       const monthData = normalizeMonthData(prev[month]);
       const dayData = monthData.visuTRPapiers[day] || DEFAULT_VISU_TR_PAPIERS_DAY;
       return {
@@ -567,7 +627,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [updateDataForYear]);
 
   const updateSalariesConfig = useCallback((month: number, configData: MonthDataSalariesConfig) => {
-    updateDataForYear(prev => {
+    updateDataForYear(month, prev => {
       const monthData = normalizeMonthData(prev[month]);
       return {
         ...prev,
@@ -580,7 +640,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [updateDataForYear]);
 
   const updatePersonnelSchema = useCallback((month: number, schema: PersonnelSchema) => {
-    updateDataForYear(prev => {
+    updateDataForYear(month, prev => {
       const monthData = normalizeMonthData(prev[month]);
       return {
         ...prev,
@@ -617,21 +677,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const saveNow = useCallback(async () => {
     if (!isCloudSyncConfigured || !cloudLoadedRef.current || !cloudBootstrapDoneRef.current) return;
+    // Laisser React appliquer les mises à jour d'état encore en attente (setState est asynchrone)
+    // avant de capturer le snapshot, sinon on sauvegarderait l'état d'avant l'action en cours.
+    await new Promise(resolve => setTimeout(resolve, 0));
     if (cloudSaveTimerRef.current) {
       window.clearTimeout(cloudSaveTimerRef.current);
       cloudSaveTimerRef.current = null;
     }
     try {
-      await saveCloudAppState({ allData, config2025, customEvents, personnelInfos });
+      await performCloudSave();
       hideCloudWarning();
     } catch (error) {
       showCloudWarning(cloudErrorMessage('Sauvegarde Supabase echouee', error));
     }
-  }, [allData, config2025, customEvents, personnelInfos, cloudErrorMessage, hideCloudWarning, showCloudWarning]);
+  }, [cloudErrorMessage, hideCloudWarning, performCloudSave, showCloudWarning]);
 
   const updateBilanSynthese = useCallback((month: number, day: number, field: keyof DayDataBilanSynthese, value: string | number) => {
     const stored = parseMoneyValue(value);
-    updateDataForYear(prev => {
+    updateDataForYear(month, prev => {
       const monthData = normalizeMonthData(prev[month]);
       const dayData = monthData.bilanSynthese[day] || DEFAULT_BILAN_DAY;
       return {
@@ -648,7 +711,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [updateDataForYear]);
 
   const updateDepensesPetiteCaisse = useCallback((month: number, field: string, value: string | number) => {
-    updateDataForYear(prev => {
+    updateDataForYear(month, prev => {
       const monthData = normalizeMonthData(prev[month]);
       const DEPENSES_NUMERIC_FIELDS = new Set(['solde_debut_mois', 'ht', 'tva', 'montant', 'p100', 'p50', 'p20', 'p10', 'p5', 'p2', 'p1', 'p050', 'p020', 'p010', 'p005', 'p002', 'p001']);
       const defaultDepenses: MonthDataDepensesPetiteCaisse = {
@@ -701,26 +764,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [updateDataForYear]);
 
   const updateDashboard = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(prev => updateMonthlyStringRecordData(prev, month, 'dashboard', cellKey, value));
+    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'dashboard', cellKey, value));
   }, [updateDataForYear]);
 
   const updateEdgMensuel = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(prev => updateMonthlyStringRecordData(prev, month, 'edgMensuel', cellKey, value));
+    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'edgMensuel', cellKey, value));
   }, [updateDataForYear]);
 
   const updateEdgMensuelRealise = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(prev => updateMonthlyStringRecordData(prev, month, 'edgMensuelRealise', cellKey, value));
+    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'edgMensuelRealise', cellKey, value));
   }, [updateDataForYear]);
 
   const updateEdgMensuelN1 = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(prev => updateMonthlyStringRecordData(prev, month, 'edgMensuelN1', cellKey, value));
+    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'edgMensuelN1', cellKey, value));
   }, [updateDataForYear]);
 
   const updateMiseEnPaiement = useCallback((month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | number | boolean) => {
     const stored = (field === 'montantHT' || field === 'montantTTC') ? parseMoneyValue(value as string | number)
       : field === 'paiementEffectue' ? Boolean(value)
       : String(value);
-    updateDataForYear(prev => {
+    updateDataForYear(month, prev => {
       const monthData = normalizeMonthData(prev[month]);
       const defaultEntries = Array(10).fill({ fournisseur: '', numFacture: '', montantHT: 0, montantTTC: 0, dateEcheance: '', datePaiementPrevue: '', paiementEffectue: false });
       const currentMiseEnPaiement = monthData.miseEnPaiement || {
@@ -744,6 +807,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [updateDataForYear]);
 
   const updateConfig2025 = useCallback((type: 'mensuel' | 'hebdo', index: number, field: string, value: string) => {
+    dirtySegmentsRef.current.config2025 = true;
     setConfig2025(prev => ({
       ...prev,
       [type]: {
@@ -766,6 +830,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     } catch {
       // La remise a zero reste possible en memoire meme si le stockage navigateur est indisponible.
     }
+    // RAZ strictement locale : on vide les marqueurs "modifié" pour que la
+    // sauvegarde automatique n'écrase pas les données Supabase avec du vide.
+    // Recharger la page restaure les données depuis le cloud.
+    dirtyMonthKeysRef.current.clear();
+    dirtySegmentsRef.current = { config2025: false, customEvents: false, personnelInfos: false };
     setAllData({});
     setConfig2025({ mensuel: {}, hebdo: {} });
     setCustomEvents([]);
