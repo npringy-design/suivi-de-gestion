@@ -594,7 +594,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
       // ── 23 totaux ───────────────────────────────────────────────────────────
       case 'cout_matiere': return [
-        fe(s(39)), '—', fe(s(41)), '—', fe(s(43)),
+        fe(s(39)), totalCA > 0 && s(39) > 0 ? fp(s(39) / totalCA * 100) : '—',
+        fe(s(41)), totalCA > 0 && s(41) > 0 ? fp(s(41) / totalCA * 100) : '—', fe(s(43)),
         fe(s(45)), fe(s(46)), fe(s(47)), fe(s(48)),
         fe(s(49)), fe(s(50)), fe(s(51)), fe(s(52)), fe(s(53)), fe(s(54)), fe(s(55)), fe(s(56)), fe(s(57)),
         fe(s(58)), fe(s(58)), totalCA > 0 ? fp(s(58) / totalCA * 100) : '—',
