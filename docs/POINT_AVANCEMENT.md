@@ -5,6 +5,13 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 03/07/2026 (correctifs reskin vue complète — couleurs par section + transparence scroll)
+
+- Retour utilisateur sur le reskin du jour : le code couleur par section (Frais de Personnel en violet, etc., comme le Récap Annuel) avait disparu — remplacé par un accent unique par onglet — et le scroll vertical laissait voir à travers les en-têtes sticky. Deux correctifs, toujours vue complète uniquement :
+  - `src/lib/tableChrome.ts` : ajout de `GROUP_ACCENTS`/`accentForGroup` — palette par groupe alignée sur `SECTIONS` du Récap Annuel (COUT MATIERE #166534, FRAIS DE PERSONNEL PROJECTION/REALISE #9333ea violet, FRAIS GENERAUX #78350f, CONTRAT MENSUALISES/RESULTATS MENSUEL HT #1e3a5f). `DashboardTableHeader.tsx` calcule désormais un `sectionChrome` par groupe/sous-groupe/colonne (au lieu d'un `chrome` unique pour toute la table) ; les groupes Prévisions/Réalisé/Événements gardent l'accent d'onglet via le fallback. Bandeau TOTAL FRAIS GÉNÉRAUX dans `DashboardTableBody.tsx` recoloré avec l'accent Frais Généraux au lieu de l'accent global.
+  - `headerBg`/`subHeaderBg`/`totalBg` dans `sectionChrome()` et `strongGradient()` portent maintenant une couche `#ffffff` opaque en second plan (fonds sticky) — le dégradé rgba seul laissait transparaître le contenu qui défile dessous ; bénéficie aussi à RecapAnnuel qui partage le même chrome.
+- tsc OK, eslint OK, 81 tests OK, build OK.
+
 ## 03/07/2026 (reskin vue complète suivi quotidien)
 
 - Vue complète du suivi quotidien alignée sur l'habillage du Récap Annuel (visuel uniquement, aucun calcul touché) : `tint`/`sectionChrome`/`strongGradient` extraits dans `src/lib/tableChrome.ts` (RecapAnnuel et Dashboard importent désormais le même habillage) ; en-tête 4 niveaux en dégradés teintés par onglet (Prévisions #d97706, Réalisé #1e40af — même palette que le récap), super-sections en dégradé plein, bloc DATE #1C1917 ; colonne DATE sticky en dégradé teinté avec base blanche opaque (anti-transparence au scroll), codes couleur métier conservés (férié/événement/vacances/week-end) ; jour courant et ligne TOTAL mois en accent plein texte blanc ; totaux semaine en tint léger ; bandeau TOTAL FRAIS GÉNÉRAUX en accent. Vues Saisie et Analyse inchangées, récap mail non touché. tsc OK, eslint OK, 81 tests OK, build OK.

@@ -1,7 +1,7 @@
 import React from 'react';
 
 import type { VisibleDashboardColumn } from '@/features/dashboard/dashboardTypes';
-import { sectionChrome, strongGradient } from '@/lib/tableChrome';
+import { accentForGroup, sectionChrome, strongGradient } from '@/lib/tableChrome';
 
 type GroupItem = { name: string; colspan: number; bg: string };
 type SubGroupItem = { name: string; group: string; colspan: number; bg: string };
@@ -39,7 +39,6 @@ export default function DashboardTableHeader({
   otherGroups,
   updatePurchaseSupplierName,
 }: DashboardTableHeaderProps) {
-  const chrome = sectionChrome(accent);
   return (
     <thead>
       {/* ── ROW 1 : super-sections ── */}
@@ -77,6 +76,7 @@ export default function DashboardTableHeader({
           let colCount = 0;
           for (let j = 0; j <= i; j++) colCount += groups[j].colspan;
           const isMajorEnd = isEndOfMajorSection[colCount - 1];
+          const chrome = sectionChrome(accentForGroup(g.name, accent));
 
           return (
             <th key={`g-${i}`} colSpan={g.colspan} style={{ ...thBase, background: chrome.headerBg, color: chrome.headerColor, top: 30, height: 30, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : `2px solid ${chrome.headerDivider}`, borderBottom: `1px solid ${chrome.headerBorder}` }}>
@@ -93,6 +93,7 @@ export default function DashboardTableHeader({
           let colCount = 0;
           for (let j = 0; j <= i; j++) colCount += subGroups[j].colspan;
           const isMajorEnd = isEndOfMajorSection[colCount - 1];
+          const chrome = sectionChrome(accentForGroup(sg.group, accent));
 
           return (
             <th key={`sg-${i}`} colSpan={sg.colspan} style={{ ...thBase, background: chrome.subHeaderBg, color: chrome.subHeaderColor, top: 60, height: 30, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : `2px solid ${chrome.headerDivider}`, borderBottom: `1px solid ${chrome.headerBorder}` }}>
@@ -113,6 +114,7 @@ export default function DashboardTableHeader({
           const isRmValue = c[0] === 'RESULTATS MENSUEL HT' && c[2] === 'Valeur';
           const isEditableSupplierHeader = tableViewMode === 'COMPLET' && c.originalIndex >= 45 && c.originalIndex <= 57;
           const minW = isRmLabel ? 180 : isRmValue ? 100 : 65;
+          const chrome = sectionChrome(accentForGroup(c[0], accent));
 
           return (
             <th key={`c-${i}`} style={{ ...thBase, background: chrome.subHeaderBg, color: chrome.subHeaderColor, top: 90, height: 60, minWidth: minW, fontSize: 9, zIndex: 40, borderRight: isMajorEnd ? '3px solid #475569' : isSectionEnd ? '2px solid #94a3b8' : `1px solid ${chrome.headerDivider}`, borderBottom: '3px solid #374151' }}>

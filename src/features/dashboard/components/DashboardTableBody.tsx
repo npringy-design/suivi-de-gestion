@@ -4,7 +4,7 @@ import type { DashboardRow, VisibleDashboardColumn } from '@/features/dashboard/
 import { editableCols } from '@/features/dashboard/dashboardStaticConfig';
 import { formatValue, getFgBoxLayout } from '@/features/dashboard/dashboardCalculations';
 import { parseMoneyValue } from '@/lib/money';
-import { sectionChrome, tint } from '@/lib/tableChrome';
+import { GROUP_ACCENTS, sectionChrome, tint } from '@/lib/tableChrome';
 import DebouncedInput from '@/features/dashboard/components/DebouncedInput';
 
 type DragState = { rIdx: number; cIdx: number; endRow: number; value: string };
@@ -57,6 +57,7 @@ export default function DashboardTableBody({
   HEADER_BG,
 }: DashboardTableBodyProps) {
   const chrome = sectionChrome(accent);
+  const fraisGenerauxChrome = sectionChrome(GROUP_ACCENTS['FRAIS GENERAUX']);
   return (
 <tbody>
   {rows.map((row, rIdx) => {
@@ -128,8 +129,8 @@ export default function DashboardTableBody({
     let dateCellBg = 'text-slate-700';
     let dateCellStyle: React.CSSProperties | undefined = { background: `linear-gradient(135deg, ${tint(accent, 0.26)} 0%, ${tint(accent, 0.12)} 48%, #fafaf9 100%), #ffffff` };
     if (isTotalRow) { dateCellBg = 'text-slate-900 font-bold'; dateCellStyle = { background: `linear-gradient(${tint(accent, 0.18)}, ${tint(accent, 0.18)}), #ffffff` }; }
-    else if (isMonthTotal) { dateCellBg = 'text-white font-bold'; dateCellStyle = { background: `${chrome.totalBg}, #ffffff`, borderTopColor: tint(accent, 0.65), borderBottomColor: tint(accent, 0.65) }; }
-    else if (isTodayRow) { dateCellBg = 'text-white font-black'; dateCellStyle = { background: `${chrome.totalBg}, #ffffff`, borderTopColor: tint(accent, 0.65), borderBottomColor: tint(accent, 0.65) }; }
+    else if (isMonthTotal) { dateCellBg = 'text-white font-bold'; dateCellStyle = { background: chrome.totalBg, borderTopColor: tint(accent, 0.65), borderBottomColor: tint(accent, 0.65) }; }
+    else if (isTodayRow) { dateCellBg = 'text-white font-black'; dateCellStyle = { background: chrome.totalBg, borderTopColor: tint(accent, 0.65), borderBottomColor: tint(accent, 0.65) }; }
     else if (row.isPublicHoliday) { dateCellBg = 'bg-red-100 text-red-800 font-bold'; dateCellStyle = undefined; }
     else if (row.isCustomEvent) { dateCellBg = 'bg-green-200 text-green-900 font-bold'; dateCellStyle = undefined; }
     else if (row.isSchoolHoliday) { dateCellBg = 'bg-blue-200 text-blue-900 font-bold'; dateCellStyle = undefined; }
@@ -201,7 +202,7 @@ export default function DashboardTableBody({
                 return (
                   <td key={`c-${rIdx}-${cIdx}`} colSpan={fgColSpan}
                     className="text-center font-black text-sm py-2 px-4 uppercase tracking-widest border-y-2 border-r-[3px] border-r-slate-600"
-                    style={{ background: chrome.totalBg, color: '#fff', borderTopColor: tint(accent, 0.65), borderBottomColor: tint(accent, 0.65) }}>
+                    style={{ background: fraisGenerauxChrome.totalBg, color: '#fff', borderTopColor: tint(GROUP_ACCENTS['FRAIS GENERAUX'], 0.65), borderBottomColor: tint(GROUP_ACCENTS['FRAIS GENERAUX'], 0.65) }}>
                     TOTAL FRAIS GÉNÉRAUX : {totalVal}
                   </td>
                 );
