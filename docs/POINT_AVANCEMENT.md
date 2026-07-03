@@ -7,7 +7,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ## 03/07/2026 (fix Ratio Perso/Cuisine Coût Matière)
 
-- RecapAnnuel Coût Matière : Ratio Perso/Ratio Cuisine affichaient toujours +0,00% — `fp(g(40))`/`fp(g(42))` lisaient des colonnes déjà formatées en `"xx%"` que `parseMoneyValue` ne sait pas parser. Remplacé par calcul local `g(39)/ca*100` et `g(41)/ca*100` (mois), sur le modèle de `ratioHT` ; ligne TOTAL idem avec `s(39)/totalCA*100` et `s(41)/totalCA*100` (auparavant `'—'` codé en dur). tsc OK, 81 tests OK.
+- RecapAnnuel Coût Matière : Ratio Perso/Ratio Cuisine affichaient toujours +0,00% — `fp(g(40))`/`fp(g(42))` lisaient des colonnes déjà formatées en `"xx%"` que `parseMoneyValue` ne sait pas parser. Remplacé par calcul local `g(39)/ca*100` et `g(41)/ca*100` (mois), sur le modèle de `ratioHT` ; ligne TOTAL idem avec `s(39)/totalCA*100` et `s(41)/totalCA*100` (auparavant `'—'` codé en dur). Seuils couleur ajoutés dans COLS_COUT_MATIERE : `threshold: 1` sur Ratio Perso, `threshold: 0.5` sur Ratio Cuisine (rouge au-dessus, vert en-dessous — mécanisme `threshold` existant, s'applique aussi à la ligne TOTAL). tsc OK, 81 tests OK.
 
 ## 30/06/2026 (signColor écarts + tirets Coût Matière)
 

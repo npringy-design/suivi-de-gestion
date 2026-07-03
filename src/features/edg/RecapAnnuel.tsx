@@ -122,9 +122,9 @@ const COLS_REALISE: ColDef[] = [
 const COLS_COUT_MATIERE: ColDef[] = [
   // 23 colonnes
   { g: 'DEMARQUES',           l: 'Personnel',          bg: BG_CM,  w: 65 }, // col 39
-  { g: 'DEMARQUES',           l: 'Ratio\nPerso',        bg: BG_FP,  w: 55 }, // col 40
+  { g: 'DEMARQUES',           l: 'Ratio\nPerso',        bg: BG_FP,  w: 55, threshold: 1 }, // col 40
   { g: 'DEMARQUES',           l: 'Cuisine',             bg: BG_CM,  w: 65 }, // col 41
-  { g: 'DEMARQUES',           l: 'Ratio\nCuisine',      bg: BG_FP,  w: 55 }, // col 42
+  { g: 'DEMARQUES',           l: 'Ratio\nCuisine',      bg: BG_FP,  w: 55, threshold: 0.5 }, // col 42
   { g: 'DEMARQUES',           l: 'TOTAL',               bg: BG_CM3, w: 65 }, // col 43
   { g: 'ACHATS\nLIQUIDE HT',  l: 'C10',                bg: BG_CM,  w: 65 }, // col 45
   { g: 'ACHATS\nLIQUIDE HT',  l: 'Richard\nVins',       bg: BG_CM,  w: 70 }, // col 46
