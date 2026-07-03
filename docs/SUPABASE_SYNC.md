@@ -45,11 +45,17 @@ Elle ne doit pas utiliser la table `app_state` de Gestion Commandes Doquet.
 - Au demarrage, l'application lit Supabase si la configuration est presente.
 - En format segmente v2, elle charge le socle global puis uniquement le mois de demarrage.
 - Quand l'utilisateur change de mois, le mois demande est charge depuis Supabase seulement si necessaire.
-- Apres modification, l'application sauvegarde automatiquement dans Supabase avec un court delai.
+- Apres modification, l'application sauvegarde automatiquement dans Supabase avec un court delai (900 ms).
+- Depuis le 03/07/2026 (commit 1e98b67), la sauvegarde ne pousse que les **snapshots marques modifies** dans la session (mois "dirty" + segments communs "dirty") : un mois present en localStorage mais jamais resynchronise depuis le cloud n'est jamais repousse, donc ne peut pas ecraser les saisies d'un autre poste.
+- Toutes les requetes app_state envoient le **token de session utilisateur** (policies RLS `to authenticated` de `APP_STATE_SETUP.sql`).
+- A la fermeture ou au masquage de l'onglet (`visibilitychange`/`pagehide`), la sauvegarde en attente est envoyee immediatement pour ne pas perdre la derniere saisie.
+- La RAZ locale provisoire (bouton Dashboard) est strictement locale : elle ne touche pas aux segments cloud ; recharger la page restaure les donnees depuis Supabase.
 - Le localStorage reste conserve comme cache technique local, mais il ne doit pas masquer un probleme Supabase.
 - Si Supabase n'est pas configure ou si la sauvegarde echoue, une alerte visible apparait dans l'application.
 - Il n'y a pas d'actualisation automatique toutes les 10 secondes.
 - Il n'y a pas de realtime permanent pour cette premiere version.
+
+Regle pour tout nouveau developpement : une nouvelle donnee persistee doit passer par `updateDataForYear(month, ...)` (qui marque le mois modifie) ou marquer son segment dirty dans `DataContext.tsx`, sinon elle sera sauvee en localStorage mais jamais poussee vers Supabase.
 
 Ce fonctionnement permet d'ouvrir l'application depuis un autre PC et de retrouver les donnees sauvegardees, tout en evitant de croire qu'une donnee est dans le cloud quand Supabase est indisponible.
 
@@ -85,7 +91,7 @@ Fonctionnement :
 
 - `fetchCloudAppBootstrap(year, month)` charge le manifeste, les segments communs et le mois courant seulement ;
 - `fetchCloudMonth(year, month)` charge un mois specifique quand l'utilisateur y accede ;
-- `scripts/dataContextCloudSyncPatch.ts` garde en memoire les mois deja charges pour eviter des lectures repetitives ;
+- `src/contexts/DataContext.tsx` garde en memoire les mois deja charges (`loadedCloudMonthKeysRef`) pour eviter des lectures repetitives ;
 - la sauvegarde conserve la liste des mois deja connus dans le manifeste, afin de ne pas perdre les mois non charges en memoire.
 
 Effet attendu : l'ouverture de l'application reste legere meme apres plusieurs annees d'import, et Supabase n'est sollicite que pour les mois utiles.
@@ -147,15 +153,14 @@ Exemples :
 
 ## Fichiers concernes
 
-- `src/services/supabaseAppState.ts` : lecture/ecriture REST Supabase, format segmente v2 et chargement ciblé ;
-- `scripts/dataContextCloudSyncPatch.ts` : branche la sauvegarde Supabase dans `DataContext`, charge les mois a la demande et affiche les alertes ;
-- `vite.config.ts` : activation du patch ;
+- `src/services/supabaseAppState.ts` : lecture/ecriture REST Supabase, format segmente v2, chargement cible et filtrage des snapshots modifies (`CloudSaveOptions`) ;
+- `src/contexts/DataContext.tsx` : sauvegarde Supabase debouncee, suivi des mois/segments modifies, chargement des mois a la demande, flush a la fermeture et alertes ;
 - `supabase/APP_STATE_SETUP.sql` : table isolee et regles Supabase ;
 - `src/router.tsx` : routeur hash pour eviter les 404 au refresh.
 
 ## Limites connues
 
-- Si deux personnes modifient exactement en meme temps depuis deux PC differents, la derniere sauvegarde peut remplacer la precedente.
+- Si deux personnes modifient **le meme mois** exactement en meme temps depuis deux PC differents, la derniere sauvegarde de ce mois peut remplacer la precedente (les autres mois ne sont plus concernes grace au filtrage des snapshots modifies).
 - Un autre PC deja ouvert ne se met pas automatiquement a jour en direct ; il retrouvera les donnees au rechargement de l'application.
 - Le chargement mensuel a la demande reduit fortement le poids d'ouverture, mais certaines pages annuelles peuvent demander plusieurs mois si elles doivent calculer une annee complete.
 - La version multi-site fine devra passer par une structure plus stricte avec `site_id` ou des cles par site bien controlees.

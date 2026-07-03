@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 03/07/2026 (fiabilisation sync Supabase — commit 1e98b67)
+
+- Audit complet puis fiabilisation de la synchronisation Supabase : (1) `saveCloudAppState` ne pousse plus que les snapshots modifiés dans la session (`dirtyMonths` + `dirtySegments`) — un mois localStorage jamais resynchronisé ne peut plus écraser les saisies d'un autre poste ; (2) token de session utilisateur envoyé sur toutes les requêtes `app_state` (policies RLS `to authenticated`) ; (3) RAZ locale provisoire strictement locale (ne vide plus les segments cloud, recharger restaure depuis Supabase) ; (4) flush de la sauvegarde débouncée sur `visibilitychange`/`pagehide` ; (5) `saveNow` attend le flush React avant de capturer le snapshot (imports Excel). tsc OK, eslint OK, 81 tests OK, build OK.
+- **À contrôler au prochain déploiement** : la synchro doit répondre avec le token de session — si les policies Supabase en prod diffèrent de `supabase/APP_STATE_SETUP.sql`, rejouer ce script puis supprimer toute policy `anon` restante.
+- Dettes connues assumées (à traiter uniquement au fil de l'eau) : chunk `Dashboard` 1,5 Mo (passer exceljs en `import()` dynamique), deps `html2canvas` et `motion` probablement inutilisées, localStorage réécrit en entier à chaque frappe, `ARCHITECTURE.md` racine référence encore `src/types.ts`/`src/utils.ts` disparus.
+
 ## 03/07/2026 (fix Ratio Perso/Cuisine Coût Matière)
 
 - RecapAnnuel Coût Matière : Ratio Perso/Ratio Cuisine affichaient toujours +0,00% — `fp(g(40))`/`fp(g(42))` lisaient des colonnes déjà formatées en `"xx%"` que `parseMoneyValue` ne sait pas parser. Remplacé par calcul local `g(39)/ca*100` et `g(41)/ca*100` (mois), sur le modèle de `ratioHT` ; ligne TOTAL idem avec `s(39)/totalCA*100` et `s(41)/totalCA*100` (auparavant `'—'` codé en dur). Seuils couleur ajoutés dans COLS_COUT_MATIERE : `threshold: 1` sur Ratio Perso, `threshold: 0.5` sur Ratio Cuisine (rouge au-dessus, vert en-dessous — mécanisme `threshold` existant, s'applique aussi à la ligne TOTAL). tsc OK, 81 tests OK.
@@ -189,6 +195,8 @@ src/
 **Utilitaires** : importer depuis `src/lib/`, ne jamais redéfinir localement.
 **Dashboard** : pas de logique ajoutée directement — hooks ou sous-composants uniquement.
 **Doc** : supprimer les sections qui ne décrivent que de l'historique terminé.
+**Anti-gonflement** : factoriser au moment où on touche le code concerné, jamais en chantier isolé ; nouvelle page = modèle existant (`CanalSaisie` pour les canaux de caisse) ; fichier > ~500 lignes lors d'une modif → extraire dans le même commit. Détails dans `AGENTS.md`.
+**Sync cloud** : toute nouvelle donnée persistée passe par `updateDataForYear(month, ...)` ou marque son segment dirty, sinon elle ne sera jamais poussée vers Supabase. Ne jamais réintroduire de sauvegarde de l'état complet. Détails dans `AGENTS.md` et `docs/SUPABASE_SYNC.md`.
 
 ---
 
