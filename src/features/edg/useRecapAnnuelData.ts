@@ -143,6 +143,19 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
         }, 0)
       ).reduce((a, b) => a + b, 0);
 
+    // Écart réalisé vs budget sommé jour par jour, uniquement sur les jours
+    // ayant du réalisé : reflète l'écart réel à date sans compter, pour le
+    // mois en cours, le budget des jours pas encore écoulés/saisis.
+    const sumDayEcart = (mi: number, realCol: number, budgetCol: number): number => {
+      const days = monthDayIndicesArr[mi] ?? [];
+      return days.reduce((sum, idx) => {
+        const real = parseMoneyValue(monthCalcData[mi][`${idx}-${realCol}`] ?? '0');
+        if (real <= 0) return sum;
+        const budget = parseMoneyValue(monthCalcData[mi][`${idx}-${budgetCol}`] ?? '0');
+        return sum + (real - budget);
+      }, 0);
+    };
+
     const getFgCategoryTotal = (mi: number, box: number, colGroup: number): number =>
       parseMoneyValue(monthCalcData[mi][`fg-total-${box}-${colGroup}`] ?? '0');
 
@@ -159,6 +172,7 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       sumRealLevel, sumProjLevel, sumRealTotal, sumProjTotal,
       sumCol, sumHoursCol,
       getFgCategoryTotal, sumFgCategory,
+      sumDayEcart,
       caByMonth, totalCA,
     };
   }, [data, year]);

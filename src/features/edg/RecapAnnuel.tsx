@@ -263,20 +263,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     sumRealLevel, sumProjLevel, sumRealTotal, sumProjTotal,
     sumCol, sumHoursCol,
     getFgCategoryTotal, sumFgCategory,
+    sumDayEcart,
     caByMonth, totalCA,
   } = useRecapAnnuelData(data, YEAR);
-
-  // Prorata du mois en cours : le mois non terminé ne doit compter, dans les
-  // cumuls/écarts vs budget, que la part de budget correspondant aux jours
-  // déjà écoulés — pas le mois entier (sinon la ligne TOTAL est faussée
-  // pendant tout le mois en cours).
-  const today = new Date();
-  const isCurrentMonthIdx = (mi: number) => YEAR === today.getFullYear() && mi === today.getMonth();
-  const monthProration = (mi: number): number => {
-    if (!isCurrentMonthIdx(mi)) return 1;
-    const daysInMonth = new Date(YEAR, mi + 1, 0).getDate();
-    return daysInMonth > 0 ? Math.min(today.getDate() / daysInMonth, 1) : 1;
-  };
 
   // Données N-1 pour les frais personnel
   const dataN1 = allData[YEAR - 1] ?? {};
@@ -353,44 +342,47 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       // ── 22 valeurs ──────────────────────────────────────────────────────────
       case 'realise': {
         const isEmpty = ca === 0;
-        const mp = monthProration(mi);
-        const budMidi     = g(0)  * mp;
-        const budSoir     = g(1)  * mp;
-        const budJour     = g(3)  * mp;
-        const budCvtsMidi = g(6)  * mp;
-        const budCvtsSoir = g(8)  * mp;
-        const budCvtsJour = g(10) * mp;
+        // Écarts vs budget sommés jour par jour (jours avec réalisé uniquement) :
+        // le mois en cours ne compare jamais au budget des jours pas encore saisis.
+        const ecartCaMidi   = sumDayEcart(mi, 18, 0);
+        const ecartCaSoir   = sumDayEcart(mi, 19, 1);
+        const ecartCaJour   = sumDayEcart(mi, 21, 3);
+        const ecartCvtsMidi = sumDayEcart(mi, 25, 6);
+        const ecartCvtsSoir = sumDayEcart(mi, 27, 8);
+        const ecartCvtsJour = sumDayEcart(mi, 29, 10);
+        const budJourToDate     = g(21) - ecartCaJour;
+        const budCvtsJourToDate = g(29) - ecartCvtsJour;
         const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i]).reduce((a, b) => a + b, 0);
         const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 29))).reduce((a, b) => a + b, 0);
-        const ecartCaJourPct   = !isEmpty && budJour > 0     ? ((g(21) - budJour)     / budJour)     * 100 : 0;
-        const ecartCvtsJourPct = !isEmpty && budCvtsJour > 0 ? ((g(29) - budCvtsJour) / budCvtsJour) * 100 : 0;
+        const ecartCaJourPct   = !isEmpty && budJourToDate > 0     ? (ecartCaJour   / budJourToDate)     * 100 : 0;
+        const ecartCvtsJourPct = !isEmpty && budCvtsJourToDate > 0 ? (ecartCvtsJour / budCvtsJourToDate) * 100 : 0;
         const budgetAnnuel     = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
         const budgetCvtsAnnuel = Array.from({ length: 12 }, (_, i) => getVal(i, 10)).reduce((a, b) => a + b, 0);
-        const cumulEcartCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? (getVal(i, 21) - getVal(i, 3) * monthProration(i)) : 0).reduce((a, b) => a + b, 0);
-        const cumulEcartCvts = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? (getVal(i, 29) - getVal(i, 10) * monthProration(i)) : 0).reduce((a, b) => a + b, 0);
+        const cumulEcartCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? sumDayEcart(i, 21, 3) : 0).reduce((a, b) => a + b, 0);
+        const cumulEcartCvts = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? sumDayEcart(i, 29, 10) : 0).reduce((a, b) => a + b, 0);
         const tendanceCA   = budgetAnnuel    + cumulEcartCA;
         const tendanceCvts = budgetCvtsAnnuel + cumulEcartCvts;
         return [
           // CA HT — 10 valeurs
           isEmpty ? '—' : fe(g(17)),
           isEmpty ? '—' : fe(g(18)),
-          isEmpty ? '—' : fe(g(18) - budMidi),
+          isEmpty ? '—' : fe(ecartCaMidi),
           isEmpty ? '—' : fe(g(19)),
-          isEmpty ? '—' : fe(g(19) - budSoir),
+          isEmpty ? '—' : fe(ecartCaSoir),
           isEmpty ? '—' : fe(g(21)),
-          isEmpty ? '—' : fe(g(21) - budJour),
+          isEmpty ? '—' : fe(ecartCaJour),
           isEmpty ? '—' : fp(ecartCaJourPct),
           isEmpty ? '—' : fe(cumulCA),
           isEmpty ? '—' : fe(tendanceCA),
           isEmpty ? '—' : fp(budgetAnnuel > 0 ? (cumulEcartCA / budgetAnnuel) * 100 : 0),
           // COUVERTS — 11 valeurs
           isEmpty ? '—' : String(Math.round(g(25))),
-          isEmpty ? '—' : String(Math.round(g(25) - budCvtsMidi)),
+          isEmpty ? '—' : String(Math.round(ecartCvtsMidi)),
           isEmpty ? '—' : String(Math.round(g(27))),
-          isEmpty ? '—' : String(Math.round(g(27) - budCvtsSoir)),
+          isEmpty ? '—' : String(Math.round(ecartCvtsSoir)),
           isEmpty ? '—' : String(Math.round(g(29))),
           isEmpty ? '—' : fe(g(30)),
-          isEmpty ? '—' : String(Math.round(g(29) - budCvtsJour)),
+          isEmpty ? '—' : String(Math.round(ecartCvtsJour)),
           isEmpty ? '—' : fp(ecartCvtsJourPct),
           isEmpty ? '—' : String(cumulCvts),
           isEmpty ? '—' : String(Math.round(tendanceCvts)),
@@ -567,45 +559,49 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const totalCvtsMidi = s(25);
         const totalCvtsSoir = s(27);
         const totalCvtsJour = s(29);
-        // Budget YTD = uniquement les mois qui ont du réalisé (comparaison à date),
-        // avec prorata du mois en cours (jours écoulés / jours du mois).
-        const ytd = (col: number) => Array.from({ length: 12 }, (_, mi) => hasData(mi) ? getVal(mi, col) * monthProration(mi) : 0).reduce((a, b) => a + b, 0);
-        const totalBudMidiYtd   = ytd(0);
-        const totalBudSoirYtd   = ytd(1);
-        const totalBudJourYtd   = ytd(3);
-        const totalBudCvtsMidiYtd = ytd(6);
-        const totalBudCvtsSoirYtd = ytd(8);
-        const totalBudCvtsJourYtd = ytd(10);
-        const ecartCaJourPct   = totalBudJourYtd    > 0 ? ((totalCaJour   - totalBudJourYtd)    / totalBudJourYtd)    * 100 : 0;
-        const ecartCvtsJourPct = totalBudCvtsJourYtd > 0 ? ((totalCvtsJour - totalBudCvtsJourYtd) / totalBudCvtsJourYtd) * 100 : 0;
+        // Écarts YTD = somme jour par jour (réalisé - budget du jour), sur les
+        // mois qui ont du réalisé — le mois en cours ne compte jamais le
+        // budget des jours pas encore saisis.
+        const ecartYtd = (realCol: number, budgetCol: number) =>
+          Array.from({ length: 12 }, (_, mi) => hasData(mi) ? sumDayEcart(mi, realCol, budgetCol) : 0).reduce((a, b) => a + b, 0);
+        const ecartCaMidiYtd   = ecartYtd(18, 0);
+        const ecartCaSoirYtd   = ecartYtd(19, 1);
+        const ecartCaJourYtd   = ecartYtd(21, 3);
+        const ecartCvtsMidiYtd = ecartYtd(25, 6);
+        const ecartCvtsSoirYtd = ecartYtd(27, 8);
+        const ecartCvtsJourYtd = ecartYtd(29, 10);
+        const totalBudJourYtd     = totalCaJour   - ecartCaJourYtd;
+        const totalBudCvtsJourYtd = totalCvtsJour - ecartCvtsJourYtd;
+        const ecartCaJourPct   = totalBudJourYtd    > 0 ? (ecartCaJourYtd   / totalBudJourYtd)    * 100 : 0;
+        const ecartCvtsJourPct = totalBudCvtsJourYtd > 0 ? (ecartCvtsJourYtd / totalBudCvtsJourYtd) * 100 : 0;
         // Tendance et budget annuel complet (projection fin d'année)
         const tBudgetAnnuel     = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
         const tBudgetCvtsAnnuel = Array.from({ length: 12 }, (_, i) => getVal(i, 10)).reduce((a, b) => a + b, 0);
-        const tCumulEcartCA   = Array.from({ length: 12 }, (_, i) => hasData(i) ? (getVal(i, 21) - getVal(i, 3) * monthProration(i)) : 0).reduce((a, b) => a + b, 0);
-        const tCumulEcartCvts = Array.from({ length: 12 }, (_, i) => hasData(i) ? (getVal(i, 29) - getVal(i, 10) * monthProration(i)) : 0).reduce((a, b) => a + b, 0);
+        const tCumulEcartCA   = ecartCaJourYtd;
+        const tCumulEcartCvts = ecartCvtsJourYtd;
         const tTendanceCA   = tBudgetAnnuel   + tCumulEcartCA;
         const tTendanceCvts = tBudgetCvtsAnnuel + tCumulEcartCvts;
         return [
           // CA HT — 10 valeurs
           fe(s(17)),
           fe(totalCaMidi),
-          fe(totalCaMidi - totalBudMidiYtd),
+          fe(ecartCaMidiYtd),
           fe(totalCaSoir),
-          fe(totalCaSoir - totalBudSoirYtd),
+          fe(ecartCaSoirYtd),
           fe(totalCaJour),
-          fe(totalCaJour - totalBudJourYtd),   // écart vs budget à date
+          fe(ecartCaJourYtd),                  // écart vs budget à date
           fp(ecartCaJourPct),                  // % vs budget à date
           fe(totalCaJour),
           fe(tTendanceCA),
           fp(tBudgetAnnuel > 0 ? (tCumulEcartCA / tBudgetAnnuel) * 100 : 0),
           // COUVERTS — 11 valeurs
           String(Math.round(totalCvtsMidi)),
-          String(Math.round(totalCvtsMidi - totalBudCvtsMidiYtd)),
+          String(Math.round(ecartCvtsMidiYtd)),
           String(Math.round(totalCvtsSoir)),
-          String(Math.round(totalCvtsSoir - totalBudCvtsSoirYtd)),
+          String(Math.round(ecartCvtsSoirYtd)),
           String(Math.round(totalCvtsJour)),
           fe(totalCvtsJour > 0 ? totalCaJour / totalCvtsJour : 0),
-          String(Math.round(totalCvtsJour - totalBudCvtsJourYtd)),
+          String(Math.round(ecartCvtsJourYtd)),
           fp(ecartCvtsJourPct),
           String(Math.round(totalCvtsJour)),
           String(Math.round(tTendanceCvts)),
