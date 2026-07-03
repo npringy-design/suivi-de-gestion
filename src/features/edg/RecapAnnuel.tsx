@@ -266,6 +266,18 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     caByMonth, totalCA,
   } = useRecapAnnuelData(data, YEAR);
 
+  // Prorata du mois en cours : le mois non terminé ne doit compter, dans les
+  // cumuls/écarts vs budget, que la part de budget correspondant aux jours
+  // déjà écoulés — pas le mois entier (sinon la ligne TOTAL est faussée
+  // pendant tout le mois en cours).
+  const today = new Date();
+  const isCurrentMonthIdx = (mi: number) => YEAR === today.getFullYear() && mi === today.getMonth();
+  const monthProration = (mi: number): number => {
+    if (!isCurrentMonthIdx(mi)) return 1;
+    const daysInMonth = new Date(YEAR, mi + 1, 0).getDate();
+    return daysInMonth > 0 ? Math.min(today.getDate() / daysInMonth, 1) : 1;
+  };
+
   // Données N-1 pour les frais personnel
   const dataN1 = allData[YEAR - 1] ?? {};
   const {
@@ -347,8 +359,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const ecartCvtsJourPct = !isEmpty && g(10) > 0 ? ((g(29) - g(10)) / g(10)) * 100 : 0;
         const budgetAnnuel     = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
         const budgetCvtsAnnuel = Array.from({ length: 12 }, (_, i) => getVal(i, 10)).reduce((a, b) => a + b, 0);
-        const cumulEcartCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? getVal(i, 22) : 0).reduce((a, b) => a + b, 0);
-        const cumulEcartCvts = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? (getVal(i, 29) - getVal(i, 10)) : 0).reduce((a, b) => a + b, 0);
+        const cumulEcartCA   = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? (getVal(i, 21) - getVal(i, 3) * monthProration(i)) : 0).reduce((a, b) => a + b, 0);
+        const cumulEcartCvts = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? (getVal(i, 29) - getVal(i, 10) * monthProration(i)) : 0).reduce((a, b) => a + b, 0);
         const tendanceCA   = budgetAnnuel    + cumulEcartCA;
         const tendanceCvts = budgetCvtsAnnuel + cumulEcartCvts;
         return [
@@ -548,8 +560,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const totalCvtsMidi = s(25);
         const totalCvtsSoir = s(27);
         const totalCvtsJour = s(29);
-        // Budget YTD = uniquement les mois qui ont du réalisé (comparaison à date)
-        const ytd = (col: number) => Array.from({ length: 12 }, (_, mi) => hasData(mi) ? getVal(mi, col) : 0).reduce((a, b) => a + b, 0);
+        // Budget YTD = uniquement les mois qui ont du réalisé (comparaison à date),
+        // avec prorata du mois en cours (jours écoulés / jours du mois).
+        const ytd = (col: number) => Array.from({ length: 12 }, (_, mi) => hasData(mi) ? getVal(mi, col) * monthProration(mi) : 0).reduce((a, b) => a + b, 0);
         const totalBudMidiYtd   = ytd(0);
         const totalBudSoirYtd   = ytd(1);
         const totalBudJourYtd   = ytd(3);
@@ -561,8 +574,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         // Tendance et budget annuel complet (projection fin d'année)
         const tBudgetAnnuel     = Array.from({ length: 12 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
         const tBudgetCvtsAnnuel = Array.from({ length: 12 }, (_, i) => getVal(i, 10)).reduce((a, b) => a + b, 0);
-        const tCumulEcartCA   = Array.from({ length: 12 }, (_, i) => hasData(i) ? getVal(i, 22) : 0).reduce((a, b) => a + b, 0);
-        const tCumulEcartCvts = Array.from({ length: 12 }, (_, i) => hasData(i) ? (getVal(i, 29) - getVal(i, 10)) : 0).reduce((a, b) => a + b, 0);
+        const tCumulEcartCA   = Array.from({ length: 12 }, (_, i) => hasData(i) ? (getVal(i, 21) - getVal(i, 3) * monthProration(i)) : 0).reduce((a, b) => a + b, 0);
+        const tCumulEcartCvts = Array.from({ length: 12 }, (_, i) => hasData(i) ? (getVal(i, 29) - getVal(i, 10) * monthProration(i)) : 0).reduce((a, b) => a + b, 0);
         const tTendanceCA   = tBudgetAnnuel   + tCumulEcartCA;
         const tTendanceCvts = tBudgetCvtsAnnuel + tCumulEcartCvts;
         return [
