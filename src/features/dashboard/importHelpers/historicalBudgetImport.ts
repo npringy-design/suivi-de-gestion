@@ -91,7 +91,17 @@ export const getHistoricalBudgetRowLabel = (sheet: Worksheet, rowNumber: number)
 export const isHistoricalBudgetTotalRow = (sheet: Worksheet, rowNumber: number) => {
   if (rowNumber < 0) return false;
   const label = getHistoricalBudgetRowLabel(sheet, rowNumber);
-  return label.includes('TOTAL') || label.includes('SEMAINE') || label.includes('CUMUL');
+  if (label.includes('TOTAL') || label.includes('SEMAINE') || label.includes('CUMUL')) return true;
+  // Certaines lignes "Total Semaine" ont leur libellé généré par formule
+  // ('"Total Semaine "&WEEKNUM(...)') dont le résultat peut être en erreur : le texte affiché
+  // ("Invalid Date") ne contient alors plus le libellé — on le cherche dans les littéraux
+  // entre guillemets de la formule, sans matcher les références de la formule elle-même.
+  return [0, 1, 2, 3, 4, 5].some(colIndex => {
+    const value = getHistoricalBudgetCell(sheet, rowNumber, colIndex)?.value;
+    if (!value || typeof value !== 'object' || !('formula' in value)) return false;
+    const literals = (String((value as { formula?: unknown }).formula ?? '').match(/"[^"]*"/g) || []).join(' ').toUpperCase();
+    return literals.includes('TOTAL') || literals.includes('SEMAINE') || literals.includes('CUMUL');
+  });
 };
 
 export type BudgetColumnMap = {
