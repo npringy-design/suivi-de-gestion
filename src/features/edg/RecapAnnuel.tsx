@@ -95,13 +95,13 @@ const COLS_BUDGET: ColDef[] = [
 
 const COLS_REALISE: ColDef[] = [
   // CA HT — 10 colonnes
-  { g: 'CA HT', l: 'CA HT\nVAE *',              bg: BG_REAL2, w: 75 }, // col 17
+  { g: 'CA HT', l: 'CA HT\nVAE',                bg: BG_REAL2, w: 75, signColor: true }, // col 17
   { g: 'CA HT', l: 'CA HT\nMidi',               bg: BG_REAL2, w: 75 }, // col 18
   { g: 'CA HT', l: 'Ecart vs\nBudget Midi',      bg: '#fff',   w: 75, signColor: true }, // g(18)-g(0)
   { g: 'CA HT', l: 'CA HT\nSoir',               bg: BG_REAL2, w: 75 }, // col 19
   { g: 'CA HT', l: 'Ecart vs\nBudget Soir',      bg: '#fff',   w: 75, signColor: true }, // g(19)-g(1)
   { g: 'CA HT', l: 'CA HT\nJour',               bg: BG_REAL2, w: 80 }, // col 21
-  { g: 'CA HT', l: 'Ecart Budget\nJour Valeur *', bg: '#fff',  w: 80, signColor: true }, // col 22
+  { g: 'CA HT', l: 'Ecart Budget\nJour Valeur',  bg: '#fff',   w: 80, signColor: true }, // col 22
   { g: 'CA HT', l: 'Ecart Budget\nJour %',       bg: BG_HATCH, w: 70 }, // calc local
   { g: 'CA HT', l: 'Cumul\nAnnuel',              bg: BG_REAL2, w: 85 }, // sum col 21 jan→mois
   { g: 'CA HT', l: 'Tendance\nAnnuel',           bg: '#fff',   w: 75 }, // progressive
@@ -986,9 +986,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
                   (mi) => getSectionValues('realise', mi).slice(0, 11),
                   totals.slice(0, 11),
                 )}
-                <p style={{ fontSize: 11, color: '#78716c', fontStyle: 'italic', marginTop: -20, marginBottom: 24 }}>
-                  * Le CA HT VAE n'a pas de budget associé : l'Ecart Budget Jour Valeur = Ecart Midi + Ecart Soir + CA HT VAE.
-                </p>
                 {renderTable(
                   COLS_REALISE.slice(11), 'Couverts Restaurant', '📊', '#1e40af', '#fff',
                   (mi) => getSectionValues('realise', mi).slice(11),
