@@ -664,10 +664,10 @@ export function computeDashboardData(
 
         const totalHeuresProjW = parseMoneyValue(data[`${rIdx}-61`]);
         const coutGlobalProjW = parseMoneyValue(data[`${rIdx}-72`]);
-        if (totalHeuresProjW > 0) data[`${rIdx}-73`] = (realiseCAW / totalHeuresProjW).toFixed(2);
-        if (realiseCAW > 0) {
-          data[`${rIdx}-74`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
-          data[`${rIdx}-75`] = ((coutGlobalProjW / realiseCAW) * 100).toFixed(2) + '%';
+        if (totalHeuresProjW > 0) data[`${rIdx}-73`] = (budgetCaW / totalHeuresProjW).toFixed(2);
+        if (budgetCaW > 0) {
+          data[`${rIdx}-74`] = ((coutGlobalProjW / budgetCaW) * 100).toFixed(2) + '%';
+          data[`${rIdx}-75`] = ((coutGlobalProjW / budgetCaW) * 100).toFixed(2) + '%';
         }
         
         const totalHeuresRealW = parseMoneyValue(data[`${rIdx}-76`]);

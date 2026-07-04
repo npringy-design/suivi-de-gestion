@@ -5,6 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 04/07/2026 (fix Frais de Personnel : import historique + ratio semaine)
+
+- Import historique personnel (`getBestHistoricalPayrollValues`) : le fallback de compensation de décalage d'en-tête (offsets `dateRow±1` à `±4`) traversait les lignes "Total Semaine" et retombait sur les valeurs du dernier jour réel, les dupliquant sur les 3 jours suivants quand l'import s'arrêtait avant la fin d'une semaine. `collectHistoricalPayrollOffsetCandidates` s'arrête désormais dès qu'une ligne total (`isHistoricalBudgetTotalRow`) est rencontrée, dans chaque direction. tsc OK, build OK, 81 tests OK.
+- Total semaine Frais Personnel Projection : `data[rIdx-73]` (Productivité) et `data[rIdx-74]`/`data[rIdx-75]` (Frais Personnel %) divisaient par `realiseCAW` (CA réalisé semaine, partiel en cours de semaine) au lieu de `budgetCaW` (CA budgété semaine) — incohérent avec le niveau jour qui utilise déjà le budget. Colonnes 76-92 (bloc réalisé/écarts) inchangées, elles utilisent `realiseCAW` à bon droit. tsc OK, build OK, 81 tests OK.
+
 ## 03/07/2026 (correctifs reskin vue complète — couleurs par section + transparence scroll)
 
 - Retour utilisateur sur le reskin du jour : le code couleur par section (Frais de Personnel en violet, etc., comme le Récap Annuel) avait disparu — remplacé par un accent unique par onglet — et le scroll vertical laissait voir à travers les en-têtes sticky. Deux correctifs, toujours vue complète uniquement :

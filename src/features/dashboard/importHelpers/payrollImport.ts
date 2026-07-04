@@ -217,8 +217,27 @@ export const getHistoricalPayrollValues = (sheet: Worksheet, rowNumber: number, 
 
 export const rowHasHistoricalPayrollValues = (values: Record<number, string>) => Object.keys(values).length > 0;
 
+// Compense un décalage d'en-tête ponctuel (quelques lignes) à l'intérieur de la même semaine.
+// S'arrête dès qu'une ligne "Total Semaine" est rencontrée pour ne jamais retomber sur un
+// autre jour de l'autre côté de cette ligne (qui produirait une duplication de ses valeurs).
+const collectHistoricalPayrollOffsetCandidates = (sheet: Worksheet, dateRow: number, step: 1 | -1, maxSteps: number) => {
+  const rows: number[] = [];
+  let row = dateRow;
+  for (let i = 0; i < maxSteps; i += 1) {
+    row += step;
+    if (row < 0 || isHistoricalBudgetTotalRow(sheet, row)) break;
+    rows.push(row);
+  }
+  return rows;
+};
+
 export const getBestHistoricalPayrollValues = (sheet: Worksheet, primaryRow: number, dateRow: number, columnMaps: HistoricalPayrollColumnMap[]) => {
-  const candidateRows = Array.from(new Set([primaryRow, dateRow, dateRow - 1, dateRow - 2, dateRow - 3, dateRow - 4, dateRow + 1, dateRow + 2, dateRow + 3, dateRow + 4]));
+  const candidateRows = Array.from(new Set([
+    primaryRow,
+    dateRow,
+    ...collectHistoricalPayrollOffsetCandidates(sheet, dateRow, -1, 4),
+    ...collectHistoricalPayrollOffsetCandidates(sheet, dateRow, 1, 4),
+  ]));
   for (const candidateRow of candidateRows) {
     const columnMap = selectHistoricalPayrollColumnMap(candidateRow, columnMaps);
     const values = getHistoricalPayrollValues(sheet, candidateRow, columnMap);
