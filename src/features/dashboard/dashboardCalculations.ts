@@ -414,10 +414,10 @@ export function computeDashboardData(
           data[`${rIdx}-61`] = totalHeuresProj.toFixed(2);
           data[`${rIdx}-72`] = coutGlobalProj.toFixed(2);
           if (totalHeuresProj > 0) {
-            data[`${rIdx}-73`] = (realiseTotalJour / totalHeuresProj).toFixed(2);
+            data[`${rIdx}-73`] = (totalJour / totalHeuresProj).toFixed(2);
           }
-          if (realiseTotalJour > 0) {
-            data[`${rIdx}-74`] = ((coutGlobalProj / realiseTotalJour) * 100).toFixed(2) + '%';
+          if (totalJour > 0) {
+            data[`${rIdx}-74`] = ((coutGlobalProj / totalJour) * 100).toFixed(2) + '%';
           }
         }
 
