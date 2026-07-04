@@ -510,6 +510,23 @@ export function computeDashboardData(
       });
     }
 
+    // Écarts au budget personnel "à date" : seuls les jours ayant du réalisé sont comparés
+    // à leur projection — comparer un réalisé partiel à la projection complète de la période
+    // produirait des écarts sans signification (ex. -1232h sur un mois entamé de 3 jours).
+    const computeMatchedPayrollEcarts = (days: Array<{ originalIdx: number }>) => {
+      let heuresProj = 0; let heuresReal = 0; let coutProj = 0; let coutReal = 0; let caReal = 0;
+      days.forEach(day => {
+        const hReal = parseMoneyValue(data[`${day.originalIdx}-76`]);
+        if (hReal <= 0) return;
+        heuresReal += hReal;
+        heuresProj += parseMoneyValue(data[`${day.originalIdx}-61`]);
+        coutReal += parseMoneyValue(data[`${day.originalIdx}-87`]);
+        coutProj += parseMoneyValue(data[`${day.originalIdx}-72`]);
+        caReal += parseMoneyValue(data[`${day.originalIdx}-21`]);
+      });
+      return { heuresProj, heuresReal, coutProj, coutReal, caReal };
+    };
+
     // Second pass: Week Totals
     rows.forEach((row, rIdx) => {
       if (row.type === 'total') {
@@ -678,11 +695,12 @@ export function computeDashboardData(
           data[`${rIdx}-90`] = ((coutGlobalRealW / realiseCAW) * 100).toFixed(2) + '%';
         }
         
-        data[`${rIdx}-91`] = (totalHeuresRealW - totalHeuresProjW).toFixed(2);
-        if (realiseCAW > 0) {
-          const pctRealW = (coutGlobalRealW / realiseCAW) * 100;
-          const pctProjW = (coutGlobalProjW / realiseCAW) * 100;
-          data[`${rIdx}-92`] = (pctRealW - pctProjW).toFixed(2) + '%';
+        const ecartsW = computeMatchedPayrollEcarts(weekDays);
+        if (ecartsW.heuresReal > 0) {
+          data[`${rIdx}-91`] = (ecartsW.heuresReal - ecartsW.heuresProj).toFixed(2);
+          if (ecartsW.caReal > 0) {
+            data[`${rIdx}-92`] = (((ecartsW.coutReal - ecartsW.coutProj) / ecartsW.caReal) * 100).toFixed(2) + '%';
+          }
         }
       }
     });
@@ -701,8 +719,9 @@ export function computeDashboardData(
         let colSum = 0;
         let hasData = false;
         allDays.forEach(day => {
-          const val = parseMoneyValue(data[`${day.originalIdx}-${cIdx}`]);
-          if (!isNaN(val) && data[`${day.originalIdx}-${cIdx}`]) {
+          const rawVal = data[`${day.originalIdx}-${cIdx}`] || '';
+          const val = isPayrollInputColumn(cIdx) ? parsePayrollHourForCalculation(rawVal) : parseMoneyValue(rawVal);
+          if (!isNaN(val) && rawVal) {
             colSum += val;
             hasData = true;
           }
@@ -822,10 +841,10 @@ export function computeDashboardData(
 
       const totalHeuresProjM = parseMoneyValue(data[`${monthTotalIdx}-61`]);
       const coutGlobalProjM = parseMoneyValue(data[`${monthTotalIdx}-72`]);
-      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-73`] = (realiseCAM / totalHeuresProjM).toFixed(2);
-      if (realiseCAM > 0) {
-        data[`${monthTotalIdx}-74`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
-        data[`${monthTotalIdx}-75`] = ((coutGlobalProjM / realiseCAM) * 100).toFixed(2) + '%';
+      if (totalHeuresProjM > 0) data[`${monthTotalIdx}-73`] = (budgetCaM / totalHeuresProjM).toFixed(2);
+      if (budgetCaM > 0) {
+        data[`${monthTotalIdx}-74`] = ((coutGlobalProjM / budgetCaM) * 100).toFixed(2) + '%';
+        data[`${monthTotalIdx}-75`] = ((coutGlobalProjM / budgetCaM) * 100).toFixed(2) + '%';
       }
       
       const totalHeuresRealM = parseMoneyValue(data[`${monthTotalIdx}-76`]);
@@ -836,11 +855,12 @@ export function computeDashboardData(
         data[`${monthTotalIdx}-90`] = ((coutGlobalRealM / realiseCAM) * 100).toFixed(2) + '%';
       }
       
-      data[`${monthTotalIdx}-91`] = (totalHeuresRealM - totalHeuresProjM).toFixed(2);
-      if (realiseCAM > 0) {
-        const pctRealM = (coutGlobalRealM / realiseCAM) * 100;
-        const pctProjM = (coutGlobalProjM / realiseCAM) * 100;
-        data[`${monthTotalIdx}-92`] = (pctRealM - pctProjM).toFixed(2) + '%';
+      const ecartsM = computeMatchedPayrollEcarts(allDays);
+      if (ecartsM.heuresReal > 0) {
+        data[`${monthTotalIdx}-91`] = (ecartsM.heuresReal - ecartsM.heuresProj).toFixed(2);
+        if (ecartsM.caReal > 0) {
+          data[`${monthTotalIdx}-92`] = (((ecartsM.coutReal - ecartsM.coutProj) / ecartsM.caReal) * 100).toFixed(2) + '%';
+        }
       }
 
       // Calculate FRAIS GENERAUX box totals
