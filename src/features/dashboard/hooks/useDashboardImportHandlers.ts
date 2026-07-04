@@ -379,6 +379,21 @@ export function useDashboardImportHandlers({
     }
   };
   
+  // Purge les colonnes personnel de TOUS les jours des mois importés, y compris ceux absents
+  // des previews (jours sans donnée source) : un import précédent a pu y laisser des valeurs
+  // dupliquées, et le reset par ligne importée ne les atteint jamais.
+  const resetHistoricalPayrollForMonths = (months: number[]) => {
+    months.forEach(monthIndex => {
+      for (let day = 1; day <= 31; day += 1) {
+        const rowIndex = getDashboardRowIndexForDay(year, monthIndex, day);
+        if (rowIndex < 0) continue;
+        [...historicalPayrollAllCols, ...historicalPayrollAllGlobalCols].forEach(col => {
+          updateDashboard(monthIndex, rowIndex + '-' + col, '');
+        });
+      }
+    });
+  };
+
   const applyHistoricalBudgetExcelImport = async () => {
     const usedColsByMonth = new Map<number, Set<number>>();
     historicalBudgetPreviews.forEach(item => {
@@ -389,6 +404,7 @@ export function useDashboardImportHandlers({
       const usesGlobal = historicalPayrollAllGlobalCols.some(col => cols.has(col));
       updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle');
     });
+    resetHistoricalPayrollForMonths([...new Set(historicalBudgetPreviews.map(item => item.month))]);
     historicalBudgetPreviews.forEach(item => {
       updateDashboard(item.month, item.rowIndex + '-0', item.caMidi > 0 ? formatImportedNumber(item.caMidi) : '');
       updateDashboard(item.month, item.rowIndex + '-1', item.caSoir > 0 ? formatImportedNumber(item.caSoir) : '');
@@ -570,6 +586,8 @@ export function useDashboardImportHandlers({
       const usesGlobal = historicalPayrollAllGlobalCols.some(col => cols.has(col));
       updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle');
     });
+
+    resetHistoricalPayrollForMonths([...new Set(historicalV25Previews.map(item => item.month))]);
 
     // Reset complet de toutes les colonnes V25 pour chaque ligne importée (garantit l'idempotence)
     const V25_REALISE_COLS = [6, 7, 8, 9, 17, 18, 19, 20, 25, 27, 34];
