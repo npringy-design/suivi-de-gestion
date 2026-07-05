@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ChevronLeft, LayoutDashboard, Target, TrendingUp, History } from 'lucide-react';
+import { ChevronLeft, LayoutDashboard, Target, TrendingUp, History, CalendarDays } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
 
+import EdgMensuel from './EdgMensuel';
 import BudgetEdgAnnuel from './BudgetEdgAnnuel';
 import RealiseEdgAnneeFiscale from './RealiseEdgAnneeFiscale';
 import VsBudget from './VsBudget';
@@ -10,21 +11,24 @@ import VsN1 from './VsN1';
 
 interface EdgAnnuelTabsProps {
   onBack: () => void;
-  initialTab?: 'budget' | 'realise' | 'vs_budget' | 'vs_n1';
+  initialTab?: 'mensuel' | 'budget' | 'realise' | 'vs_budget' | 'vs_n1';
 }
 
 export default function EdgAnnuelTabs({ onBack, initialTab = 'budget' }: EdgAnnuelTabsProps) {
-  const { selectedYear } = useData();
+  const { selectedYear, selectedMonth, setSelectedMonth } = useData();
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const tabs = [
+    { id: 'mensuel', label: 'EDG Mensuel', icon: CalendarDays },
     { id: 'budget', label: 'Budget EDG annuel', icon: LayoutDashboard, component: BudgetEdgAnnuel },
     { id: 'realise', label: 'Réalisé EDG annuel', icon: Target, component: RealiseEdgAnneeFiscale },
     { id: 'vs_budget', label: 'VS Budget', icon: TrendingUp, component: VsBudget },
     { id: 'vs_n1', label: 'VS N-1', icon: History, component: VsN1 },
   ] as const;
 
-  const ActiveComponent = tabs.find(t => t.id === activeTab)?.component || BudgetEdgAnnuel;
+  const ActiveComponent = activeTab === 'mensuel'
+    ? null
+    : tabs.find((t): t is Exclude<typeof tabs[number], { id: 'mensuel' }> => t.id === activeTab)?.component || BudgetEdgAnnuel;
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
@@ -63,6 +67,7 @@ export default function EdgAnnuelTabs({ onBack, initialTab = 'budget' }: EdgAnnu
             const accentColor = '#fff';
             
             switch (tab.id) {
+              case 'mensuel': icon = '📅'; accentBg = '#0d9488'; break;
               case 'budget': icon = '📊'; accentBg = '#3b82f6'; break;
               case 'realise': icon = '🎯'; accentBg = '#92400e'; break;
               case 'vs_budget': icon = '📈'; accentBg = '#1e40af'; break;
@@ -102,7 +107,11 @@ export default function EdgAnnuelTabs({ onBack, initialTab = 'budget' }: EdgAnnu
       <main className="flex-1 overflow-hidden flex flex-col">
         <div className="flex-1 overflow-hidden">
           {/* We pass a dummy onBack because we handle it in the header */}
-          <ActiveComponent onBack={() => {}} hideHeader={true} />
+          {activeTab === 'mensuel' ? (
+            <EdgMensuel month={selectedMonth} setMonth={setSelectedMonth} onBack={() => {}} />
+          ) : (
+            ActiveComponent && <ActiveComponent onBack={() => {}} hideHeader={true} />
+          )}
         </div>
       </main>
 

@@ -28,8 +28,6 @@ const ClickCollect = lazy(() => import('@/features/caisse/ClickCollect'));
 const RemiseTR = lazy(() => import('@/features/caisse/RemiseTR'));
 const BilanSynthese = lazy(() => import('@/features/comptabilite/BilanSynthese'));
 const DepensesPetiteCaisse = lazy(() => import('@/features/facturation/DepensesPetiteCaisse'));
-const EdgMensuel = lazy(() => import('@/features/edg/EdgMensuel'));
-const BudgetEdgAnnuel = lazy(() => import('@/features/edg/BudgetEdgAnnuel'));
 const VsBudget = lazy(() => import('@/features/edg/VsBudget'));
 const VsN1 = lazy(() => import('@/features/edg/VsN1'));
 const RealiseEdgAnneeFiscale = lazy(() => import('@/features/edg/RealiseEdgAnneeFiscale'));
@@ -181,7 +179,7 @@ const router = createHashRouter([
   { path: '/depenses-petite-caisse', element: <MonthRoute Component={DepensesPetiteCaisse} backPath='/synthese' /> },
   { path: '/depenses-petite-caisse/:month', element: <MonthParamRoute Component={DepensesPetiteCaisse} /> },
   { path: '/edg-mensuel/:month', element: <EdgMensuelRoute /> },
-  { path: '/budget-edg-annuel', element: <PageRoute Component={BudgetEdgAnnuel} backPath='/' /> },
+  { path: '/budget-edg-annuel', element: <EdgAnnuelTabsRoute initialTab='budget' /> },
   { path: '/vs-budget', element: <PageRoute Component={VsBudget} backPath='/' /> },
   { path: '/vs-n1', element: <PageRoute Component={VsN1} backPath='/' /> },
   { path: '/realise-edg-annee-fiscale', element: <PageRoute Component={RealiseEdgAnneeFiscale} backPath='/' /> },
@@ -209,7 +207,12 @@ function EdgMensuelRoute() {
     }
   }, [month, selectedMonth, setSelectedMonth]);
 
-  return <EdgMensuel month={month} setMonth={setSelectedMonth} onBack={() => navigate('/')} />;
+  return <EdgAnnuelTabs onBack={() => navigate('/')} initialTab='mensuel' />;
+}
+
+function EdgAnnuelTabsRoute({ initialTab }: { initialTab: 'mensuel' | 'budget' | 'realise' | 'vs_budget' | 'vs_n1' }) {
+  const navigate = useNavigate();
+  return <EdgAnnuelTabs onBack={() => navigate('/')} initialTab={initialTab} />;
 }
 
 export default router;

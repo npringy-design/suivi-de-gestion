@@ -4,7 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
-import { getDashboardRowIndices } from '@/lib/utils';
+import { getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
 
 const MONTH_INDICES = [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5];
 
@@ -23,12 +23,7 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
   const getCaMonth = (m: number) => {
     const year = m >= 6 ? YEAR - 1 : YEAR;
     const md = allData[year]?.[m]?.dashboard || {};
-    const indices = getDashboardRowIndices(m, year);
-    let total = 0;
-    Object.values(indices).forEach(rIdx => {
-      total += parseMoneyValue(md[`${rIdx}-24`]);
-    });
-    return total;
+    return getCaRealiseMonth(md, m, year);
   };
 
   const caMonths = useMemo(() => MONTH_INDICES.map(m => getCaMonth(m)), [allData, YEAR]);

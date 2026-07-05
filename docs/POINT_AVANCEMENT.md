@@ -5,6 +5,14 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 05/07/2026 (EDG temps réel : fix CA col 21, réalisé auto + hub unifié)
+
+- Fix bug CA réalisé EDG : 5 vues (`EdgMensuel`, `BudgetEdgAnnuel`, `RealiseEdgAnneeFiscale`, `VsBudget`, `VsN1`) sommaient la colonne 24 (VAR % VS N-1, hachurée, jamais remplie) au lieu de la colonne 21 (CA réalisé TOTAL JOUR). Centralisé dans `getCaRealiseMonth` (`src/features/edg/edgRealtimeSources.ts`), importé par les 5 vues — plus de duplication.
+- Nouveau module `edgRealtimeSources.ts` (pur, sans React) : agrège le Suivi Quotidien pour l'EDG Mensuel — `getCaRealiseMonth`/`getCaBudgetMonth` (somme jour col 21/3), `getMonthProgress` (avancement du mois pondéré par le budget CA des jours renseignés, fallback ratio jours/mois si budget=0), `getAutoRealiseValues` (achats_food, cout_salaires, entretien_locaux, produits_entretien, pub_locale, contrats_maintenance déduits automatiquement du Suivi Quotidien, en négatif). 8 tests unitaires dédiés.
+- EDG Mensuel : la colonne Réalisé se remplit désormais automatiquement depuis le Suivi Quotidien (cellule teintée + pastille "Calculé depuis le Suivi Quotidien"), reste modifiable manuellement (la saisie prime sur l'auto, effacer revient à l'auto) ; badge "Avancement : XX %" à côté du titre du mois ; colonne renommée "ECART BUDGET À DATE" = réalisé − budget × avancement (tiret si avancement nul). Colonne Budget non touchée.
+- Navigation fusionnée : `EdgAnnuelTabs` devient le hub unique avec un premier onglet "Mensuel" (EdgMensuel) ; le raccourci Accueil "EdG Mensuel"/"Budget EdG" devient un seul "EDG" ; les routes `/edg-mensuel/:month` et `/budget-edg-annuel` pointent désormais vers ce hub (onglets Mensuel/Budget pré-sélectionnés), `/edg-annuel-tabs` reste la route principale du hub.
+- tsc OK, build OK, 90 tests OK.
+
 ## 04/07/2026 (fix Frais de Personnel : import historique + ratio semaine)
 
 - Import historique personnel (`getBestHistoricalPayrollValues`) : le fallback de compensation de décalage d'en-tête (offsets `dateRow±1` à `±4`) traversait les lignes "Total Semaine" et retombait sur les valeurs du dernier jour réel, les dupliquant sur les 3 jours suivants quand l'import s'arrêtait avant la fin d'une semaine. `collectHistoricalPayrollOffsetCandidates` s'arrête désormais dès qu'une ligne total (`isHistoricalBudgetTotalRow`) est rencontrée, dans chaque direction. tsc OK, build OK, 81 tests OK.

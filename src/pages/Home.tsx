@@ -229,8 +229,7 @@ export default function Home() {
       goToSyntheseCA: () => navigate('/synthese'),
       goToRecapAnnuel: () => navigate('/recap-annuel'),
       goToReporting: () => navigate('/reporting'),
-      goToEdgMensuel: () => navigate(`/edg-mensuel/${month}`),
-      goToBudgetEdgAnnuel: () => navigate('/budget-edg-annuel'),
+      goToEdg: () => navigate(`/edg-mensuel/${month}`),
       goToMiseEnPaiement: () => navigate(`/mise-en-paiement/${month}`),
       goToFactureDevis: () => navigate('/facture-devis'),
       goToConfigSalaires: () => navigate('/config-salaires'),
@@ -976,8 +975,7 @@ export default function Home() {
             </NavGroup>
 
             <NavGroup title="Gestion" icon={FileText}>
-              <NavItem label="EdG Mensuel" onClick={navigationHandlers.goToEdgMensuel} />
-              <NavItem label="Budget EdG" onClick={navigationHandlers.goToBudgetEdgAnnuel} />
+              <NavItem label="EDG" onClick={navigationHandlers.goToEdg} />
               <NavItem label="Mise en Paiement" onClick={navigationHandlers.goToMiseEnPaiement} />
               <NavItem label="Facture & Devis" onClick={navigationHandlers.goToFactureDevis} />
             </NavGroup>

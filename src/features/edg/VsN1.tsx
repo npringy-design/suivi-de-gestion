@@ -5,7 +5,7 @@ import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 import { MONTH_NAMES_SHORT } from '@/lib/constants';
 
-import { getDashboardRowIndices } from '@/lib/utils';
+import { getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
 
 interface VsN1Props {
   onBack: () => void;
@@ -18,15 +18,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   const { data, selectedYear } = useData();
   const YEAR = selectedYear;
 
-  const getCaMonth = (m: number) => {
-    const md = data[m]?.dashboard || {};
-    const indices = getDashboardRowIndices(m, YEAR);
-    let total = 0;
-    Object.values(indices).forEach(rIdx => {
-      total += parseMoneyValue(md[`${rIdx}-24`]);
-    });
-    return total;
-  };
+  const getCaMonth = (m: number) => getCaRealiseMonth(data[m]?.dashboard || {}, m, YEAR);
 
   const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [data]);
   const caTotal = caMonths.reduce((a, b) => a + b, 0);

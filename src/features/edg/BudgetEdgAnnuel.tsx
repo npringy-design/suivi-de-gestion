@@ -4,7 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
-import { getDashboardRowIndices } from '@/lib/utils';
+import { getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
 
 interface BudgetEdgAnnuelProps {
   onBack: () => void;
@@ -18,15 +18,7 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
   const YEAR = selectedYear;
   const MONTHS_SHORT = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'].map(m => `${m}-${YEAR.toString().slice(-2)}`);
 
-  const getCaMonth = (m: number) => {
-    const md = data[m]?.dashboard || {};
-    const indices = getDashboardRowIndices(m, YEAR);
-    let total = 0;
-    Object.values(indices).forEach(rIdx => {
-      total += parseMoneyValue(md[`${rIdx}-24`]);
-    });
-    return total;
-  };
+  const getCaMonth = (m: number) => getCaRealiseMonth(data[m]?.dashboard || {}, m, YEAR);
 
   const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [data]);
   const caTotal = caMonths.reduce((a, b) => a + b, 0);
