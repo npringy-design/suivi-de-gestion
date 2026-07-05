@@ -1,5 +1,5 @@
 import { createHashRouter, useNavigate, useParams } from 'react-router-dom';
-import { lazy, useEffect } from 'react';
+import { lazy, useEffect, useRef } from 'react';
 import type { ComponentType } from 'react';
 
 import { useData } from '@/contexts/DataContext';
@@ -51,15 +51,13 @@ function DashboardRoute() {
   const { month: monthParam } = useParams();
   const { selectedYear, selectedMonth, setSelectedMonth } = useData();
   const navigate = useNavigate();
-  const month = parseMonthParam(monthParam, selectedMonth);
+  const initialMonthRef = useRef(parseMonthParam(monthParam, selectedMonth));
 
   useEffect(() => {
-    if (month !== selectedMonth) {
-      setSelectedMonth(month);
-    }
-  }, [month, selectedMonth, setSelectedMonth]);
+    setSelectedMonth(initialMonthRef.current);
+  }, [setSelectedMonth]);
 
-  return <Dashboard initialMonth={month} year={selectedYear} onBack={() => navigate('/')} />;
+  return <Dashboard initialMonth={initialMonthRef.current} year={selectedYear} onBack={() => navigate('/')} />;
 }
 
 function SyntheseRoute() {
@@ -199,13 +197,11 @@ function EdgMensuelRoute() {
   const { month: monthParam } = useParams();
   const { selectedMonth, setSelectedMonth } = useData();
   const navigate = useNavigate();
-  const month = parseMonthParam(monthParam, selectedMonth);
+  const initialMonthRef = useRef(parseMonthParam(monthParam, selectedMonth));
 
   useEffect(() => {
-    if (month !== selectedMonth) {
-      setSelectedMonth(month);
-    }
-  }, [month, selectedMonth, setSelectedMonth]);
+    setSelectedMonth(initialMonthRef.current);
+  }, [setSelectedMonth]);
 
   return <EdgAnnuelTabs onBack={() => navigate('/')} initialTab='mensuel' />;
 }

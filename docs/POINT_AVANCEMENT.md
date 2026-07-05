@@ -5,6 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 05/07/2026 (fix navigation mois EDG/Dashboard figée sur l'URL)
+
+- `DashboardRoute` et `EdgMensuelRoute` (`src/router.tsx`) resynchronisaient `selectedMonth` depuis le paramètre d'URL à chaque changement de `selectedMonth` (effet avec `month`/`selectedMonth` en dépendances) — tout clic sur un autre mois dans une sidebar (EDG Mensuel, Dashboard) était immédiatement annulé par cet effet. Corrigé : synchronisation URL → state une seule fois au montage, via une ref capturant le mois initial (`initialMonthRef`), effet dépendant uniquement de `setSelectedMonth` (référence stable). `MonthParamRoute`/`MonthRouteWithSetMonth` n'avaient pas ce défaut (pas d'effet de resynchronisation) — vérifié, rien à corriger dessus.
+- tsc OK, eslint OK, build OK. Vérification en direct impossible dans cet environnement (Supabase non configuré, pas de session) — câblage `dashboardData`/clés EDG (`achats_food`, `cout_salaires`, etc.) revérifié par lecture de code, cohérent avec `getAutoRealiseValues`.
+
 ## 05/07/2026 (EDG temps réel : fix CA col 21, réalisé auto + hub unifié)
 
 - Fix bug CA réalisé EDG : 5 vues (`EdgMensuel`, `BudgetEdgAnnuel`, `RealiseEdgAnneeFiscale`, `VsBudget`, `VsN1`) sommaient la colonne 24 (VAR % VS N-1, hachurée, jamais remplie) au lieu de la colonne 21 (CA réalisé TOTAL JOUR). Centralisé dans `getCaRealiseMonth` (`src/features/edg/edgRealtimeSources.ts`), importé par les 5 vues — plus de duplication.
