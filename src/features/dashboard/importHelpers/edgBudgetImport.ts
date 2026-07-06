@@ -121,12 +121,16 @@ const findEdgBudgetSheet = (workbook: Workbook): Worksheet | undefined =>
   workbook.worksheets.find(ws => compact(ws.name) === EDG_BUDGET_SHEET_NAME);
 
 // Une cellule par mois en ligne 5 porte la date du bloc : sa colonne est la colonne valeur du mois.
+// Chaque en-tête de mois est fusionné sur 2 colonnes (montant € + ratio % à droite) : ExcelJS
+// renvoie la même date fusionnée pour les deux colonnes. On scanne de gauche à droite et on ne
+// retient que la première colonne trouvée pour un mois donné (la colonne montant), en ignorant
+// toute colonne suivante portant la même date (la colonne ratio fusionnée).
 const detectMonthColumns = (sheet: Worksheet): Record<number, number> => {
   const columns: Record<number, number> = {};
   const colCount = Math.min(sheet.columnCount || MAX_SCAN_COLUMNS, MAX_SCAN_COLUMNS);
   for (let col = 0; col < colCount; col += 1) {
     const date = parseHistoricalBudgetCellDate(getHistoricalBudgetCell(sheet, MONTH_HEADER_ROW, col));
-    if (date) columns[date.getMonth()] = col;
+    if (date && !(date.getMonth() in columns)) columns[date.getMonth()] = col;
   }
   return columns;
 };

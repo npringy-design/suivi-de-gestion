@@ -80,4 +80,22 @@ describe('parseEdgBudgetSheet', () => {
     const result = parseEdgBudgetSheet(workbook);
     expect(result![0].achats_food).toBe('9000.00');
   });
+
+  it('conserve la colonne montant (gauche) d\'un en-tête de mois fusionné sur 2 colonnes, ignore la colonne ratio (droite)', () => {
+    // Cas réel du classeur V26 : l'en-tête de chaque mois en ligne 5 est une cellule fusionnée
+    // sur 2 colonnes (C = montant €, D = ratio %). ExcelJS renvoie la même date fusionnée pour
+    // les deux colonnes : sans garde-fou, la boucle de gauche à droite retient en dernier D
+    // (ratio) au lieu de C (montant).
+    const workbook = new Workbook();
+    const sheet = workbook.addWorksheet('ANNUEL BUDGET');
+    sheet.mergeCells(5, 3, 5, 4); // C5:D5, même date fusionnée sur les deux colonnes
+    sheet.getCell(5, 3).value = new Date(2026, 0, 1);
+
+    sheet.getCell(6, 1).value = 'C.A. TOTAL HT';
+    sheet.getCell(6, 3).value = 111825; // colonne montant (C, index 2)
+    sheet.getCell(6, 4).value = 0.42;   // colonne ratio (D, index 3) : ne doit pas être retenue
+
+    const result = parseEdgBudgetSheet(workbook);
+    expect(result![0].ca_total_ht).toBe('111825.00');
+  });
 });

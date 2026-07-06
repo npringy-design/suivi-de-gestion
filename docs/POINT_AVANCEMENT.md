@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 06/07/2026 (fix import Budget EDG : ratio importé au lieu du montant)
+
+- Bug : `detectMonthColumns()` (`edgBudgetImport.ts`) scannait la ligne 5 de gauche à droite et écrasait `columns[month]` à chaque cellule date rencontrée. Or l'en-tête de chaque mois est fusionné sur 2 colonnes (montant € à gauche, ratio % à droite) et ExcelJS renvoie la même date fusionnée pour les deux colonnes — la boucle retenait donc en dernier la colonne ratio au lieu de la colonne montant. Toutes les valeurs de Budget EDG Annuel/Mensuel importées étaient en conséquence des ratios (ex. C.A. TOTAL HT affiché "1" au lieu de "111 825").
+- Fix : `columns[month]` n'est plus écrasé une fois trouvé — seule la première colonne (la plus à gauche) portant la date d'un mois est retenue, toute colonne suivante portant la même date fusionnée est ignorée. Un test de non-régression simule la fusion réelle (`sheet.mergeCells`) et vérifie que le montant de la colonne de gauche est bien retourné. 7 tests OK (edgBudgetImport.test.ts), tsc OK, eslint OK, 99 tests OK, build OK.
+- **Action requise** : toute donnée de Budget EDG déjà importée avant ce correctif est corrompue (stockée en ratios et non en euros, ex. `edgMensuel.ca_total_ht = "0.42"` au lieu de `"111825.00"`). Un ré-import du classeur Excel (feuille "ANNUEL BUDGET") est nécessaire après déploiement pour purger ces valeurs — l'import réécrit les clés présentes dans la feuille, donc un nouvel import suffit à corriger les mois déjà importés.
+
 ## 06/07/2026 (import auto du budget EDG depuis la feuille "ANNUEL BUDGET")
 
 - Nouveau parseur `src/features/dashboard/importHelpers/edgBudgetImport.ts` : `parseEdgBudgetSheet(workbook)` lit la feuille `ANNUEL BUDGET` du classeur V26 (libellés en colonne A, 12 blocs mensuels de 3 colonnes, colonnes détectées dynamiquement via les dates en ligne 5 — aucun pas de colonne hardcodé), mappe les libellés vers les ~52 clés EDG existantes (`ca_total_ht`, `achats_food`, ... `remboursement_capital`) par correspondance de fragment normalisé (accents/casse/ponctuation ignorés, fragment le plus long prioritaire en cas d'ambiguïté), ignore les lignes de total recalculées par l'app. Réutilise `parseHistoricalBudgetCellNumber`/`parseHistoricalBudgetCellDate`/`getHistoricalBudgetCell` de `historicalBudgetImport.ts` sans duplication. Retourne `null` si la feuille est absente ou si aucune colonne mensuelle n'est détectée ; une cellule vide n'ajoute pas de clé (pas de `0` par défaut).
