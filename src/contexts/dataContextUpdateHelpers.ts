@@ -85,3 +85,22 @@ export const updateMonthlyStringRecordData = <K extends 'dashboard' | 'edgMensue
     },
   };
 };
+
+// Fusionne, en une seule mise à jour, les valeurs importées de plusieurs mois dans
+// edgMensuel : les clés importées écrasent, les clés absentes de valuesByMonth restent
+// intactes (saisie manuelle préservée). Utilisé par l'import automatique du budget EDG.
+export const mergeEdgMensuelBudgetData = (
+  prev: Record<number, MonthData>,
+  valuesByMonth: Record<number, Record<string, string>>,
+): Record<number, MonthData> => {
+  const next = { ...prev };
+  Object.entries(valuesByMonth).forEach(([monthKey, values]) => {
+    const month = Number(monthKey);
+    const monthData = normalizeMonthData(next[month]);
+    next[month] = {
+      ...monthData,
+      edgMensuel: { ...(monthData.edgMensuel || {}), ...values },
+    };
+  });
+  return next;
+};

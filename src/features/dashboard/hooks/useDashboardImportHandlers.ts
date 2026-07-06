@@ -56,6 +56,7 @@ import {
   getHistoricalV25RowValues,
   getHistoricalPayrollColumnMaps as getV25PayrollColumnMaps,
 } from '@/features/dashboard/importHelpers/historicalV25Import';
+import { parseEdgBudgetSheet } from '@/features/dashboard/importHelpers/edgBudgetImport';
 
 type DayRowEntry = { row: DashboardRow; index: number };
 type ImportPreviewItem = { label: string; value: string };
@@ -93,6 +94,7 @@ type UseDashboardImportHandlersParams = {
   updateBilanSynthese: (month: number, day: number, field: keyof DayDataBilanSynthese, value: string | number) => void;
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
   updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
+  importEdgBudget: (valuesByMonth: Record<number, Record<string, string>>) => void;
   markMonthsAsLoaded: (year: number, months: number[]) => void;
   saveNow: () => Promise<void>;
   personnelInfos: PersonnelInfo[];
@@ -130,6 +132,7 @@ export function useDashboardImportHandlers({
   updateBilanSynthese,
   updateSalariesConfig,
   updatePersonnelSchema,
+  importEdgBudget,
   markMonthsAsLoaded,
   saveNow,
   personnelInfos,
@@ -372,6 +375,11 @@ export function useDashboardImportHandlers({
       setHistoricalBudgetStatus(previews.length > 0
         ? `${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.`
         : `Aucune prévision trouvée. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`);
+
+      // Budget EDG annuel : feuille "ANNUEL BUDGET" indépendante du Suivi Quotidien,
+      // importée directement (pas de preview/validation, contrairement aux jours ci-dessus).
+      const edgBudgetValues = parseEdgBudgetSheet(workbook);
+      if (edgBudgetValues) importEdgBudget(edgBudgetValues);
     } catch (error) {
       setHistoricalBudgetStatus('Erreur import budget Excel : ' + (error instanceof Error ? error.message : 'lecture impossible'));
     } finally {

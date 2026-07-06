@@ -5,6 +5,13 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 06/07/2026 (import auto du budget EDG depuis la feuille "ANNUEL BUDGET")
+
+- Nouveau parseur `src/features/dashboard/importHelpers/edgBudgetImport.ts` : `parseEdgBudgetSheet(workbook)` lit la feuille `ANNUEL BUDGET` du classeur V26 (libellés en colonne A, 12 blocs mensuels de 3 colonnes, colonnes détectées dynamiquement via les dates en ligne 5 — aucun pas de colonne hardcodé), mappe les libellés vers les ~52 clés EDG existantes (`ca_total_ht`, `achats_food`, ... `remboursement_capital`) par correspondance de fragment normalisé (accents/casse/ponctuation ignorés, fragment le plus long prioritaire en cas d'ambiguïté), ignore les lignes de total recalculées par l'app. Réutilise `parseHistoricalBudgetCellNumber`/`parseHistoricalBudgetCellDate`/`getHistoricalBudgetCell` de `historicalBudgetImport.ts` sans duplication. Retourne `null` si la feuille est absente ou si aucune colonne mensuelle n'est détectée ; une cellule vide n'ajoute pas de clé (pas de `0` par défaut).
+- `DataContext` : ajout de `importEdgBudget(valuesByMonth)` + helper `mergeEdgMensuelBudgetData` (`dataContextUpdateHelpers.ts`) — une seule mise à jour d'état fusionnant `edgMensuel` de chaque mois concerné (clés importées écrasent, saisie manuelle existante sur les autres clés préservée), au lieu d'une boucle `updateEdgMensuel` par cellule.
+- Branché dans `handleHistoricalBudgetExcelImport` (`useDashboardImportHandlers.ts`) : après le traitement existant du Suivi Quotidien, `parseEdgBudgetSheet(workbook)` est appelé sur le classeur déjà chargé et, si non-null, importé immédiatement via `importEdgBudget` (pas de preview/validation, contrairement aux jours du Suivi Quotidien — le budget EDG annuel est une donnée indépendante). Feuille absente → import du Suivi Quotidien inchangé, sans erreur.
+- 6 tests unitaires (`edgBudgetImport.test.ts`, workbook ExcelJS réel construit en mémoire) : détection feuille absente/insensible casse-espaces, mapping libellé→clé, colonnes par dates, cellules formule `{ result }`, lignes de total ignorées, cellule vide → clé absente. tsc OK, eslint OK (0 erreur), 98 tests OK, build OK.
+
 ## 06/07/2026 (fix EDG temps réel à zéro : colonnes dérivées non calculées)
 
 - Les 5 vues EDG (`EdgMensuel`, `BudgetEdgAnnuel`, `RealiseEdgAnneeFiscale`, `VsBudget`, `VsN1`) lisaient `data[m]?.dashboard` brut, qui ne contient que les cellules de saisie — les colonnes dérivées (CA réalisé jour col 21, coûts matière/personnel jour col 58/87, etc.) ne sont calculées que par `computeDashboardData()`, appelé jusqu'ici uniquement dans `Dashboard.tsx` sur une copie jamais persistée. Toutes les agrégations EDG (CA réalisé, avancement, valeurs auto) retournaient donc 0.
