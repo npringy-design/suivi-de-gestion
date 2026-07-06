@@ -4,7 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
-import { getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
+import { computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
 
 const MONTH_INDICES = [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5];
 
@@ -20,18 +20,39 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
   const YEAR = selectedYear;
   const MONTHS_SHORT = ['juil', 'août', 'sept', 'oct', 'nov', 'déc', 'janv', 'févr', 'mars', 'avr', 'mai', 'juin'].map((m, i) => `${m}-${(i < 6 ? YEAR - 1 : YEAR).toString().slice(-2)}`);
 
+  const getYearForMonth = (m: number) => (m >= 6 ? YEAR - 1 : YEAR);
+
+  const computedByMonth = useMemo(() => {
+    const map: Record<number, Record<string, string>> = {};
+    MONTH_INDICES.forEach(m => {
+      const year = getYearForMonth(m);
+      map[m] = computeMonthDashboard(allData[year]?.[m], m, year);
+    });
+    return map;
+  }, [allData, YEAR]);
+
+  const autoRealiseByMonth = useMemo(() => {
+    const map: Record<number, Record<string, number>> = {};
+    MONTH_INDICES.forEach(m => {
+      const year = getYearForMonth(m);
+      map[m] = getAutoRealiseValues(computedByMonth[m], m, year);
+    });
+    return map;
+  }, [computedByMonth, YEAR]);
+
   const getCaMonth = (m: number) => {
-    const year = m >= 6 ? YEAR - 1 : YEAR;
-    const md = allData[year]?.[m]?.dashboard || {};
-    return getCaRealiseMonth(md, m, year);
+    const year = getYearForMonth(m);
+    return getCaRealiseMonth(computedByMonth[m], m, year);
   };
 
-  const caMonths = useMemo(() => MONTH_INDICES.map(m => getCaMonth(m)), [allData, YEAR]);
+  const caMonths = useMemo(() => MONTH_INDICES.map(m => getCaMonth(m)), [computedByMonth]);
   const caTotal = caMonths.reduce((a, b) => a + b, 0);
 
   const getValR = (m: number, key: string) => {
-    const year = m >= 6 ? YEAR - 1 : YEAR;
-    return parseMoneyValue(allData[year]?.[m]?.edgMensuelRealise?.[key]);
+    const year = getYearForMonth(m);
+    const override = allData[year]?.[m]?.edgMensuelRealise?.[key];
+    if (override !== undefined && override !== '') return parseMoneyValue(override);
+    return autoRealiseByMonth[m]?.[key] ?? 0;
   };
 
   const getRowData = (key: string) => {

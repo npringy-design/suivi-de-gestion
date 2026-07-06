@@ -6,7 +6,7 @@ import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 import { MONTH_NAMES, MONTH_NAMES_SHORT } from '@/lib/constants';
 
-import { getAutoRealiseValues, getCaRealiseMonth, getMonthProgress } from '@/features/edg/edgRealtimeSources';
+import { computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth, getMonthProgress } from '@/features/edg/edgRealtimeSources';
 
 interface EdgMensuelProps {
   month: number;
@@ -35,7 +35,10 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
 
   const edgData = data[month]?.edgMensuel || {};
   const edgRealiseData = data[month]?.edgMensuelRealise || {};
-  const dashboardData = useMemo(() => data[month]?.dashboard || {}, [data, month]);
+  const dashboardData = useMemo(
+    () => computeMonthDashboard(data[month], month, YEAR),
+    [data, month, YEAR],
+  );
 
   // Calculate CA TOTAL HT from dashboard for REALISE
   const caTotalHtRealise = useMemo(

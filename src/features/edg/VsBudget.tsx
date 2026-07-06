@@ -4,7 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
-import { getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
+import { computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
 
 interface VsBudgetProps {
   onBack: () => void;
@@ -18,13 +18,26 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
   const YEAR = selectedYear;
   const MONTHS_SHORT = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'].map(m => `${m}-${YEAR.toString().slice(-2)}`);
 
-  const getCaMonth = (m: number) => getCaRealiseMonth(data[m]?.dashboard || {}, m, YEAR);
+  const computedMonths = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => computeMonthDashboard(data[i], i, YEAR)),
+    [data, YEAR],
+  );
+  const autoRealiseByMonth = useMemo(
+    () => computedMonths.map((cm, i) => getAutoRealiseValues(cm, i, YEAR)),
+    [computedMonths, YEAR],
+  );
 
-  const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [data]);
+  const getCaMonth = (m: number) => getCaRealiseMonth(computedMonths[m], m, YEAR);
+
+  const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [computedMonths]);
   const caTotal = caMonths.reduce((a, b) => a + b, 0);
 
   const getValB = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuel?.[key]);
-  const getValR = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuelRealise?.[key]);
+  const getValR = (m: number, key: string) => {
+    const override = data[m]?.edgMensuelRealise?.[key];
+    if (override !== undefined && override !== '') return parseMoneyValue(override);
+    return autoRealiseByMonth[m]?.[key] ?? 0;
+  };
 
   const getRowData = (key: string) => {
     const monthsB = Array.from({ length: 12 }, (_, i) => getValB(i, key));

@@ -5,6 +5,13 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 06/07/2026 (fix EDG temps réel à zéro : colonnes dérivées non calculées)
+
+- Les 5 vues EDG (`EdgMensuel`, `BudgetEdgAnnuel`, `RealiseEdgAnneeFiscale`, `VsBudget`, `VsN1`) lisaient `data[m]?.dashboard` brut, qui ne contient que les cellules de saisie — les colonnes dérivées (CA réalisé jour col 21, coûts matière/personnel jour col 58/87, etc.) ne sont calculées que par `computeDashboardData()`, appelé jusqu'ici uniquement dans `Dashboard.tsx` sur une copie jamais persistée. Toutes les agrégations EDG (CA réalisé, avancement, valeurs auto) retournaient donc 0.
+- Ajout de `computeMonthDashboard(monthData, month, year)` dans `src/features/edg/edgRealtimeSources.ts` (même pattern que `useRecapAnnuelData`) : reconstruit `buildMonthRows`/`buildDynamicColumns` et appelle `computeDashboardData`, retourne `{}` si le mois n'a pas de dashboard saisi. Les 5 vues passent désormais par cette fonction avant d'agréger.
+- Aligné le fallback réalisé auto : les 4 vues annuelles (`BudgetEdgAnnuel`, `RealiseEdgAnneeFiscale`, `VsBudget`, `VsN1`) utilisaient uniquement la saisie manuelle `edgMensuelRealise`, contrairement à `EdgMensuel` qui retombe sur `getAutoRealiseValues` (Suivi Quotidien) si aucune saisie. Les 4 vues appliquent maintenant la même priorité saisie manuelle > auto.
+- 2 tests ajoutés à `edgRealtimeSources.test.ts` (calcul des colonnes dérivées, retour `{}` sur mois vide). tsc OK, eslint OK, 92 tests OK, build OK.
+
 ## 05/07/2026 (fix navigation mois EDG/Dashboard figée sur l'URL)
 
 - `DashboardRoute` et `EdgMensuelRoute` (`src/router.tsx`) resynchronisaient `selectedMonth` depuis le paramètre d'URL à chaque changement de `selectedMonth` (effet avec `month`/`selectedMonth` en dépendances) — tout clic sur un autre mois dans une sidebar (EDG Mensuel, Dashboard) était immédiatement annulé par cet effet. Corrigé : synchronisation URL → state une seule fois au montage, via une ref capturant le mois initial (`initialMonthRef`), effet dépendant uniquement de `setSelectedMonth` (référence stable). `MonthParamRoute`/`MonthRouteWithSetMonth` n'avaient pas ce défaut (pas d'effet de resynchronisation) — vérifié, rien à corriger dessus.

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { getDashboardRowIndices } from '@/lib/utils';
+import type { MonthData } from '@/types/dataTypes';
+
 import {
+  computeMonthDashboard,
   getAutoRealiseValues,
   getCaBudgetMonth,
   getCaRealiseMonth,
@@ -90,5 +93,25 @@ describe('edgRealtimeSources', () => {
 
   it('retourne 0 quand aucun jour n\'est renseigné', () => {
     expect(getMonthProgress({}, MONTH, YEAR)).toBe(0);
+  });
+
+  describe('computeMonthDashboard', () => {
+    it('calcule les colonnes dérivées (col 21) à partir des cellules de saisie (col 18/19)', () => {
+      const indices = getDashboardRowIndices(MONTH, YEAR);
+      const seed: Record<string, string> = {};
+      seed[`${indices[1]}-18`] = '300'; // réalisé midi
+      seed[`${indices[1]}-19`] = '150'; // réalisé soir
+
+      const monthData = { dashboard: seed } as MonthData;
+      const computed = computeMonthDashboard(monthData, MONTH, YEAR);
+
+      expect(computed[`${indices[1]}-21`]).toBe('450.00');
+      expect(getCaRealiseMonth(computed, MONTH, YEAR)).toBe(450);
+    });
+
+    it('retourne un objet vide si le mois n\'a pas de dashboard saisi', () => {
+      expect(computeMonthDashboard(undefined, MONTH, YEAR)).toEqual({});
+      expect(computeMonthDashboard({ dashboard: {} } as MonthData, MONTH, YEAR)).toEqual({});
+    });
   });
 });

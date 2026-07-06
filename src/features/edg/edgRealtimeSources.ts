@@ -1,7 +1,38 @@
 import { getDashboardRowIndices } from '@/lib/utils';
 import { parseMoneyValue } from '@/lib/money';
+import type { MonthData } from '@/types/dataTypes';
+import { buildMonthRows } from '@/features/dashboard/dashboardRows';
+import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
+import { computeDashboardData } from '@/features/dashboard/dashboardCalculations';
 
 type DashboardData = Record<string, string>;
+
+// Les données stockées dans DataContext ne contiennent que les cellules de
+// saisie : les colonnes dérivées (CA réalisé jour, coûts matière/personnel
+// jour, etc.) ne sont calculées que par computeDashboardData. Les fonctions
+// d'agrégation ci-dessous ont besoin de ce résultat calculé, pas des données
+// brutes — voir Dashboard.tsx / useRecapAnnuelData pour le même pattern.
+export const computeMonthDashboard = (
+  monthData: MonthData | undefined,
+  month: number,
+  year: number,
+): DashboardData => {
+  const cellData = monthData?.dashboard;
+  if (!cellData || Object.keys(cellData).length === 0) return {};
+
+  const rows = buildMonthRows(year, month);
+  const dynamicColumns = buildDynamicColumns(monthData?.salariesConfig?.categories, {});
+
+  return computeDashboardData(
+    cellData,
+    rows,
+    dynamicColumns,
+    monthData?.salariesConfig?.categories,
+    monthData?.personnelSchema ?? 'global',
+    undefined,
+    monthData?.salariesConfig?.tauxCibles,
+  );
+};
 
 const sumDayColumn = (monthData: DashboardData, month: number, year: number, col: number): number => {
   const indices = getDashboardRowIndices(month, year);
