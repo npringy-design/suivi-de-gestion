@@ -12,11 +12,12 @@ interface EdgMensuelProps {
   month: number;
   setMonth: (month: number) => void;
   onBack: () => void;
+  hideHeader?: boolean;
 }
 
 
 
-export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps) {
+export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false }: EdgMensuelProps) {
   const { data, updateEdgMensuel, updateEdgMensuelRealise, selectedYear, edgChargesConfig } = useData();
   const YEAR = selectedYear;
   const MONTHS_SHORT = MONTH_NAMES_SHORT.map(m => `${m}-${YEAR.toString().slice(-2)}`);
@@ -480,14 +481,17 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
             z-index: 95;
           }
         }
+        .edg-mensuel-month-pills::-webkit-scrollbar { display: none; }
+        .edg-mensuel-month-pills { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      {isMobile && isSidebarOpen && (
+      {!hideHeader && isMobile && isSidebarOpen && (
         <div className="mobile-sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
       )}
 
-      {/* Left Sidebar for Months */}
-      <aside style={{ 
+      {/* Left Sidebar for Months (mode complet uniquement — masquée quand hideHeader, le sélecteur de mois passe dans la ligne compacte horizontale) */}
+      {!hideHeader && (
+      <aside style={{
         width: 260, 
         background: '#1e293b', 
         color: '#fff', 
@@ -535,16 +539,18 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
           ))}
         </div>
       </aside>
+      )}
 
       {/* Main Content Area */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8fafc' }}>
         
-        {/* Top Header */}
+        {!hideHeader ? (
+        /* Top Header (mode complet) */
         <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: isMobile ? '0 16px' : '0 32px', display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 90 }}>
           <div style={{ height: isMobile ? 60 : 80, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {isMobile && (
-                <button 
+                <button
                   onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', padding: 4 }}
                 >
@@ -566,16 +572,52 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
             </div>
           </div>
         </header>
+        ) : (
+        /* Ligne compacte : sélecteur de mois horizontal (pastilles scrollables) + badge Avancement,
+           remplace la sidebar 260px + le header complet, tous deux redondants avec le header d'EdgAnnuelTabs. */
+        <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: isMobile ? '8px 12px' : '10px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, zIndex: 90 }}>
+          <div className="edg-mensuel-month-pills" style={{ display: 'flex', gap: 6, overflowX: 'auto', flex: 1, minWidth: 0 }}>
+            {MONTH_NAMES_SHORT.map((m, i) => (
+              <button
+                key={i}
+                onClick={() => setMonth(i)}
+                style={{
+                  flexShrink: 0,
+                  padding: isMobile ? '6px 10px' : '6px 14px',
+                  borderRadius: 999,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: month === i ? '#10b981' : '#f1f5f9',
+                  color: month === i ? '#fff' : '#475569',
+                  fontSize: isMobile ? 12 : 13,
+                  fontWeight: month === i ? 700 : 600,
+                  textTransform: 'capitalize',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+          <div
+            title="Part du budget CA du mois déjà couverte par les jours renseignés dans le Suivi Quotidien"
+            style={{ flexShrink: 0, background: '#f0fdfa', color: '#0d9488', border: '1px solid #99f6e4', padding: '4px 12px', borderRadius: 999, fontSize: isMobile ? 11 : 12, fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
+          >
+            Avancement : {formatPercent(monthProgress * 100)}
+          </div>
+        </div>
+        )}
 
         {/* KPI Summary Cards */}
-        <div style={{ display: 'flex', gap: isMobile ? 8 : 16, padding: isMobile ? '12px 12px 0' : '20px 32px 0', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+        <div style={{ display: 'flex', gap: isMobile ? 8 : 16, padding: hideHeader ? (isMobile ? '10px 12px 0' : '12px 20px 0') : (isMobile ? '12px 12px 0' : '20px 32px 0'), flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
           {kpiCards.map(k => {
             const rawEcart = monthHasRealiseData ? ecart(k.r, k.b) : null;
             const kpiEcartColor = ecartColor(rawEcart);
             const kpiEcartText = ecartText(rawEcart, k.invert);
             const kpiRatioEcart = ecartRatioText(rawEcart, k.b, k.invert);
             return (
-              <div key={k.label} style={{ flex: 1, minWidth: isMobile ? '47%' : 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: isMobile ? '10px 12px' : '14px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+              <div key={k.label} style={{ flex: 1, minWidth: isMobile ? '47%' : 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: hideHeader ? '8px 14px' : (isMobile ? '10px 12px' : '14px 16px'), boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                 <div style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {k.label}
                 </div>
@@ -602,7 +644,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         </div>
 
         {/* Table Area */}
-        <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 12 : 32 }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: hideHeader ? (isMobile ? 12 : 16) : (isMobile ? 12 : 32) }}>
           <div style={{ height: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
               <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>

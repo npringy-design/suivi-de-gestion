@@ -108,7 +108,7 @@ export default function EdgAnnuelTabs({ onBack, initialTab = 'budget' }: EdgAnnu
         <div className="flex-1 overflow-hidden">
           {/* We pass a dummy onBack because we handle it in the header */}
           {activeTab === 'mensuel' ? (
-            <EdgMensuel month={selectedMonth} setMonth={setSelectedMonth} onBack={() => {}} />
+            <EdgMensuel month={selectedMonth} setMonth={setSelectedMonth} onBack={() => {}} hideHeader={true} />
           ) : (
             ActiveComponent && <ActiveComponent onBack={() => {}} hideHeader={true} />
           )}
