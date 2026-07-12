@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 12/07/2026 (EdgMensuel : lisibilité visuelle)
+
+- EdgMensuel : ajout d'un bandeau de 5 cartes KPI (C.A. Total HT, Marge Brute, Total Salaires et Charges, Résultat Gestion, E.B.E. — Budget/Réalisé/Écart à date) sous le header, et de 8 bandeaux de section (Coût Matière, Marge, Personnel, Publicité, Frais Généraux d'Exploitation, Frais Généraux d'Occupation, Coût des Immeubles, Résultats et Trésorerie) scindant le mur de ~50 lignes détail en blocs identifiables. Présentation uniquement (JSX/CSS dans EdgMensuel.tsx), aucune donnée/calcul/clé touchés, colonnes Budget/Réalisé/Écart inchangées. Autres vues EDG non concernées. tsc OK, build OK. Vérification visuelle non faite (Supabase non configuré dans cet environnement de dev local, pas de session) — à valider après déploiement.
+
 ## 06/07/2026 (fix import Budget EDG : ratio importé au lieu du montant)
 
 - Bug : `detectMonthColumns()` (`edgBudgetImport.ts`) scannait la ligne 5 de gauche à droite et écrasait `columns[month]` à chaque cellule date rencontrée. Or l'en-tête de chaque mois est fusionné sur 2 colonnes (montant € à gauche, ratio % à droite) et ExcelJS renvoie la même date fusionnée pour les deux colonnes — la boucle retenait donc en dernier la colonne ratio au lieu de la colonne montant. Toutes les valeurs de Budget EDG Annuel/Mensuel importées étaient en conséquence des ratios (ex. C.A. TOTAL HT affiché "1" au lieu de "111 825").
