@@ -359,7 +359,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
   };
 
   return (
-    <div style={{ height: '100vh', background: '#f8fafc', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ height: '100%', background: '#f8fafc', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', overflow: 'hidden', position: 'relative' }}>
       <style>{`
         @media (max-width: 1024px) {
           .mobile-sidebar-overlay {
