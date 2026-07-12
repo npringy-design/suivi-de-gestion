@@ -3,7 +3,7 @@ import { Menu, X, ChevronLeft } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
-import { formatEuro, formatPercent, formatPercentSigned } from '@/lib/formatters';
+import { formatEuro, formatPercent } from '@/lib/formatters';
 import { MONTH_NAMES, MONTH_NAMES_SHORT } from '@/lib/constants';
 
 import { computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth, getMonthProgress } from '@/features/edg/edgRealtimeSources';
@@ -153,16 +153,21 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
 
   const ecartColor = (eVal: number | null): string => eVal === null ? '#0f172a' : (eVal < 0 ? RED : GREEN);
 
+  // Signe explicite (+ / -) plutôt que de compter sur le glyphe négatif implicite du formatage —
+  // garantit un symbole "-" toujours visible devant un montant/pourcentage défavorable.
   const ecartText = (eVal: number | null, invert: boolean): string => {
     if (eVal === null) return '—';
     const display = invert ? -eVal : eVal;
-    return `${display > 0 ? '+' : ''}${euro(display)}`;
+    const sign = display > 0 ? '+' : display < 0 ? '-' : '';
+    return `${sign}${euro(Math.abs(display))}`;
   };
 
   const ecartRatioText = (eVal: number | null, bVal: number, invert: boolean): string => {
     if (eVal === null || bVal === 0) return '';
     const display = invert ? -eVal : eVal;
-    return formatPercentSigned((display / Math.abs(bVal)) * 100);
+    const pct = (display / Math.abs(bVal)) * 100;
+    const sign = pct > 0 ? '+' : pct < 0 ? '-' : '';
+    return `${sign}${formatPercent(Math.abs(pct))}`;
   };
 
   // Indicateurs clés affichés dans le bandeau de synthèse en haut de la vue.
