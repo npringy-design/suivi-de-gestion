@@ -217,7 +217,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
     return (
       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
         <td style={{ 
-          padding: isMobile ? '6px 8px' : '8px 12px', 
+          padding: isMobile ? '5px 8px' : '5px 12px', 
           fontSize: isMobile ? 11 : 13, 
           background: '#fff', 
           color: '#334155', 
@@ -233,27 +233,27 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
         
         {/* BUDGET */}
         <td style={{ width: 10, background: '#fff', borderBottom: '1px solid #e2e8f0' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: 0, background: isBlue ? '#eff6ff' : '#fff', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: 0, background: isBlue ? '#eff6ff' : '#fff', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
           <input
             type="text"
             value={edgData[key] || ''}
             onChange={e => handleChangeBudget(key, e.target.value)}
-            style={{ width: '100%', height: '100%', border: 'none', background: 'transparent', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 11 : 13, outline: 'none', color: '#0f172a', fontWeight: edgData[key] ? 500 : 400 }}
+            style={{ width: '100%', height: '100%', border: 'none', background: 'transparent', textAlign: 'right', padding: isMobile ? '5px 8px' : '5px 12px', fontSize: isMobile ? 11 : 13, outline: 'none', color: '#0f172a', fontWeight: edgData[key] ? 500 : 400 }}
             placeholder="0"
           />
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '5px 8px' : '5px 12px', fontSize: isMobile ? 10 : 12, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
           {caTotalHtBudget > 0 && edgData[key] ? formatPercent((bVal / caTotalHtBudget) * 100) : ''}
         </td>
 
         {/* REALISE */}
         <td style={{ width: 10, background: '#fff', borderBottom: '1px solid #e2e8f0' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: 0, position: 'relative', background: isAuto ? '#f0fdfa' : '#fff', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: 0, position: 'relative', background: isAuto ? '#f0fdfa' : '#fff', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
           <input
             type="text"
             value={edgRealiseData[key] || ''}
             onChange={e => handleChangeRealise(key, e.target.value)}
-            style={{ width: '100%', height: '100%', border: 'none', background: 'transparent', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 11 : 13, outline: 'none', color: '#0f172a', fontWeight: edgRealiseData[key] ? 500 : 400 }}
+            style={{ width: '100%', height: '100%', border: 'none', background: 'transparent', textAlign: 'right', padding: isMobile ? '5px 8px' : '5px 12px', fontSize: isMobile ? 11 : 13, outline: 'none', color: '#0f172a', fontWeight: edgRealiseData[key] ? 500 : 400 }}
             placeholder={isAuto ? euro(autoVal) : '0'}
             title={isAuto ? 'Calculé depuis le Suivi Quotidien' : undefined}
           />
@@ -264,16 +264,16 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
             />
           )}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '5px 8px' : '5px 12px', fontSize: isMobile ? 10 : 12, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
           {caTotalHtRealise > 0 && (edgRealiseData[key] || isAuto) ? formatPercent((rVal / caTotalHtRealise) * 100) : ''}
         </td>
 
         {/* ECART */}
         <td style={{ width: 10, background: '#fff', borderBottom: '1px solid #e2e8f0' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '6px 8px' : '8px 12px', textAlign: 'right', background: '#fff', fontSize: isMobile ? 11 : 13, fontWeight: 600, color: ecartColor(eVal), borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: isMobile ? '5px 8px' : '5px 12px', textAlign: 'right', background: '#fff', fontSize: isMobile ? 11 : 13, fontWeight: 600, color: ecartColor(eVal), borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
           {ecartText(eVal, invert)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: ecartColor(eVal), borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '5px 8px' : '5px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: ecartColor(eVal), borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #e2e8f0' }}>
           {ecartRatioText(eVal, bVal, invert)}
         </td>
       </tr>
@@ -288,7 +288,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
     return (
       <tr style={{ borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
         <td style={{ 
-          padding: isMobile ? '8px 10px' : '10px 12px', 
+          padding: isMobile ? '6px 10px' : '7px 12px', 
           fontSize: isMobile ? 11 : 13, 
           fontWeight: 700, 
           color: isRed ? '#b91c1c' : '#0f172a', 
@@ -308,36 +308,36 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
         
         {/* BUDGET */}
         <td style={{ width: 10, background: '#fff', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: isCaTotal ? 0 : (isMobile ? '8px 10px' : '10px 12px'), textAlign: 'right', fontWeight: 700, color: isRed ? '#b91c1c' : '#0f172a', background: isCaTotal ? '#eff6ff' : '#fef2f2', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: isCaTotal ? 0 : (isMobile ? '6px 10px' : '7px 12px'), textAlign: 'right', fontWeight: 700, color: isRed ? '#b91c1c' : '#0f172a', background: isCaTotal ? '#eff6ff' : '#fef2f2', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {isCaTotal ? (
             <input
               type="text"
               value={edgData['ca_total_ht'] || ''}
               onChange={e => handleChangeBudget('ca_total_ht', e.target.value)}
-              style={{ width: '100%', height: '100%', border: 'none', background: 'transparent', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 11 : 13, outline: 'none', color: isRed ? '#b91c1c' : '#0f172a', fontWeight: 700 }}
+              style={{ width: '100%', height: '100%', border: 'none', background: 'transparent', textAlign: 'right', padding: isMobile ? '6px 10px' : '7px 12px', fontSize: isMobile ? 11 : 13, outline: 'none', color: isRed ? '#b91c1c' : '#0f172a', fontWeight: 700 }}
               placeholder="0"
             />
           ) : euro(bVal)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#fef2f2', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: isRed ? '#b91c1c' : '#0f172a', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#fef2f2', textAlign: 'right', padding: isMobile ? '6px 10px' : '7px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: isRed ? '#b91c1c' : '#0f172a', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {caTotalHtBudget > 0 ? formatPercent((bVal / caTotalHtBudget) * 100) : ''}
         </td>
 
         {/* REALISE */}
         <td style={{ width: 10, background: '#fff', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, color: isRed ? '#b91c1c' : '#0f172a', background: '#fef2f2', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: isMobile ? '6px 10px' : '7px 12px', textAlign: 'right', fontWeight: 700, color: isRed ? '#b91c1c' : '#0f172a', background: '#fef2f2', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {euro(rVal)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#fef2f2', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: isRed ? '#b91c1c' : '#0f172a', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#fef2f2', textAlign: 'right', padding: isMobile ? '6px 10px' : '7px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: isRed ? '#b91c1c' : '#0f172a', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {caTotalHtRealise > 0 ? formatPercent((rVal / caTotalHtRealise) * 100) : ''}
         </td>
 
         {/* ECART */}
         <td style={{ width: 10, background: '#fff', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, color: ecartColor(eVal), background: '#fef2f2', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: isMobile ? '6px 10px' : '7px 12px', textAlign: 'right', fontWeight: 700, color: ecartColor(eVal), background: '#fef2f2', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {ecartText(eVal, invert)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: ecartColor(eVal), borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '6px 10px' : '7px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: ecartColor(eVal), borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {ecartRatioText(eVal, bVal, invert)}
         </td>
       </tr>
@@ -350,7 +350,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
     return (
       <tr style={{ borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
         <td style={{ 
-          padding: isMobile ? '8px 10px' : '10px 12px', 
+          padding: isMobile ? '6px 10px' : '7px 12px', 
           fontSize: isMobile ? 11 : 13, 
           fontWeight: 700, 
           background: '#f0fdf4', 
@@ -370,28 +370,28 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
         
         {/* BUDGET */}
         <td style={{ width: 10, background: '#fff', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: '#166534', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: isMobile ? '6px 10px' : '7px 12px', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: '#166534', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {euro(bVal)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#f0fdf4', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: '#166534', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#f0fdf4', textAlign: 'right', padding: isMobile ? '6px 10px' : '7px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: '#166534', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {caTotalHtBudget > 0 ? formatPercent((bVal / caTotalHtBudget) * 100) : ''}
         </td>
 
         {/* REALISE */}
         <td style={{ width: 10, background: '#fff', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: '#166534', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: isMobile ? '6px 10px' : '7px 12px', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: '#166534', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {euro(rVal)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#f0fdf4', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: '#166534', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#f0fdf4', textAlign: 'right', padding: isMobile ? '6px 10px' : '7px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: '#166534', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {caTotalHtRealise > 0 ? formatPercent((rVal / caTotalHtRealise) * 100) : ''}
         </td>
 
         {/* ECART */}
         <td style={{ width: 10, background: '#fff', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: ecartColor(eVal), fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: isMobile ? '6px 10px' : '7px 12px', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: ecartColor(eVal), fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {ecartText(eVal, invert)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: ecartColor(eVal), borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '6px 10px' : '7px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: ecartColor(eVal), borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {ecartRatioText(eVal, bVal, invert)}
         </td>
       </tr>
@@ -403,7 +403,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
     return (
       <tr style={{ borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
         <td style={{ 
-          padding: isMobile ? '6px 8px' : '8px 12px', 
+          padding: isMobile ? '5px 8px' : '5px 12px', 
           fontSize: isMobile ? 11 : 13, 
           fontWeight: 600, 
           background: '#f8fafc', 
@@ -421,28 +421,28 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
         
         {/* BUDGET */}
         <td style={{ width: 10, background: '#fff', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '6px 8px' : '8px 12px', textAlign: 'right', fontWeight: 600, background: '#f8fafc', color: '#0f172a', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: isMobile ? '5px 8px' : '5px 12px', textAlign: 'right', fontWeight: 600, background: '#f8fafc', color: '#0f172a', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
           {euro(bVal)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 500, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '5px 8px' : '5px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 500, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
           {caTotalHtBudget > 0 ? formatPercent((bVal / caTotalHtBudget) * 100) : ''}
         </td>
 
         {/* REALISE */}
         <td style={{ width: 10, background: '#fff', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '6px 8px' : '8px 12px', textAlign: 'right', fontWeight: 600, background: '#f8fafc', color: '#0f172a', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: isMobile ? '5px 8px' : '5px 12px', textAlign: 'right', fontWeight: 600, background: '#f8fafc', color: '#0f172a', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
           {euro(rVal)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 500, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#f8fafc', textAlign: 'right', padding: isMobile ? '5px 8px' : '5px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 500, color: '#64748b', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
           {caTotalHtRealise > 0 ? formatPercent((rVal / caTotalHtRealise) * 100) : ''}
         </td>
 
         {/* ECART */}
         <td style={{ width: 10, background: '#fff', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}></td>
-        <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '6px 8px' : '8px 12px', textAlign: 'right', fontWeight: 600, background: '#f8fafc', color: ecartColor(eVal), fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 80 : 112, padding: isMobile ? '5px 8px' : '5px 12px', textAlign: 'right', fontWeight: 600, background: '#f8fafc', color: ecartColor(eVal), fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
           {ecartText(eVal, true)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 500, color: ecartColor(eVal), borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 56 : 72, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '5px 8px' : '5px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 500, color: ecartColor(eVal), borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
           {ecartRatioText(eVal, bVal, true)}
         </td>
       </tr>
@@ -452,7 +452,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
   const renderSectionBanner =(icon: string, title: string) => (
     <tr>
       <td colSpan={10} style={{
-        padding: isMobile ? '10px 12px' : '12px 16px',
+        padding: isMobile ? '7px 12px' : '8px 16px',
         fontSize: isMobile ? 11 : 12,
         fontWeight: 800,
         color: '#f8fafc',
@@ -665,16 +665,16 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
                   <th style={{ background: '#fff', position: 'sticky', left: 0, top: 34, zIndex: 50, border: 'none', padding: '0 0 12px 0' }}></th>
                   
                   <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 90, background: '#f8fafc' }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
+                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
+                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
                   
                   <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 90, background: '#f8fafc' }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
+                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
+                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
                   
                   <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 90, background: '#f8fafc' }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#e2e8f0', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}></th>
+                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
+                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#e2e8f0', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}></th>
                 </tr>
               </thead>
               <tbody style={{ borderTop: '1px solid #cbd5e1' }}>
