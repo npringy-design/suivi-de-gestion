@@ -158,6 +158,17 @@ export type Config2025Data = {
   hebdo: Record<number, Record<string, string>>;
 };
 
+export type EdgChargeMode = 'fixe' | 'pourcentage' | 'manuel';
+
+export type EdgChargeConfig = {
+  mode: EdgChargeMode;
+  pourcentage?: number;
+};
+
+// Configuration globale (pas par mois/année) pilotant l'auto-remplissage du réalisé
+// des lignes EDG sous Résultat Gestion — une entrée par clé de ligne EDG concernée.
+export type EdgChargesConfig = Record<string, EdgChargeConfig>;
+
 export type CustomEvent = {
   id: string;
   date: string;

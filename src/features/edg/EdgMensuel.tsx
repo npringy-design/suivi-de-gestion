@@ -17,7 +17,7 @@ interface EdgMensuelProps {
 
 
 export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps) {
-  const { data, updateEdgMensuel, updateEdgMensuelRealise, selectedYear } = useData();
+  const { data, updateEdgMensuel, updateEdgMensuelRealise, selectedYear, edgChargesConfig } = useData();
   const YEAR = selectedYear;
   const MONTHS_SHORT = MONTH_NAMES_SHORT.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
@@ -52,6 +52,29 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
     [dashboardData, month, YEAR],
   );
 
+  // Valeurs auto calculées pour les lignes sous Résultat Gestion pilotées par Paramètre EDG
+  // ('fixe' : recopie du budget saisi ce mois-ci ; 'pourcentage' : % du CA réalisé du mois).
+  // Les clés en mode 'manuel' ne produisent aucune valeur ici (comportement inchangé).
+  const chargeAutoRealiseValues = useMemo(() => {
+    const values: Record<string, number> = {};
+    Object.entries(edgChargesConfig).forEach(([key, cfg]) => {
+      if (cfg.mode === 'fixe') {
+        values[key] = parseMoneyValue(edgData[key]);
+      } else if (cfg.mode === 'pourcentage') {
+        values[key] = ((cfg.pourcentage ?? 0) / 100) * caTotalHtRealise;
+      }
+    });
+    return values;
+  }, [edgChargesConfig, edgData, caTotalHtRealise]);
+
+  // Fusion des deux sources d'auto-remplissage réalisé : Suivi Quotidien (CA, Achats Food,
+  // Coût salaires...) et Paramètre EDG (les 17 lignes sous Résultat Gestion). Aucun chevauchement
+  // de clés entre les deux, donc fusion directe.
+  const combinedAutoRealiseValues = useMemo(
+    () => ({ ...autoRealiseValues, ...chargeAutoRealiseValues }),
+    [autoRealiseValues, chargeAutoRealiseValues],
+  );
+
   const monthProgress = useMemo(
     () => getMonthProgress(dashboardData, month, YEAR),
     [dashboardData, month, YEAR],
@@ -75,14 +98,14 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
 
   const isAutoRealise = (key: string) => {
     const override = edgRealiseData[key];
-    return (override === undefined || override === '') && key in autoRealiseValues;
+    return (override === undefined || override === '') && key in combinedAutoRealiseValues;
   };
 
   const valB = (key: string) => parseMoneyValue(edgData[key]);
   const valR = (key: string) => {
     const override = edgRealiseData[key];
     if (override !== undefined && override !== '') return parseMoneyValue(override);
-    return autoRealiseValues[key] ?? 0;
+    return combinedAutoRealiseValues[key] ?? 0;
   };
 
   // Calculations BUDGET
@@ -129,11 +152,11 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
   const ecart = (r: number, b: number): number | null => r - b;
 
   // Une ligne détail sans aucune donnée réalisée (ni saisie manuelle, ni valeur auto-calculée
-  // depuis le Suivi Quotidien) n'a pas d'écart significatif : un réalisé à 0 par absence de
-  // donnée afficherait une fausse "économie" égale au budget complet.
+  // depuis le Suivi Quotidien ou Paramètre EDG) n'a pas d'écart significatif : un réalisé à 0
+  // par absence de donnée afficherait une fausse "économie" égale au budget complet.
   const hasRealiseData = (key: string): boolean => {
     const override = edgRealiseData[key];
-    return (override !== undefined && override !== '') || key in autoRealiseValues;
+    return (override !== undefined && override !== '') || key in combinedAutoRealiseValues;
   };
 
   // Pour les lignes calculées (headers/totaux/sous-totaux) et les cartes KPI, l'écart n'est
@@ -187,7 +210,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
     const rVal = valR(key);
     const eVal = hasRealiseData(key) ? ecart(rVal, bVal) : null;
     const isAuto = isAutoRealise(key);
-    const autoVal = autoRealiseValues[key];
+    const autoVal = combinedAutoRealiseValues[key];
     const invert = !REVENUE_LIKE_KEYS.has(key);
 
     return (

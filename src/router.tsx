@@ -39,6 +39,7 @@ const ConfigurationChiffre2025 = lazy(() => import('@/features/salaires/Configur
 const VisuelVacances = lazy(() => import('@/features/salaires/VisuelVacances'));
 const EdgAnnuelTabs = lazy(() => import('@/features/edg/EdgAnnuelTabs'));
 const ParametrageComptable = lazy(() => import('@/features/comptabilite/ParametrageComptable'));
+const ParametrageEdg = lazy(() => import('@/features/edg/ParametrageEdg'));
 const ExportComptable = lazy(() => import('@/features/comptabilite/ExportComptable'));
 const UserManagementPage = lazy(() => import('@/UserManagementPage'));
 
@@ -189,6 +190,7 @@ const router = createHashRouter([
   { path: '/visuel-vacances', element: <PageRoute Component={VisuelVacances} backPath='/' /> },
   { path: '/edg-annuel-tabs', element: <PageRoute Component={EdgAnnuelTabs} backPath='/' /> },
   { path: '/parametrage-comptable', element: <PageRoute Component={ParametrageComptable} backPath='/' /> },
+  { path: '/parametrage-edg', element: <PageRoute Component={ParametrageEdg} backPath='/' /> },
   { path: '/ecritures-comptables', element: <PageRoute Component={ExportComptable} backPath='/' /> },
   { path: '/utilisateurs', element: <PageRoute Component={UserManagementPage} backPath='/' /> },
 ]);

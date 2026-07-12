@@ -5,6 +5,7 @@ export type CloudAppState = {
   config2025?: unknown;
   customEvents?: unknown;
   personnelInfos?: unknown;
+  edgChargesConfig?: unknown;
 };
 
 export type CloudSaveOptions = {
@@ -16,6 +17,7 @@ export type CloudSaveOptions = {
     config2025?: boolean;
     customEvents?: boolean;
     personnelInfos?: boolean;
+    edgChargesConfig?: boolean;
   };
 };
 
@@ -37,6 +39,7 @@ type CloudSegmentManifest = {
     config2025: boolean;
     customEvents: boolean;
     personnelInfos: boolean;
+    edgChargesConfig: boolean;
   };
   savedAt: string;
 };
@@ -157,6 +160,7 @@ const monthSegmentKey = (year: string | number, month: string | number) => {
 const configSegmentKey = `${segmentedPrefix}:config2025`;
 const customEventsSegmentKey = `${segmentedPrefix}:customEvents`;
 const personnelInfosSegmentKey = `${segmentedPrefix}:personnelInfos`;
+const edgChargesConfigSegmentKey = `${segmentedPrefix}:edgChargesConfig`;
 
 const fetchSegmentManifest = async (): Promise<CloudSegmentManifest | null> => {
   if (manifestCache !== undefined) return manifestCache;
@@ -169,16 +173,18 @@ const fetchSegmentManifest = async (): Promise<CloudSegmentManifest | null> => {
 };
 
 const fetchCommonSegments = async (manifest: CloudSegmentManifest) => {
-  const [configRow, customEventsRow, personnelInfosRow] = await Promise.all([
+  const [configRow, customEventsRow, personnelInfosRow, edgChargesConfigRow] = await Promise.all([
     manifest.segments?.config2025 ? fetchStateRecord(configSegmentKey) : Promise.resolve(null),
     manifest.segments?.customEvents ? fetchStateRecord(customEventsSegmentKey) : Promise.resolve(null),
     manifest.segments?.personnelInfos ? fetchStateRecord(personnelInfosSegmentKey) : Promise.resolve(null),
+    manifest.segments?.edgChargesConfig ? fetchStateRecord(edgChargesConfigSegmentKey) : Promise.resolve(null),
   ]);
 
   return {
     config2025: configRow?.value,
     customEvents: customEventsRow?.value,
     personnelInfos: personnelInfosRow?.value,
+    edgChargesConfig: edgChargesConfigRow?.value,
   };
 };
 
@@ -331,7 +337,7 @@ export const saveCloudAppState = async (value: CloudAppState, options?: CloudSav
   // Avec options : seuls les snapshots marqués modifiés sont poussés.
   const shouldSaveMonth = (year: string, month: string) =>
     !options?.dirtyMonths || options.dirtyMonths.has(`${year}:${month}`);
-  const shouldSaveSegment = (segment: 'config2025' | 'customEvents' | 'personnelInfos') =>
+  const shouldSaveSegment = (segment: 'config2025' | 'customEvents' | 'personnelInfos' | 'edgChargesConfig') =>
     !options?.dirtySegments || options.dirtySegments[segment] === true;
 
   const monthEntries = Object.entries(allData).flatMap(([year, months]) => {
@@ -345,6 +351,7 @@ export const saveCloudAppState = async (value: CloudAppState, options?: CloudSav
   const config2025 = value.config2025 && typeof value.config2025 === 'object' ? value.config2025 : {};
   const customEvents = Array.isArray(value.customEvents) ? value.customEvents : [];
   const personnelInfos = Array.isArray(value.personnelInfos) ? value.personnelInfos : [];
+  const edgChargesConfig = value.edgChargesConfig && typeof value.edgChargesConfig === 'object' ? value.edgChargesConfig : {};
 
   const existingManifest = await fetchSegmentManifest().catch(() => null);
   const manifestMonths = mergeMonthRefs(
@@ -357,6 +364,7 @@ export const saveCloudAppState = async (value: CloudAppState, options?: CloudSav
     shouldSaveSegment('config2025') ? saveStateRecord(configSegmentKey, config2025) : Promise.resolve(null),
     shouldSaveSegment('customEvents') ? saveStateRecord(customEventsSegmentKey, customEvents) : Promise.resolve(null),
     shouldSaveSegment('personnelInfos') ? saveStateRecord(personnelInfosSegmentKey, personnelInfos) : Promise.resolve(null),
+    shouldSaveSegment('edgChargesConfig') ? saveStateRecord(edgChargesConfigSegmentKey, edgChargesConfig) : Promise.resolve(null),
   ]);
 
   const manifest: CloudSegmentManifest = {
@@ -367,6 +375,7 @@ export const saveCloudAppState = async (value: CloudAppState, options?: CloudSav
       config2025: true,
       customEvents: true,
       personnelInfos: true,
+      edgChargesConfig: true,
     },
     savedAt: existingManifest?.savedAt || new Date().toISOString(),
   };
