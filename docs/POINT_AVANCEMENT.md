@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 12/07/2026 (EdgMensuel : écart contre budget complet)
+
+- EdgMensuel : la colonne Écart comparait le réalisé à un budget proraté par l'avancement du mois (`réalisé − budget × monthProgress`), ce qui affichait des écarts verts trompeurs en cours de mois (ex. 112k€ réalisés vs 114k€ budgétés lu comme favorable car en avance sur le prorata). Décision produit : `ecart(r, b) = r − b` (budget complet, `monthProgress` conservé uniquement pour le badge "Avancement" du header). '—' affiché : par ligne détail si aucune donnée réalisée (ni saisie manuelle ni auto-calcul) n'existe pour cette clé ; pour les lignes calculées et les cartes KPI si le mois n'a aucune donnée réalisée du tout (aucun jour Suivi Quotidien renseigné et aucune saisie manuelle). Convention de signe/couleur (favorable = vert, défavorable = rouge, `invert` pour les lignes de charges) auditée ligne par ligne, inchangée car déjà correcte. En-tête "ECART BUDGET À DATE" → "ÉCART BUDGET", carte KPI "Écart à date" → "Écart". tsc OK, build OK.
+
 ## 12/07/2026 (EdgMensuel : lisibilité visuelle)
 
 - EdgMensuel : ajout d'un bandeau de 5 cartes KPI (C.A. Total HT, Marge Brute, Total Salaires et Charges, Résultat Gestion, E.B.E. — Budget/Réalisé/Écart à date) sous le header, et de 8 bandeaux de section (Coût Matière, Marge, Personnel, Publicité, Frais Généraux d'Exploitation, Frais Généraux d'Occupation, Coût des Immeubles, Résultats et Trésorerie) scindant le mur de ~50 lignes détail en blocs identifiables. Présentation uniquement (JSX/CSS dans EdgMensuel.tsx), aucune donnée/calcul/clé touchés, colonnes Budget/Réalisé/Écart inchangées. Autres vues EDG non concernées. tsc OK, build OK. Vérification visuelle non faite (Supabase non configuré dans cet environnement de dev local, pas de session) — à valider après déploiement.

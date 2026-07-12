@@ -123,10 +123,25 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
   const ebeR = resNetAvantIsR + valR('retraitement_daa');
   const cashFlowR = ebeR + valR('remboursement_net') + valR('remboursement_capital');
 
-  // Écart au budget à date : réalisé - (budget * avancement du mois). '—' tant qu'aucun jour n'est renseigné.
-  const ecartDate = (r: number, b: number): number | null => monthProgress > 0 ? r - b * monthProgress : null;
+  // Écart au budget complet du mois (réalisé - budget). Ne dépend plus de l'avancement du mois :
+  // un réalisé partiel (mois en cours) s'affiche défavorable tant qu'il n'atteint pas le budget
+  // total, au lieu d'être comparé à un budget proraté qui produisait de faux écarts favorables.
+  const ecart = (r: number, b: number): number | null => r - b;
 
-  // Sens gestion de la colonne Écart à date : le signe affiché n'est pas toujours le signe brut
+  // Une ligne détail sans aucune donnée réalisée (ni saisie manuelle, ni valeur auto-calculée
+  // depuis le Suivi Quotidien) n'a pas d'écart significatif : un réalisé à 0 par absence de
+  // donnée afficherait une fausse "économie" égale au budget complet.
+  const hasRealiseData = (key: string): boolean => {
+    const override = edgRealiseData[key];
+    return (override !== undefined && override !== '') || key in autoRealiseValues;
+  };
+
+  // Pour les lignes calculées (headers/totaux/sous-totaux) et les cartes KPI, l'écart n'est
+  // affiché que si le mois a au moins une donnée réalisée (un jour renseigné dans le Suivi
+  // Quotidien ou une saisie manuelle dans edgMensuelRealise) — sinon '—'.
+  const monthHasRealiseData = monthProgress > 0 || Object.values(edgRealiseData).some(v => v !== undefined && v !== '');
+
+  // Sens gestion de la colonne Écart : le signe affiché n'est pas toujours le signe brut
   // (réalisé - budget). Pour les lignes de charges (budget stocké en négatif), un dépassement de
   // budget (plus dépensé) doit se lire en positif/rouge et une économie en négatif/vert — inverse
   // du signe brut, qui est négatif quand on dépense plus. Pour les lignes de revenu/crédit et les
@@ -165,7 +180,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
   const renderRow =(label: string, key: string, isBlue = false) => {
     const bVal = valB(key);
     const rVal = valR(key);
-    const eVal = ecartDate(rVal, bVal);
+    const eVal = hasRealiseData(key) ? ecart(rVal, bVal) : null;
     const isAuto = isAutoRealise(key);
     const autoVal = autoRealiseValues[key];
     const invert = !REVENUE_LIKE_KEYS.has(key);
@@ -237,7 +252,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
   };
 
   const renderHeader =(label: string, bVal: number, rVal: number, isRed = false) => {
-    const eVal = ecartDate(rVal, bVal);
+    const eVal = monthHasRealiseData ? ecart(rVal, bVal) : null;
     const isCaTotal = label === 'C.A. TOTAL HT';
     const invert = !['C.A. TOTAL HT', 'Marge brute'].includes(label);
     
@@ -301,7 +316,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
   };
 
   const renderTotal =(label: string, bVal: number, rVal: number) => {
-    const eVal = ecartDate(rVal, bVal);
+    const eVal = monthHasRealiseData ? ecart(rVal, bVal) : null;
     const invert = label === 'TOTA COUT MATIERE';
     return (
       <tr style={{ borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
@@ -355,7 +370,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
   };
 
   const renderSubTotal =(label: string, bVal: number, rVal: number) => {
-    const eVal = ecartDate(rVal, bVal);
+    const eVal = monthHasRealiseData ? ecart(rVal, bVal) : null;
     return (
       <tr style={{ borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
         <td style={{ 
@@ -527,7 +542,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         {/* KPI Summary Cards */}
         <div style={{ display: 'flex', gap: isMobile ? 8 : 16, padding: isMobile ? '12px 12px 0' : '20px 32px 0', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
           {kpiCards.map(k => {
-            const rawEcart = ecartDate(k.r, k.b);
+            const rawEcart = monthHasRealiseData ? ecart(k.r, k.b) : null;
             const kpiEcartColor = ecartColor(rawEcart);
             const kpiEcartText = ecartText(rawEcart, k.invert);
             const kpiRatioEcart = ecartRatioText(rawEcart, k.b, k.invert);
@@ -546,7 +561,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
                     <span style={{ fontWeight: 600, color: '#0f172a' }}>{euro(k.r)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: isMobile ? 11 : 12, borderTop: '1px solid #f1f5f9', paddingTop: 4, marginTop: 2 }}>
-                    <span style={{ color: '#94a3b8' }}>Écart à date</span>
+                    <span style={{ color: '#94a3b8' }}>Écart</span>
                     <span>
                       <span style={{ fontWeight: 700, color: kpiEcartColor }}>{kpiEcartText}</span>
                       {kpiRatioEcart && <span style={{ marginLeft: 6, fontSize: isMobile ? 10 : 11, fontWeight: 600, color: kpiEcartColor }}>({kpiRatioEcart})</span>}
@@ -574,7 +589,7 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
                   <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>REALISE</th>
                   
                   <th style={{ background: '#fff', position: 'sticky', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
-                  <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>ECART BUDGET À DATE</th>
+                  <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>ÉCART BUDGET</th>
                 </tr>
                 <tr>
                   <th style={{ background: '#fff', position: 'sticky', left: 0, top: 34, zIndex: 50, border: 'none', padding: '0 0 12px 0' }}></th>
