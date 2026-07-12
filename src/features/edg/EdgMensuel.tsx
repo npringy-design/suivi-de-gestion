@@ -490,31 +490,27 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         <div style={{ display: 'flex', gap: isMobile ? 8 : 16, padding: isMobile ? '12px 12px 0' : '20px 32px 0', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
           {kpiCards.map(k => {
             const eVal = ecartDate(k.r, k.b);
-            const ratioB = caTotalHtBudget > 0 ? formatPercent((k.b / caTotalHtBudget) * 100) : null;
-            const ratioR = caTotalHtRealise > 0 ? formatPercent((k.r / caTotalHtRealise) * 100) : null;
+            const ratioEcart = eVal !== null && k.b !== 0 ? formatPercent((eVal / Math.abs(k.b)) * 100) : null;
             return (
               <div key={k.label} style={{ flex: 1, minWidth: isMobile ? '47%' : 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: isMobile ? '10px 12px' : '14px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                 <div style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {k.label}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: isMobile ? 11 : 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? 11 : 12 }}>
                     <span style={{ color: '#94a3b8' }}>Budget</span>
-                    <span>
-                      <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatEuro(k.b)}</span>
-                      {ratioB && <span style={{ marginLeft: 6, fontSize: isMobile ? 10 : 11, fontWeight: 600, color: '#b45309' }}>{ratioB}</span>}
-                    </span>
+                    <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatEuro(k.b)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: isMobile ? 11 : 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? 11 : 12 }}>
                     <span style={{ color: '#94a3b8' }}>Réalisé</span>
-                    <span>
-                      <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatEuro(k.r)}</span>
-                      {ratioR && <span style={{ marginLeft: 6, fontSize: isMobile ? 10 : 11, fontWeight: 600, color: '#b45309' }}>{ratioR}</span>}
-                    </span>
+                    <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatEuro(k.r)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? 11 : 12, borderTop: '1px solid #f1f5f9', paddingTop: 4, marginTop: 2 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: isMobile ? 11 : 12, borderTop: '1px solid #f1f5f9', paddingTop: 4, marginTop: 2 }}>
                     <span style={{ color: '#94a3b8' }}>Écart à date</span>
-                    <span style={{ fontWeight: 700, color: eVal !== null && eVal < 0 ? '#b91c1c' : '#166534' }}>{eVal === null ? '—' : formatEuro(eVal)}</span>
+                    <span>
+                      <span style={{ fontWeight: 700, color: eVal !== null && eVal < 0 ? '#b91c1c' : '#166534' }}>{eVal === null ? '—' : formatEuro(eVal)}</span>
+                      {ratioEcart && <span style={{ marginLeft: 6, fontSize: isMobile ? 10 : 11, fontWeight: 600, color: eVal !== null && eVal < 0 ? '#b91c1c' : '#166534' }}>({ratioEcart})</span>}
+                    </span>
                   </div>
                 </div>
               </div>
