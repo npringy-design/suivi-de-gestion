@@ -3,7 +3,7 @@ import { Menu, X, ChevronLeft } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
-import { formatEuro, formatPercent } from '@/lib/formatters';
+import { formatEuro, formatPercent, formatPercentSigned } from '@/lib/formatters';
 import { MONTH_NAMES, MONTH_NAMES_SHORT } from '@/lib/constants';
 
 import { computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth, getMonthProgress } from '@/features/edg/edgRealtimeSources';
@@ -122,13 +122,16 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
   // Écart au budget à date : réalisé - (budget * avancement du mois). '—' tant qu'aucun jour n'est renseigné.
   const ecartDate = (r: number, b: number): number | null => monthProgress > 0 ? r - b * monthProgress : null;
 
-  // Indicateurs clés affichés dans le bandeau de synthèse en haut de la vue
-  const kpiCards = [
-    { label: 'C.A. Total HT', b: caTotalHtBudget, r: caTotalHtRealise },
-    { label: 'Marge Brute', b: margeBruteB, r: margeBruteR },
-    { label: 'Total Salaires et Charges', b: totalSalairesChargesB, r: totalSalairesChargesR },
-    { label: 'Résultat Gestion', b: resultatGestionB, r: resultatGestionR },
-    { label: 'E.B.E.', b: ebeB, r: ebeR },
+  // Indicateurs clés affichés dans le bandeau de synthèse en haut de la vue.
+  // `invert` : lignes de charges (stockées en négatif) où un écart favorable (moins dépensé)
+  // doit s'afficher en négatif/vert et un dépassement en positif/rouge — inverse des lignes
+  // de chiffre d'affaires ou de résultat où plus de réalisé que de budget est favorable.
+  const kpiCards: { label: string; b: number; r: number; invert: boolean }[] = [
+    { label: 'C.A. Total HT', b: caTotalHtBudget, r: caTotalHtRealise, invert: false },
+    { label: 'Marge Brute', b: margeBruteB, r: margeBruteR, invert: false },
+    { label: 'Total Salaires et Charges', b: totalSalairesChargesB, r: totalSalairesChargesR, invert: true },
+    { label: 'Résultat Gestion', b: resultatGestionB, r: resultatGestionR, invert: false },
+    { label: 'E.B.E.', b: ebeB, r: ebeR, invert: false },
   ];
 
   const renderRow =(label: string, key: string, isBlue = false) => {
@@ -489,8 +492,14 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         {/* KPI Summary Cards */}
         <div style={{ display: 'flex', gap: isMobile ? 8 : 16, padding: isMobile ? '12px 12px 0' : '20px 32px 0', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
           {kpiCards.map(k => {
-            const eVal = ecartDate(k.r, k.b);
-            const ratioEcart = eVal !== null && k.b !== 0 ? formatPercent((eVal / Math.abs(k.b)) * 100) : null;
+            const rawEcart = ecartDate(k.r, k.b);
+            // Sens gestion : pour les lignes de charges (invert), un dépassement de budget
+            // (plus dépensé) s'affiche en positif/rouge, une économie en négatif/vert —
+            // inverse du signe brut réalisé - budget, qui est négatif quand on dépense plus.
+            const displayEcart = rawEcart === null ? null : (k.invert ? -rawEcart : rawEcart);
+            const isUnfavorable = rawEcart !== null && rawEcart < 0;
+            const ecartColor = displayEcart === null ? '#0f172a' : (isUnfavorable ? '#b91c1c' : '#166534');
+            const ratioEcart = displayEcart !== null && k.b !== 0 ? formatPercentSigned((displayEcart / Math.abs(k.b)) * 100) : null;
             return (
               <div key={k.label} style={{ flex: 1, minWidth: isMobile ? '47%' : 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: isMobile ? '10px 12px' : '14px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                 <div style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -508,8 +517,8 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: isMobile ? 11 : 12, borderTop: '1px solid #f1f5f9', paddingTop: 4, marginTop: 2 }}>
                     <span style={{ color: '#94a3b8' }}>Écart à date</span>
                     <span>
-                      <span style={{ fontWeight: 700, color: eVal !== null && eVal < 0 ? '#b91c1c' : '#166534' }}>{eVal === null ? '—' : formatEuro(eVal)}</span>
-                      {ratioEcart && <span style={{ marginLeft: 6, fontSize: isMobile ? 10 : 11, fontWeight: 600, color: eVal !== null && eVal < 0 ? '#b91c1c' : '#166534' }}>({ratioEcart})</span>}
+                      <span style={{ fontWeight: 700, color: ecartColor }}>{displayEcart === null ? '—' : `${displayEcart > 0 ? '+' : ''}${formatEuro(displayEcart)}`}</span>
+                      {ratioEcart && <span style={{ marginLeft: 6, fontSize: isMobile ? 10 : 11, fontWeight: 600, color: ecartColor }}>({ratioEcart})</span>}
                     </span>
                   </div>
                 </div>
