@@ -460,8 +460,8 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         </header>
 
         {/* Table Area */}
-        <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 12 : 32, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ flex: 1, background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 12 : 32 }}>
+          <div style={{ height: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
               <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
                 <thead>
