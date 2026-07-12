@@ -121,6 +121,8 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
 
   // Écart au budget à date : réalisé - (budget * avancement du mois). '—' tant qu'aucun jour n'est renseigné.
   const ecartDate = (r: number, b: number): number | null => monthProgress > 0 ? r - b * monthProgress : null;
+  // Écart à date en % du budget de la ligne (même sens que l'écart en €, pas de signe forcé — cohérent avec les colonnes Ratio Budget/Réalisé).
+  const ratioEcartDate = (eVal: number | null, bVal: number): string => eVal === null || bVal === 0 ? '' : formatPercent((eVal / Math.abs(bVal)) * 100);
 
   // Indicateurs clés affichés dans le bandeau de synthèse en haut de la vue.
   // `invert` : lignes de charges (stockées en négatif) où un écart favorable (moins dépensé)
@@ -200,13 +202,14 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '6px 8px' : '8px 12px', textAlign: 'right', background: '#fff', fontSize: isMobile ? 11 : 13, color: eVal !== null && eVal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
           {eVal === null ? '—' : formatEuro(eVal)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, color: '#475569', borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: eVal !== null && eVal < 0 ? '#b91c1c' : '#475569', borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #e2e8f0' }}>
+          {ratioEcartDate(eVal, bVal)}
         </td>
       </tr>
     );
   };
 
-  const renderHeader = (label: string, bVal: number, rVal: number, isRed = false) => {
+  const renderHeader =(label: string, bVal: number, rVal: number, isRed = false) => {
     const eVal = ecartDate(rVal, bVal);
     const isCaTotal = label === 'C.A. TOTAL HT';
     
@@ -262,13 +265,14 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, color: eVal !== null && eVal < 0 ? '#b91c1c' : '#0f172a', background: '#fef2f2', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {eVal === null ? '—' : formatEuro(eVal)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: eVal !== null && eVal < 0 ? '#b91c1c' : '#475569', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+          {ratioEcartDate(eVal, bVal)}
         </td>
       </tr>
     );
   };
 
-  const renderTotal = (label: string, bVal: number, rVal: number) => {
+  const renderTotal =(label: string, bVal: number, rVal: number) => {
     const eVal = ecartDate(rVal, bVal);
     return (
       <tr style={{ borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
@@ -314,13 +318,14 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '8px 10px' : '10px 12px', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: eVal !== null && eVal < 0 ? '#b91c1c' : '#166534', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
           {eVal === null ? '—' : formatEuro(eVal)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '8px 10px' : '10px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: eVal !== null && eVal < 0 ? '#b91c1c' : '#166534', borderRight: '1px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', borderTop: '2px solid #cbd5e1' }}>
+          {ratioEcartDate(eVal, bVal)}
         </td>
       </tr>
     );
   };
 
-  const renderSubTotal = (label: string, bVal: number, rVal: number) => {
+  const renderSubTotal =(label: string, bVal: number, rVal: number) => {
     const eVal = ecartDate(rVal, bVal);
     return (
       <tr style={{ borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
@@ -364,13 +369,14 @@ export default function EdgMensuel({ month, setMonth, onBack }: EdgMensuelProps)
         <td style={{ width: isMobile ? 70 : 90, padding: isMobile ? '6px 8px' : '8px 12px', textAlign: 'right', fontWeight: 600, background: '#f8fafc', color: eVal !== null && eVal < 0 ? '#b91c1c' : '#0f172a', fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
           {eVal === null ? '—' : formatEuro(eVal)}
         </td>
-        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
+        <td style={{ width: isMobile ? 50 : 60, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '6px 8px' : '8px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 500, color: eVal !== null && eVal < 0 ? '#b91c1c' : '#475569', borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
+          {ratioEcartDate(eVal, bVal)}
         </td>
       </tr>
     );
   };
 
-  const renderSectionBanner = (icon: string, title: string) => (
+  const renderSectionBanner =(icon: string, title: string) => (
     <tr>
       <td colSpan={10} style={{
         padding: isMobile ? '10px 12px' : '12px 16px',
