@@ -100,16 +100,48 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
 
   const ecart = (r: number, b: number) => r - b;
 
+  // Code couleur d'écart (repris à l'identique d'EdgMensuel.tsx) : vert = favorable, rouge =
+  // défavorable. N-1/Réalisé des lignes de charges sont déjà stockés en négatif, donc eVal
+  // (réalisé - N-1) est naturellement négatif quand on dépense plus — pas d'inversion sur la
+  // couleur. Seul l'affichage du signe (ecartText/ecartRatioText) est inversé sur les lignes de
+  // charges pour lire "+" un dépassement et "-" une économie.
+  const RED = '#b91c1c';
+  const GREEN = '#166534';
+  const REVENUE_LIKE_KEYS = new Set(['refacturation', 'aides_subventions', 'retraitement_daa']);
+  const ecartColor = (eVal: number): string => (eVal < 0 ? RED : GREEN);
+  const ecartText = (eVal: number, invert: boolean): string => {
+    const display = invert ? -eVal : eVal;
+    const sign = display > 0 ? '+' : display < 0 ? '-' : '';
+    return `${sign}${formatEuro(Math.abs(display))}`;
+  };
+  const ecartRatioText = (eVal: number, bVal: number, invert: boolean): string => {
+    if (bVal === 0) return '';
+    const display = invert ? -eVal : eVal;
+    const pct = (display / Math.abs(bVal)) * 100;
+    const sign = pct > 0 ? '+' : pct < 0 ? '-' : '';
+    return `${sign}${formatPercent(Math.abs(pct))}`;
+  };
+
+  // Cartes KPI de synthèse (mêmes 5 indicateurs qu'EdgMensuel), totaux annuels via getTotalCalc.
+  const kpiCards: { label: string; key: keyof ReturnType<typeof getMonthCalculations>['n1']; invert: boolean }[] = [
+    { label: 'C.A. Total HT', key: 'ca', invert: false },
+    { label: 'Marge Brute', key: 'margeBrute', invert: false },
+    { label: 'Total Salaires et Charges', key: 'totalSalairesCharges', invert: true },
+    { label: 'Résultat Gestion', key: 'resultatGestion', invert: false },
+    { label: 'E.B.E.', key: 'ebe', invert: false },
+  ];
+
   const renderDataRow = (label: string, key: string, isBlue = false) => {
     const rowData = getRowData(key);
+    const invert = !REVENUE_LIKE_KEYS.has(key);
     const eValTotal = ecart(rowData.totalR, rowData.totalN1);
     const ratioRTotal = caTotal ? (rowData.totalR / caTotal) * 100 : 0;
-    
+
     // Calculate total CA N1
     const caN1Total = monthCalcs.reduce((sum, m) => sum + m.n1.ca, 0);
     const ratioN1Total = caN1Total ? (rowData.totalN1 / caN1Total) * 100 : 0;
     const ratioETotal = ratioRTotal - ratioN1Total;
-    
+
     return (
       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
         <td style={{ padding: '8px 12px', fontSize: 12, background: '#fff', color: '#334155', position: 'sticky', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', minWidth: 250 }}>{label}</td>
@@ -117,14 +149,14 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
           const n1Val = rowData.monthsN1[m];
           const rVal = rowData.monthsR[m];
           const eVal = ecart(rVal, n1Val);
-          
+
           const caN1 = parseMoneyValue(data[m]?.edgMensuelN1?.['ca_total_ht']);
           const caR = caMonths[m];
-          
+
           const ratioN1 = caN1 ? (n1Val / caN1) * 100 : 0;
           const ratioR = caR ? (rVal / caR) * 100 : 0;
           const ratioE = ratioR - ratioN1;
-          
+
           return (
             <React.Fragment key={m}>
               <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: '#f1f5f9', fontSize: 12, color: '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
@@ -139,11 +171,11 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
               <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fef9c3', fontSize: 11, color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>
                 {formatPercent(ratioR)}
               </td>
-              <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 12, color: eVal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-                {formatEuro(eVal)}
+              <td style={{ width: 80, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 12, fontWeight: 600, color: ecartColor(eVal), borderLeft: '1px solid #e2e8f0' }}>
+                {ecartText(eVal, invert)}
               </td>
-              <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 11, color: '#991b1b', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>
-                {formatPercent(ratioE)}
+              <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 11, fontWeight: 600, color: ecartColor(eVal), borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>
+                {formatPercent(invert ? -ratioE : ratioE)}
               </td>
             </React.Fragment>
           );
@@ -160,11 +192,11 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
         <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fef9c3', fontSize: 11, fontWeight: 600, color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>
           {formatPercent(ratioRTotal)}
         </td>
-        <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 12, fontWeight: 600, color: eValTotal < 0 ? '#b91c1c' : '#0f172a', borderLeft: '1px solid #e2e8f0' }}>
-          {formatEuro(eValTotal)}
+        <td style={{ width: 90, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 12, fontWeight: 700, color: ecartColor(eValTotal), borderLeft: '1px solid #e2e8f0' }}>
+          {ecartText(eValTotal, invert)}
         </td>
-        <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 11, fontWeight: 600, color: '#991b1b', borderLeft: '1px solid #e2e8f0' }}>
-          {formatPercent(ratioETotal)}
+        <td style={{ width: 60, padding: '8px 4px', textAlign: 'right', background: '#fee2e2', fontSize: 11, fontWeight: 700, color: ecartColor(eValTotal), borderLeft: '1px solid #e2e8f0' }}>
+          {formatPercent(invert ? -ratioETotal : ratioETotal)}
         </td>
       </tr>
     );
@@ -178,7 +210,13 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
     const ratioN1Total = caN1Total ? (totals.n1 / caN1Total) * 100 : 0;
     const ratioRTotal = caTotal ? (totals.realise / caTotal) * 100 : 0;
     const ratioETotal = ratioRTotal - ratioN1Total;
-    
+    // Inversion de signe des lignes de charges (mêmes règles qu'EdgMensuel renderHeader/renderTotal/renderSubTotal).
+    const invert = type === 'header'
+      ? !['C.A. TOTAL HT', 'Marge brute'].includes(label)
+      : type === 'total'
+        ? label === 'TOTA COUT MATIERE'
+        : true;
+
     let bg = '#fff';
     let color = '#0f172a';
     let weight = 400;
@@ -234,11 +272,11 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
               <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fef9c3', color: type === 'header' || type === 'total' ? color : '#854d0e', fontSize: 11, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
                 {formatPercent(ratioR)}
               </td>
-              <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: eVal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
-                {formatEuro(eVal)}
+              <td style={{ width: 80, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: ecartColor(eVal), fontSize: 12, fontWeight: weight, borderLeft: '1px solid #e2e8f0' }}>
+                {ecartText(eVal, invert)}
               </td>
-              <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: type === 'header' || type === 'total' ? color : '#991b1b', fontSize: 11, fontWeight: weight, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>
-                {formatPercent(ratioE)}
+              <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: ecartColor(eVal), fontSize: 11, fontWeight: weight, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>
+                {formatPercent(invert ? -ratioE : ratioE)}
               </td>
             </React.Fragment>
           );
@@ -255,11 +293,11 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
         <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fef9c3', color: type === 'header' || type === 'total' ? color : '#854d0e', fontSize: 11, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
           {formatPercent(ratioRTotal)}
         </td>
-        <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: eValTotal < 0 ? '#b91c1c' : color, fontSize: 12, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
-          {formatEuro(eValTotal)}
+        <td style={{ width: 90, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: ecartColor(eValTotal), fontSize: 12, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
+          {ecartText(eValTotal, invert)}
         </td>
-        <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: type === 'header' || type === 'total' ? color : '#991b1b', fontSize: 11, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
-          {formatPercent(ratioETotal)}
+        <td style={{ width: 60, padding: '10px 4px', textAlign: 'right', background: type === 'header' || type === 'total' ? bg : '#fee2e2', color: ecartColor(eValTotal), fontSize: 11, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
+          {formatPercent(invert ? -ratioETotal : ratioETotal)}
         </td>
       </tr>
     );
@@ -290,6 +328,40 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
             <div style={{ background: '#10b981', color: '#fff', padding: '6px 16px', borderRadius: 999, fontSize: 14, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)' }}>
               ANNÉE {YEAR}
             </div>
+          </div>
+
+          {/* Cartes KPI de synthèse (repris d'EdgMensuel.tsx), totaux annuels N-1/Réalisé/Écart */}
+          <div style={{ display: 'flex', gap: 16, padding: '16px 24px 0', flexShrink: 0 }}>
+            {kpiCards.map(k => {
+              const totals = getTotalCalc(k.key);
+              const kpiEcart = ecart(totals.realise, totals.n1);
+              return (
+                <div key={k.label} style={{ flex: 1, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {k.label}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                      <span style={{ color: '#94a3b8' }}>N-1</span>
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatEuro(totals.n1)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                      <span style={{ color: '#94a3b8' }}>Réalisé</span>
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatEuro(totals.realise)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 12, borderTop: '1px solid #f1f5f9', paddingTop: 4, marginTop: 2 }}>
+                      <span style={{ color: '#94a3b8' }}>Écart</span>
+                      <span>
+                        <span style={{ fontWeight: 700, color: ecartColor(kpiEcart) }}>{ecartText(kpiEcart, k.invert)}</span>
+                        {ecartRatioText(kpiEcart, totals.n1, k.invert) && (
+                          <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, color: ecartColor(kpiEcart) }}>({ecartRatioText(kpiEcart, totals.n1, k.invert)})</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div style={{ overflow: 'auto', flex: 1 }}>

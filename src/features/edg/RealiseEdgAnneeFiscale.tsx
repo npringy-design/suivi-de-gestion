@@ -103,6 +103,17 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
     return monthCalcs.reduce((sum, m) => sum + m[calcKey], 0);
   };
 
+  // Cartes KPI de synthèse (mêmes 5 indicateurs qu'EdgMensuel), mais Réalisé seul : cette vue
+  // n'a pas de colonne Budget ni d'écart (uniquement le réalisé de l'année fiscale juil.→juin),
+  // donc pas de comparaison à afficher ni de code couleur écart à appliquer.
+  const kpiCards: { label: string; key: keyof ReturnType<typeof getMonthCalculations> }[] = [
+    { label: 'C.A. Total HT', key: 'ca' },
+    { label: 'Marge Brute', key: 'margeBrute' },
+    { label: 'Total Salaires et Charges', key: 'totalSalairesCharges' },
+    { label: 'Résultat Gestion', key: 'resultatGestion' },
+    { label: 'E.B.E.', key: 'ebe' },
+  ];
+
   const renderDataRow = (label: string, key: string, isBlue = false) => {
     const rowData = getRowData(key);
     const ratioRTotal = caTotal ? (rowData.totalR / caTotal) * 100 : 0;
@@ -220,6 +231,22 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
             <div style={{ background: '#10b981', color: '#fff', padding: '6px 16px', borderRadius: 999, fontSize: 14, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)' }}>
               ANNÉE FISCALE {YEAR - 1}-{YEAR}
             </div>
+          </div>
+
+          {/* Cartes KPI de synthèse (repris d'EdgMensuel.tsx) : Réalisé seul, cette vue n'a pas de
+              Budget ni d'écart à comparer. */}
+          <div style={{ display: 'flex', gap: 16, padding: '16px 24px 0', flexShrink: 0 }}>
+            {kpiCards.map(k => (
+              <div key={k.label} style={{ flex: 1, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {k.label}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                  <span style={{ color: '#94a3b8' }}>Réalisé</span>
+                  <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatEuro(getTotalCalc(k.key))}</span>
+                </div>
+              </div>
+            ))}
           </div>
 
           <div style={{ overflow: 'auto', flex: 1 }}>

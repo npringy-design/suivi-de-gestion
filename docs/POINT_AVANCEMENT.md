@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 13/07/2026 (Harmonisation visuelle des onglets EDG annuels)
+
+- Cartes KPI et code couleur d'écart d'`EdgMensuel.tsx` (vert `#166534` favorable / rouge `#b91c1c` défavorable, inversion de signe pour les lignes de charges sauf `refacturation`/`aides_subventions`/`retraitement_daa`) repris à l'identique dans `BudgetEdgAnnuel.tsx`, `VsBudget.tsx` et `VsN1.tsx` : bandeau de 5 cartes KPI (C.A. Total HT, Marge Brute, Total Salaires et Charges, Résultat Gestion, E.B.E.) avec totaux annuels via `getTotalCalc`, et `ecartColor`/`ecartText`/`ecartRatioText` appliqués aux cellules d'écart existantes (remplace l'ancien `eVal < 0 ? rouge : défaut` sans vert ni inversion). `VsN1.tsx` compare contre N-1 (labels adaptés) au lieu du Budget.
+- `RealiseEdgAnneeFiscale.tsx` (vue Réalisé seul, sans Budget ni écart dans le code existant) : cartes KPI adaptées affichant uniquement le total Réalisé annuel fiscal par indicateur, sans ligne Écart ni code couleur (rien à comparer) — décision utilisateur.
+- Aucune modification de logique de calcul (`getMonthCalculations`, `getRowData`, `getTotalCalc`, `ecart()` inchangés). tsc OK, eslint OK (0 erreur, warnings préexistantes uniquement).
+
 ## 12/07/2026 (EdgMensuel : suppression header/sidebar dupliqués)
 
 - EdgMensuel : suppression du header/sidebar dupliqués via prop `hideHeader` (défaut `false`, même pattern que `BudgetEdgAnnuel`/`RealiseEdgAnneeFiscale`/`VsBudget`/`VsN1`) — désormais toujours monté avec `hideHeader={true}` depuis `EdgAnnuelTabs.tsx` (route `/edg-mensuel/:month`), qui fournit déjà son propre header/onglets. Sidebar sombre 260px et header interne (titre, nom du mois, badge redondant) supprimés dans ce mode, remplacés par une ligne compacte : sélecteur de mois horizontal (pastilles scrollables) + badge "Avancement". Padding du conteneur tableau réduit 32px→16px et padding vertical des cartes KPI réduit, uniquement en mode `hideHeader` (mode complet `hideHeader=false` inchangé pour compatibilité). Mobile : comportement overlay conservé en mode complet ; en mode `hideHeader`, plus de sidebar donc plus de hamburger, sélecteur de mois horizontal scrollable à la place. Aucun calcul/donnée touché. tsc OK, build OK. Vérification visuelle non faite (Supabase non configuré dans cet environnement de dev local, pas de session) — à valider après déploiement.
