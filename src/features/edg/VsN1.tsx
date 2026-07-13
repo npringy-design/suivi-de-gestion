@@ -18,6 +18,14 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   const { data, selectedYear } = useData();
   const YEAR = selectedYear;
 
+  // Un mois futur ou en cours n'a pas de réalisé complet à comparer à son équivalent N-1 —
+  // les agrégats "à date" (cartes KPI + colonnes Total) n'additionnent que les mois clos, des deux
+  // côtés de la comparaison (même mois N-1 et Réalisé), pour éviter de comparer une année N-1
+  // complète à un réalisé partiel. Les colonnes mensuelles individuelles ne sont pas concernées.
+  const today = new Date();
+  const isMonthComplete = (m: number): boolean =>
+    YEAR < today.getFullYear() || (YEAR === today.getFullYear() && m < today.getMonth());
+
   const computedMonths = useMemo(
     () => Array.from({ length: 12 }, (_, i) => computeMonthDashboard(data[i], i, YEAR)),
     [data, YEAR],
@@ -30,7 +38,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   const getCaMonth = (m: number) => getCaRealiseMonth(computedMonths[m], m, YEAR);
 
   const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [computedMonths]);
-  const caTotal = caMonths.reduce((a, b) => a + b, 0);
+  const caTotal = caMonths.reduce((sum, v, i) => (isMonthComplete(i) ? sum + v : sum), 0);
 
   const getValN1 = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuelN1?.[key]);
   const getValR = (m: number, key: string) => {
@@ -42,8 +50,8 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   const getRowData = (key: string) => {
     const monthsN1 = Array.from({ length: 12 }, (_, i) => getValN1(i, key));
     const monthsR = Array.from({ length: 12 }, (_, i) => getValR(i, key));
-    const totalN1 = monthsN1.reduce((a, b) => a + b, 0);
-    const totalR = monthsR.reduce((a, b) => a + b, 0);
+    const totalN1 = monthsN1.reduce((sum, v, i) => (isMonthComplete(i) ? sum + v : sum), 0);
+    const totalR = monthsR.reduce((sum, v, i) => (isMonthComplete(i) ? sum + v : sum), 0);
     return { monthsN1, monthsR, totalN1, totalR };
   };
 
@@ -93,8 +101,8 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   const monthCalcs = useMemo(() => Array.from({ length: 12 }, (_, i) => getMonthCalculations(i)), [data, caMonths]);
 
   const getTotalCalc = (key: keyof ReturnType<typeof getMonthCalculations>['n1']) => {
-    const n1 = monthCalcs.reduce((sum, m) => sum + m.n1[key], 0);
-    const realise = monthCalcs.reduce((sum, m) => sum + m.realise[key], 0);
+    const n1 = monthCalcs.reduce((sum, m, i) => (isMonthComplete(i) ? sum + m.n1[key] : sum), 0);
+    const realise = monthCalcs.reduce((sum, m, i) => (isMonthComplete(i) ? sum + m.realise[key] : sum), 0);
     return { n1, realise };
   };
 
@@ -122,6 +130,9 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
     return `${sign}${formatPercent(Math.abs(pct))}`;
   };
 
+  // Nombre de mois clos de l'année, affiché sous les cartes KPI pour expliciter le périmètre "à date".
+  const monthsClosedCount = Array.from({ length: 12 }, (_, i) => i).filter(isMonthComplete).length;
+
   // Cartes KPI de synthèse (mêmes 5 indicateurs qu'EdgMensuel), totaux annuels via getTotalCalc.
   const kpiCards: { label: string; key: keyof ReturnType<typeof getMonthCalculations>['n1']; invert: boolean }[] = [
     { label: 'C.A. Total HT', key: 'ca', invert: false },
@@ -138,7 +149,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
     const ratioRTotal = caTotal ? (rowData.totalR / caTotal) * 100 : 0;
 
     // Calculate total CA N1
-    const caN1Total = monthCalcs.reduce((sum, m) => sum + m.n1.ca, 0);
+    const caN1Total = monthCalcs.reduce((sum, m, i) => (isMonthComplete(i) ? sum + m.n1.ca : sum), 0);
     const ratioN1Total = caN1Total ? (rowData.totalN1 / caN1Total) * 100 : 0;
     const ratioETotal = ratioRTotal - ratioN1Total;
 
@@ -206,7 +217,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
     const totals = getTotalCalc(calcKey);
     const eValTotal = ecart(totals.realise, totals.n1);
     
-    const caN1Total = monthCalcs.reduce((sum, m) => sum + m.n1.ca, 0);
+    const caN1Total = monthCalcs.reduce((sum, m, i) => (isMonthComplete(i) ? sum + m.n1.ca : sum), 0);
     const ratioN1Total = caN1Total ? (totals.n1 / caN1Total) * 100 : 0;
     const ratioRTotal = caTotal ? (totals.realise / caTotal) * 100 : 0;
     const ratioETotal = ratioRTotal - ratioN1Total;
@@ -357,8 +368,11 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
               const kpiEcart = ecart(totals.realise, totals.n1);
               return (
                 <div key={k.label} style={{ flex: 1, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {k.label}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 8 }}>
+                    Cumul à date ({monthsClosedCount} mois clos)
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
@@ -396,8 +410,8 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
                       <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#fee2e2', color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #cbd5e1' }}>ECART VS N-1</th>
                     </React.Fragment>
                   ))}
-                  <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '8px 0', background: '#cbd5e1', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '2px solid #cbd5e1', borderRight: '1px solid #cbd5e1' }}>TOTAL {YEAR - 1}</th>
-                  <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '8px 0', background: '#e2e8f0', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #cbd5e1' }}>TOTAL {YEAR}</th>
+                  <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '8px 0', background: '#cbd5e1', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '2px solid #cbd5e1', borderRight: '1px solid #cbd5e1' }}>À DATE {YEAR - 1}</th>
+                  <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '8px 0', background: '#e2e8f0', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #cbd5e1' }}>À DATE {YEAR}</th>
                   <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '8px 0', background: '#fca5a5', color: '#7f1d1d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>ECART VS N-1</th>
                 </tr>
                 <tr style={{ height: 34 }}>

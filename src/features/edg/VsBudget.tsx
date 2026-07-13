@@ -18,6 +18,14 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
   const YEAR = selectedYear;
   const MONTHS_SHORT = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'].map(m => `${m}-${YEAR.toString().slice(-2)}`);
 
+  // Un mois futur ou en cours n'a pas de réalisé complet à comparer à son budget annuel complet —
+  // les agrégats "à date" (cartes KPI + colonne Total) n'additionnent que les mois clos, pour éviter
+  // de comparer un budget annuel entier à un réalisé partiel. Les colonnes mensuelles individuelles
+  // ne sont pas concernées : chaque mois continue d'afficher ses propres valeurs telles quelles.
+  const today = new Date();
+  const isMonthComplete = (m: number): boolean =>
+    YEAR < today.getFullYear() || (YEAR === today.getFullYear() && m < today.getMonth());
+
   const computedMonths = useMemo(
     () => Array.from({ length: 12 }, (_, i) => computeMonthDashboard(data[i], i, YEAR)),
     [data, YEAR],
@@ -30,7 +38,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
   const getCaMonth = (m: number) => getCaRealiseMonth(computedMonths[m], m, YEAR);
 
   const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [computedMonths]);
-  const caTotal = caMonths.reduce((a, b) => a + b, 0);
+  const caTotal = caMonths.reduce((sum, v, i) => (isMonthComplete(i) ? sum + v : sum), 0);
 
   const getValB = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuel?.[key]);
   const getValR = (m: number, key: string) => {
@@ -42,8 +50,8 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
   const getRowData = (key: string) => {
     const monthsB = Array.from({ length: 12 }, (_, i) => getValB(i, key));
     const monthsR = Array.from({ length: 12 }, (_, i) => getValR(i, key));
-    const totalB = monthsB.reduce((a, b) => a + b, 0);
-    const totalR = monthsR.reduce((a, b) => a + b, 0);
+    const totalB = monthsB.reduce((sum, v, i) => (isMonthComplete(i) ? sum + v : sum), 0);
+    const totalR = monthsR.reduce((sum, v, i) => (isMonthComplete(i) ? sum + v : sum), 0);
     return { monthsB, monthsR, totalB, totalR };
   };
 
@@ -93,8 +101,8 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
   const monthCalcs = useMemo(() => Array.from({ length: 12 }, (_, i) => getMonthCalculations(i)), [data, caMonths]);
 
   const getTotalCalc = (key: keyof ReturnType<typeof getMonthCalculations>['budget']) => {
-    const budget = monthCalcs.reduce((sum, m) => sum + m.budget[key], 0);
-    const realise = monthCalcs.reduce((sum, m) => sum + m.realise[key], 0);
+    const budget = monthCalcs.reduce((sum, m, i) => (isMonthComplete(i) ? sum + m.budget[key] : sum), 0);
+    const realise = monthCalcs.reduce((sum, m, i) => (isMonthComplete(i) ? sum + m.realise[key] : sum), 0);
     return { budget, realise };
   };
 
@@ -121,6 +129,9 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
     const sign = pct > 0 ? '+' : pct < 0 ? '-' : '';
     return `${sign}${formatPercent(Math.abs(pct))}`;
   };
+
+  // Nombre de mois clos de l'année, affiché sous les cartes KPI pour expliciter le périmètre "à date".
+  const monthsClosedCount = Array.from({ length: 12 }, (_, i) => i).filter(isMonthComplete).length;
 
   // Cartes KPI de synthèse (mêmes 5 indicateurs qu'EdgMensuel), totaux annuels via getTotalCalc.
   const kpiCards: { label: string; key: keyof ReturnType<typeof getMonthCalculations>['budget']; invert: boolean }[] = [
@@ -328,8 +339,11 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
               const kpiEcart = ecart(totals.realise, totals.budget);
               return (
                 <div key={k.label} style={{ flex: 1, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {k.label}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 8 }}>
+                    Cumul à date ({monthsClosedCount} mois clos)
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
@@ -365,7 +379,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
                       <th colSpan={4} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{m}</th>
                     </React.Fragment>
                   ))}
-                  <th colSpan={4} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '8px 0', background: '#e2e8f0', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '2px solid #cbd5e1' }}>ANNÉE {YEAR}</th>
+                  <th colSpan={4} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '8px 0', background: '#e2e8f0', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '2px solid #cbd5e1' }}>À DATE {YEAR}</th>
                 </tr>
                 <tr style={{ height: 34 }}>
                   <th style={{ background: '#f1f5f9', position: 'sticky', left: 0, top: 34, zIndex: 50, borderRight: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1' }}></th>

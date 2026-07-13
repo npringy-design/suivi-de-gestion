@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 13/07/2026 (Lisibilité cellules + agrégats "à date" EDG annuels)
+
+- `BudgetEdgAnnuel.tsx` : les cellules Budget/Réalisé/Écart empilaient montant + ratio dans une même `<td>` via une div flex (illisible sur 80px) — découpées en colonnes séparées Montant/Ratio (comme `VsBudget.tsx`, déjà correct), pour les colonnes mensuelles et pour la colonne Total. `<thead>` adapté en conséquence (`colSpan` 3→6 par mois/total, sous-en-tête "Ratio" ajouté pour Budget et Réalisé, dupliqué pour Écart qui n'en avait pas). Aucune valeur ni logique de calcul touchée, uniquement le découpage des `<td>` et l'ajout d'un ratio d'écart affiché en plus (non calculé auparavant).
+- `BudgetEdgAnnuel.tsx`, `VsBudget.tsx`, `VsN1.tsx` : les cartes KPI et la colonne "Total Année" additionnaient les 12 mois pour Budget/Réalisé (ou N-1/Réalisé), comparant un budget annuel complet à un réalisé partiel sur le mois en cours/futurs — écart faussé. Ajout de `isMonthComplete(m)` (mois strictement antérieur au mois courant, ou année strictement antérieure) dans les 3 fichiers ; `getTotalCalc`, `getRowData.totalB/totalR/totalN1` et `caTotal`/`caN1Total` n'agrègent désormais que les mois clos des deux côtés de la comparaison. Colonnes mensuelles individuelles inchangées. En-tête "ANNÉE {YEAR}" → "À DATE {YEAR}" (VsN1 : "TOTAL {YEAR-1}"/"TOTAL {YEAR}" → "À DATE {YEAR-1}"/"À DATE {YEAR}") ; sous-titre "Cumul à date (X mois clos)" ajouté sous le libellé de chaque carte KPI.
+- Aucune modification de `getMonthCalculations`/`ecart()`/logique de calcul métier. tsc OK, eslint OK (0 erreur), `npm run build` OK. Vérification visuelle non faite (Supabase non configuré dans cet environnement de dev local — page de connexion bloquante) — à valider après déploiement.
+
 ## 13/07/2026 (Bandeaux de section EDG sur les onglets annuels)
 
 - Ajout de la fonction `renderSectionBanner` (reprise à l'identique d'`EdgMensuel.tsx` : fond `#1e293b`, texte blanc `#f8fafc`, icône + titre en majuscules) dans `BudgetEdgAnnuel.tsx`, `VsBudget.tsx`, `VsN1.tsx` et `RealiseEdgAnneeFiscale.tsx` — `colSpan={999}` (au lieu de `10` dans EdgMensuel) pour couvrir le nombre de colonnes propre à chaque vue (12 mois × 3-4 colonnes + total). 8 bandeaux insérés aux mêmes endroits que dans EdgMensuel : 🍽️ Coût Matière, 📈 Marge, 👥 Personnel, 📣 Publicité, 🏢 Frais Généraux d'Exploitation, 🔧 Frais Généraux d'Occupation, 🏗️ Coût des Immeubles, 📊 Résultats et Trésorerie.
