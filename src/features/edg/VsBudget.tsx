@@ -274,6 +274,26 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
     );
   };
 
+  // Bandeau de section (repris à l'identique d'EdgMensuel.tsx) — colSpan={999} pour couvrir
+  // toutes les colonnes du tableau sans dépendre du nombre exact.
+  const renderSectionBanner = (icon: string, title: string) => (
+    <tr>
+      <td colSpan={999} style={{
+        padding: '8px 16px',
+        fontSize: 12,
+        fontWeight: 800,
+        color: '#f8fafc',
+        background: '#1e293b',
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        borderTop: '1px solid #0f172a',
+        borderBottom: '1px solid #0f172a',
+      }}>
+        <span style={{ marginRight: 8 }}>{icon}</span>{title}
+      </td>
+    </tr>
+  );
+
   return (
     <div style={{ height: hideHeader ? '100%' : '100vh', background: '#f8fafc', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {!hideHeader && (
@@ -365,15 +385,18 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
               </thead>
               <tbody>
                 {renderCalcRow('C.A. TOTAL HT', 'ca', 'header', true)}
+                {renderSectionBanner('🍽️', 'Coût Matière')}
                 {renderDataRow('Achats Food', 'achats_food', true)}
                 {renderDataRow('Consommables liés à la vente (Paper; Flyer;jouets;CO2)', 'consommables')}
                 {renderDataRow('Variation de stock', 'variation_stock')}
                 {renderDataRow('Repas des salariés (2,29€+1,23€/repas)', 'repas_salaries')}
                 {renderCalcRow('TOTA COUT MATIERE', 'coutMatiere', 'total')}
+                {renderSectionBanner('📈', 'Marge')}
                 {renderCalcRow('Marge brute', 'margeBrute', 'header', true)}
                 {renderDataRow('Refacturation Pub, Revenus Ecoles & format°et huiles usagées', 'refacturation')}
                 {renderCalcRow('TOTAL MARGE', 'totalMarge', 'total')}
-                
+
+                {renderSectionBanner('👥', 'Personnel')}
                 {renderDataRow('Coût salaires', 'cout_salaires', true)}
                 {renderDataRow('Charges sociales', 'charges_sociales')}
                 {renderDataRow('Frais de formation et réaffectation salaires', 'frais_formation')}
@@ -387,11 +410,13 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
                 {renderDataRow('Autres primes et divers', 'autres_primes')}
                 {renderCalcRow('Total autres frais person.', 'totalAutresFraisPers', 'subtotal')}
                 {renderCalcRow('TOTAL Salaires et charges', 'totalSalairesCharges', 'header', true)}
-                
+
+                {renderSectionBanner('📣', 'Publicité')}
                 {renderDataRow('Prestation animation + décoration', 'prestation_anim', true)}
                 {renderDataRow('Publicité locale + Com Agence + Annonces', 'pub_locale')}
                 {renderCalcRow('TOTAL PUBLICITE', 'totalPublicite', 'header', true)}
-                
+
+                {renderSectionBanner('🏢', "Frais Généraux d'Exploitation")}
                 {renderDataRow('Comm. / encaissement', 'comm_encaissement')}
                 {renderDataRow('Produits d\'entretien et linge à jeter', 'produits_entretien', true)}
                 {renderDataRow('Fournitures d\'exploitation et de bureau', 'fournitures_bureau', true)}
@@ -404,7 +429,8 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
                 {renderDataRow('Honoraires comptables + juridiques (+ CAC)', 'honoraires_comptables')}
                 {renderDataRow('Honoraires divers', 'honoraires_divers')}
                 {renderCalcRow('TOTAL FG d\'exploitation', 'totalFgExploitation', 'header', true)}
-                
+
+                {renderSectionBanner('🔧', "Frais Généraux d'Occupation")}
                 {renderDataRow('Contrats maintenance', 'contrats_maintenance', true)}
                 {renderDataRow('Entretien & répar. locaux.', 'entretien_locaux')}
                 {renderDataRow('Nettoyage locaux & ext.', 'nettoyage_locaux')}
@@ -413,16 +439,18 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
                 {renderDataRow('Gaz-Eau', 'gaz_eau')}
                 {renderDataRow('Assurances', 'assurances')}
                 {renderCalcRow('TOTAL FG d\'occupation', 'totalFgOccupation', 'header', true)}
-                
+
                 {renderCalcRow('RESULTAT GESTION', 'resultatGestion', 'total')}
-                
+
+                {renderSectionBanner('🏗️', 'Coût des Immeubles')}
                 {renderDataRow('Amortissements', 'amortissements')}
                 {renderDataRow('Crédit Bail', 'credit_bail')}
                 {renderDataRow('Loyers Murs', 'loyers_murs')}
                 {renderDataRow('Charges locatives et GIE', 'charges_locatives')}
                 {renderDataRow('Impots et taxes', 'impots_taxes')}
                 {renderCalcRow('COUT DES IMM.', 'coutImm', 'header', true)}
-                
+
+                {renderSectionBanner('📊', 'Résultats et Trésorerie')}
                 {renderDataRow('Redavances Spre SACEM', 'redevances_spre')}
                 {renderDataRow('Redevances Grpe Flo', 'redevances_flo')}
                 {renderDataRow('Marketing', 'marketing')}

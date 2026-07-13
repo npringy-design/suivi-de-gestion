@@ -5,6 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 13/07/2026 (Bandeaux de section EDG sur les onglets annuels)
+
+- Ajout de la fonction `renderSectionBanner` (reprise à l'identique d'`EdgMensuel.tsx` : fond `#1e293b`, texte blanc `#f8fafc`, icône + titre en majuscules) dans `BudgetEdgAnnuel.tsx`, `VsBudget.tsx`, `VsN1.tsx` et `RealiseEdgAnneeFiscale.tsx` — `colSpan={999}` (au lieu de `10` dans EdgMensuel) pour couvrir le nombre de colonnes propre à chaque vue (12 mois × 3-4 colonnes + total). 8 bandeaux insérés aux mêmes endroits que dans EdgMensuel : 🍽️ Coût Matière, 📈 Marge, 👥 Personnel, 📣 Publicité, 🏢 Frais Généraux d'Exploitation, 🔧 Frais Généraux d'Occupation, 🏗️ Coût des Immeubles, 📊 Résultats et Trésorerie.
+- Aucune modification de la logique de calcul, des cartes KPI ni du code couleur d'écart déjà en place. `<thead>` non touché. tsc OK, `npm run build` OK. Vérification visuelle non faite (Supabase non configuré dans cet environnement de dev local — page de connexion bloquante) — à valider après déploiement.
+
 ## 13/07/2026 (Harmonisation visuelle des onglets EDG annuels)
 
 - Cartes KPI et code couleur d'écart d'`EdgMensuel.tsx` (vert `#166534` favorable / rouge `#b91c1c` défavorable, inversion de signe pour les lignes de charges sauf `refacturation`/`aides_subventions`/`retraitement_daa`) repris à l'identique dans `BudgetEdgAnnuel.tsx`, `VsBudget.tsx` et `VsN1.tsx` : bandeau de 5 cartes KPI (C.A. Total HT, Marge Brute, Total Salaires et Charges, Résultat Gestion, E.B.E.) avec totaux annuels via `getTotalCalc`, et `ecartColor`/`ecartText`/`ecartRatioText` appliqués aux cellules d'écart existantes (remplace l'ancien `eVal < 0 ? rouge : défaut` sans vert ni inversion). `VsN1.tsx` compare contre N-1 (labels adaptés) au lieu du Budget.
