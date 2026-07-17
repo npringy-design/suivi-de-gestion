@@ -462,7 +462,11 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
         borderTop: '1px solid #0f172a',
         borderBottom: '1px solid #0f172a',
       }}>
-        <span style={{ marginRight: 8 }}>{icon}</span>{title}
+        {/* Libellé sticky : le td s'étale sur toute la largeur du tableau et défile
+            horizontalement — sans ça, le titre de section sort de l'écran au scroll. */}
+        <span style={{ position: 'sticky', left: isMobile ? 12 : 16, display: 'inline-block' }}>
+          <span style={{ marginRight: 8 }}>{icon}</span>{title}
+        </span>
       </td>
     </tr>
   );

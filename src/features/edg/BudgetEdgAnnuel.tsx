@@ -316,7 +316,11 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
         borderTop: '1px solid #0f172a',
         borderBottom: '1px solid #0f172a',
       }}>
-        <span style={{ marginRight: 8 }}>{icon}</span>{title}
+        {/* Libellé sticky : le td s'étale sur toute la largeur du tableau et défile
+            horizontalement — sans ça, le titre de section sort de l'écran au scroll. */}
+        <span style={{ position: 'sticky', left: 16, display: 'inline-block' }}>
+          <span style={{ marginRight: 8 }}>{icon}</span>{title}
+        </span>
       </td>
     </tr>
   );

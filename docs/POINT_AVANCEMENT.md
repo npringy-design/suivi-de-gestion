@@ -5,6 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (bandeaux de section EDG : libellé sticky au scroll horizontal)
+
+- Le symptôme persistait après le `translateZ(0)` ci-dessous — le diagnostic était erroné : ce sont les **bandeaux de section** (COÛT MATIÈRE, MARGE, PERSONNEL...) qui n'étaient pas figés, pas les en-têtes de colonnes. Le `<td colSpan={999}>` du bandeau s'étale sur toute la largeur du tableau et défile avec lui : au scroll horizontal, le titre sortait de l'écran ("IATIÈRE", "NEL"...).
+- Fix : dans `renderSectionBanner` des 5 vues EDG, le libellé (icône + titre) est enveloppé dans un `<span style={{ position: 'sticky', left: 16 }}>` (12px mobile dans EdgMensuel) — le fond du bandeau continue de couvrir toute la largeur, seul le texte reste calé au bord gauche visible. tsc OK, eslint OK, 104 tests OK, build OK. `translateZ(0)` conservé (inoffensif).
+
 ## 17/07/2026 (en-têtes sticky EDG annuels qui disparaissent au scroll horizontal)
 
 - Signalé sur "Budget EDG annuel" (probablement les 5 vues EDG, même implémentation copiée) : les bandeaux d'en-tête sticky (mois JANV/FÉVR..., BUDGET/Ratio/RÉALISÉ...) se vidaient visuellement pendant un scroll horizontal, alors que le scroll vertical restait à 0 — symptôme d'un défaut de repaint connu de Chromium sur les cellules `position: sticky` dans un tableau scrollable horizontalement (l'élément sticky n'est pas recomposé correctement tant qu'aucun scroll vertical ne force un repaint).
