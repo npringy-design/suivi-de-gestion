@@ -226,7 +226,9 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           zIndex: 10, 
           borderRight: '1px solid #e2e8f0', 
           borderBottom: '1px solid #e2e8f0',
-          minWidth: isMobile ? 140 : 200
+          width: isMobile ? 140 : 220,
+          whiteSpace: 'normal',
+          lineHeight: 1.3
         }}>
           {label}
         </td>
@@ -301,7 +303,9 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           borderRight: '2px solid #cbd5e1', 
           borderBottom: '2px solid #cbd5e1', 
           borderTop: '2px solid #cbd5e1',
-          minWidth: isMobile ? 140 : 200
+          width: isMobile ? 140 : 220,
+          whiteSpace: 'normal',
+          lineHeight: 1.3
         }}>
           {label}
         </td>
@@ -363,7 +367,9 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           borderRight: '2px solid #cbd5e1', 
           borderBottom: '2px solid #cbd5e1', 
           borderTop: '2px solid #cbd5e1',
-          minWidth: isMobile ? 140 : 200
+          width: isMobile ? 140 : 220,
+          whiteSpace: 'normal',
+          lineHeight: 1.3
         }}>
           {label}
         </td>
@@ -414,7 +420,9 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           borderRight: '1px solid #cbd5e1', 
           borderBottom: '1px solid #cbd5e1', 
           borderTop: '1px solid #e2e8f0',
-          minWidth: isMobile ? 140 : 200
+          width: isMobile ? 140 : 220,
+          whiteSpace: 'normal',
+          lineHeight: 1.3
         }}>
           {label}
         </td>

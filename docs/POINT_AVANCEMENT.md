@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (EdgMensuel : colonne libellés resserrée)
+
+- `EdgMensuel.tsx` : la colonne libellés (`renderRow`/`renderHeader`/`renderTotal`/`renderSubTotal`) n'avait qu'un `minWidth` sans `width` — avec le tableau en `width: 'max-content'`, elle se dimensionnait sur le libellé non tronqué le plus long (ex. "Refacturation Pub, Revenus Ecoles & format°et huiles usagées"), laissant un grand espace vide pour les libellés courts. `width` fixe (220px desktop / 140px mobile inchangé) + retour à la ligne (`whiteSpace: 'normal'`) sur les 4 fonctions de rendu — les libellés longs passent sur 2-3 lignes, la colonne ne déborde plus. Aucun calcul ni donnée touché. tsc OK, build OK.
+
 ## 17/07/2026 (AGENTS.md : validation limitée à tsc + build)
 
 - AGENTS.md : vérification visuelle retirée, validation limitée à tsc + build.
