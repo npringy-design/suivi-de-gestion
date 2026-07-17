@@ -90,3 +90,4 @@ Voir `src/features/dashboard/ARCHITECTURE.md`.
 - Laisser du `console.log` en dehors des fichiers de test.
 - Modifier la logique métier (formules, calculs) sans que ce soit explicitement demandé.
 - Créer un fichier de patch ou codemod au lieu de modifier le source directement.
+- Ne jamais demander ou attendre une validation visuelle — la vérification visuelle est assurée par le développeur après déploiement.

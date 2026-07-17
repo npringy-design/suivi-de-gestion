@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (AGENTS.md : validation limitée à tsc + build)
+
+- AGENTS.md : vérification visuelle retirée, validation limitée à tsc + build.
+
 ## 17/07/2026 (AGENTS.md : règle push automatique)
 
 - AGENTS.md : ajout règle push automatique vers main après chaque commit.
