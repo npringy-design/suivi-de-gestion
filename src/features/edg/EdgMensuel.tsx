@@ -226,9 +226,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           zIndex: 10, 
           borderRight: '1px solid #e2e8f0', 
           borderBottom: '1px solid #e2e8f0',
-          width: isMobile ? 140 : 220,
-          whiteSpace: 'normal',
-          lineHeight: 1.3
+          minWidth: isMobile ? 140 : 200
         }}>
           {label}
         </td>
@@ -303,9 +301,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           borderRight: '2px solid #cbd5e1', 
           borderBottom: '2px solid #cbd5e1', 
           borderTop: '2px solid #cbd5e1',
-          width: isMobile ? 140 : 220,
-          whiteSpace: 'normal',
-          lineHeight: 1.3
+          minWidth: isMobile ? 140 : 200
         }}>
           {label}
         </td>
@@ -367,9 +363,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           borderRight: '2px solid #cbd5e1', 
           borderBottom: '2px solid #cbd5e1', 
           borderTop: '2px solid #cbd5e1',
-          width: isMobile ? 140 : 220,
-          whiteSpace: 'normal',
-          lineHeight: 1.3
+          minWidth: isMobile ? 140 : 200
         }}>
           {label}
         </td>
@@ -420,9 +414,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           borderRight: '1px solid #cbd5e1', 
           borderBottom: '1px solid #cbd5e1', 
           borderTop: '1px solid #e2e8f0',
-          width: isMobile ? 140 : 220,
-          whiteSpace: 'normal',
-          lineHeight: 1.3
+          minWidth: isMobile ? 140 : 200
         }}>
           {label}
         </td>
@@ -789,31 +781,31 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
         ) : (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           {/* Colonne KPI gauche */}
-          <div style={{ width: 176, flexShrink: 0, overflowY: 'auto', background: '#f8fafc', borderRight: '1px solid #e2e8f0', padding: hideHeader ? '12px 10px' : '16px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ width: 220, flexShrink: 0, overflowY: 'auto', background: '#f8fafc', borderRight: '1px solid #e2e8f0', padding: hideHeader ? '12px 10px' : '16px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {kpiCards.map(k => {
               const rawEcart = monthHasRealiseData ? ecart(k.r, k.b) : null;
               const kpiEcartColor = ecartColor(rawEcart);
               const kpiEcartText = ecartText(rawEcart, k.invert);
               const kpiRatioEcart = ecartRatioText(rawEcart, k.b, k.invert);
               return (
-                <div key={k.label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 12px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'normal' }}>
+                <div key={k.label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 14px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'normal' }}>
                     {k.label}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                       <span style={{ color: '#94a3b8' }}>Budget</span>
                       <span style={{ fontWeight: 600, color: '#0f172a' }}>{euro(k.b)}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                       <span style={{ color: '#94a3b8' }}>Réalisé</span>
                       <span style={{ fontWeight: 600, color: '#0f172a' }}>{euro(k.r)}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 12, borderTop: '1px solid #f1f5f9', paddingTop: 4, marginTop: 2 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 13, borderTop: '1px solid #f1f5f9', paddingTop: 5, marginTop: 2 }}>
                       <span style={{ color: '#94a3b8' }}>Écart</span>
                       <span>
                         <span style={{ fontWeight: 700, color: kpiEcartColor }}>{kpiEcartText}</span>
-                        {kpiRatioEcart && <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, color: kpiEcartColor }}>({kpiRatioEcart})</span>}
+                        {kpiRatioEcart && <span style={{ marginLeft: 6, fontSize: 12, fontWeight: 600, color: kpiEcartColor }}>({kpiRatioEcart})</span>}
                       </span>
                     </div>
                   </div>

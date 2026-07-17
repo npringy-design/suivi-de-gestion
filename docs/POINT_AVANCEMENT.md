@@ -5,9 +5,9 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
-## 17/07/2026 (EdgMensuel : colonne libellés resserrée)
+## 17/07/2026 (EdgMensuel : cartes KPI élargies desktop)
 
-- `EdgMensuel.tsx` : la colonne libellés (`renderRow`/`renderHeader`/`renderTotal`/`renderSubTotal`) n'avait qu'un `minWidth` sans `width` — avec le tableau en `width: 'max-content'`, elle se dimensionnait sur le libellé non tronqué le plus long (ex. "Refacturation Pub, Revenus Ecoles & format°et huiles usagées"), laissant un grand espace vide pour les libellés courts. `width` fixe (220px desktop / 140px mobile inchangé) + retour à la ligne (`whiteSpace: 'normal'`) sur les 4 fonctions de rendu — les libellés longs passent sur 2-3 lignes, la colonne ne déborde plus. Aucun calcul ni donnée touché. tsc OK, build OK.
+- `EdgMensuel.tsx` : le premier essai (largeur fixe sur la colonne libellés du tableau) ne répondait pas à la demande — objectif réel : utiliser l'espace visuellement excédentaire pour élargir les cartes KPI de la colonne latérale gauche, pas retoucher les colonnes du tableau. Retour à l'état d'origine des colonnes libellés (`minWidth` seul, comme avant). Colonne KPI gauche (desktop) élargie de 176px à 220px, tailles de police des cartes augmentées en conséquence (libellé 10→11px, valeurs 12→13px, ratio écart 11→12px). Aucun calcul ni donnée touché. tsc OK, build OK.
 
 ## 17/07/2026 (AGENTS.md : validation limitée à tsc + build)
 
