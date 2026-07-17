@@ -253,23 +253,24 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
             </div>
           </div>
 
-          {/* Cartes KPI de synthèse (repris d'EdgMensuel.tsx) : Réalisé seul, cette vue n'a pas de
-              Budget ni d'écart à comparer. */}
-          <div style={{ display: 'flex', gap: 16, padding: '16px 24px 0', flexShrink: 0 }}>
-            {kpiCards.map(k => (
-              <div key={k.label} style={{ flex: 1, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {k.label}
+          {/* Cartes KPI en colonne latérale gauche (repris d'EdgMensuel.tsx) : Réalisé seul, cette
+              vue n'a pas de Budget ni d'écart à comparer. */}
+          <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
+            <div style={{ width: 260, flexShrink: 0, overflowY: 'auto', background: '#f8fafc', borderRight: '1px solid #e2e8f0', padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {kpiCards.map(k => (
+                <div key={k.label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 14px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'normal' }}>
+                    {k.label}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                    <span style={{ color: '#94a3b8' }}>Réalisé</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatEuro(getTotalCalc(k.key))}</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <span style={{ color: '#94a3b8' }}>Réalisé</span>
-                  <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatEuro(getTotalCalc(k.key))}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <div style={{ overflow: 'auto', flex: 1 }}>
+            <div style={{ overflow: 'auto', flex: 1 }}>
             <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
               <thead>
                 <tr style={{ height: 34 }}>
@@ -384,6 +385,7 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
                 {renderCalcRow('Cash Flow avant IS', 'cashFlow', 'total')}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </div>

@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (EDG annuel : cartes KPI en colonne latérale sur les 4 autres onglets)
+
+- Même restructuration qu'`EdgMensuel.tsx` appliquée à `BudgetEdgAnnuel.tsx`, `RealiseEdgAnneeFiscale.tsx`, `VsBudget.tsx` et `VsN1.tsx` : cartes KPI déplacées du bandeau horizontal au-dessus du tableau vers une colonne latérale gauche fixe (260px, fond `#f8fafc`, scroll indépendant) — le tableau (12 mois) récupère toute la hauteur disponible à droite. Ces 4 vues n'ont pas de mode mobile (`isMobile` inexistant), la colonne latérale s'applique donc systématiquement. Aucun calcul ni donnée touché, uniquement la disposition JSX. tsc OK, build OK.
+
 ## 17/07/2026 (EdgMensuel : cartes KPI encore élargies desktop)
 
 - `EdgMensuel.tsx` : colonne KPI gauche (desktop) élargie de 220px à 260px. Aucun calcul ni donnée touché. tsc OK, build OK.
