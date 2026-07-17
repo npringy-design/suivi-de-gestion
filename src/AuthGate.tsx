@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useEffect, useState } from 'react';
+import { createContext, FormEvent, ReactNode, useContext, useEffect, useState } from 'react';
 
 import {
   isSupabaseAuthConfigured,
@@ -11,6 +11,23 @@ import {
 type AuthGateProps = {
   children: ReactNode;
 };
+
+// Session active + déconnexion, exposées aux pages qui veulent afficher un contrôle de
+// déconnexion à un endroit précis de leur mise en page (voir Home.tsx) — plus de bouton
+// flottant global affiché sur toutes les pages.
+type AuthSessionContextValue = {
+  session: SupabaseAuthSession;
+  signOut: () => void;
+};
+
+// Exporté pour les tests (rendu de pages consommatrices sans passer par tout AuthGate).
+export const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
+
+export function useAuthSession(): AuthSessionContextValue {
+  const context = useContext(AuthSessionContext);
+  if (!context) throw new Error('useAuthSession doit être utilisé à l\'intérieur d\'AuthGate.');
+  return context;
+}
 
 function AuthShell({ children }: { children: ReactNode }) {
   return (
@@ -127,17 +144,9 @@ function AuthLogin({ onAuthenticated }: { onAuthenticated: (session: SupabaseAut
 
 function AuthenticatedApp({ children, session, onSignOut }: AuthGateProps & { session: SupabaseAuthSession; onSignOut: () => void }) {
   return (
-    <>
+    <AuthSessionContext.Provider value={{ session, signOut: onSignOut }}>
       {children}
-      <button
-        className="fixed bottom-4 right-4 z-50 rounded-full border border-white/40 bg-slate-950/75 px-4 py-2 text-xs font-semibold text-white shadow-xl backdrop-blur transition hover:bg-slate-900"
-        onClick={onSignOut}
-        title={session.user?.email || 'Session active'}
-        type="button"
-      >
-        Deconnexion
-      </button>
-    </>
+    </AuthSessionContext.Provider>
   );
 }
 

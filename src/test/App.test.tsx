@@ -3,7 +3,13 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 
 import { DataProvider } from '@/contexts/DataContext';
+import { AuthSessionContext } from '@/AuthGate';
 import Home from '@/pages/Home';
+
+const fakeAuthSession = {
+  session: { access_token: 'x', refresh_token: 'x', expires_at: 0, token_type: 'bearer', user: { id: 'test-user' } },
+  signOut: () => {},
+};
 
 function LocationDisplay() {
   const location = useLocation();
@@ -26,12 +32,14 @@ describe('App flow', () => {
 
   it('renders the home dashboard and navigates to Synthese CA', async () => {
     render(
-      <DataProvider>
-        <MemoryRouter initialEntries={['/']}>
-          <Home />
-          <LocationDisplay />
-        </MemoryRouter>
-      </DataProvider>,
+      <AuthSessionContext.Provider value={fakeAuthSession}>
+        <DataProvider>
+          <MemoryRouter initialEntries={['/']}>
+            <Home />
+            <LocationDisplay />
+          </MemoryRouter>
+        </DataProvider>
+      </AuthSessionContext.Provider>,
     );
 
     expect(await screen.findByRole('heading', { name: /Hippopotamus/i })).toBeInTheDocument();

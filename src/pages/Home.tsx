@@ -19,6 +19,7 @@ import {
   X,
   Calendar,
   Users,
+  LogOut,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -37,6 +38,7 @@ import {
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { getValidAccessToken } from '@/services/supabaseAuth';
+import { useAuthSession } from '@/AuthGate';
 import { getDashboardRowIndices } from '@/lib/utils';
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
@@ -196,6 +198,7 @@ const formatHomePeriodLabel = (period: HomePeriodSelection) => {
 export default function Home() {
   const { data, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth } = useData();
   const navigate = useNavigate();
+  const { session, signOut } = useAuthSession();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null);
@@ -958,12 +961,21 @@ export default function Home() {
                 <div className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-100/55">Espace</div>
                 <div className="mt-1 text-lg font-black text-cyan-50">Accueil</div>
               </div>
-              <button
-                onClick={() => setIsSidebarOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-950/60 text-cyan-100/70 transition-colors hover:bg-cyan-900/70 hover:text-white lg:hidden"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={signOut}
+                  title={session.user?.email ? `Déconnexion (${session.user.email})` : 'Déconnexion'}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-950/60 text-cyan-100/70 transition-colors hover:bg-cyan-900/70 hover:text-white"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-950/60 text-cyan-100/70 transition-colors hover:bg-cyan-900/70 hover:text-white lg:hidden"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </div>
 

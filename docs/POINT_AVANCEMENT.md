@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (bouton Déconnexion retiré du global, déplacé sur l'Accueil)
+
+- `AuthGate.tsx` : le bouton "Deconnexion" flottant (`fixed bottom-4 right-4`) était affiché par-dessus **toutes** les pages de l'appli. Remplacé par un contexte React `AuthSessionContext`/hook `useAuthSession()` exposant `session`/`signOut`, consommé uniquement par la page qui en a besoin — plus aucun bouton global.
+- `Home.tsx` : petit bouton icône (LogOut, 32×32px) ajouté dans l'en-tête de la sidebar, à côté du bouton fermer mobile — discret, uniquement sur la page d'Accueil.
+- `App.test.tsx` : mis à jour pour fournir `AuthSessionContext.Provider` (Home consomme désormais `useAuthSession`). tsc OK, eslint OK, 104 tests OK, build OK.
+
 ## 17/07/2026 (import EDG mensuel 2025 depuis les onglets 01-12 du V25)
 
 - Nouveau parseur `src/features/dashboard/importHelpers/edgMonthlySheetsImport.ts` : `parseEdgMonthlySheets(workbook)` lit les onglets mensuels du classeur V25 nommés `01` à `12` (un onglet par mois, contrairement au V26 où les 12 mois sont des blocs colonnes d'une seule feuille "ANNUEL BUDGET") et recopie tel quel — sans aucun calcul — le Budget (colonne C) et le Réalisé (colonne F) de chaque ligne EDG reconnue via `findEdgKeyForLabel` (exportée depuis `edgBudgetImport.ts`, réutilisée sans duplication : mêmes clés et lignes de total ignorées que l'import V26). Retourne `null` si aucun onglet `01`-`12` n'est trouvé ; une cellule vide n'ajoute pas de clé.
