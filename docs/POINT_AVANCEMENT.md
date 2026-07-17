@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (EdgMensuel : cartes KPI encore élargies desktop)
+
+- `EdgMensuel.tsx` : colonne KPI gauche (desktop) élargie de 220px à 260px. Aucun calcul ni donnée touché. tsc OK, build OK.
+
 ## 17/07/2026 (EdgMensuel : cartes KPI élargies desktop)
 
 - `EdgMensuel.tsx` : le premier essai (largeur fixe sur la colonne libellés du tableau) ne répondait pas à la demande — objectif réel : utiliser l'espace visuellement excédentaire pour élargir les cartes KPI de la colonne latérale gauche, pas retoucher les colonnes du tableau. Retour à l'état d'origine des colonnes libellés (`minWidth` seul, comme avant). Colonne KPI gauche (desktop) élargie de 176px à 220px, tailles de police des cartes augmentées en conséquence (libellé 10→11px, valeurs 12→13px, ratio écart 11→12px). Aucun calcul ni donnée touché. tsc OK, build OK.

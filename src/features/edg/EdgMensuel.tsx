@@ -781,7 +781,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
         ) : (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           {/* Colonne KPI gauche */}
-          <div style={{ width: 220, flexShrink: 0, overflowY: 'auto', background: '#f8fafc', borderRight: '1px solid #e2e8f0', padding: hideHeader ? '12px 10px' : '16px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ width: 260, flexShrink: 0, overflowY: 'auto', background: '#f8fafc', borderRight: '1px solid #e2e8f0', padding: hideHeader ? '12px 10px' : '16px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {kpiCards.map(k => {
               const rawEcart = monthHasRealiseData ? ecart(k.r, k.b) : null;
               const kpiEcartColor = ecartColor(rawEcart);
