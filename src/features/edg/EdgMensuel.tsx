@@ -467,6 +467,130 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
     </tr>
   );
 
+  const edgTable = (
+    <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+      <thead>
+      <tr>
+        <th style={{ background: '#fff', position: 'sticky', left: 0, top: 0, zIndex: 50, border: 'none', padding: '0 0 12px 0' }}></th>
+
+        <th style={{ background: '#fff', position: 'sticky', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>BUDGET</th>
+
+        <th style={{ background: '#fff', position: 'sticky', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>REALISE</th>
+
+        <th style={{ background: '#fff', position: 'sticky', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>ÉCART BUDGET</th>
+      </tr>
+      <tr>
+        <th style={{ background: '#fff', position: 'sticky', left: 0, top: 34, zIndex: 50, border: 'none', padding: '0 0 12px 0' }}></th>
+
+        <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
+        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
+
+        <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
+        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
+
+        <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
+        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#e2e8f0', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}></th>
+      </tr>
+    </thead>
+    <tbody style={{ borderTop: '1px solid #cbd5e1' }}>
+    {renderHeader('C.A. TOTAL HT', caTotalHtBudget, caTotalHtRealise, true)}
+    {renderSectionBanner('🍽️', 'Coût Matière')}
+    {renderRow('Achats Food', 'achats_food', true)}
+    {renderRow('Consommables liés à la vente (Paper; Flyer;jouets;CO2)', 'consommables')}
+    {renderRow('Variation de stock', 'variation_stock')}
+    {renderRow('Repas des salariés (2,29€+1,23€/repas)', 'repas_salaries')}
+    {renderTotal('TOTA COUT MATIERE', coutMatiereB, coutMatiereR)}
+    {renderSectionBanner('📈', 'Marge')}
+    {renderHeader('Marge brute', margeBruteB, margeBruteR, true)}
+    {renderRow('Refacturation Pub, Revenus Ecoles & format°et huiles usagées', 'refacturation')}
+    {renderTotal('TOTAL MARGE', totalMargeB, totalMargeR)}
+
+    {renderSectionBanner('👥', 'Personnel')}
+    {renderRow('Coût salaires', 'cout_salaires', true)}
+    {renderRow('Charges sociales', 'charges_sociales')}
+    {renderRow('Frais de formation et réaffectation salaires', 'frais_formation')}
+    {renderRow('Aides et Subventions', 'aides_subventions')}
+    {renderSubTotal('Frais person. directs', fraisPersDirectsB, fraisPersDirectsR)}
+    {renderRow('Provision CP+ JF+ RC BRUT', 'prov_cp_brut')}
+    {renderRow('Provision CP+ JF+ RC PAT', 'prov_cp_pat')}
+    {renderRow('Prov. prud\'h, pro et div.', 'prov_prud')}
+    {renderSubTotal('Frais Pers. indirects', fraisPersIndirectsB, fraisPersIndirectsR)}
+    {renderRow('Taxe sur les salaires', 'taxe_salaires')}
+    {renderRow('Autres primes et divers', 'autres_primes')}
+    {renderSubTotal('Total autres frais person.', totalAutresFraisPersB, totalAutresFraisPersR)}
+    {renderHeader('TOTAL Salaires et charges', totalSalairesChargesB, totalSalairesChargesR, true)}
+
+    {renderSectionBanner('📣', 'Publicité')}
+    {renderRow('Prestation animation + décoration', 'prestation_anim', true)}
+    {renderRow('Publicité locale + Com Agence + Annonces', 'pub_locale')}
+    {renderHeader('TOTAL PUBLICITE', totalPubliciteB, totalPubliciteR, true)}
+
+    {renderSectionBanner('🏢', "Frais Généraux d'Exploitation")}
+    {renderRow('Comm. / encaissement', 'comm_encaissement')}
+    {renderRow('Produits d\'entretien et linge à jeter', 'produits_entretien', true)}
+    {renderRow('Fournitures d\'exploitation et de bureau', 'fournitures_bureau', true)}
+    {renderRow('Matériel et outillage', 'materiel_outillage', true)}
+    {renderRow('Blanchissage-Entretien matériel', 'blanchissage')}
+    {renderRow('Vêtement professionnel', 'vetement_pro', true)}
+    {renderRow('PTT+Telephone+Internet', 'ptt')}
+    {renderRow('Enlèv.fonds et trait. déchets', 'enlev_fonds')}
+    {renderRow('Transport et déplacement', 'transport')}
+    {renderRow('Honoraires comptables + juridiques (+ CAC)', 'honoraires_comptables')}
+    {renderRow('Honoraires divers', 'honoraires_divers')}
+    {renderHeader('TOTAL FG d\'exploitation', totalFgExploitationB, totalFgExploitationR, true)}
+
+    {renderSectionBanner('🔧', "Frais Généraux d'Occupation")}
+    {renderRow('Contrats maintenance', 'contrats_maintenance', true)}
+    {renderRow('Entretien & répar. locaux.', 'entretien_locaux')}
+    {renderRow('Nettoyage locaux & ext.', 'nettoyage_locaux')}
+    {renderRow('Surveillance-Sécurité-Voiturier', 'surveillance')}
+    {renderRow('Energie', 'energie', true)}
+    {renderRow('Gaz-Eau', 'gaz_eau')}
+    {renderRow('Assurances', 'assurances')}
+    {renderHeader('TOTAL FG d\'occupation', totalFgOccupationB, totalFgOccupationR, true)}
+
+    {renderTotal('RESULTAT GESTION', resultatGestionB, resultatGestionR)}
+
+    {renderSectionBanner('🏗️', 'Coût des Immeubles')}
+    {renderRow('Amortissements', 'amortissements')}
+    {renderRow('Crédit Bail', 'credit_bail')}
+    {renderRow('Loyers Murs', 'loyers_murs')}
+    {renderRow('Charges locatives et GIE', 'charges_locatives')}
+    {renderRow('Impots et taxes', 'impots_taxes')}
+    {renderHeader('COUT DES IMM.', coutImmB, coutImmR, true)}
+
+    {renderSectionBanner('📊', 'Résultats et Trésorerie')}
+    {renderRow('Redavances Spre SACEM', 'redevances_spre')}
+    {renderRow('Redevances Grpe Flo', 'redevances_flo')}
+    {renderRow('Marketing', 'marketing')}
+    {renderRow('Except de gestion(Diff.de caisse+Remb Ass)', 'except_gestion')}
+    {renderRow('Frais de banque', 'frais_banque')}
+    {renderTotal('RES. D\'EXPLOIT', resExploitB, resExploitR)}
+
+    {renderRow('Net financier', 'net_financier')}
+    {renderTotal('RES. COURANT', resCourantB, resCourantR)}
+
+    {renderRow('Amortissement except.', 'amortissement_except')}
+    {renderRow('Frais de Holding', 'frais_holding')}
+    {renderRow('Pertes exceptionnelles', 'pertes_except')}
+    {renderTotal('RES. NET avant IS', resNetAvantIsB, resNetAvantIsR)}
+
+    {renderRow('Retraitement DAA & Net financier', 'retraitement_daa')}
+    {renderTotal('E.B.E.( credit CICE inclus)', ebeB, ebeR)}
+
+    {renderRow('Remboursement net financier', 'remboursement_net')}
+    {renderRow('Remboursement Capital emprunté', 'remboursement_capital')}
+    {renderTotal('Cash Flow avant IS', cashFlowB, cashFlowR)}
+    </tbody>
+  </table>
+  );
+
   return (
     <div style={{ height: '100%', background: '#f8fafc', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', overflow: 'hidden', position: 'relative' }}>
       <style>{`
@@ -609,32 +733,34 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
         </div>
         )}
 
+        {isMobile ? (
+        <>
         {/* KPI Summary Cards */}
-        <div style={{ display: 'flex', gap: isMobile ? 8 : 16, padding: hideHeader ? (isMobile ? '10px 12px 0' : '12px 20px 0') : (isMobile ? '12px 12px 0' : '20px 32px 0'), flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+        <div style={{ display: 'flex', gap: 8, padding: hideHeader ? '10px 12px 0' : '12px 12px 0', flexWrap: 'wrap' }}>
           {kpiCards.map(k => {
             const rawEcart = monthHasRealiseData ? ecart(k.r, k.b) : null;
             const kpiEcartColor = ecartColor(rawEcart);
             const kpiEcartText = ecartText(rawEcart, k.invert);
             const kpiRatioEcart = ecartRatioText(rawEcart, k.b, k.invert);
             return (
-              <div key={k.label} style={{ flex: 1, minWidth: isMobile ? '47%' : 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: hideHeader ? '8px 14px' : (isMobile ? '10px 12px' : '14px 16px'), boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                <div style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div key={k.label} style={{ flex: 1, minWidth: '47%', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: hideHeader ? '8px 14px' : '10px 12px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {k.label}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? 11 : 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
                     <span style={{ color: '#94a3b8' }}>Budget</span>
                     <span style={{ fontWeight: 600, color: '#0f172a' }}>{euro(k.b)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? 11 : 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
                     <span style={{ color: '#94a3b8' }}>Réalisé</span>
                     <span style={{ fontWeight: 600, color: '#0f172a' }}>{euro(k.r)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: isMobile ? 11 : 12, borderTop: '1px solid #f1f5f9', paddingTop: 4, marginTop: 2 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 11, borderTop: '1px solid #f1f5f9', paddingTop: 4, marginTop: 2 }}>
                     <span style={{ color: '#94a3b8' }}>Écart</span>
                     <span>
                       <span style={{ fontWeight: 700, color: kpiEcartColor }}>{kpiEcartText}</span>
-                      {kpiRatioEcart && <span style={{ marginLeft: 6, fontSize: isMobile ? 10 : 11, fontWeight: 600, color: kpiEcartColor }}>({kpiRatioEcart})</span>}
+                      {kpiRatioEcart && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: kpiEcartColor }}>({kpiRatioEcart})</span>}
                     </span>
                   </div>
                 </div>
@@ -644,133 +770,59 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
         </div>
 
         {/* Table Area */}
-        <div style={{ flex: 1, overflow: 'auto', padding: hideHeader ? (isMobile ? 12 : 16) : (isMobile ? 12 : 32) }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
           <div style={{ height: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
-              <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
-                <thead>
-                <tr>
-                  <th style={{ background: '#fff', position: 'sticky', left: 0, top: 0, zIndex: 50, border: 'none', padding: '0 0 12px 0' }}></th>
-                  
-                  <th style={{ background: '#fff', position: 'sticky', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
-                  <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>BUDGET</th>
-                  
-                  <th style={{ background: '#fff', position: 'sticky', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
-                  <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>REALISE</th>
-                  
-                  <th style={{ background: '#fff', position: 'sticky', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
-                  <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>ÉCART BUDGET</th>
-                </tr>
-                <tr>
-                  <th style={{ background: '#fff', position: 'sticky', left: 0, top: 34, zIndex: 50, border: 'none', padding: '0 0 12px 0' }}></th>
-                  
-                  <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
-                  
-                  <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
-                  
-                  <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#e2e8f0', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}></th>
-                </tr>
-              </thead>
-              <tbody style={{ borderTop: '1px solid #cbd5e1' }}>
-              {renderHeader('C.A. TOTAL HT', caTotalHtBudget, caTotalHtRealise, true)}
-              {renderSectionBanner('🍽️', 'Coût Matière')}
-              {renderRow('Achats Food', 'achats_food', true)}
-              {renderRow('Consommables liés à la vente (Paper; Flyer;jouets;CO2)', 'consommables')}
-              {renderRow('Variation de stock', 'variation_stock')}
-              {renderRow('Repas des salariés (2,29€+1,23€/repas)', 'repas_salaries')}
-              {renderTotal('TOTA COUT MATIERE', coutMatiereB, coutMatiereR)}
-              {renderSectionBanner('📈', 'Marge')}
-              {renderHeader('Marge brute', margeBruteB, margeBruteR, true)}
-              {renderRow('Refacturation Pub, Revenus Ecoles & format°et huiles usagées', 'refacturation')}
-              {renderTotal('TOTAL MARGE', totalMargeB, totalMargeR)}
-
-              {renderSectionBanner('👥', 'Personnel')}
-              {renderRow('Coût salaires', 'cout_salaires', true)}
-              {renderRow('Charges sociales', 'charges_sociales')}
-              {renderRow('Frais de formation et réaffectation salaires', 'frais_formation')}
-              {renderRow('Aides et Subventions', 'aides_subventions')}
-              {renderSubTotal('Frais person. directs', fraisPersDirectsB, fraisPersDirectsR)}
-              {renderRow('Provision CP+ JF+ RC BRUT', 'prov_cp_brut')}
-              {renderRow('Provision CP+ JF+ RC PAT', 'prov_cp_pat')}
-              {renderRow('Prov. prud\'h, pro et div.', 'prov_prud')}
-              {renderSubTotal('Frais Pers. indirects', fraisPersIndirectsB, fraisPersIndirectsR)}
-              {renderRow('Taxe sur les salaires', 'taxe_salaires')}
-              {renderRow('Autres primes et divers', 'autres_primes')}
-              {renderSubTotal('Total autres frais person.', totalAutresFraisPersB, totalAutresFraisPersR)}
-              {renderHeader('TOTAL Salaires et charges', totalSalairesChargesB, totalSalairesChargesR, true)}
-
-              {renderSectionBanner('📣', 'Publicité')}
-              {renderRow('Prestation animation + décoration', 'prestation_anim', true)}
-              {renderRow('Publicité locale + Com Agence + Annonces', 'pub_locale')}
-              {renderHeader('TOTAL PUBLICITE', totalPubliciteB, totalPubliciteR, true)}
-
-              {renderSectionBanner('🏢', "Frais Généraux d'Exploitation")}
-              {renderRow('Comm. / encaissement', 'comm_encaissement')}
-              {renderRow('Produits d\'entretien et linge à jeter', 'produits_entretien', true)}
-              {renderRow('Fournitures d\'exploitation et de bureau', 'fournitures_bureau', true)}
-              {renderRow('Matériel et outillage', 'materiel_outillage', true)}
-              {renderRow('Blanchissage-Entretien matériel', 'blanchissage')}
-              {renderRow('Vêtement professionnel', 'vetement_pro', true)}
-              {renderRow('PTT+Telephone+Internet', 'ptt')}
-              {renderRow('Enlèv.fonds et trait. déchets', 'enlev_fonds')}
-              {renderRow('Transport et déplacement', 'transport')}
-              {renderRow('Honoraires comptables + juridiques (+ CAC)', 'honoraires_comptables')}
-              {renderRow('Honoraires divers', 'honoraires_divers')}
-              {renderHeader('TOTAL FG d\'exploitation', totalFgExploitationB, totalFgExploitationR, true)}
-
-              {renderSectionBanner('🔧', "Frais Généraux d'Occupation")}
-              {renderRow('Contrats maintenance', 'contrats_maintenance', true)}
-              {renderRow('Entretien & répar. locaux.', 'entretien_locaux')}
-              {renderRow('Nettoyage locaux & ext.', 'nettoyage_locaux')}
-              {renderRow('Surveillance-Sécurité-Voiturier', 'surveillance')}
-              {renderRow('Energie', 'energie', true)}
-              {renderRow('Gaz-Eau', 'gaz_eau')}
-              {renderRow('Assurances', 'assurances')}
-              {renderHeader('TOTAL FG d\'occupation', totalFgOccupationB, totalFgOccupationR, true)}
-              
-              {renderTotal('RESULTAT GESTION', resultatGestionB, resultatGestionR)}
-
-              {renderSectionBanner('🏗️', 'Coût des Immeubles')}
-              {renderRow('Amortissements', 'amortissements')}
-              {renderRow('Crédit Bail', 'credit_bail')}
-              {renderRow('Loyers Murs', 'loyers_murs')}
-              {renderRow('Charges locatives et GIE', 'charges_locatives')}
-              {renderRow('Impots et taxes', 'impots_taxes')}
-              {renderHeader('COUT DES IMM.', coutImmB, coutImmR, true)}
-
-              {renderSectionBanner('📊', 'Résultats et Trésorerie')}
-              {renderRow('Redavances Spre SACEM', 'redevances_spre')}
-              {renderRow('Redevances Grpe Flo', 'redevances_flo')}
-              {renderRow('Marketing', 'marketing')}
-              {renderRow('Except de gestion(Diff.de caisse+Remb Ass)', 'except_gestion')}
-              {renderRow('Frais de banque', 'frais_banque')}
-              {renderTotal('RES. D\'EXPLOIT', resExploitB, resExploitR)}
-              
-              {renderRow('Net financier', 'net_financier')}
-              {renderTotal('RES. COURANT', resCourantB, resCourantR)}
-              
-              {renderRow('Amortissement except.', 'amortissement_except')}
-              {renderRow('Frais de Holding', 'frais_holding')}
-              {renderRow('Pertes exceptionnelles', 'pertes_except')}
-              {renderTotal('RES. NET avant IS', resNetAvantIsB, resNetAvantIsR)}
-              
-              {renderRow('Retraitement DAA & Net financier', 'retraitement_daa')}
-              {renderTotal('E.B.E.( credit CICE inclus)', ebeB, ebeR)}
-              
-              {renderRow('Remboursement net financier', 'remboursement_net')}
-              {renderRow('Remboursement Capital emprunté', 'remboursement_capital')}
-              {renderTotal('Cash Flow avant IS', cashFlowB, cashFlowR)}
-            </tbody>
-          </table>
+              {edgTable}
             </div>
           </div>
         </div>
+        </>
+        ) : (
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {/* Colonne KPI gauche */}
+          <div style={{ width: 176, flexShrink: 0, overflowY: 'auto', background: '#f8fafc', borderRight: '1px solid #e2e8f0', padding: hideHeader ? '12px 10px' : '16px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {kpiCards.map(k => {
+              const rawEcart = monthHasRealiseData ? ecart(k.r, k.b) : null;
+              const kpiEcartColor = ecartColor(rawEcart);
+              const kpiEcartText = ecartText(rawEcart, k.invert);
+              const kpiRatioEcart = ecartRatioText(rawEcart, k.b, k.invert);
+              return (
+                <div key={k.label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 12px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, whiteSpace: 'normal' }}>
+                    {k.label}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                      <span style={{ color: '#94a3b8' }}>Budget</span>
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>{euro(k.b)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                      <span style={{ color: '#94a3b8' }}>Réalisé</span>
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>{euro(k.r)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 12, borderTop: '1px solid #f1f5f9', paddingTop: 4, marginTop: 2 }}>
+                      <span style={{ color: '#94a3b8' }}>Écart</span>
+                      <span>
+                        <span style={{ fontWeight: 700, color: kpiEcartColor }}>{kpiEcartText}</span>
+                        {kpiRatioEcart && <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, color: kpiEcartColor }}>({kpiRatioEcart})</span>}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Tableau */}
+          <div style={{ flex: 1, overflow: 'auto', padding: hideHeader ? 16 : 24 }}>
+            <div style={{ height: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: 1, overflow: 'auto' }}>
+                {edgTable}
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
       </main>
     </div>
   );

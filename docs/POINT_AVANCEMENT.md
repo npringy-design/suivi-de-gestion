@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (EdgMensuel : cartes KPI en colonne latérale desktop)
+
+- `EdgMensuel.tsx` : sur desktop (`!isMobile`), les 5 cartes KPI passent d'un bandeau horizontal au-dessus du tableau à une colonne latérale gauche fixe (176px, fond `#f8fafc`, scroll indépendant) — le tableau récupère toute la hauteur disponible à droite. Mobile inchangé (bandeau horizontal wrap au-dessus du tableau). Le tableau (thead + tbody, ~50 lignes détail) est désormais extrait dans une variable `edgTable` réutilisée dans les deux branches mobile/desktop pour éviter la duplication du JSX. Aucun calcul ni donnée touché. tsc OK, build OK. Vérification visuelle non faite (Supabase non configuré en dev local — page de connexion bloquante) — à valider après déploiement.
+
 ## 13/07/2026 (Lisibilité cellules + agrégats "à date" EDG annuels)
 
 - `BudgetEdgAnnuel.tsx` : les cellules Budget/Réalisé/Écart empilaient montant + ratio dans une même `<td>` via une div flex (illisible sur 80px) — découpées en colonnes séparées Montant/Ratio (comme `VsBudget.tsx`, déjà correct), pour les colonnes mensuelles et pour la colonne Total. `<thead>` adapté en conséquence (`colSpan` 3→6 par mois/total, sous-en-tête "Ratio" ajouté pour Budget et Réalisé, dupliqué pour Écart qui n'en avait pas). Aucune valeur ni logique de calcul touchée, uniquement le découpage des `<td>` et l'ajout d'un ratio d'écart affiché en plus (non calculé auparavant).
