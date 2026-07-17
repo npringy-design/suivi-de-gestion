@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (fix VsN1 : les données N-1 étaient structurellement toujours vides)
+
+- Bug racine : `VsN1.tsx` lisait le "N-1" via un champ `edgMensuelN1` (saisie manuelle censée exister par mois) qui n'avait **aucun producteur** dans toute l'appli — ni UI de saisie, ni import Excel (l'import "Suivi 2025" écrit dans `edgMensuel`/le réalisé de l'année **courante affichée**, jamais dans un champ N-1). Résultat : la comparaison N-1 affichait 0 partout, quel que soit l'import fait.
+- Fix : `VsN1.tsx` va désormais chercher les **vraies données réalisées de l'année précédente** (`allData[YEAR - 1]`), avec le même mécanisme que `RecapAnnuel.tsx` (`loadYearFromCloud(YEAR - 1)` au montage pour récupérer l'année N-1 depuis Supabase si absente en local). Le réalisé N-1 par ligne EDG est calculé exactement comme le réalisé de l'année courante (saisie manuelle `edgMensuelRealise` de l'année N-1 si présente, sinon auto-calcul depuis le Suivi Quotidien N-1 via `computeMonthDashboard`/`getAutoRealiseValues`/`getCaRealiseMonth`). Le champ `edgMensuelN1` (mort, jamais alimenté) est supprimé : `updateEdgMensuelN1` (`DataContext.tsx`), le type `edgMensuelN1?` (`dataTypes.ts`), et son entrée dans l'union de `updateMonthlyStringRecordData` (`dataContextUpdateHelpers.ts`).
+- Aucune formule métier changée pour l'année courante ; seule la source de comparaison N-1 est corrigée. tsc OK, build OK, 99 tests OK.
+
 ## 17/07/2026 (EDG annuel : cartes KPI en colonne latérale sur les 4 autres onglets)
 
 - Même restructuration qu'`EdgMensuel.tsx` appliquée à `BudgetEdgAnnuel.tsx`, `RealiseEdgAnneeFiscale.tsx`, `VsBudget.tsx` et `VsN1.tsx` : cartes KPI déplacées du bandeau horizontal au-dessus du tableau vers une colonne latérale gauche fixe (260px, fond `#f8fafc`, scroll indépendant) — le tableau (12 mois) récupère toute la hauteur disponible à droite. Ces 4 vues n'ont pas de mode mobile (`isMobile` inexistant), la colonne latérale s'applique donc systématiquement. Aucun calcul ni donnée touché, uniquement la disposition JSX. tsc OK, build OK.

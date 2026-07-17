@@ -299,7 +299,6 @@ export type MonthData = {
   dashboard?: Record<string, string>;
   edgMensuel?: Record<string, string>;
   edgMensuelRealise?: Record<string, string>;
-  edgMensuelN1?: Record<string, string>;
   miseEnPaiement?: MonthDataMiseEnPaiement;
   salariesConfig?: MonthDataSalariesConfig;
   personnelSchema?: PersonnelSchema;

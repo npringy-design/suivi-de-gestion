@@ -98,7 +98,6 @@ type DataContextType = {
   updateDashboard: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuel: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuelRealise: (month: number, cellKey: string, value: string) => void;
-  updateEdgMensuelN1: (month: number, cellKey: string, value: string) => void;
   importEdgBudget: (valuesByMonth: Record<number, Record<string, string>>) => void;
   updateMiseEnPaiement: (month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | number | boolean) => void;
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
@@ -793,10 +792,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'edgMensuelRealise', cellKey, value));
   }, [updateDataForYear]);
 
-  const updateEdgMensuelN1 = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'edgMensuelN1', cellKey, value));
-  }, [updateDataForYear]);
-
   // Import en lot du budget EDG (une valeur par mois et par clé) : une seule mise à jour
   // d'état au lieu d'une boucle sur updateEdgMensuel (jusqu'à 12 mois x ~50 clés).
   const importEdgBudget = useCallback((valuesByMonth: Record<number, Record<string, string>>) => {
@@ -903,7 +898,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateDashboard,
     updateEdgMensuel,
     updateEdgMensuelRealise,
-    updateEdgMensuelN1,
     importEdgBudget,
     updateMiseEnPaiement,
     updateSalariesConfig,
@@ -944,7 +938,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateDashboard,
     updateEdgMensuel,
     updateEdgMensuelRealise,
-    updateEdgMensuelN1,
     importEdgBudget,
     updateMiseEnPaiement,
     updateSalariesConfig,

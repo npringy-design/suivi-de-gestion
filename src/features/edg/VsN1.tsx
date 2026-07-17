@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
@@ -15,8 +15,16 @@ interface VsN1Props {
 
 
 export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
-  const { data, selectedYear } = useData();
+  const { data, allData, selectedYear, loadYearFromCloud } = useData();
   const YEAR = selectedYear;
+
+  // Charge les mois N-1 depuis Supabase si l'année précédente n'est pas encore en local
+  // (même mécanisme que RecapAnnuel.tsx pour les frais personnel N-1).
+  useEffect(() => {
+    void loadYearFromCloud(YEAR - 1);
+  }, [YEAR, loadYearFromCloud]);
+
+  const dataN1 = allData[YEAR - 1] ?? {};
 
   // Un mois futur ou en cours n'a pas de réalisé complet à comparer à son équivalent N-1 —
   // les agrégats "à date" (cartes KPI + colonnes Total) n'additionnent que les mois clos, des deux
@@ -35,12 +43,27 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
     [computedMonths, YEAR],
   );
 
+  const computedMonthsN1 = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => computeMonthDashboard(dataN1[i], i, YEAR - 1)),
+    [dataN1, YEAR],
+  );
+  const autoRealiseByMonthN1 = useMemo(
+    () => computedMonthsN1.map((cm, i) => getAutoRealiseValues(cm, i, YEAR - 1)),
+    [computedMonthsN1, YEAR],
+  );
+
   const getCaMonth = (m: number) => getCaRealiseMonth(computedMonths[m], m, YEAR);
+  const getCaN1Month = (m: number) => getCaRealiseMonth(computedMonthsN1[m], m, YEAR - 1);
 
   const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [computedMonths]);
+  const caN1Months = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaN1Month(i)), [computedMonthsN1]);
   const caTotal = caMonths.reduce((sum, v, i) => (isMonthComplete(i) ? sum + v : sum), 0);
 
-  const getValN1 = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuelN1?.[key]);
+  const getValN1 = (m: number, key: string) => {
+    const override = dataN1[m]?.edgMensuelRealise?.[key];
+    if (override !== undefined && override !== '') return parseMoneyValue(override);
+    return autoRealiseByMonthN1[m]?.[key] ?? 0;
+  };
   const getValR = (m: number, key: string) => {
     const override = data[m]?.edgMensuelRealise?.[key];
     if (override !== undefined && override !== '') return parseMoneyValue(override);
@@ -56,7 +79,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   };
 
   const getMonthCalculations = (m: number) => {
-    const caN1 = parseMoneyValue(data[m]?.edgMensuelN1?.['ca_total_ht']);
+    const caN1 = caN1Months[m];
     const caR = caMonths[m]; // Realise CA from dashboard
     
     const valN1 = (k: string) => getValN1(m, k);
@@ -161,7 +184,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
           const rVal = rowData.monthsR[m];
           const eVal = ecart(rVal, n1Val);
 
-          const caN1 = parseMoneyValue(data[m]?.edgMensuelN1?.['ca_total_ht']);
+          const caN1 = caN1Months[m];
           const caR = caMonths[m];
 
           const ratioN1 = caN1 ? (n1Val / caN1) * 100 : 0;
@@ -262,9 +285,9 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
           const rVal = mCalc.realise[calcKey];
           const eVal = ecart(rVal, n1Val);
           
-          const caN1 = parseMoneyValue(data[m]?.edgMensuelN1?.['ca_total_ht']);
+          const caN1 = caN1Months[m];
           const caR = caMonths[m];
-          
+
           const ratioN1 = caN1 ? (n1Val / caN1) * 100 : 0;
           const ratioR = caR ? (rVal / caR) * 100 : 0;
           const ratioE = ratioR - ratioN1;
