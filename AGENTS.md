@@ -72,11 +72,12 @@ Voir `src/features/dashboard/ARCHITECTURE.md`.
 
 ---
 
-## Règles de commit
+## Règles de commit et déploiement
 
 - Un commit par tâche cohérente.
 - Message court : `"feat: ..."`, `"fix: ..."`, `"refactor: ..."`, `"docs: ..."`.
 - Vérifier `tsc --noEmit` avant chaque commit.
+- **Après chaque commit : `git push origin main`** — le déploiement Vercel se déclenche automatiquement.
 
 ---
 

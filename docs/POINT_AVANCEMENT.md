@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (AGENTS.md : règle push automatique)
+
+- AGENTS.md : ajout règle push automatique vers main après chaque commit.
+
 ## 17/07/2026 (EdgMensuel : cartes KPI en colonne latérale desktop)
 
 - `EdgMensuel.tsx` : sur desktop (`!isMobile`), les 5 cartes KPI passent d'un bandeau horizontal au-dessus du tableau à une colonne latérale gauche fixe (176px, fond `#f8fafc`, scroll indépendant) — le tableau récupère toute la hauteur disponible à droite. Mobile inchangé (bandeau horizontal wrap au-dessus du tableau). Le tableau (thead + tbody, ~50 lignes détail) est désormais extrait dans une variable `edgTable` réutilisée dans les deux branches mobile/desktop pour éviter la duplication du JSX. Aucun calcul ni donnée touché. tsc OK, build OK. Vérification visuelle non faite (Supabase non configuré en dev local — page de connexion bloquante) — à valider après déploiement.
