@@ -5,6 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (en-têtes sticky EDG annuels qui disparaissent au scroll horizontal)
+
+- Signalé sur "Budget EDG annuel" (probablement les 5 vues EDG, même implémentation copiée) : les bandeaux d'en-tête sticky (mois JANV/FÉVR..., BUDGET/Ratio/RÉALISÉ...) se vidaient visuellement pendant un scroll horizontal, alors que le scroll vertical restait à 0 — symptôme d'un défaut de repaint connu de Chromium sur les cellules `position: sticky` dans un tableau scrollable horizontalement (l'élément sticky n'est pas recomposé correctement tant qu'aucun scroll vertical ne force un repaint).
+- Fix : ajout de `transform: 'translateZ(0)'` sur toutes les cellules sticky (en-têtes haut + colonne libellés gauche) des 5 vues EDG (`EdgMensuel.tsx`, `BudgetEdgAnnuel.tsx`, `RealiseEdgAnneeFiscale.tsx`, `VsBudget.tsx`, `VsN1.tsx`) — force chaque cellule sur sa propre couche de composition GPU, correctif standard pour ce type de défaut de rendu, sans effet sur le positionnement (translation nulle) ni sur les calculs/données. tsc OK, eslint OK, 104 tests OK, build OK. Correctif appliqué par déduction (bug de rendu non reproductible dans cet environnement de dev local sans session Supabase) — à confirmer après déploiement, remonter si le symptôme persiste.
+
 ## 17/07/2026 (bouton Déconnexion retiré du global, déplacé sur l'Accueil)
 
 - `AuthGate.tsx` : le bouton "Deconnexion" flottant (`fixed bottom-4 right-4`) était affiché par-dessus **toutes** les pages de l'appli. Remplacé par un contexte React `AuthSessionContext`/hook `useAuthSession()` exposant `session`/`signOut`, consommé uniquement par la page qui en a besoin — plus aucun bouton global.

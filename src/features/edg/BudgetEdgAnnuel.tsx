@@ -152,7 +152,7 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
 
     return (
       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-        <td style={{ padding: '8px 12px', fontSize: 12, background: '#fff', color: '#334155', position: 'sticky', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', minWidth: 250 }}>{label}</td>
+        <td style={{ padding: '8px 12px', fontSize: 12, background: '#fff', color: '#334155', position: 'sticky', transform: 'translateZ(0)', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', minWidth: 250 }}>{label}</td>
         {Array.from({ length: 12 }).map((_, m) => {
           const bVal = rowData.monthsB[m];
           const rVal = rowData.monthsR[m];
@@ -248,7 +248,7 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
 
     return (
       <tr style={{ borderBottom, borderTop }}>
-        <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: weight, background: bg, color: color, position: 'sticky', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', textTransform: type === 'header' || type === 'total' ? 'uppercase' : 'none' }}>{label}</td>
+        <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: weight, background: bg, color: color, position: 'sticky', transform: 'translateZ(0)', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', textTransform: type === 'header' || type === 'total' ? 'uppercase' : 'none' }}>{label}</td>
         {monthCalcs.map((mCalc, m) => {
           const bVal = mCalc.budget[calcKey];
           const rVal = mCalc.realise[calcKey];
@@ -390,32 +390,32 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
             <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
               <thead>
                 <tr style={{ height: 34 }}>
-                  <th style={{ background: '#f1f5f9', position: 'sticky', left: 0, top: 0, zIndex: 50, borderRight: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1' }}></th>
+                  <th style={{ background: '#f1f5f9', position: 'sticky', transform: 'translateZ(0)', left: 0, top: 0, zIndex: 50, borderRight: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1' }}></th>
                   {MONTHS_SHORT.map((m, i) => (
                     <React.Fragment key={i}>
-                      <th colSpan={6} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{m}</th>
+                      <th colSpan={6} style={{ position: 'sticky', transform: 'translateZ(0)', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>{m}</th>
                     </React.Fragment>
                   ))}
-                  <th colSpan={6} style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '8px 0', background: '#e2e8f0', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '2px solid #cbd5e1' }}>À DATE {YEAR}</th>
+                  <th colSpan={6} style={{ position: 'sticky', transform: 'translateZ(0)', top: 0, zIndex: 40, borderBottom: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '8px 0', background: '#e2e8f0', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '2px solid #cbd5e1' }}>À DATE {YEAR}</th>
                 </tr>
                 <tr style={{ height: 34 }}>
-                  <th style={{ background: '#f1f5f9', position: 'sticky', left: 0, top: 34, zIndex: 50, borderRight: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1' }}></th>
+                  <th style={{ background: '#f1f5f9', position: 'sticky', transform: 'translateZ(0)', left: 0, top: 34, zIndex: 50, borderRight: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1' }}></th>
                   {MONTHS_SHORT.map((m, i) => (
                     <React.Fragment key={i}>
-                      <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 80, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>BUDGET</th>
-                      <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>Ratio</th>
-                      <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 80, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>RÉALISÉ</th>
-                      <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#fef9c3', color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>Ratio</th>
-                      <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 80, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>ÉCART</th>
-                      <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#fee2e2', color: '#991b1b', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>Ratio</th>
+                      <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 80, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>BUDGET</th>
+                      <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>Ratio</th>
+                      <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 80, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>RÉALISÉ</th>
+                      <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#fef9c3', color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>Ratio</th>
+                      <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 80, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>ÉCART</th>
+                      <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 600, fontSize: 11, padding: '8px 0', background: '#fee2e2', color: '#991b1b', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #cbd5e1' }}>Ratio</th>
                     </React.Fragment>
                   ))}
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 90, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f1f5f9', color: '#475569', borderLeft: '2px solid #cbd5e1' }}>BUDGET</th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>Ratio</th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 90, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f1f5f9', color: '#475569', borderLeft: '1px solid #e2e8f0' }}>RÉALISÉ</th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef9c3', color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>Ratio</th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 90, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f1f5f9', color: '#475569', borderLeft: '1px solid #e2e8f0' }}>ÉCART</th>
-                  <th style={{ position: 'sticky', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fee2e2', color: '#991b1b', borderLeft: '1px solid #e2e8f0' }}>Ratio</th>
+                  <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 90, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f1f5f9', color: '#475569', borderLeft: '2px solid #cbd5e1' }}>BUDGET</th>
+                  <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f8fafc', color: '#64748b', borderLeft: '1px solid #e2e8f0' }}>Ratio</th>
+                  <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 90, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f1f5f9', color: '#475569', borderLeft: '1px solid #e2e8f0' }}>RÉALISÉ</th>
+                  <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef9c3', color: '#854d0e', borderLeft: '1px solid #e2e8f0' }}>Ratio</th>
+                  <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 90, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#f1f5f9', color: '#475569', borderLeft: '1px solid #e2e8f0' }}>ÉCART</th>
+                  <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderBottom: '2px solid #cbd5e1', width: 60, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fee2e2', color: '#991b1b', borderLeft: '1px solid #e2e8f0' }}>Ratio</th>
                 </tr>
               </thead>
               <tbody>

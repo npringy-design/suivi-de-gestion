@@ -221,7 +221,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           fontSize: isMobile ? 11 : 13, 
           background: '#fff', 
           color: '#334155', 
-          position: 'sticky', 
+          position: 'sticky', transform: 'translateZ(0)', 
           left: 0, 
           zIndex: 10, 
           borderRight: '1px solid #e2e8f0', 
@@ -295,7 +295,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           background: '#fef2f2', 
           textTransform: 'uppercase', 
           letterSpacing: '0.02em', 
-          position: 'sticky', 
+          position: 'sticky', transform: 'translateZ(0)', 
           left: 0, 
           zIndex: 10, 
           borderRight: '2px solid #cbd5e1', 
@@ -357,7 +357,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           color: '#166534', 
           textTransform: 'uppercase', 
           letterSpacing: '0.02em', 
-          position: 'sticky', 
+          position: 'sticky', transform: 'translateZ(0)', 
           left: 0, 
           zIndex: 10, 
           borderRight: '2px solid #cbd5e1', 
@@ -408,7 +408,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           fontWeight: 600, 
           background: '#f8fafc', 
           color: '#334155', 
-          position: 'sticky', 
+          position: 'sticky', transform: 'translateZ(0)', 
           left: 0, 
           zIndex: 10, 
           borderRight: '1px solid #cbd5e1', 
@@ -471,31 +471,31 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
     <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
       <thead>
       <tr>
-        <th style={{ background: '#fff', position: 'sticky', left: 0, top: 0, zIndex: 50, border: 'none', padding: '0 0 12px 0' }}></th>
+        <th style={{ background: '#fff', position: 'sticky', transform: 'translateZ(0)', left: 0, top: 0, zIndex: 50, border: 'none', padding: '0 0 12px 0' }}></th>
 
-        <th style={{ background: '#fff', position: 'sticky', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
-        <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>BUDGET</th>
+        <th style={{ background: '#fff', position: 'sticky', transform: 'translateZ(0)', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th colSpan={2} style={{ position: 'sticky', transform: 'translateZ(0)', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>BUDGET</th>
 
-        <th style={{ background: '#fff', position: 'sticky', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
-        <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>REALISE</th>
+        <th style={{ background: '#fff', position: 'sticky', transform: 'translateZ(0)', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th colSpan={2} style={{ position: 'sticky', transform: 'translateZ(0)', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>REALISE</th>
 
-        <th style={{ background: '#fff', position: 'sticky', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
-        <th colSpan={2} style={{ position: 'sticky', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>ÉCART BUDGET</th>
+        <th style={{ background: '#fff', position: 'sticky', transform: 'translateZ(0)', top: 0, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th colSpan={2} style={{ position: 'sticky', transform: 'translateZ(0)', top: 0, zIndex: 40, borderTop: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700, fontSize: 12, padding: '8px 0', background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: 6, borderTopRightRadius: 6 }}>ÉCART BUDGET</th>
       </tr>
       <tr>
-        <th style={{ background: '#fff', position: 'sticky', left: 0, top: 34, zIndex: 50, border: 'none', padding: '0 0 12px 0' }}></th>
+        <th style={{ background: '#fff', position: 'sticky', transform: 'translateZ(0)', left: 0, top: 34, zIndex: 50, border: 'none', padding: '0 0 12px 0' }}></th>
 
-        <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
-        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
-        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
+        <th style={{ background: '#fff', position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
+        <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
 
-        <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
-        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
-        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
+        <th style={{ background: '#fff', position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
+        <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#fef3c7', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ratio</th>
 
-        <th style={{ background: '#fff', position: 'sticky', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
-        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
-        <th style={{ position: 'sticky', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#e2e8f0', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}></th>
+        <th style={{ background: '#fff', position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, border: 'none', width: 10 }}></th>
+        <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', width: 112, background: '#f8fafc' }}></th>
+        <th style={{ position: 'sticky', transform: 'translateZ(0)', top: 34, zIndex: 40, borderRight: '1px solid #cbd5e1', width: 72, textAlign: 'center', fontWeight: 700, fontSize: 11, padding: '8px 0', background: '#e2e8f0', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}></th>
       </tr>
     </thead>
     <tbody style={{ borderTop: '1px solid #cbd5e1' }}>
