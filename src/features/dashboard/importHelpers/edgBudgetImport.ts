@@ -103,7 +103,7 @@ const EDG_KEY_LABELS: Array<[string, string]> = [
   ['remboursement_capital', 'Remboursement Capital'],
 ].map(([key, label]) => [key, compact(label)]);
 
-const findEdgKeyForLabel = (rawLabel: string): string | null => {
+export const findEdgKeyForLabel = (rawLabel: string): string | null => {
   const label = compact(rawLabel);
   if (!label) return null;
   if (TOTAL_ROW_PATTERNS.some(pattern => label.includes(pattern))) return null;

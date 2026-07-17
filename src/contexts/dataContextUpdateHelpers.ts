@@ -104,3 +104,21 @@ export const mergeEdgMensuelBudgetData = (
   });
   return next;
 };
+
+// Même mécanisme que mergeEdgMensuelBudgetData, mais cible edgMensuelRealise. Utilisé par
+// l'import automatique du Réalisé EDG (onglets mensuels V25).
+export const mergeEdgMensuelRealiseData = (
+  prev: Record<number, MonthData>,
+  valuesByMonth: Record<number, Record<string, string>>,
+): Record<number, MonthData> => {
+  const next = { ...prev };
+  Object.entries(valuesByMonth).forEach(([monthKey, values]) => {
+    const month = Number(monthKey);
+    const monthData = normalizeMonthData(next[month]);
+    next[month] = {
+      ...monthData,
+      edgMensuelRealise: { ...(monthData.edgMensuelRealise || {}), ...values },
+    };
+  });
+  return next;
+};

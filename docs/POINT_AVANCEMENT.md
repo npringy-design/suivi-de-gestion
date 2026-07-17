@@ -5,6 +5,13 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (import EDG mensuel 2025 depuis les onglets 01-12 du V25)
+
+- Nouveau parseur `src/features/dashboard/importHelpers/edgMonthlySheetsImport.ts` : `parseEdgMonthlySheets(workbook)` lit les onglets mensuels du classeur V25 nommés `01` à `12` (un onglet par mois, contrairement au V26 où les 12 mois sont des blocs colonnes d'une seule feuille "ANNUEL BUDGET") et recopie tel quel — sans aucun calcul — le Budget (colonne C) et le Réalisé (colonne F) de chaque ligne EDG reconnue via `findEdgKeyForLabel` (exportée depuis `edgBudgetImport.ts`, réutilisée sans duplication : mêmes clés et lignes de total ignorées que l'import V26). Retourne `null` si aucun onglet `01`-`12` n'est trouvé ; une cellule vide n'ajoute pas de clé.
+- `DataContext` : ajout d'`importEdgRealise(valuesByMonth)` sur le modèle exact d'`importEdgBudget` (import en lot, une seule mise à jour d'état, mois marqués dirty pour la sync Supabase) + helper `mergeEdgMensuelRealiseData` (`dataContextUpdateHelpers.ts`, cible `edgMensuelRealise`).
+- Branché dans `handleHistoricalV25ExcelImport` (`useDashboardImportHandlers.ts`) uniquement (flux V26 non touché) : après le traitement existant, `parseEdgMonthlySheets(workbook)` est appelé et, si non-null, `importEdgBudget`/`importEdgRealise` importent directement (pas de preview/validation, comme le Budget EDG V26). Message de statut complété avec le nombre de mois EDG importés.
+- 5 tests unitaires (`edgMonthlySheetsImport.test.ts`, modèle `edgBudgetImport.test.ts`) : onglets absents, recopie Budget/Réalisé par mois, lignes de total ignorées, cellule vide → pas de clé, cellules formule ExcelJS. tsc OK, eslint OK, 104 tests OK, build OK.
+
 ## 17/07/2026 (fix CI GitHub Actions : erreur ESLint no-irregular-whitespace)
 
 - La CI GitHub Actions (`.github/workflows/ci.yml`) échouait sur `npm run lint` : `EdgMensuel.tsx` contenait une regex avec des caractères espace insécable/fine (U+00A0/U+202F) tapés en dur dans la classe de caractères (`replace(/[  ]/g, ' ')`), déclenchant `no-irregular-whitespace`. Remplacés par leurs échappements Unicode explicites (` `/` `), comportement identique. `npm run lint`, tsc, build et 99 tests passent tous.

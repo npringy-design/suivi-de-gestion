@@ -57,6 +57,7 @@ import {
   getHistoricalPayrollColumnMaps as getV25PayrollColumnMaps,
 } from '@/features/dashboard/importHelpers/historicalV25Import';
 import { parseEdgBudgetSheet } from '@/features/dashboard/importHelpers/edgBudgetImport';
+import { parseEdgMonthlySheets } from '@/features/dashboard/importHelpers/edgMonthlySheetsImport';
 
 type DayRowEntry = { row: DashboardRow; index: number };
 type ImportPreviewItem = { label: string; value: string };
@@ -95,6 +96,7 @@ type UseDashboardImportHandlersParams = {
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
   updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
   importEdgBudget: (valuesByMonth: Record<number, Record<string, string>>) => void;
+  importEdgRealise: (valuesByMonth: Record<number, Record<string, string>>) => void;
   markMonthsAsLoaded: (year: number, months: number[]) => void;
   saveNow: () => Promise<void>;
   personnelInfos: PersonnelInfo[];
@@ -133,6 +135,7 @@ export function useDashboardImportHandlers({
   updateSalariesConfig,
   updatePersonnelSchema,
   importEdgBudget,
+  importEdgRealise,
   markMonthsAsLoaded,
   saveNow,
   personnelInfos,
@@ -574,9 +577,23 @@ export function useDashboardImportHandlers({
       setImportPreview([]);
       setCaisseImportPreviews([]);
       setInvoiceImportPreviews([]);
-      setHistoricalV25Status(previews.length > 0
+
+      // EDG mensuel (Budget + Réalisé) : onglets "01"-"12" du classeur V25, indépendant du Suivi
+      // Quotidien, importé directement par simple recopie (pas de preview/validation, comme pour
+      // le Budget EDG V26 ci-dessus).
+      const edgMonthlyValues = parseEdgMonthlySheets(workbook);
+      if (edgMonthlyValues) {
+        importEdgBudget(edgMonthlyValues.budget);
+        importEdgRealise(edgMonthlyValues.realise);
+      }
+      const edgMonthsImported = edgMonthlyValues
+        ? new Set([...Object.keys(edgMonthlyValues.budget), ...Object.keys(edgMonthlyValues.realise)]).size
+        : 0;
+
+      setHistoricalV25Status((previews.length > 0
         ? `Budget V25 — ${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.`
-        : `Budget V25 — Aucun réalisé trouvé. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`);
+        : `Budget V25 — Aucun réalisé trouvé. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`)
+        + (edgMonthsImported > 0 ? ` EDG mensuel : ${edgMonthsImported} mois importés.` : ''));
     } catch (error) {
       setHistoricalV25Status('Erreur import budget V25 : ' + (error instanceof Error ? error.message : 'lecture impossible'));
     } finally {

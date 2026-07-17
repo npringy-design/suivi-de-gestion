@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 
 import { fetchCloudAppBootstrap, fetchCloudMonth, fetchCloudYearMonths, isCloudSyncConfigured, saveCloudAppState, type CloudAppState } from '@/services/supabaseAppState';
-import { mergeEdgMensuelBudgetData, normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
+import { mergeEdgMensuelBudgetData, mergeEdgMensuelRealiseData, normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
 import { parseMoneyValue } from '@/lib/money';
 import { createDefaultEdgChargesConfig } from '@/features/edg/edgChargesConfigDefaults';
 
@@ -99,6 +99,7 @@ type DataContextType = {
   updateEdgMensuel: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuelRealise: (month: number, cellKey: string, value: string) => void;
   importEdgBudget: (valuesByMonth: Record<number, Record<string, string>>) => void;
+  importEdgRealise: (valuesByMonth: Record<number, Record<string, string>>) => void;
   updateMiseEnPaiement: (month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | number | boolean) => void;
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
   updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
@@ -804,6 +805,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }));
   }, [selectedYear]);
 
+  // Import en lot du Réalisé EDG (même mécanisme qu'importEdgBudget, cible edgMensuelRealise).
+  const importEdgRealise = useCallback((valuesByMonth: Record<number, Record<string, string>>) => {
+    const months = Object.keys(valuesByMonth);
+    if (months.length === 0) return;
+    months.forEach(month => dirtyMonthKeysRef.current.add(selectedYear + ':' + month));
+    setAllData(prev => ({
+      ...prev,
+      [selectedYear]: mergeEdgMensuelRealiseData(prev[selectedYear] || {}, valuesByMonth),
+    }));
+  }, [selectedYear]);
+
   const updateMiseEnPaiement = useCallback((month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | number | boolean) => {
     const stored = (field === 'montantHT' || field === 'montantTTC') ? parseMoneyValue(value as string | number)
       : field === 'paiementEffectue' ? Boolean(value)
@@ -899,6 +911,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateEdgMensuel,
     updateEdgMensuelRealise,
     importEdgBudget,
+    importEdgRealise,
     updateMiseEnPaiement,
     updateSalariesConfig,
     updatePersonnelSchema,
@@ -939,6 +952,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateEdgMensuel,
     updateEdgMensuelRealise,
     importEdgBudget,
+    importEdgRealise,
     updateMiseEnPaiement,
     updateSalariesConfig,
     updatePersonnelSchema,
