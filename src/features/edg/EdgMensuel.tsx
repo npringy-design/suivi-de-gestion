@@ -85,7 +85,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
 
   // formatEuro sépare les milliers par une espace fine insécable (U+202F), invisible dans
   // certaines polices — remplacée ici par une espace normale pour une séparation lisible (1 500 au lieu de 1500).
-  const euro = (v: number) => formatEuro(v).replace(/[  ]/g, ' ');
+  const euro = (v: number) => formatEuro(v).replace(/[\u202F\u00A0]/g, ' ');
 
   const handleChangeBudget = (key: string, value: string) => {
     const cleanValue = value.replace(/[^0-9.,-]/g, '').replace(',', '.');

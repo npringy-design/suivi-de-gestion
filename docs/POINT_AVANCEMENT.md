@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/07/2026 (fix CI GitHub Actions : erreur ESLint no-irregular-whitespace)
+
+- La CI GitHub Actions (`.github/workflows/ci.yml`) échouait sur `npm run lint` : `EdgMensuel.tsx` contenait une regex avec des caractères espace insécable/fine (U+00A0/U+202F) tapés en dur dans la classe de caractères (`replace(/[  ]/g, ' ')`), déclenchant `no-irregular-whitespace`. Remplacés par leurs échappements Unicode explicites (` `/` `), comportement identique. `npm run lint`, tsc, build et 99 tests passent tous.
+
 ## 17/07/2026 (fix VsN1 : les données N-1 étaient structurellement toujours vides)
 
 - Bug racine : `VsN1.tsx` lisait le "N-1" via un champ `edgMensuelN1` (saisie manuelle censée exister par mois) qui n'avait **aucun producteur** dans toute l'appli — ni UI de saisie, ni import Excel (l'import "Suivi 2025" écrit dans `edgMensuel`/le réalisé de l'année **courante affichée**, jamais dans un champ N-1). Résultat : la comparaison N-1 affichait 0 partout, quel que soit l'import fait.
