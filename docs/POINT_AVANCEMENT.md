@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 18/07/2026 (fix écart budget Total Semaine : budget à date au lieu du budget complet)
+
+- `dashboardCalculations.ts` (Second pass Week Totals) : l'écart CA (`-22`/`-117`) et le ratio écart couverts (`-122`) des lignes Total Semaine comparaient le réalisé partiel au budget de la semaine complète (jours futurs inclus), produisant des écarts non exploitables en cours de semaine. Désormais le budget de comparaison est sommé uniquement sur les jours ayant du réalisé CA (col `-21` > 0) : `budgetCaAtDateW` (col `-3`) pour le CA, `budgetCvtsAtDate` (cols `-10` + `-14`) pour les couverts. `budgetCaW` (budget semaine complet) est conservé pour les ratios Frais Personnel Projection (cols 73/74/75) qui l'utilisent à bon droit. Total Mois (month_total) non touché. tsc OK, 104 tests OK, build OK.
+
 ## 17/07/2026 (bandeaux de section EDG : libellé sticky au scroll horizontal)
 
 - Le symptôme persistait après le `translateZ(0)` ci-dessous — le diagnostic était erroné : ce sont les **bandeaux de section** (COÛT MATIÈRE, MARGE, PERSONNEL...) qui n'étaient pas figés, pas les en-têtes de colonnes. Le `<td colSpan={999}>` du bandeau s'étale sur toute la largeur du tableau et défile avec lui : au scroll horizontal, le titre sortait de l'écran ("IATIÈRE", "NEL"...).

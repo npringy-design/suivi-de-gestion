@@ -582,10 +582,18 @@ export function computeDashboardData(
         if (nbMidiW > 0 && caMidiWr > 0) data[`${rIdx}-26`] = (caMidiWr / nbMidiW).toFixed(2);
         if (nbSoirW > 0 && caSoirWr > 0) data[`${rIdx}-28`] = (caSoirWr / nbSoirW).toFixed(2);
         const budgetCaW = parseMoneyValue(data[`${rIdx}-3`]);
-        if (budgetCaW > 0 || realiseCAW > 0) {
-          const ecartCaBudgetW = realiseCAW - budgetCaW;
+        // Écart au budget "à date" : uniquement les jours ayant du réalisé CA — comparer le
+        // réalisé partiel au budget de la semaine complète (jours futurs inclus) produirait
+        // des écarts sans signification. budgetCaW (semaine complète) reste utilisé plus bas
+        // pour les ratios Frais Personnel Projection (cols 73/74/75).
+        const budgetCaAtDateW = weekDays.reduce((sum, day) => {
+          const hasRealise = parseMoneyValue(data[`${day.originalIdx}-21`] || '') > 0;
+          return hasRealise ? sum + parseMoneyValue(data[`${day.originalIdx}-3`] || '') : sum;
+        }, 0);
+        if (budgetCaAtDateW > 0 || realiseCAW > 0) {
+          const ecartCaBudgetW = realiseCAW - budgetCaAtDateW;
           data[`${rIdx}-22`] = ecartCaBudgetW.toFixed(2);
-          if (budgetCaW > 0) data[`${rIdx}-117`] = ((ecartCaBudgetW / budgetCaW) * 100).toFixed(2);
+          if (budgetCaAtDateW > 0) data[`${rIdx}-117`] = ((ecartCaBudgetW / budgetCaAtDateW) * 100).toFixed(2);
         }
         const totalCvtsRealiseW = nbMidiW + nbSoirW;
         if (totalCvtsRealiseW > 0) {
@@ -596,9 +604,15 @@ export function computeDashboardData(
           if (budgetMoyJourW > 0) data[`${rIdx}-31`] = (moyJourRealiseW - budgetMoyJourW).toFixed(2);
           const lastWeekDay = weekDays[weekDays.length - 1];
           if (lastWeekDay) data[`${rIdx}-32`] = data[`${lastWeekDay.originalIdx}-32`] || totalCvtsRealiseW.toFixed(0);
-          const budgetCvtsW = parseMoneyValue(data[`${rIdx}-10`]) + parseMoneyValue(data[`${rIdx}-14`]);
+          // Budget couverts à date : uniquement les jours ayant du réalisé CA
+          const budgetCvtsAtDate = weekDays.reduce((sum, day) => {
+            const hasRealise = parseMoneyValue(data[`${day.originalIdx}-21`] || '') > 0;
+            return hasRealise
+              ? sum + parseMoneyValue(data[`${day.originalIdx}-10`] || '') + parseMoneyValue(data[`${day.originalIdx}-14`] || '')
+              : sum;
+          }, 0);
           const ecartCvtsW = parseMoneyValue(data[`${rIdx}-33`]);
-          if (budgetCvtsW > 0) data[`${rIdx}-122`] = ((ecartCvtsW / budgetCvtsW) * 100).toFixed(2);
+          if (budgetCvtsAtDate > 0) data[`${rIdx}-122`] = ((ecartCvtsW / budgetCvtsAtDate) * 100).toFixed(2);
         }
         // Démarques semaine
         const demPersonnelW = parseMoneyValue(data[`${rIdx}-39`]);
