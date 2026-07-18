@@ -835,10 +835,15 @@ export function computeDashboardData(
       if (nbMidiM > 0 && caMidiMr > 0) data[`${monthTotalIdx}-26`] = (caMidiMr / nbMidiM).toFixed(2);
       if (nbSoirM > 0 && caSoirMr > 0) data[`${monthTotalIdx}-28`] = (caSoirMr / nbSoirM).toFixed(2);
       const budgetCaM = parseMoneyValue(data[`${monthTotalIdx}-3`]);
-      if (budgetCaM > 0 || realiseCAM > 0) {
-        const ecartCaBudgetM = realiseCAM - budgetCaM;
+      // Budget à date : uniquement les jours ayant du réalisé CA — même logique que les totaux semaine
+      const budgetCaAtDateM = allDays.reduce((sum, day) => {
+        const hasRealise = parseMoneyValue(data[`${day.originalIdx}-21`] || '') > 0;
+        return hasRealise ? sum + parseMoneyValue(data[`${day.originalIdx}-3`] || '') : sum;
+      }, 0);
+      if (budgetCaAtDateM > 0 || realiseCAM > 0) {
+        const ecartCaBudgetM = realiseCAM - budgetCaAtDateM;
         data[`${monthTotalIdx}-22`] = ecartCaBudgetM.toFixed(2);
-        if (budgetCaM > 0) data[`${monthTotalIdx}-117`] = ((ecartCaBudgetM / budgetCaM) * 100).toFixed(2);
+        if (budgetCaAtDateM > 0) data[`${monthTotalIdx}-117`] = ((ecartCaBudgetM / budgetCaAtDateM) * 100).toFixed(2);
       }
       const totalCvtsM = nbMidiM + nbSoirM;
       if (totalCvtsM > 0) {
@@ -848,9 +853,15 @@ export function computeDashboardData(
         data[`${monthTotalIdx}-32`] = totalCvtsM.toFixed(0);
         const budgetMoyJourM = parseMoneyValue(data[`${monthTotalIdx}-11`]);
         if (budgetMoyJourM > 0) data[`${monthTotalIdx}-31`] = (moyJourRealiseM - budgetMoyJourM).toFixed(2);
-        const budgetCvtsM = parseMoneyValue(data[`${monthTotalIdx}-10`]) + parseMoneyValue(data[`${monthTotalIdx}-14`]);
+        // Budget couverts à date : uniquement les jours ayant du réalisé CA
+        const budgetCvtsAtDateM = allDays.reduce((sum, day) => {
+          const hasRealise = parseMoneyValue(data[`${day.originalIdx}-21`] || '') > 0;
+          return hasRealise
+            ? sum + parseMoneyValue(data[`${day.originalIdx}-10`] || '') + parseMoneyValue(data[`${day.originalIdx}-14`] || '')
+            : sum;
+        }, 0);
         const ecartCvtsM = parseMoneyValue(data[`${monthTotalIdx}-33`]);
-        if (budgetCvtsM > 0) data[`${monthTotalIdx}-122`] = ((ecartCvtsM / budgetCvtsM) * 100).toFixed(2);
+        if (budgetCvtsAtDateM > 0) data[`${monthTotalIdx}-122`] = ((ecartCvtsM / budgetCvtsAtDateM) * 100).toFixed(2);
       }
 
       const totalHeuresProjM = parseMoneyValue(data[`${monthTotalIdx}-61`]);

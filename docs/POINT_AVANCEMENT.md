@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 18/07/2026 (fix écart budget Total Mois : budget à date au lieu du budget complet)
+
+- `dashboardCalculations.ts` (Third pass Month Total) : même correction que le Total Semaine — l'écart CA (`-22`/`-117`) et le ratio écart couverts (`-122`) de la ligne Total Mois en bas du tableau comparaient désormais le réalisé partiel au budget des seuls jours ayant du réalisé CA (col `-21` > 0) : `budgetCaAtDateM` (col `-3`) et `budgetCvtsAtDateM` (cols `-10` + `-14`). `budgetCaM` (budget mois complet) conservé pour les ratios Frais Personnel Projection (cols 73/74/75). tsc OK, 104 tests OK, build OK.
+
 ## 18/07/2026 (fix écart budget Total Semaine : budget à date au lieu du budget complet)
 
 - `dashboardCalculations.ts` (Second pass Week Totals) : l'écart CA (`-22`/`-117`) et le ratio écart couverts (`-122`) des lignes Total Semaine comparaient le réalisé partiel au budget de la semaine complète (jours futurs inclus), produisant des écarts non exploitables en cours de semaine. Désormais le budget de comparaison est sommé uniquement sur les jours ayant du réalisé CA (col `-21` > 0) : `budgetCaAtDateW` (col `-3`) pour le CA, `budgetCvtsAtDate` (cols `-10` + `-14`) pour les couverts. `budgetCaW` (budget semaine complet) est conservé pour les ratios Frais Personnel Projection (cols 73/74/75) qui l'utilisent à bon droit. Total Mois (month_total) non touché. tsc OK, 104 tests OK, build OK.
