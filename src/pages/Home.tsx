@@ -981,7 +981,7 @@ export default function Home() {
             </div>
           </div>
 
-          <nav className="relative flex-1 overflow-y-auto px-2 py-3">
+          <nav className="relative flex-1 overflow-y-auto px-2 py-3 pb-20">
             <NavGroup title="Analyse" icon={BarChart3}>
               <NavItem label="Suivi Quotidien" onClick={navigationHandlers.goToDashboard} />
               <NavItem label="Suivi Quotidien V2" onClick={navigationHandlers.goToSuiviV2} />
