@@ -5,6 +5,16 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 19/07/2026 (nouvelles pages : Paramètres Entreprise + Suivi Quotidien V2)
+
+- `src/types/dataTypes.ts` : ajout types `PurchaseSupplier`, `PurchaseSection`, `CompanySettings`.
+- `src/features/parametres/companySettingsDefaults.ts` (NOUVEAU) : valeurs par défaut fournisseurs + personnel, mappage colonnes dashboard.
+- `src/services/supabaseAppState.ts` : segment cloud `companySettings` ajouté (fetch + save, pattern identique à `config2025`).
+- `src/contexts/DataContext.tsx` : état `companySettings` + `updateCompanySettings`, merge safe sur `applyCloudState`, reset local.
+- `src/features/parametres/ParametresEntreprise.tsx` (NOUVEAU) : page `/parametres-entreprise` — 3 sections (Identité, Achats dynamiques, Grille salariale), sauvegarde explicite.
+- `src/features/dashboard/SuiviQuotidienV2.tsx` (NOUVEAU) : page `/suivi-quotidien-v2` — pills mois, KPIs N-1, 4 onglets (CA éditable, Achats éditable, Personnel RO, Frais RO), écriture via `updateDashboard` (mêmes clés que Dashboard existant).
+- `src/router.tsx` + `src/pages/Home.tsx` : routes et entrées sidebar ajoutées (100% additif, aucune page existante modifiée). eslint 0 erreur, build OK.
+
 ## 18/07/2026 (fix écart budget Total Mois : budget à date au lieu du budget complet)
 
 - `dashboardCalculations.ts` (Third pass Month Total) : même correction que le Total Semaine — l'écart CA (`-22`/`-117`) et le ratio écart couverts (`-122`) de la ligne Total Mois en bas du tableau comparaient désormais le réalisé partiel au budget des seuls jours ayant du réalisé CA (col `-21` > 0) : `budgetCaAtDateM` (col `-3`) et `budgetCvtsAtDateM` (cols `-10` + `-14`). `budgetCaM` (budget mois complet) conservé pour les ratios Frais Personnel Projection (cols 73/74/75). tsc OK, 104 tests OK, build OK.

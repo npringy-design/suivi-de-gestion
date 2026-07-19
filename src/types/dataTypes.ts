@@ -281,6 +281,35 @@ export interface GroupDefinition {
   rows?: GroupDefinition[];
 }
 
+export type PurchaseSupplier = {
+  id: string;
+  name: string;
+  // Indice de colonne dans dashboardColumns pour les fournisseurs par défaut.
+  // null pour les fournisseurs ajoutés par l'utilisateur.
+  storeColumn: number | null;
+};
+
+export type PurchaseSection = {
+  id: string;
+  name: string;
+  suppliers: PurchaseSupplier[];
+};
+
+export type CompanySettings = {
+  enseigne: string;
+  localisation: string;
+  // Mois de début de l'exercice fiscal (0=Janvier, 11=Décembre).
+  exerciceFiscalStart: number;
+  purchaseSections: PurchaseSection[];
+  personnelRateMode: 'categories' | 'average' | 'import';
+  personnelRates: Record<PersonnelCategory, number>;
+  splitCuisineSalle: boolean;
+  // Objectif frais de personnel en %.
+  objectifFraisPersonnel: number;
+  // Productivité cible (CA HT / h travaillée).
+  productiviteCible: number;
+};
+
 export type MonthData = {
   theorique: Record<number, DayDataTheorique>;
   nepting: Record<number, DayDataNepting>;

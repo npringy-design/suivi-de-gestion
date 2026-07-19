@@ -240,6 +240,8 @@ export default function Home() {
       goToVisuelVacances: () => navigate('/visuel-vacances'),
       goToEcrituresComptables: () => navigate('/ecritures-comptables'),
       goToParametrageEdg: () => navigate('/parametrage-edg'),
+      goToParametresEntreprise: () => navigate('/parametres-entreprise'),
+      goToSuiviV2: () => navigate(`/suivi-quotidien-v2/${month}`),
     }),
     [navigate, month],
   );
@@ -982,6 +984,7 @@ export default function Home() {
           <nav className="relative flex-1 overflow-y-auto px-2 py-3">
             <NavGroup title="Analyse" icon={BarChart3}>
               <NavItem label="Suivi Quotidien" onClick={navigationHandlers.goToDashboard} />
+              <NavItem label="Suivi Quotidien V2" onClick={navigationHandlers.goToSuiviV2} />
               <NavItem label="Synthèse CA" onClick={navigationHandlers.goToSyntheseCA} />
               <NavItem label="Récap Annuel" onClick={navigationHandlers.goToRecapAnnuel} />
               <NavItem label="Reporting" onClick={navigationHandlers.goToReporting} />
@@ -999,6 +1002,7 @@ export default function Home() {
               <NavItem label="Vacances" onClick={navigationHandlers.goToVisuelVacances} />
               <NavItem label="Ecritures comptables" onClick={navigationHandlers.goToEcrituresComptables} />
               <NavItem label="Paramètre EDG" onClick={navigationHandlers.goToParametrageEdg} />
+              <NavItem label="Paramètres Entreprise" onClick={navigationHandlers.goToParametresEntreprise} />
             </NavGroup>
           </nav>
         </div>

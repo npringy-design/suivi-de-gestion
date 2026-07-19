@@ -40,6 +40,8 @@ const VisuelVacances = lazy(() => import('@/features/salaires/VisuelVacances'));
 const EdgAnnuelTabs = lazy(() => import('@/features/edg/EdgAnnuelTabs'));
 const ParametrageComptable = lazy(() => import('@/features/comptabilite/ParametrageComptable'));
 const ParametrageEdg = lazy(() => import('@/features/edg/ParametrageEdg'));
+const ParametresEntreprise = lazy(() => import('@/features/parametres/ParametresEntreprise'));
+const SuiviQuotidienV2 = lazy(() => import('@/features/dashboard/SuiviQuotidienV2'));
 const ExportComptable = lazy(() => import('@/features/comptabilite/ExportComptable'));
 const UserManagementPage = lazy(() => import('@/UserManagementPage'));
 
@@ -191,6 +193,9 @@ const router = createHashRouter([
   { path: '/edg-annuel-tabs', element: <PageRoute Component={EdgAnnuelTabs} backPath='/' /> },
   { path: '/parametrage-comptable', element: <PageRoute Component={ParametrageComptable} backPath='/' /> },
   { path: '/parametrage-edg', element: <PageRoute Component={ParametrageEdg} backPath='/' /> },
+  { path: '/parametres-entreprise', element: <PageRoute Component={ParametresEntreprise} backPath='/' /> },
+  { path: '/suivi-quotidien-v2', element: <SuiviV2Route /> },
+  { path: '/suivi-quotidien-v2/:month', element: <SuiviV2Route /> },
   { path: '/ecritures-comptables', element: <PageRoute Component={ExportComptable} backPath='/' /> },
   { path: '/utilisateurs', element: <PageRoute Component={UserManagementPage} backPath='/' /> },
 ]);
@@ -211,6 +216,14 @@ function EdgMensuelRoute() {
 function EdgAnnuelTabsRoute({ initialTab }: { initialTab: 'mensuel' | 'budget' | 'realise' | 'vs_budget' | 'vs_n1' }) {
   const navigate = useNavigate();
   return <EdgAnnuelTabs onBack={() => navigate('/')} initialTab={initialTab} />;
+}
+
+function SuiviV2Route() {
+  const { month: monthParam } = useParams();
+  const { selectedYear, selectedMonth } = useData();
+  const navigate = useNavigate();
+  const month = parseMonthParam(monthParam, selectedMonth);
+  return <SuiviQuotidienV2 month={month} year={selectedYear} onBack={() => navigate('/')} />;
 }
 
 export default router;
