@@ -103,6 +103,7 @@ type DataContextType = {
   updateBilanSynthese: (month: number, day: number, field: keyof DayDataBilanSynthese, value: string | number) => void;
   updateDepensesPetiteCaisse: (month: number, field: keyof MonthDataDepensesPetiteCaisse | string, value: string | number) => void;
   updateDashboard: (month: number, cellKey: string, value: string) => void;
+  updateCaisseDynamique: (month: number, systemId: string, day: number, field: 'montant' | 'commentaire', value: string) => void;
   updateEdgMensuel: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuelRealise: (month: number, cellKey: string, value: string) => void;
   importEdgBudget: (valuesByMonth: Record<number, Record<string, string>>) => void;
@@ -804,6 +805,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'dashboard', cellKey, value));
   }, [updateDataForYear]);
 
+  const updateCaisseDynamique = useCallback((month: number, systemId: string, day: number, field: 'montant' | 'commentaire', value: string) => {
+    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'caisseDynamique', `${systemId}:${day}:${field}`, value));
+  }, [updateDataForYear]);
+
   const updateEdgMensuel = useCallback((month: number, cellKey: string, value: string) => {
     updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'edgMensuel', cellKey, value));
   }, [updateDataForYear]);
@@ -934,6 +939,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateBilanSynthese,
     updateDepensesPetiteCaisse,
     updateDashboard,
+    updateCaisseDynamique,
     updateEdgMensuel,
     updateEdgMensuelRealise,
     importEdgBudget,
@@ -977,6 +983,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateBilanSynthese,
     updateDepensesPetiteCaisse,
     updateDashboard,
+    updateCaisseDynamique,
     updateEdgMensuel,
     updateEdgMensuelRealise,
     importEdgBudget,

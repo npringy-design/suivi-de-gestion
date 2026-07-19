@@ -42,6 +42,7 @@ const ParametrageComptable = lazy(() => import('@/features/comptabilite/Parametr
 const ParametrageEdg = lazy(() => import('@/features/edg/ParametrageEdg'));
 const ParametresEntreprise = lazy(() => import('@/features/parametres/ParametresEntreprise'));
 const SuiviQuotidienV2 = lazy(() => import('@/features/dashboard/SuiviQuotidienV2'));
+const SaisieCaisseDynamique = lazy(() => import('@/features/caisse/SaisieCaisseDynamique'));
 const ExportComptable = lazy(() => import('@/features/comptabilite/ExportComptable'));
 const UserManagementPage = lazy(() => import('@/UserManagementPage'));
 
@@ -91,6 +92,7 @@ function SyntheseRoute() {
       onRemiseTR={goToMonthPage('/remise-tr')}
       onBilanSynthese={goToMonthPage('/bilan-synthese')}
       onDepensesPetiteCaisse={goToMonthPage('/depenses-petite-caisse')}
+      onCaisseDynamique={(systemId, month) => navigate(`/caisse-dynamique/${systemId}/${month}`)}
     />
   );
 }
@@ -196,6 +198,8 @@ const router = createHashRouter([
   { path: '/parametres-entreprise', element: <PageRoute Component={ParametresEntreprise} backPath='/' /> },
   { path: '/suivi-quotidien-v2', element: <SuiviV2Route /> },
   { path: '/suivi-quotidien-v2/:month', element: <SuiviV2Route /> },
+  { path: '/caisse-dynamique/:systemId', element: <CaisseDynamiqueRoute /> },
+  { path: '/caisse-dynamique/:systemId/:month', element: <CaisseDynamiqueRoute /> },
   { path: '/ecritures-comptables', element: <PageRoute Component={ExportComptable} backPath='/' /> },
   { path: '/utilisateurs', element: <PageRoute Component={UserManagementPage} backPath='/' /> },
 ]);
@@ -216,6 +220,15 @@ function EdgMensuelRoute() {
 function EdgAnnuelTabsRoute({ initialTab }: { initialTab: 'mensuel' | 'budget' | 'realise' | 'vs_budget' | 'vs_n1' }) {
   const navigate = useNavigate();
   return <EdgAnnuelTabs onBack={() => navigate('/')} initialTab={initialTab} />;
+}
+
+function CaisseDynamiqueRoute() {
+  const { systemId, month: monthParam } = useParams();
+  const { selectedYear, selectedMonth } = useData();
+  const navigate = useNavigate();
+  const month = parseMonthParam(monthParam, selectedMonth);
+  if (!systemId) return null;
+  return <SaisieCaisseDynamique systemId={systemId} month={month} year={selectedYear} onBack={() => navigate('/synthese/' + month)} />;
 }
 
 function SuiviV2Route() {

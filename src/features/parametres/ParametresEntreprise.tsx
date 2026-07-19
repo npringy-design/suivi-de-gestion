@@ -1,19 +1,28 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   ArrowLeft,
   Building2,
   ShoppingCart,
-  Users,
+  CreditCard,
+  Smartphone,
+  Wallet,
+  Banknote,
+  ShoppingBag,
+  Store,
+  Package,
   Plus,
   Trash2,
   GripVertical,
   ChevronDown,
   ChevronUp,
+  Lock,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
 import type { CompanySettings, PurchaseSection, PurchaseSupplier } from '@/contexts/DataContext';
-import { MONTH_NAMES_FULL, PERSONNEL_RATE_LABELS } from '@/features/parametres/companySettingsDefaults';
+import type { CaisseSysteme } from '@/types/dataTypes';
+import { MONTH_NAMES_FULL, BUILTIN_CAISSE_SYSTEMS, CAISSE_ICON_OPTIONS } from '@/features/parametres/companySettingsDefaults';
 import { parseMoneyValue } from '@/lib/money';
 
 type Props = { onBack: () => void };
@@ -37,12 +46,59 @@ const BTN_AMBER = [
   'text-xs font-black text-white shadow-md',
   'transition hover:brightness-110',
 ].join(' ');
+
+// ─── Icon map ─────────────────────────────────────────────────────────────────
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  CreditCard, Smartphone, Wallet, Banknote, ShoppingBag, Store, Package,
+};
+
+function CaisseIcon({ name, cls }: { name: string; cls?: string }) {
+  const Icon = ICON_MAP[name] ?? CreditCard;
+  return <Icon className={cls ?? 'h-4 w-4'} />;
+}
+
 // ─── Section 1 : Identité ─────────────────────────────────────────────────────
+
+type GeoResult = { name: string; admin1: string } | null | 'error';
 
 function SectionIdentite({ settings, onChange }: {
   settings: CompanySettings;
   onChange: (s: CompanySettings) => void;
 }) {
+  const [geoResult, setGeoResult] = useState<GeoResult>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resolveGeo = useCallback(async (city: string) => {
+    if (!city.trim()) { setGeoResult(null); return; }
+    setGeoLoading(true);
+    try {
+      const res = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=fr`,
+      );
+      const json: { results?: { name: string; admin1: string; latitude: number; longitude: number }[] } = await res.json();
+      const hit = json.results?.[0];
+      if (hit) {
+        setGeoResult({ name: hit.name, admin1: hit.admin1 });
+        onChange({ ...settings, localisation: city, weatherLat: hit.latitude, weatherLon: hit.longitude });
+      } else {
+        setGeoResult('error');
+      }
+    } catch {
+      setGeoResult('error');
+    } finally {
+      setGeoLoading(false);
+    }
+  }, [settings, onChange]);
+
+  const handleLocalisationChange = (value: string) => {
+    onChange({ ...settings, localisation: value });
+    setGeoResult(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => resolveGeo(value), 800);
+  };
+
   return (
     <div className={CARD}>
       <div className={CARD_HEADER}>
@@ -63,8 +119,15 @@ function SectionIdentite({ settings, onChange }: {
           <input
             className={INPUT}
             value={settings.localisation}
-            onChange={e => onChange({ ...settings, localisation: e.target.value })}
+            onChange={e => handleLocalisationChange(e.target.value)}
           />
+          {geoLoading && <p className="text-[10px] text-cyan-100/50">Recherche en cours…</p>}
+          {geoResult === 'error' && <p className="text-[10px] text-red-400/80">Ville introuvable — coordonnées météo inchangées.</p>}
+          {geoResult && geoResult !== 'error' && (
+            <p className="text-[10px] text-emerald-400/90">
+              ✓ Météo : {geoResult.name}, {geoResult.admin1}
+            </p>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <div className={LABEL}>Exercice fiscal — mois de début</div>
@@ -94,6 +157,20 @@ function SupplierRow({ supplier, onChangeName, onDelete, onMoveUp, onMoveDown, i
   isFirst: boolean;
   isLast: boolean;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  if (confirmDelete) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-900/20 px-3 py-2">
+        <span className="flex-1 text-xs text-red-300/90">
+          Supprimer <strong>{supplier.name}</strong> ? Les données saisies seront masquées (non supprimées).
+        </span>
+        <button onClick={() => setConfirmDelete(false)} className="rounded px-2 py-1 text-xs text-cyan-100/60 hover:text-cyan-100">Annuler</button>
+        <button onClick={onDelete} className="rounded bg-red-600/80 px-2 py-1 text-xs font-black text-white hover:bg-red-600">Confirmer</button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2 rounded-lg border border-cyan-200/10 bg-[rgba(6,31,40,0.4)] px-3 py-2">
       <GripVertical className="h-3.5 w-3.5 shrink-0 text-cyan-100/30" />
@@ -103,15 +180,9 @@ function SupplierRow({ supplier, onChangeName, onDelete, onMoveUp, onMoveDown, i
         onChange={e => onChangeName(e.target.value)}
       />
       <div className="flex shrink-0 gap-0.5">
-        <button disabled={isFirst} onClick={onMoveUp} className="rounded p-1 text-cyan-100/40 disabled:opacity-20 hover:text-cyan-100">
-          <ChevronUp className="h-3 w-3" />
-        </button>
-        <button disabled={isLast} onClick={onMoveDown} className="rounded p-1 text-cyan-100/40 disabled:opacity-20 hover:text-cyan-100">
-          <ChevronDown className="h-3 w-3" />
-        </button>
-        <button onClick={onDelete} className="rounded p-1 text-cyan-100/30 hover:text-red-400">
-          <Trash2 className="h-3 w-3" />
-        </button>
+        <button disabled={isFirst} onClick={onMoveUp} className="rounded p-1 text-cyan-100/40 disabled:opacity-20 hover:text-cyan-100"><ChevronUp className="h-3 w-3" /></button>
+        <button disabled={isLast} onClick={onMoveDown} className="rounded p-1 text-cyan-100/40 disabled:opacity-20 hover:text-cyan-100"><ChevronDown className="h-3 w-3" /></button>
+        <button onClick={() => setConfirmDelete(true)} className="rounded p-1 text-cyan-100/30 hover:text-red-400"><Trash2 className="h-3 w-3" /></button>
       </div>
     </div>
   );
@@ -126,6 +197,8 @@ function SectionAchatsCard({ section, onChange, onDelete, onMoveUp, onMoveDown, 
   isFirst: boolean;
   isLast: boolean;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const addSupplier = () => {
     const id = 'sup_' + Date.now();
     onChange({ ...section, suppliers: [...section.suppliers, { id, name: 'Nouveau fournisseur', storeColumn: null }] });
@@ -148,6 +221,21 @@ function SectionAchatsCard({ section, onChange, onDelete, onMoveUp, onMoveDown, 
     onChange({ ...section, suppliers: arr });
   };
 
+  if (confirmDelete) {
+    return (
+      <div className="rounded-xl border border-red-500/30 bg-red-900/20 p-4">
+        <p className="mb-3 text-sm text-red-300/90">
+          Supprimer la section <strong>{section.name}</strong> et ses {section.suppliers.length} fournisseur(s) ?
+          Les données saisies seront masquées (non supprimées).
+        </p>
+        <div className="flex gap-2">
+          <button onClick={() => setConfirmDelete(false)} className="rounded-lg border border-cyan-200/20 px-3 py-1.5 text-xs text-cyan-100/60 hover:text-cyan-100">Annuler</button>
+          <button onClick={onDelete} className="rounded-lg bg-red-600/80 px-3 py-1.5 text-xs font-black text-white hover:bg-red-600">Confirmer la suppression</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border border-cyan-200/10 bg-[rgba(6,31,40,0.5)] p-4">
       <div className="mb-3 flex items-center gap-2">
@@ -161,7 +249,7 @@ function SectionAchatsCard({ section, onChange, onDelete, onMoveUp, onMoveDown, 
         <div className="flex gap-0.5">
           <button disabled={isFirst} onClick={onMoveUp} className="rounded p-1 text-cyan-100/40 disabled:opacity-20 hover:text-cyan-100"><ChevronUp className="h-3.5 w-3.5" /></button>
           <button disabled={isLast} onClick={onMoveDown} className="rounded p-1 text-cyan-100/40 disabled:opacity-20 hover:text-cyan-100"><ChevronDown className="h-3.5 w-3.5" /></button>
-          <button onClick={onDelete} className="rounded p-1 text-cyan-100/30 hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
+          <button onClick={() => setConfirmDelete(true)} className="rounded p-1 text-cyan-100/30 hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
@@ -238,119 +326,131 @@ function SectionAchats({ settings, onChange }: {
   );
 }
 
-// ─── Section 3 : Grille salariale ────────────────────────────────────────────
+// ─── Section 3 : Systèmes d'encaissement ─────────────────────────────────────
 
-const CATEGORY_KEYS = ['cadre', 'maitrise', 'niv12', 'niv3', 'apprenti'] as const;
+const COLOR_OPTIONS = [
+  { value: '#06b6d4', label: 'Cyan' },
+  { value: '#f59e0b', label: 'Ambre' },
+  { value: '#10b981', label: 'Émeraude' },
+  { value: '#8b5cf6', label: 'Violet' },
+  { value: '#ef4444', label: 'Rouge' },
+  { value: '#3b82f6', label: 'Bleu' },
+];
 
-function SectionGrilleSalariale({ settings, onChange }: {
+function CustomSystemeRow({ sys, onChange, onDelete }: {
+  sys: CaisseSysteme;
+  onChange: (s: CaisseSysteme) => void;
+  onDelete: () => void;
+}) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  if (confirmDelete) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-900/20 px-3 py-2">
+        <span className="flex-1 text-xs text-red-300/90">
+          Supprimer <strong>{sys.name}</strong> ? Les données saisies seront masquées.
+        </span>
+        <button onClick={() => setConfirmDelete(false)} className="rounded px-2 py-1 text-xs text-cyan-100/60 hover:text-cyan-100">Annuler</button>
+        <button onClick={onDelete} className="rounded bg-red-600/80 px-2 py-1 text-xs font-black text-white hover:bg-red-600">Confirmer</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-cyan-200/10 bg-[rgba(6,31,40,0.4)] px-3 py-2">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ background: sys.accentColor + '33' }}>
+        <CaisseIcon name={sys.icon} cls="h-4 w-4" />
+      </div>
+      <input
+        className="flex-1 bg-transparent text-sm font-semibold text-amber-50/90 outline-none"
+        value={sys.name}
+        onChange={e => onChange({ ...sys, name: e.target.value })}
+      />
+      <select
+        className="rounded bg-[rgba(6,31,40,0.6)] border border-cyan-200/15 px-1 py-1 text-xs text-cyan-100/70 outline-none"
+        value={sys.icon}
+        onChange={e => onChange({ ...sys, icon: e.target.value })}
+        style={{ background: '#07111f' }}
+      >
+        {CAISSE_ICON_OPTIONS.map(ic => <option key={ic} value={ic}>{ic}</option>)}
+      </select>
+      <select
+        className="rounded bg-[rgba(6,31,40,0.6)] border border-cyan-200/15 px-1 py-1 text-xs text-cyan-100/70 outline-none"
+        value={sys.accentColor}
+        onChange={e => onChange({ ...sys, accentColor: e.target.value })}
+        style={{ background: '#07111f' }}
+      >
+        {COLOR_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+      </select>
+      <button onClick={() => setConfirmDelete(true)} className="rounded p-1 text-cyan-100/30 hover:text-red-400">
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function SectionSystemesEncaissement({ settings, onChange }: {
   settings: CompanySettings;
   onChange: (s: CompanySettings) => void;
 }) {
+  const systemes = settings.caisseSystemes ?? [];
+
+  const addSysteme = () => {
+    const id = 'sys_' + Date.now();
+    const newSys: CaisseSysteme = { id, name: 'Nouveau système', icon: 'CreditCard', accentColor: '#06b6d4' };
+    onChange({ ...settings, caisseSystemes: [...systemes, newSys] });
+  };
+
+  const updateSysteme = (idx: number, sys: CaisseSysteme) => {
+    const next = systemes.map((s, i) => i === idx ? sys : s);
+    onChange({ ...settings, caisseSystemes: next });
+  };
+
+  const deleteSysteme = (idx: number) => {
+    onChange({ ...settings, caisseSystemes: systemes.filter((_, i) => i !== idx) });
+  };
+
   return (
     <div className={CARD}>
       <div className={CARD_HEADER}>
-        <Users className="h-4 w-4 text-cyan-300" />
-        <span className={CARD_TITLE}>Grille salariale</span>
+        <CreditCard className="h-4 w-4 text-cyan-300" />
+        <span className={CARD_TITLE}>Systèmes d'encaissement</span>
       </div>
       <div className="p-5">
-        {/* Mode selector */}
-        <div className="mb-5 flex flex-col gap-2">
-          <span className={LABEL}>Mode de calcul des frais de personnel</span>
+        {/* Systèmes intégrés (lecture seule) */}
+        <div className="mb-4">
+          <div className={LABEL + ' mb-2'}>Intégrés (lecture seule)</div>
           <div className="flex flex-wrap gap-2">
-            {[
-              { value: 'categories' as const, label: 'Par catégorie' },
-              { value: 'average' as const, label: 'Taux moyen unique', disabled: true },
-              { value: 'import' as const, label: 'Import paie', disabled: true },
-            ].map(({ value, label, disabled }) => (
-              <button
-                key={value}
-                disabled={disabled}
-                onClick={() => !disabled && onChange({ ...settings, personnelRateMode: value })}
-                className={[
-                  'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-black transition',
-                  settings.personnelRateMode === value
-                    ? 'bg-gradient-to-r from-[#078892] to-[#0f5d66] text-white shadow-md'
-                    : 'border border-cyan-200/15 text-cyan-100/60 hover:border-cyan-200/30',
-                  disabled ? 'cursor-not-allowed opacity-50' : '',
-                ].join(' ')}
-              >
-                {label}
-                {disabled && (
-                  <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-black text-amber-400">bientôt</span>
-                )}
-              </button>
+            {BUILTIN_CAISSE_SYSTEMS.map(name => (
+              <div key={name} className="flex items-center gap-1.5 rounded-lg border border-cyan-200/10 bg-[rgba(6,31,40,0.4)] px-2.5 py-1.5">
+                <Lock className="h-3 w-3 text-cyan-100/30" />
+                <span className="text-xs font-semibold text-cyan-100/70">{name}</span>
+                <span className="ml-1 rounded-full bg-cyan-500/15 px-1.5 py-0.5 text-[9px] font-black text-cyan-400/80">intégré</span>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Taux par catégorie */}
-        <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {CATEGORY_KEYS.map(cat => (
-            <div key={cat} className="flex flex-col gap-1.5">
-              <label className={LABEL}>{PERSONNEL_RATE_LABELS[cat]}</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.01"
-                  className={INPUT + ' pr-8'}
-                  value={settings.personnelRates[cat]}
-                  onChange={e => onChange({
-                    ...settings,
-                    personnelRates: { ...settings.personnelRates, [cat]: parseMoneyValue(e.target.value) },
-                  })}
+        {/* Systèmes personnalisés */}
+        {systemes.length > 0 && (
+          <div className="mb-4">
+            <div className={LABEL + ' mb-2'}>Personnalisés</div>
+            <div className="flex flex-col gap-2">
+              {systemes.map((sys, idx) => (
+                <CustomSystemeRow
+                  key={sys.id}
+                  sys={sys}
+                  onChange={s => updateSysteme(idx, s)}
+                  onDelete={() => deleteSysteme(idx)}
                 />
-                <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-cyan-100/40">€/h</span>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
 
-        {/* Autres réglages */}
-        <div className="grid grid-cols-1 gap-4 border-t border-cyan-200/10 pt-5 sm:grid-cols-3">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => onChange({ ...settings, splitCuisineSalle: !settings.splitCuisineSalle })}
-              className={[
-                'relative h-6 w-11 rounded-full transition',
-                settings.splitCuisineSalle ? 'bg-gradient-to-r from-[#078892] to-[#0f5d66]' : 'bg-cyan-100/15',
-              ].join(' ')}
-            >
-              <span className={[
-                'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all',
-                settings.splitCuisineSalle ? 'left-[calc(100%-22px)]' : 'left-0.5',
-              ].join(' ')} />
-            </button>
-            <span className="text-sm font-semibold text-cyan-100/80">Séparation Cuisine / Salle</span>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="objectif-frais" className={LABEL}>Objectif frais de personnel</label>
-            <div className="relative">
-              <input
-                id="objectif-frais"
-                type="number"
-                step="0.1"
-                className={INPUT + ' pr-6'}
-                value={settings.objectifFraisPersonnel}
-                onChange={e => onChange({ ...settings, objectifFraisPersonnel: parseMoneyValue(e.target.value) })}
-              />
-              <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-cyan-100/40">%</span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="productivite-cible" className={LABEL}>Productivité cible</label>
-            <div className="relative">
-              <input
-                id="productivite-cible"
-                type="number"
-                step="0.01"
-                className={INPUT + ' pr-8'}
-                value={settings.productiviteCible}
-                onChange={e => onChange({ ...settings, productiviteCible: parseMoneyValue(e.target.value) })}
-              />
-              <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-cyan-100/40">€/h</span>
-            </div>
-          </div>
-        </div>
+        <button onClick={addSysteme} className={BTN_AMBER}>
+          <Plus className="h-3.5 w-3.5" /> Nouveau système
+        </button>
       </div>
     </div>
   );
@@ -363,11 +463,21 @@ export default function ParametresEntreprise({ onBack }: Props) {
   const [local, setLocal] = useState<CompanySettings>(companySettings);
   const [saved, setSaved] = useState(false);
 
+  // Synchronise le state local si CompanySettings change depuis ailleurs (cloud sync)
+  const prevRemoteRef = useRef(companySettings);
+  if (prevRemoteRef.current !== companySettings && !saved) {
+    prevRemoteRef.current = companySettings;
+    setLocal(prev => ({ ...companySettings, ...prev }));
+  }
+
   const handleSave = useCallback(() => {
     updateCompanySettings(local);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }, [local, updateCompanySettings]);
+
+  // parseMoneyValue est importé pour la grille salariale (types conservés, affichage masqué)
+  void parseMoneyValue;
 
   return (
     <div
@@ -391,7 +501,7 @@ export default function ParametresEntreprise({ onBack }: Props) {
               <div className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">Paramétrage</div>
               <h1 className="mt-1 text-3xl font-black tracking-tight text-amber-50">Paramètres Entreprise</h1>
               <p className="mt-2 text-sm font-medium text-cyan-50/70">
-                Identité du site, sections d'achats et grille salariale — utilisés par le Suivi Quotidien V2.
+                Identité du site, sections d'achats, systèmes d'encaissement — utilisés par le Suivi Quotidien V2.
               </p>
             </div>
             <button
@@ -410,7 +520,7 @@ export default function ParametresEntreprise({ onBack }: Props) {
 
         <SectionIdentite settings={local} onChange={setLocal} />
         <SectionAchats settings={local} onChange={setLocal} />
-        <SectionGrilleSalariale settings={local} onChange={setLocal} />
+        <SectionSystemesEncaissement settings={local} onChange={setLocal} />
 
       </div>
     </div>

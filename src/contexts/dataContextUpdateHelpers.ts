@@ -64,7 +64,7 @@ export const updateDailyChannelData = <K extends DailyChannelKey>(
   };
 };
 
-export const updateMonthlyStringRecordData = <K extends 'dashboard' | 'edgMensuel' | 'edgMensuelRealise'>(
+export const updateMonthlyStringRecordData = <K extends 'dashboard' | 'caisseDynamique' | 'edgMensuel' | 'edgMensuelRealise'>(
   prev: Record<number, MonthData>,
   month: number,
   recordKey: K,

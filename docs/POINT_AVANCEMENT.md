@@ -5,6 +5,15 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 19/07/2026 (évolutions Paramètres Entreprise + Suivi Quotidien V2)
+
+- **T1 — Identité Home** : `Home.tsx` consomme `companySettings` (enseigne, localisation, lat/lon météo) au lieu des valeurs en dur. URL Open-Meteo construite dynamiquement avec `weatherLat`/`weatherLon` (défauts 49.2567/3.955). `loadWeather` s'actualise quand les coordonnées changent.
+- **T1 — Géocodage** : `ParametresEntreprise.tsx` / `SectionIdentite` : debounce 800 ms sur le champ Localisation → appel `geocoding-api.open-meteo.com`, stocke lat/lon dans `CompanySettings`, affiche ville résolue ou message d'erreur sans bloquer la sauvegarde.
+- **T2 — Confirmations suppression** : `ParametresEntreprise.tsx` : confirmation inline (message + boutons Annuler/Confirmer) avant chaque suppression de fournisseur ou de section (données masquées, non supprimées).
+- **T3 — Grille salariale masquée** : `SectionGrilleSalariale` retirée du rendu de `ParametresEntreprise.tsx` (types et persistance conservés).
+- **T4 — Systèmes d'encaissement** : type `CaisseSysteme` + champ `caisseSystemes` dans `CompanySettings` + `weatherLat`/`weatherLon`. `caisseDynamique?: Record<string,string>` ajouté à `MonthData` (même pattern que `dashboard`). `updateCaisseDynamique` dans `DataContext`. Carte "Systèmes d'encaissement" dans `ParametresEntreprise` (12 systèmes intégrés read-only + ajout/suppression/renommage/icône/couleur personnalisés). Page `/caisse-dynamique/:systemId/:month?` via `SaisieCaisseDynamique.tsx` (tableau mensuel jour/montant/commentaire). `SyntheseCA.tsx` : boutons dynamiques pour les systèmes personnalisés. Route ajoutée dans `router.tsx`.
+- **T5 — Colonnes extensibles TabCA** : `SuiviV2TabCA.tsx` (nouveau composant extrait) : 3 groupes en-tête avec chevron (CA HT, Couverts, vs Budget), état réduit par défaut mémorisé en localStorage. CA étendu : VAE/Midi/Soir/Limo/Total/Cumul. Couverts étendu : Midi/Soir/Total/Moy/Cumul. Budget étendu : Écart€/%/Var%N-1. `SuiviV2Shared.tsx` extrait (EditCell, VarBadge, styles). `SuiviQuotidienV2.tsx` refactoré en orchestrateur. build OK, eslint --quiet 0 erreur.
+
 ## 19/07/2026 (nouvelles pages : Paramètres Entreprise + Suivi Quotidien V2)
 
 - `src/types/dataTypes.ts` : ajout types `PurchaseSupplier`, `PurchaseSection`, `CompanySettings`.

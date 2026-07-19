@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MONTH_NAMES_UPPER } from '@/lib/constants';
+import { useData } from '@/contexts/DataContext';
 
 interface SyntheseCAProps {
   initialMonth: number;
@@ -20,6 +21,7 @@ interface SyntheseCAProps {
   onRemiseTR: (month: number) => void;
   onBilanSynthese: (month: number) => void;
   onDepensesPetiteCaisse: (month: number) => void;
+  onCaisseDynamique: (systemId: string, month: number) => void;
 }
 
 
@@ -30,8 +32,10 @@ export default function SyntheseCA({
   onBack, onSaisieTheorique, onCbNepting, onEspeces, onConecs, 
   onAncvPapiers, onSaisieTR, onVisuTRPapiers, onSunday, onUber, 
   onAmexAncv, onDeliveroo, onClickCollect, onRemiseTR, 
-  onBilanSynthese, onDepensesPetiteCaisse 
+  onBilanSynthese, onDepensesPetiteCaisse, onCaisseDynamique,
 }: SyntheseCAProps) {
+  const { companySettings } = useData();
+  const customSystemes = companySettings.caisseSystemes ?? [];
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
 
   useEffect(() => {
@@ -200,6 +204,21 @@ export default function SyntheseCA({
             DEPENSES PETITES CAISSE
           </Btn>
         </div>
+
+        {/* Section 5 : Systèmes d'encaissement personnalisés */}
+        {customSystemes.length > 0 && (
+          <div className="mt-2 flex flex-col gap-2">
+            {customSystemes.map(sys => (
+              <Btn
+                key={sys.id}
+                onClick={() => onCaisseDynamique(sys.id, selectedMonth)}
+                colorClass={`border-2 text-white font-bold hover:-translate-y-0.5 transition-all`}
+              >
+                <span style={{ color: sys.accentColor }}>{sys.name}</span>
+              </Btn>
+            ))}
+          </div>
+        )}
 
       </div>
     </div>

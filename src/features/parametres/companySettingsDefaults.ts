@@ -1,9 +1,21 @@
 import type { CompanySettings } from '@/types/dataTypes';
 
+export const BUILTIN_CAISSE_SYSTEMS = [
+  'Saisie Théorique', 'CB Nepting', 'Espèces', 'Conecs', 'ANCV Papiers',
+  'Saisie TR', 'Sunday', 'Uber', 'Amex / ANCV', 'Deliveroo', 'Click & Collect', 'Remise TR',
+] as const;
+
+export const CAISSE_ICON_OPTIONS = [
+  'CreditCard', 'Smartphone', 'Wallet', 'Banknote', 'ShoppingBag', 'Store', 'Package',
+] as const;
+
 export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   enseigne: 'Hippopotamus',
   localisation: 'Thillois',
   exerciceFiscalStart: 0,
+  weatherLat: 49.2567,
+  weatherLon: 3.955,
+  caisseSystemes: [],
   purchaseSections: [
     {
       id: 'liquides',

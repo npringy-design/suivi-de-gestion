@@ -295,6 +295,14 @@ export type PurchaseSection = {
   suppliers: PurchaseSupplier[];
 };
 
+export type CaisseSysteme = {
+  id: string;
+  name: string;
+  icon: string;
+  accentColor: string;
+  builtin?: boolean;
+};
+
 export type CompanySettings = {
   enseigne: string;
   localisation: string;
@@ -308,6 +316,11 @@ export type CompanySettings = {
   objectifFraisPersonnel: number;
   // Productivité cible (CA HT / h travaillée).
   productiviteCible: number;
+  // Coordonnées géographiques pour la météo.
+  weatherLat?: number;
+  weatherLon?: number;
+  // Systèmes d'encaissement personnalisés (hors builtins).
+  caisseSystemes?: CaisseSysteme[];
 };
 
 export type MonthData = {
@@ -326,6 +339,7 @@ export type MonthData = {
   bilanSynthese: Record<number, DayDataBilanSynthese>;
   depensesPetiteCaisse?: MonthDataDepensesPetiteCaisse;
   dashboard?: Record<string, string>;
+  caisseDynamique?: Record<string, string>;
   edgMensuel?: Record<string, string>;
   edgMensuelRealise?: Record<string, string>;
   miseEnPaiement?: MonthDataMiseEnPaiement;
