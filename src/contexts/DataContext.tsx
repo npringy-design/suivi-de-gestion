@@ -4,7 +4,7 @@ import { fetchCloudAppBootstrap, fetchCloudMonth, fetchCloudYearMonths, isCloudS
 import { mergeEdgMensuelBudgetData, mergeEdgMensuelRealiseData, normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
 import { parseMoneyValue } from '@/lib/money';
 import { createDefaultEdgChargesConfig } from '@/features/edg/edgChargesConfigDefaults';
-import { DEFAULT_COMPANY_SETTINGS } from '@/features/parametres/companySettingsDefaults';
+import { DEFAULT_COMPANY_SETTINGS, DEFAULT_CAISSE_SYSTEMS } from '@/features/parametres/companySettingsDefaults';
 
 export type {
   CompanySettings,
@@ -196,7 +196,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [customEvents, setCustomEvents] = useState<CustomEvent[]>(() => loadJson(CUSTOM_EVENTS_STORAGE_KEY, []));
   const [personnelInfos, setPersonnelInfos] = useState<PersonnelInfo[]>(() => loadJson(PERSONNEL_INFOS_STORAGE_KEY, []));
   const [edgChargesConfig, setEdgChargesConfig] = useState<EdgChargesConfig>(() => loadJson(EDG_CHARGES_CONFIG_STORAGE_KEY, createDefaultEdgChargesConfig()));
-  const [companySettings, setCompanySettings] = useState<CompanySettings>(() => loadJson(COMPANY_SETTINGS_STORAGE_KEY, DEFAULT_COMPANY_SETTINGS));
+  const [companySettings, setCompanySettings] = useState<CompanySettings>(() => {
+    const loaded = loadJson<CompanySettings>(COMPANY_SETTINGS_STORAGE_KEY, DEFAULT_COMPANY_SETTINGS);
+    if (!loaded.caisseSystemes?.length) {
+      return { ...loaded, caisseSystemes: DEFAULT_CAISSE_SYSTEMS };
+    }
+    return loaded;
+  });
 
   const data = allData[selectedYear] || EMPTY_YEAR_DATA;
 
@@ -299,7 +305,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setEdgChargesConfig(cloudState.edgChargesConfig as EdgChargesConfig);
     }
     if (cloudState.companySettings && typeof cloudState.companySettings === 'object') {
-      setCompanySettings(prev => ({ ...DEFAULT_COMPANY_SETTINGS, ...prev, ...(cloudState.companySettings as CompanySettings) }));
+      setCompanySettings(prev => {
+        const merged = { ...DEFAULT_COMPANY_SETTINGS, ...prev, ...(cloudState.companySettings as CompanySettings) };
+        if (!merged.caisseSystemes?.length) {
+          merged.caisseSystemes = DEFAULT_CAISSE_SYSTEMS;
+        }
+        return merged;
+      });
     }
   }, [rememberLoadedCloudMonths]);
 
