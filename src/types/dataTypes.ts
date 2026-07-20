@@ -296,13 +296,22 @@ export type PurchaseSection = {
   suppliers: PurchaseSupplier[];
 };
 
+export type CaisseColumn = {
+  id: string;
+  name: string;
+  type: 'saisie' | 'calcule' | 'commentaire';
+};
+
 export type CaisseSysteme = {
   id: string;
   name: string;
+  description?: string;
   icon: string;
   accentColor: string;
   route?: string;
   custom?: boolean;
+  inputType?: 'daily' | 'reconciliation';
+  columns?: CaisseColumn[];
 };
 
 export type CompanySettings = {

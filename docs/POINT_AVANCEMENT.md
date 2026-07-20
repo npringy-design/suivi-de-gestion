@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 20/07/2026 (sélecteur d'icônes visuel + modale création système + SaisieCaisseDynamique enrichie)
+
+- **T1 — IconPicker visuel** : `ParametresEntreprise.tsx` — sélecteur `<select>` remplacé par grille cliquable 5×N (23 icônes Lucide). Composant `IconPicker` réutilisé dans `SystemeRow` (expand/collapse) et `SectionAchatsCard` (clic sur l'icône de section → picker inline). `ColorPicker` : 8 swatches couleur.
+- **T2 — Modale création système** : clic "Nouveau système personnalisé" → modale overlay (nom, description, IconPicker, ColorPicker, radio `daily`/`reconciliation`, colonnes configurables pour rapprochement). Colonnes par défaut : Théorique (saisie) / Réel (saisie) / Écart (calculé). `CaisseColumn` et champs `description`, `inputType`, `columns` ajoutés à `CaisseSysteme` dans `dataTypes.ts`.
+- **T3 — SaisieCaisseDynamique enrichie** : icône + couleur d'accent du système dans le header, total mensuel en header, 3 KPI cards (Total / Jours renseignés / Moy. jour). Mode `daily` (inchangé, montant+commentaire). Mode `reconciliation` : colonnes configurables, cellules saisie fond jaune, cellule calculée (Écart = saisie[0] − saisie[1]) fond blanc avec couleur verte/rouge, footer totaux par colonne. build OK.
+
 ## 20/07/2026 (fix pré-chargement systèmes d'encaissement)
 
 - **DataContext** : au bootstrap localStorage et au merge cloud, si `caisseSystemes` est vide ou absent, injection de `DEFAULT_CAISSE_SYSTEMS` — corrige l'affichage vide de la section quand un ancien localStorage avec `caisseSystemes: []` était présent. build OK.
