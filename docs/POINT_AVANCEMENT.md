@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 20/07/2026 (fix pré-chargement systèmes d'encaissement)
+
+- **DataContext** : au bootstrap localStorage et au merge cloud, si `caisseSystemes` est vide ou absent, injection de `DEFAULT_CAISSE_SYSTEMS` — corrige l'affichage vide de la section quand un ancien localStorage avec `caisseSystemes: []` était présent. build OK.
+
 ## 20/07/2026 (refonte visuelle + renommage CompanySettings + colonnes TabCA V2)
 
 - **T1 — Fond blanc** : `BG_PAGE = '#f8fafc'` dans `SuiviV2Shared.tsx` (cascade sur SuiviQuotidienV2 et TabCA). Même fond sur `ParametresEntreprise` et `SaisieCaisseDynamique`. Cartes blanches + ombres légères. En-têtes de section : dégradé teal sombre. Bandeau principal reste sombre. `SuiviQuotidienV2` : barre de progression, KPIs, onglets, TabPersonnel/Frais tous mis en styles clairs. tsc OK.
