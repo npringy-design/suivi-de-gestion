@@ -5,6 +5,14 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 20/07/2026 (refonte visuelle + renommage CompanySettings + colonnes TabCA V2)
+
+- **T1 — Fond blanc** : `BG_PAGE = '#f8fafc'` dans `SuiviV2Shared.tsx` (cascade sur SuiviQuotidienV2 et TabCA). Même fond sur `ParametresEntreprise` et `SaisieCaisseDynamique`. Cartes blanches + ombres légères. En-têtes de section : dégradé teal sombre. Bandeau principal reste sombre. `SuiviQuotidienV2` : barre de progression, KPIs, onglets, TabPersonnel/Frais tous mis en styles clairs. tsc OK.
+- **T2 — Renommage CompanySettings** : `enseigne→companyName`, `localisation→locationName`, `exerciceFiscalStart→fiscalStart` dans `dataTypes.ts`, `companySettingsDefaults.ts`, `ParametresEntreprise.tsx`, `Home.tsx`, `SuiviQuotidienV2.tsx`. Geocoding utilise `locationName`. tsc OK.
+- **T3 — Sections achats** : icône affichée (`icon?` sur `PurchaseSection`, icônes Wine/Beef/Sparkles sur les 3 sections par défaut). Nom de section éditable inline (click→input). `window.confirm` pour toutes les suppressions. tsc OK.
+- **T4 — Systèmes d'encaissement unifiés** : `CaisseSysteme` : `builtin` supprimé, `route?` et `custom?` ajoutés. `DEFAULT_CAISSE_SYSTEMS` (12 systèmes avec routes) remplace `BUILTIN_CAISSE_SYSTEMS` dans `companySettingsDefaults.ts`. Liste unifiée dans `ParametresEntreprise`, badge "personnalisé" sur les customs. `SyntheseCA` : filtre `!s.route || s.custom`. tsc OK.
+- **T6 — Colonnes TabCA** : CA réduit = Midi+Soir (2 cols), CA développé = Midi/Soir/Limo/VAE/Total/Cumul/Écart€ (7 cols). Couverts réduit = Total+Moy.HT (2 cols), développé = Midi nb/Midi moy/Soir nb/Soir moy/Total/Moy.jour/Cumul (7 cols). Groupe Budget supprimé. Clé localStorage `sqv2_col_prefs`. Chevrons teal/slate. build OK.
+
 ## 19/07/2026 (évolutions Paramètres Entreprise + Suivi Quotidien V2)
 
 - **T1 — Identité Home** : `Home.tsx` consomme `companySettings` (enseigne, localisation, lat/lon météo) au lieu des valeurs en dur. URL Open-Meteo construite dynamiquement avec `weatherLat`/`weatherLon` (défauts 49.2567/3.955). `loadWeather` s'actualise quand les coordonnées changent.
