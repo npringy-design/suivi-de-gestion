@@ -10,47 +10,50 @@ import {
   ShoppingBag,
   Store,
   Package,
+  FileText,
   Plus,
   Trash2,
   GripVertical,
   ChevronDown,
   ChevronUp,
-  Lock,
+  Wine,
+  Beef,
+  Sparkles,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
 import type { CompanySettings, PurchaseSection, PurchaseSupplier } from '@/contexts/DataContext';
 import type { CaisseSysteme } from '@/types/dataTypes';
-import { MONTH_NAMES_FULL, BUILTIN_CAISSE_SYSTEMS, CAISSE_ICON_OPTIONS } from '@/features/parametres/companySettingsDefaults';
-import { parseMoneyValue } from '@/lib/money';
+import { MONTH_NAMES_FULL, CAISSE_ICON_OPTIONS } from '@/features/parametres/companySettingsDefaults';
 
 type Props = { onBack: () => void };
 
 // ─── Styles communs ──────────────────────────────────────────────────────────
 
-const CARD = 'overflow-hidden rounded-2xl border border-cyan-200/15 bg-[rgba(6,31,40,0.8)] shadow-lg';
-const CARD_HEADER = 'flex items-center gap-3 border-b border-cyan-200/10 px-5 py-4';
-const CARD_TITLE = 'text-base font-black text-amber-50';
-const LABEL = 'text-[10px] font-black uppercase tracking-[0.18em] text-cyan-100/60';
+const CARD = 'overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm';
+const CARD_HEADER = 'flex items-center gap-3 border-b border-slate-100 px-5 py-4 bg-gradient-to-r from-[#0f4c5c] to-[#0c3d4a]';
+const CARD_TITLE = 'text-base font-black text-white';
+const LABEL = 'text-[10px] font-black uppercase tracking-[0.18em] text-slate-500';
 const INPUT = [
-  'w-full rounded-lg border border-cyan-200/20 bg-[rgba(6,31,40,0.6)]',
-  'px-3 py-2 text-sm font-semibold text-amber-50',
+  'w-full rounded-lg border border-slate-200 bg-white',
+  'px-3 py-2 text-sm font-semibold text-slate-800',
   'outline-none transition',
-  'focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20',
-  'placeholder:text-cyan-100/30',
+  'focus:border-teal-500 focus:ring-1 focus:ring-teal-500/20',
+  'placeholder:text-slate-400',
 ].join(' ');
-const BTN_AMBER = [
+const BTN_TEAL = [
   'flex items-center gap-1.5 rounded-lg px-3 py-1.5',
-  'bg-gradient-to-r from-[#f59e0b] to-[#d97706]',
-  'text-xs font-black text-white shadow-md',
+  'bg-gradient-to-r from-[#0d9488] to-[#0f766e]',
+  'text-xs font-black text-white shadow-sm',
   'transition hover:brightness-110',
 ].join(' ');
 
-// ─── Icon map ─────────────────────────────────────────────────────────────────
+// ─── Icon maps ────────────────────────────────────────────────────────────────
 
 const ICON_MAP: Record<string, LucideIcon> = {
-  CreditCard, Smartphone, Wallet, Banknote, ShoppingBag, Store, Package,
+  CreditCard, Smartphone, Wallet, Banknote, ShoppingBag, Store, Package, FileText,
+  Wine, Beef, Sparkles,
 };
 
 function CaisseIcon({ name, cls }: { name: string; cls?: string }) {
@@ -81,7 +84,7 @@ function SectionIdentite({ settings, onChange }: {
       const hit = json.results?.[0];
       if (hit) {
         setGeoResult({ name: hit.name, admin1: hit.admin1 });
-        onChange({ ...settings, localisation: city, weatherLat: hit.latitude, weatherLon: hit.longitude });
+        onChange({ ...settings, locationName: city, weatherLat: hit.latitude, weatherLon: hit.longitude });
       } else {
         setGeoResult('error');
       }
@@ -92,8 +95,8 @@ function SectionIdentite({ settings, onChange }: {
     }
   }, [settings, onChange]);
 
-  const handleLocalisationChange = (value: string) => {
-    onChange({ ...settings, localisation: value });
+  const handleLocationChange = (value: string) => {
+    onChange({ ...settings, locationName: value });
     setGeoResult(null);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => resolveGeo(value), 800);
@@ -102,7 +105,7 @@ function SectionIdentite({ settings, onChange }: {
   return (
     <div className={CARD}>
       <div className={CARD_HEADER}>
-        <Building2 className="h-4 w-4 text-cyan-300" />
+        <Building2 className="h-4 w-4 text-teal-300" />
         <span className={CARD_TITLE}>Identité du site</span>
       </div>
       <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-3">
@@ -110,21 +113,21 @@ function SectionIdentite({ settings, onChange }: {
           <div className={LABEL}>Enseigne</div>
           <input
             className={INPUT}
-            value={settings.enseigne}
-            onChange={e => onChange({ ...settings, enseigne: e.target.value })}
+            value={settings.companyName}
+            onChange={e => onChange({ ...settings, companyName: e.target.value })}
           />
         </div>
         <div className="flex flex-col gap-1.5">
           <div className={LABEL}>Localisation</div>
           <input
             className={INPUT}
-            value={settings.localisation}
-            onChange={e => handleLocalisationChange(e.target.value)}
+            value={settings.locationName}
+            onChange={e => handleLocationChange(e.target.value)}
           />
-          {geoLoading && <p className="text-[10px] text-cyan-100/50">Recherche en cours…</p>}
-          {geoResult === 'error' && <p className="text-[10px] text-red-400/80">Ville introuvable — coordonnées météo inchangées.</p>}
+          {geoLoading && <p className="text-[10px] text-slate-400">Recherche en cours…</p>}
+          {geoResult === 'error' && <p className="text-[10px] text-red-500">Ville introuvable — coordonnées météo inchangées.</p>}
           {geoResult && geoResult !== 'error' && (
-            <p className="text-[10px] text-emerald-400/90">
+            <p className="text-[10px] text-emerald-600">
               ✓ Météo : {geoResult.name}, {geoResult.admin1}
             </p>
           )}
@@ -133,11 +136,11 @@ function SectionIdentite({ settings, onChange }: {
           <div className={LABEL}>Exercice fiscal — mois de début</div>
           <select
             className={INPUT}
-            value={settings.exerciceFiscalStart}
-            onChange={e => onChange({ ...settings, exerciceFiscalStart: Number(e.target.value) })}
+            value={settings.fiscalStart}
+            onChange={e => onChange({ ...settings, fiscalStart: Number(e.target.value) })}
           >
             {MONTH_NAMES_FULL.map((m, i) => (
-              <option key={i} value={i} style={{ background: '#07111f' }}>{m}</option>
+              <option key={i} value={i}>{m}</option>
             ))}
           </select>
         </div>
@@ -157,32 +160,27 @@ function SupplierRow({ supplier, onChangeName, onDelete, onMoveUp, onMoveDown, i
   isFirst: boolean;
   isLast: boolean;
 }) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  if (confirmDelete) {
-    return (
-      <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-900/20 px-3 py-2">
-        <span className="flex-1 text-xs text-red-300/90">
-          Supprimer <strong>{supplier.name}</strong> ? Les données saisies seront masquées (non supprimées).
-        </span>
-        <button onClick={() => setConfirmDelete(false)} className="rounded px-2 py-1 text-xs text-cyan-100/60 hover:text-cyan-100">Annuler</button>
-        <button onClick={onDelete} className="rounded bg-red-600/80 px-2 py-1 text-xs font-black text-white hover:bg-red-600">Confirmer</button>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-cyan-200/10 bg-[rgba(6,31,40,0.4)] px-3 py-2">
-      <GripVertical className="h-3.5 w-3.5 shrink-0 text-cyan-100/30" />
+    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+      <GripVertical className="h-3.5 w-3.5 shrink-0 text-slate-300" />
       <input
-        className="flex-1 bg-transparent text-sm font-semibold text-amber-50/90 outline-none placeholder:text-cyan-100/30 focus:text-amber-50"
+        className="flex-1 bg-transparent text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400 focus:text-slate-900"
         value={supplier.name}
         onChange={e => onChangeName(e.target.value)}
       />
       <div className="flex shrink-0 gap-0.5">
-        <button disabled={isFirst} onClick={onMoveUp} className="rounded p-1 text-cyan-100/40 disabled:opacity-20 hover:text-cyan-100"><ChevronUp className="h-3 w-3" /></button>
-        <button disabled={isLast} onClick={onMoveDown} className="rounded p-1 text-cyan-100/40 disabled:opacity-20 hover:text-cyan-100"><ChevronDown className="h-3 w-3" /></button>
-        <button onClick={() => setConfirmDelete(true)} className="rounded p-1 text-cyan-100/30 hover:text-red-400"><Trash2 className="h-3 w-3" /></button>
+        <button disabled={isFirst} onClick={onMoveUp} className="rounded p-1 text-slate-400 disabled:opacity-20 hover:text-slate-700"><ChevronUp className="h-3 w-3" /></button>
+        <button disabled={isLast} onClick={onMoveDown} className="rounded p-1 text-slate-400 disabled:opacity-20 hover:text-slate-700"><ChevronDown className="h-3 w-3" /></button>
+        <button
+          onClick={() => {
+            if (window.confirm(`Supprimer "${supplier.name}" ? Les données saisies seront masquées (non supprimées).`)) {
+              onDelete();
+            }
+          }}
+          className="rounded p-1 text-slate-300 hover:text-red-500"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
       </div>
     </div>
   );
@@ -197,7 +195,8 @@ function SectionAchatsCard({ section, onChange, onDelete, onMoveUp, onMoveDown, 
   isFirst: boolean;
   isLast: boolean;
 }) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const SectionIcon = ICON_MAP[section.icon ?? ''] ?? ShoppingCart;
 
   const addSupplier = () => {
     const id = 'sup_' + Date.now();
@@ -221,35 +220,42 @@ function SectionAchatsCard({ section, onChange, onDelete, onMoveUp, onMoveDown, 
     onChange({ ...section, suppliers: arr });
   };
 
-  if (confirmDelete) {
-    return (
-      <div className="rounded-xl border border-red-500/30 bg-red-900/20 p-4">
-        <p className="mb-3 text-sm text-red-300/90">
-          Supprimer la section <strong>{section.name}</strong> et ses {section.suppliers.length} fournisseur(s) ?
-          Les données saisies seront masquées (non supprimées).
-        </p>
-        <div className="flex gap-2">
-          <button onClick={() => setConfirmDelete(false)} className="rounded-lg border border-cyan-200/20 px-3 py-1.5 text-xs text-cyan-100/60 hover:text-cyan-100">Annuler</button>
-          <button onClick={onDelete} className="rounded-lg bg-red-600/80 px-3 py-1.5 text-xs font-black text-white hover:bg-red-600">Confirmer la suppression</button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-xl border border-cyan-200/10 bg-[rgba(6,31,40,0.5)] p-4">
+    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
       <div className="mb-3 flex items-center gap-2">
-        <GripVertical className="h-4 w-4 text-cyan-100/30" />
-        <input
-          className="flex-1 bg-transparent text-sm font-black text-amber-50 outline-none placeholder:text-cyan-100/30"
-          value={section.name}
-          onChange={e => onChange({ ...section, name: e.target.value })}
-          placeholder="Nom de la section"
-        />
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-teal-100 text-teal-600">
+          <SectionIcon className="h-4 w-4" />
+        </div>
+        {editingName ? (
+          <input
+            autoFocus
+            className="flex-1 rounded border border-teal-300 bg-white px-2 py-1 text-sm font-black text-slate-800 outline-none"
+            value={section.name}
+            onChange={e => onChange({ ...section, name: e.target.value })}
+            onBlur={() => setEditingName(false)}
+            onKeyDown={e => { if (e.key === 'Enter') setEditingName(false); }}
+          />
+        ) : (
+          <button
+            className="flex-1 text-left text-sm font-black text-slate-800 hover:text-teal-600"
+            onClick={() => setEditingName(true)}
+          >
+            {section.name}
+          </button>
+        )}
         <div className="flex gap-0.5">
-          <button disabled={isFirst} onClick={onMoveUp} className="rounded p-1 text-cyan-100/40 disabled:opacity-20 hover:text-cyan-100"><ChevronUp className="h-3.5 w-3.5" /></button>
-          <button disabled={isLast} onClick={onMoveDown} className="rounded p-1 text-cyan-100/40 disabled:opacity-20 hover:text-cyan-100"><ChevronDown className="h-3.5 w-3.5" /></button>
-          <button onClick={() => setConfirmDelete(true)} className="rounded p-1 text-cyan-100/30 hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
+          <button disabled={isFirst} onClick={onMoveUp} className="rounded p-1 text-slate-400 disabled:opacity-20 hover:text-slate-700"><ChevronUp className="h-3.5 w-3.5" /></button>
+          <button disabled={isLast} onClick={onMoveDown} className="rounded p-1 text-slate-400 disabled:opacity-20 hover:text-slate-700"><ChevronDown className="h-3.5 w-3.5" /></button>
+          <button
+            onClick={() => {
+              if (window.confirm(`Supprimer la section "${section.name}" et ses ${section.suppliers.length} fournisseur(s) ? Les données seront masquées.`)) {
+                onDelete();
+              }
+            }}
+            className="rounded p-1 text-slate-300 hover:text-red-500"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
@@ -265,7 +271,7 @@ function SectionAchatsCard({ section, onChange, onDelete, onMoveUp, onMoveDown, 
             isLast={idx === section.suppliers.length - 1}
           />
         ))}
-        <button onClick={addSupplier} className="mt-1 flex items-center gap-1.5 rounded-lg border border-dashed border-cyan-200/20 px-3 py-2 text-xs font-semibold text-cyan-100/50 transition hover:border-cyan-200/40 hover:text-cyan-100/80">
+        <button onClick={addSupplier} className="mt-1 flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs font-semibold text-slate-400 transition hover:border-teal-400 hover:text-teal-600">
           <Plus className="h-3.5 w-3.5" /> Ajouter un fournisseur
         </button>
       </div>
@@ -302,7 +308,7 @@ function SectionAchats({ settings, onChange }: {
   return (
     <div className={CARD}>
       <div className={CARD_HEADER}>
-        <ShoppingCart className="h-4 w-4 text-cyan-300" />
+        <ShoppingCart className="h-4 w-4 text-teal-300" />
         <span className={CARD_TITLE}>Sections d'achats (coût matière)</span>
       </div>
       <div className="flex flex-col gap-3 p-5">
@@ -318,7 +324,7 @@ function SectionAchats({ settings, onChange }: {
             isLast={idx === settings.purchaseSections.length - 1}
           />
         ))}
-        <button onClick={addSection} className={BTN_AMBER}>
+        <button onClick={addSection} className={BTN_TEAL}>
           <Plus className="h-3.5 w-3.5" /> Ajouter une section
         </button>
       </div>
@@ -337,52 +343,46 @@ const COLOR_OPTIONS = [
   { value: '#3b82f6', label: 'Bleu' },
 ];
 
-function CustomSystemeRow({ sys, onChange, onDelete }: {
+function SystemeRow({ sys, onChange, onDelete }: {
   sys: CaisseSysteme;
   onChange: (s: CaisseSysteme) => void;
   onDelete: () => void;
 }) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  if (confirmDelete) {
-    return (
-      <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-900/20 px-3 py-2">
-        <span className="flex-1 text-xs text-red-300/90">
-          Supprimer <strong>{sys.name}</strong> ? Les données saisies seront masquées.
-        </span>
-        <button onClick={() => setConfirmDelete(false)} className="rounded px-2 py-1 text-xs text-cyan-100/60 hover:text-cyan-100">Annuler</button>
-        <button onClick={onDelete} className="rounded bg-red-600/80 px-2 py-1 text-xs font-black text-white hover:bg-red-600">Confirmer</button>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-cyan-200/10 bg-[rgba(6,31,40,0.4)] px-3 py-2">
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ background: sys.accentColor + '33' }}>
+    <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ background: sys.accentColor + '22' }}>
         <CaisseIcon name={sys.icon} cls="h-4 w-4" />
       </div>
       <input
-        className="flex-1 bg-transparent text-sm font-semibold text-amber-50/90 outline-none"
+        className="flex-1 bg-transparent text-sm font-semibold text-slate-800 outline-none"
         value={sys.name}
         onChange={e => onChange({ ...sys, name: e.target.value })}
       />
+      {sys.custom && (
+        <span className="shrink-0 rounded-full bg-teal-100 px-2 py-0.5 text-[9px] font-black text-teal-700">personnalisé</span>
+      )}
       <select
-        className="rounded bg-[rgba(6,31,40,0.6)] border border-cyan-200/15 px-1 py-1 text-xs text-cyan-100/70 outline-none"
+        className="rounded border border-slate-200 bg-white px-1 py-1 text-xs text-slate-600 outline-none"
         value={sys.icon}
         onChange={e => onChange({ ...sys, icon: e.target.value })}
-        style={{ background: '#07111f' }}
       >
         {CAISSE_ICON_OPTIONS.map(ic => <option key={ic} value={ic}>{ic}</option>)}
       </select>
       <select
-        className="rounded bg-[rgba(6,31,40,0.6)] border border-cyan-200/15 px-1 py-1 text-xs text-cyan-100/70 outline-none"
+        className="rounded border border-slate-200 bg-white px-1 py-1 text-xs text-slate-600 outline-none"
         value={sys.accentColor}
         onChange={e => onChange({ ...sys, accentColor: e.target.value })}
-        style={{ background: '#07111f' }}
       >
         {COLOR_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
       </select>
-      <button onClick={() => setConfirmDelete(true)} className="rounded p-1 text-cyan-100/30 hover:text-red-400">
+      <button
+        onClick={() => {
+          if (window.confirm(`Supprimer "${sys.name}" ? Les données saisies seront masquées.`)) {
+            onDelete();
+          }
+        }}
+        className="rounded p-1 text-slate-300 hover:text-red-500"
+      >
         <Trash2 className="h-3.5 w-3.5" />
       </button>
     </div>
@@ -397,7 +397,7 @@ function SectionSystemesEncaissement({ settings, onChange }: {
 
   const addSysteme = () => {
     const id = 'sys_' + Date.now();
-    const newSys: CaisseSysteme = { id, name: 'Nouveau système', icon: 'CreditCard', accentColor: '#06b6d4' };
+    const newSys: CaisseSysteme = { id, name: 'Nouveau système', icon: 'CreditCard', accentColor: '#06b6d4', custom: true };
     onChange({ ...settings, caisseSystemes: [...systemes, newSys] });
   };
 
@@ -413,43 +413,22 @@ function SectionSystemesEncaissement({ settings, onChange }: {
   return (
     <div className={CARD}>
       <div className={CARD_HEADER}>
-        <CreditCard className="h-4 w-4 text-cyan-300" />
+        <CreditCard className="h-4 w-4 text-teal-300" />
         <span className={CARD_TITLE}>Systèmes d'encaissement</span>
       </div>
       <div className="p-5">
-        {/* Systèmes intégrés (lecture seule) */}
-        <div className="mb-4">
-          <div className={LABEL + ' mb-2'}>Intégrés (lecture seule)</div>
-          <div className="flex flex-wrap gap-2">
-            {BUILTIN_CAISSE_SYSTEMS.map(name => (
-              <div key={name} className="flex items-center gap-1.5 rounded-lg border border-cyan-200/10 bg-[rgba(6,31,40,0.4)] px-2.5 py-1.5">
-                <Lock className="h-3 w-3 text-cyan-100/30" />
-                <span className="text-xs font-semibold text-cyan-100/70">{name}</span>
-                <span className="ml-1 rounded-full bg-cyan-500/15 px-1.5 py-0.5 text-[9px] font-black text-cyan-400/80">intégré</span>
-              </div>
-            ))}
-          </div>
+        <div className="mb-4 flex flex-col gap-2">
+          {systemes.map((sys, idx) => (
+            <SystemeRow
+              key={sys.id}
+              sys={sys}
+              onChange={s => updateSysteme(idx, s)}
+              onDelete={() => deleteSysteme(idx)}
+            />
+          ))}
         </div>
-
-        {/* Systèmes personnalisés */}
-        {systemes.length > 0 && (
-          <div className="mb-4">
-            <div className={LABEL + ' mb-2'}>Personnalisés</div>
-            <div className="flex flex-col gap-2">
-              {systemes.map((sys, idx) => (
-                <CustomSystemeRow
-                  key={sys.id}
-                  sys={sys}
-                  onChange={s => updateSysteme(idx, s)}
-                  onDelete={() => deleteSysteme(idx)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <button onClick={addSysteme} className={BTN_AMBER}>
-          <Plus className="h-3.5 w-3.5" /> Nouveau système
+        <button onClick={addSysteme} className={BTN_TEAL}>
+          <Plus className="h-3.5 w-3.5" /> Nouveau système personnalisé
         </button>
       </div>
     </div>
@@ -463,7 +442,6 @@ export default function ParametresEntreprise({ onBack }: Props) {
   const [local, setLocal] = useState<CompanySettings>(companySettings);
   const [saved, setSaved] = useState(false);
 
-  // Synchronise le state local si CompanySettings change depuis ailleurs (cloud sync)
   const prevRemoteRef = useRef(companySettings);
   if (prevRemoteRef.current !== companySettings && !saved) {
     prevRemoteRef.current = companySettings;
@@ -476,18 +454,12 @@ export default function ParametresEntreprise({ onBack }: Props) {
     setTimeout(() => setSaved(false), 2000);
   }, [local, updateCompanySettings]);
 
-  // parseMoneyValue est importé pour la grille salariale (types conservés, affichage masqué)
-  void parseMoneyValue;
-
   return (
-    <div
-      className="min-h-screen p-4 sm:p-6"
-      style={{ background: 'linear-gradient(135deg, #07111f 0%, #0a2430 50%, #073d43 100%)' }}
-    >
+    <div className="min-h-screen p-4 sm:p-6" style={{ background: '#f8fafc' }}>
       <div className="mx-auto flex max-w-[1100px] flex-col gap-5">
 
-        {/* Header */}
-        <header className="overflow-hidden rounded-3xl border border-cyan-200/15 bg-[rgba(6,31,40,0.8)] p-5 shadow-xl">
+        {/* Header — reste sombre */}
+        <header className="overflow-hidden rounded-3xl border border-cyan-200/15 bg-[rgba(6,31,40,0.9)] p-5 shadow-xl">
           <div className="flex items-start gap-4">
             <button
               type="button"
@@ -510,7 +482,7 @@ export default function ParametresEntreprise({ onBack }: Props) {
                 'mt-1 flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-black shadow-lg transition',
                 saved
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-white hover:brightness-110',
+                  : 'bg-gradient-to-r from-[#0d9488] to-[#0f766e] text-white hover:brightness-110',
               ].join(' ')}
             >
               {saved ? '✓ Sauvegardé' : 'Sauvegarder'}

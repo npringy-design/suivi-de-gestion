@@ -14,11 +14,11 @@ type Props = {
   onBack: () => void;
 };
 
-const BG_PAGE = 'linear-gradient(135deg, #07111f 0%, #0a2430 50%, #073d43 100%)';
-const TH = 'sticky top-0 z-10 bg-[#07111f] px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-100/70 border-b border-cyan-200/10 whitespace-nowrap';
-const TD = 'px-4 py-2 text-sm text-amber-50/90 border-b border-cyan-200/5';
-const TD_DAY = TD + ' font-semibold text-amber-50/80 sticky left-0 bg-[rgba(6,31,40,0.95)]';
-const TD_TOTAL = 'px-4 py-2.5 text-sm font-black border-t border-cyan-200/15 bg-[rgba(6,31,40,0.6)]';
+const BG_PAGE = '#f8fafc';
+const TH = 'sticky top-0 z-10 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 border-b border-slate-200 whitespace-nowrap';
+const TD = 'px-4 py-2 text-sm text-slate-700 border-b border-slate-100';
+const TD_DAY = TD + ' font-semibold text-slate-800 sticky left-0 bg-white';
+const TD_TOTAL = 'px-4 py-2.5 text-sm font-black border-t border-slate-200 bg-slate-50';
 
 function EditCell({ value, onCommit }: { value: string; onCommit: (v: string) => void }) {
   const [draft, setDraft] = useState<string | null>(null);
@@ -27,7 +27,7 @@ function EditCell({ value, onCommit }: { value: string; onCommit: (v: string) =>
   return (
     <input
       ref={inputRef}
-      className="w-full bg-transparent text-sm text-amber-50/90 outline-none border-b border-transparent focus:border-cyan-400/50"
+      className="w-full bg-transparent text-sm text-slate-800 outline-none border-b border-transparent focus:border-teal-500/60"
       value={draft !== null ? draft : (parseMoneyValue(value) > 0 ? parseMoneyValue(value).toLocaleString('fr-FR') : '')}
       placeholder="—"
       onChange={e => setDraft(e.target.value)}
@@ -104,7 +104,7 @@ export default function SaisieCaisseDynamique({ systemId, month, year, onBack }:
         </header>
 
         {/* Tableau */}
-        <div className="overflow-hidden rounded-2xl border border-cyan-200/15 bg-[rgba(6,31,40,0.8)] shadow-lg">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-auto">
             <table className="min-w-[500px] border-separate border-spacing-0">
               <thead>
@@ -134,7 +134,7 @@ export default function SaisieCaisseDynamique({ systemId, month, year, onBack }:
                       </td>
                       <td className={TD}>
                         <input
-                          className="w-full bg-transparent text-sm text-cyan-100/70 outline-none placeholder:text-cyan-100/20 focus:text-amber-50/90"
+                          className="w-full bg-transparent text-sm text-slate-500 outline-none placeholder:text-slate-300 focus:text-slate-800"
                           value={commentaire}
                           placeholder="—"
                           onChange={e => setVal(day, 'commentaire', e.target.value)}
@@ -146,8 +146,8 @@ export default function SaisieCaisseDynamique({ systemId, month, year, onBack }:
               </tbody>
               <tfoot>
                 <tr>
-                  <td className={TD_TOTAL + ' text-amber-300 sticky left-0 bg-[rgba(6,31,40,0.6)]'}>TOTAL {MONTH_NAMES[activeMonth].toUpperCase()} {year}</td>
-                  <td className={TD_TOTAL + ' text-right text-amber-50'}>{totalMontant > 0 ? formatEuro(totalMontant) : '—'}</td>
+                  <td className={TD_TOTAL + ' text-teal-700 sticky left-0 bg-slate-50'}>TOTAL {MONTH_NAMES[activeMonth].toUpperCase()} {year}</td>
+                  <td className={TD_TOTAL + ' text-right text-slate-900'}>{totalMontant > 0 ? formatEuro(totalMontant) : '—'}</td>
                   <td className={TD_TOTAL} />
                 </tr>
               </tfoot>

@@ -1060,11 +1060,11 @@ export default function Home() {
                   <div className="min-w-0 py-0.5 text-center lg:pl-[clamp(1.5rem,5vw,6rem)]">
                     <div className="home-separator mx-auto mb-1.5 h-px max-w-[520px] bg-gradient-to-r from-transparent via-amber-200/80 to-transparent" />
                     <h1 className="home-title text-center font-serif text-[clamp(2rem,3.4vw,3rem)] font-black uppercase leading-none tracking-[0.08em] text-amber-50 drop-shadow">
-                      {companySettings.enseigne}
+                      {companySettings.companyName}
                     </h1>
                     <div className="home-separator mx-auto mt-1.5 h-px max-w-[520px] bg-gradient-to-r from-transparent via-amber-200/75 to-transparent" />
                     <div className="home-location mx-auto mt-1.5 max-w-[520px] text-center text-[11px] font-bold uppercase tracking-[0.42em] text-white/85 sm:text-xs">
-                      {companySettings.localisation}
+                      {companySettings.locationName}
                     </div>
                   </div>
 
@@ -1078,7 +1078,7 @@ export default function Home() {
                         aria-label="Ouvrir les prévisions météo de la semaine"
                       >
                         <div className="border-b border-cyan-100/20 pb-0.5 text-center text-[11px] font-black text-cyan-50">
-                          Météo {companySettings.localisation}
+                          Météo {companySettings.locationName}
                         </div>
                         <div className="mt-1.5 flex items-center justify-center gap-2">
                           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 shadow-inner ring-1 ring-cyan-100/20">
@@ -1463,7 +1463,7 @@ export default function Home() {
             <div className="flex items-center justify-between border-b border-cyan-100/20 px-4 py-3">
               <div>
                 <div className="text-sm font-black text-cyan-50">Prévision semaine</div>
-                <div className="text-xs font-semibold text-cyan-50/70">{companySettings.localisation}</div>
+                <div className="text-xs font-semibold text-cyan-50/70">{companySettings.locationName}</div>
               </div>
               <button
                 type="button"

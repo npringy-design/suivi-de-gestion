@@ -292,6 +292,7 @@ export type PurchaseSupplier = {
 export type PurchaseSection = {
   id: string;
   name: string;
+  icon?: string;
   suppliers: PurchaseSupplier[];
 };
 
@@ -300,14 +301,15 @@ export type CaisseSysteme = {
   name: string;
   icon: string;
   accentColor: string;
-  builtin?: boolean;
+  route?: string;
+  custom?: boolean;
 };
 
 export type CompanySettings = {
-  enseigne: string;
-  localisation: string;
+  companyName: string;
+  locationName: string;
   // Mois de début de l'exercice fiscal (0=Janvier, 11=Décembre).
-  exerciceFiscalStart: number;
+  fiscalStart: number;
   purchaseSections: PurchaseSection[];
   personnelRateMode: 'categories' | 'average' | 'import';
   personnelRates: Record<PersonnelCategory, number>;
@@ -319,7 +321,6 @@ export type CompanySettings = {
   // Coordonnées géographiques pour la météo.
   weatherLat?: number;
   weatherLon?: number;
-  // Systèmes d'encaissement personnalisés (hors builtins).
   caisseSystemes?: CaisseSysteme[];
 };
 

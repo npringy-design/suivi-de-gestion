@@ -48,14 +48,14 @@ function TabAchats({
       <table className="min-w-[600px] border-separate border-spacing-0 text-sm">
         <thead>
           <tr>
-            <th className={TH_CLS + ' text-left sticky left-0 bg-[#07111f] min-w-[120px]'}>Jour</th>
+            <th className={TH_CLS + ' text-left sticky left-0 bg-white min-w-[120px]'}>Jour</th>
             {sections.map(sec => (
               <th key={sec.id} colSpan={sec.suppliers.length} className={TH_CLS + ' text-center border-l border-cyan-200/10'}>{sec.name}</th>
             ))}
             <th className={TH_CLS}>Total</th>
           </tr>
           <tr>
-            <th className={TH_CLS + ' sticky left-0 bg-[#07111f]'} />
+            <th className={TH_CLS + ' sticky left-0 bg-white'} />
             {allSuppliers.map(sup => <th key={sup.id} className={TH_CLS + ' text-[9px]'}>{sup.name}</th>)}
             <th className={TH_CLS} />
           </tr>
@@ -77,7 +77,7 @@ function TabAchats({
                 <tr key={ri}>
                   <td className={TD_DAY_WEEK}>{row.label}</td>
                   {weekSums.map((v, i) => <td key={i} className={TD_WEEK}>{v > 0 ? formatEuro(v) : '—'}</td>)}
-                  <td className={TD_WEEK + ' text-amber-200'}>{totalWeek > 0 ? formatEuro(totalWeek) : '—'}</td>
+                  <td className={TD_WEEK + ' text-teal-900 font-black'}>{totalWeek > 0 ? formatEuro(totalWeek) : '—'}</td>
                 </tr>
               );
             }
@@ -88,25 +88,25 @@ function TabAchats({
 
             return (
               <tr key={ri}>
-                <td className={TD_DAY + (row.isWeekend ? ' text-cyan-300/70' : '')}>{row.label?.split(' ').slice(0, 2).join(' ')}</td>
+                <td className={TD_DAY + (row.isWeekend ? ' text-teal-600/70' : '')}>{row.label?.split(' ').slice(0, 2).join(' ')}</td>
                 {allSuppliers.map(sup => (
                   <td key={sup.id} className={TD_CLS}>
                     <EditCell value={rawDashboard[cellKey(rIdx, sup)] ?? ''} cellKey={cellKey(rIdx, sup)} month={month} onUpdate={updateDashboard} />
                   </td>
                 ))}
-                <td className={TD_CLS + ' font-black text-amber-50'}>{dayTotal > 0 ? formatEuro(dayTotal) : <span className="text-cyan-100/20">—</span>}</td>
+                <td className={TD_CLS + ' font-black text-slate-900'}>{dayTotal > 0 ? formatEuro(dayTotal) : <span className="text-slate-300">—</span>}</td>
               </tr>
             );
           })}
         </tbody>
         <tfoot>
           <tr>
-            <td className={TD_DAY_WEEK + ' text-amber-300'}>TOTAL MOIS</td>
+            <td className={TD_DAY_WEEK + ' text-teal-800 font-black'}>TOTAL MOIS</td>
             {allSuppliers.map(sup => {
               const total = Object.values(indices).reduce((sum, rIdx) => sum + parseMoneyValue(rawDashboard[cellKey(rIdx, sup)] ?? ''), 0);
               return <td key={sup.id} className={TD_WEEK}>{total > 0 ? formatEuro(total) : '—'}</td>;
             })}
-            <td className={TD_WEEK + ' text-amber-200 font-black'}>
+            <td className={TD_WEEK + ' text-teal-900 font-black'}>
               {formatEuro(Object.values(indices).reduce((sum, rIdx) =>
                 sum + allSuppliers.reduce((s, sup) => s + parseMoneyValue(rawDashboard[cellKey(rIdx, sup)] ?? ''), 0), 0))}
             </td>
@@ -135,13 +135,13 @@ function TabPersonnel({ computed, month, year }: { computed: Record<string, stri
           { label: 'Frais personnel %', value: fraisPersoRatio > 0 ? fraisPersoRatio.toFixed(1) + ' %' : '—' },
           { label: 'CA réalisé mois', value: ca > 0 ? formatEuro(ca) : '—' },
         ].map(({ label, value }) => (
-          <div key={label} className="rounded-xl border border-cyan-200/10 bg-[rgba(6,31,40,0.5)] p-4">
-            <div className="mb-1 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-100/60">{label}</div>
-            <div className="text-2xl font-black text-amber-50">{value}</div>
+          <div key={label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">{label}</div>
+            <div className="text-2xl font-black text-slate-900">{value}</div>
           </div>
         ))}
       </div>
-      <p className="mt-4 text-xs text-cyan-100/40">Édition disponible dans le Suivi Quotidien existant (onglet Vue complète).</p>
+      <p className="mt-4 text-xs text-slate-400">Édition disponible dans le Suivi Quotidien existant (onglet Vue complète).</p>
     </div>
   );
 }
@@ -170,7 +170,7 @@ function TabFrais({ computed }: { computed: Record<string, string> }) {
           </div>
         ))}
       </div>
-      <p className="mt-4 text-xs text-cyan-100/40">Édition disponible dans le Suivi Quotidien existant (onglet Vue complète).</p>
+      <p className="mt-4 text-xs text-slate-400">Édition disponible dans le Suivi Quotidien existant (onglet Vue complète).</p>
     </div>
   );
 }
@@ -241,7 +241,7 @@ export default function SuiviQuotidienV2({ month, year: _year, onBack }: Props) 
             </button>
             <div>
               <div className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">
-                {companySettings.enseigne} — {companySettings.localisation}
+                {companySettings.companyName} — {companySettings.locationName}
               </div>
               <h1 className="mt-1 text-3xl font-black tracking-tight text-amber-50">
                 Suivi quotidien — {MONTH_NAMES[activeMonth]} {YEAR}
@@ -263,13 +263,13 @@ export default function SuiviQuotidienV2({ month, year: _year, onBack }: Props) 
         </header>
 
         {/* Barre de progression */}
-        <div className="rounded-2xl border border-cyan-200/15 bg-[rgba(6,31,40,0.8)] px-5 py-4">
+        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-black text-amber-50">{nbJoursSaisis} jour{nbJoursSaisis > 1 ? 's' : ''} saisi{nbJoursSaisis > 1 ? 's' : ''} sur {nbJoursTotal}</span>
-            <span className="text-xs font-semibold text-cyan-100/60">{nbJoursTotal > 0 ? Math.round((nbJoursSaisis / nbJoursTotal) * 100) : 0} %</span>
+            <span className="text-sm font-black text-slate-800">{nbJoursSaisis} jour{nbJoursSaisis > 1 ? 's' : ''} saisi{nbJoursSaisis > 1 ? 's' : ''} sur {nbJoursTotal}</span>
+            <span className="text-xs font-semibold text-slate-400">{nbJoursTotal > 0 ? Math.round((nbJoursSaisis / nbJoursTotal) * 100) : 0} %</span>
           </div>
-          <div className="h-2 rounded-full bg-cyan-100/10">
-            <div className="h-2 rounded-full bg-gradient-to-r from-[#078892] to-[#0f5d66] transition-all" style={{ width: nbJoursTotal > 0 ? `${(nbJoursSaisis / nbJoursTotal) * 100}%` : '0%' }} />
+          <div className="h-2 rounded-full bg-slate-100">
+            <div className="h-2 rounded-full bg-gradient-to-r from-[#0d9488] to-[#0f766e] transition-all" style={{ width: nbJoursTotal > 0 ? `${(nbJoursSaisis / nbJoursTotal) * 100}%` : '0%' }} />
           </div>
         </div>
 
@@ -279,9 +279,9 @@ export default function SuiviQuotidienV2({ month, year: _year, onBack }: Props) 
             <div key={label} className={CARD_CLS + ' p-4'}>
               <div className="mb-2 flex items-center justify-between">
                 <span className={LABEL_CLS}>{label}</span>
-                <Icon className="h-4 w-4 text-cyan-300/60" />
+                <Icon className="h-4 w-4 text-teal-400" />
               </div>
-              <div className="text-2xl font-black text-amber-50">{value}</div>
+              <div className="text-2xl font-black text-slate-900">{value}</div>
               {badge !== null && <div className="mt-1.5"><VarBadge pct={badge} /></div>}
             </div>
           ))}
@@ -289,11 +289,11 @@ export default function SuiviQuotidienV2({ month, year: _year, onBack }: Props) 
 
         {/* Tableau avec onglets */}
         <div className={CARD_CLS}>
-          <div className="flex border-b border-cyan-200/10 px-5">
+          <div className="flex border-b border-slate-200 px-5">
             {TABS.map(({ key, label }) => (
               <button key={key} onClick={() => setActiveTab(key)} className={[
                 'px-4 py-3.5 text-xs font-black tracking-wider transition',
-                activeTab === key ? 'border-b-2 border-amber-400 text-amber-300' : 'text-cyan-100/50 hover:text-cyan-100/80',
+                activeTab === key ? 'border-b-2 border-teal-500 text-teal-700' : 'text-slate-400 hover:text-slate-700',
               ].join(' ')}>
                 {label.toUpperCase()}
               </button>

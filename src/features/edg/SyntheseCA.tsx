@@ -35,7 +35,7 @@ export default function SyntheseCA({
   onBilanSynthese, onDepensesPetiteCaisse, onCaisseDynamique,
 }: SyntheseCAProps) {
   const { companySettings } = useData();
-  const customSystemes = companySettings.caisseSystemes ?? [];
+  const customSystemes = (companySettings.caisseSystemes ?? []).filter(s => !s.route || s.custom);
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
 
   useEffect(() => {
