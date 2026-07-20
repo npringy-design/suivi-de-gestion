@@ -296,10 +296,15 @@ export type PurchaseSection = {
   suppliers: PurchaseSupplier[];
 };
 
+export type CaisseColumnSource = 'ca_ht' | 'couverts' | 'libre';
+
 export type CaisseColumn = {
   id: string;
   name: string;
-  type: 'saisie' | 'calcule' | 'commentaire';
+  type: 'saisie' | 'calcule' | 'calculAuto' | 'ecartCalc' | 'commentaire';
+  source?: CaisseColumnSource; // pour calculAuto
+  colA?: string; // id colonne pour ecartCalc
+  colB?: string; // id colonne pour ecartCalc
 };
 
 export type CaisseSysteme = {

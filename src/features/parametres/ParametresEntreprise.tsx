@@ -54,9 +54,6 @@ const ICON_OPTIONS: { key: string; label: string }[] = [
   { key: 'Zap',             label: 'Énergie' },
   { key: 'Clock',           label: 'Horloge' },
   { key: 'BarChart2',       label: 'Graphique' },
-  { key: 'Beef',            label: 'Viande' },
-  { key: 'Sparkles',        label: 'Paillettes' },
-  { key: 'ShoppingCart',    label: 'Panier' },
 ];
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -87,7 +84,7 @@ const COLOR_PALETTE = [
 
 function IconPicker({ value, onChange }: { value: string; onChange: (key: string) => void }) {
   return (
-    <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-8">
+    <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-8 sm:gap-1.5">
       {ICON_OPTIONS.map(({ key, label }) => {
         const selected = value === key;
         const Icon = ICON_MAP[key] ?? CreditCard;
@@ -97,12 +94,12 @@ function IconPicker({ value, onChange }: { value: string; onChange: (key: string
             type="button"
             title={label}
             onClick={() => onChange(key)}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border-2 transition"
-            style={{
-              background: selected ? 'rgba(13,148,136,0.1)' : '#f1f5f9',
-              borderColor: selected ? '#0d9488' : 'transparent',
-              color: selected ? '#0d9488' : '#94a3b8',
-            }}
+            className={[
+              'flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-all duration-100',
+              selected
+                ? 'border-[#0d9488] bg-[rgba(13,148,136,0.1)] text-[#0d9488]'
+                : 'border-[#e2e8f0] bg-[#f8fafc] text-[#94a3b8] hover:bg-[#f0fdfa] hover:border-[#99f6e4]',
+            ].join(' ')}
           >
             <Icon className="h-4 w-4" />
           </button>
@@ -116,20 +113,18 @@ function IconPicker({ value, onChange }: { value: string; onChange: (key: string
 
 function ColorPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2.5">
       {COLOR_PALETTE.map(c => (
         <button
           key={c.value}
           type="button"
           title={c.label}
           onClick={() => onChange(c.value)}
-          className="h-8 w-8 rounded-full border-[3px] transition"
-          style={{
-            background: c.value,
-            borderColor: value === c.value ? '#0f172a' : 'transparent',
-            outline: value === c.value ? `2px solid ${c.value}` : 'none',
-            outlineOffset: 2,
-          }}
+          className={[
+            'h-[30px] w-[30px] rounded-full border-[3px] transition-all duration-100',
+            value === c.value ? 'scale-[1.15] border-slate-900' : 'border-transparent hover:scale-110',
+          ].join(' ')}
+          style={{ background: c.value }}
         />
       ))}
     </div>
@@ -138,10 +133,35 @@ function ColorPicker({ value, onChange }: { value: string; onChange: (v: string)
 
 // ─── Modale création système ──────────────────────────────────────────────────
 
-const DEFAULT_RECO_COLUMNS: CaisseColumn[] = [
-  { id: 'col_theorique', name: 'Théorique', type: 'saisie' },
-  { id: 'col_reel',      name: 'Réel',      type: 'saisie' },
-  { id: 'col_ecart',     name: 'Écart',     type: 'calcule' },
+type ColType = 'calculAuto' | 'saisie' | 'ecartCalc' | 'commentaire';
+type ColSource = 'ca_ht' | 'couverts' | 'libre';
+
+type NewSysColumn = {
+  id: string;
+  name: string;
+  type: ColType;
+  source?: ColSource;
+  colA?: string;
+  colB?: string;
+};
+
+const COL_TYPE_LABELS: Record<ColType, string> = {
+  calculAuto:  'Calculé auto',
+  saisie:      'Saisie manuelle',
+  ecartCalc:   'Écart calculé',
+  commentaire: 'Commentaire',
+};
+
+const COL_SOURCE_LABELS: Record<ColSource, string> = {
+  ca_ht:    'CA HT du jour (suivi quotidien)',
+  couverts: 'Nombre de couverts',
+  libre:    'Valeur libre',
+};
+
+const DEFAULT_RECO_COLUMNS: NewSysColumn[] = [
+  { id: 'col_theorique', name: 'CA Théorique',  type: 'calculAuto', source: 'ca_ht' },
+  { id: 'col_reel',      name: 'Réel encaissé', type: 'saisie' },
+  { id: 'col_ecart',     name: 'Écart',         type: 'ecartCalc', colA: 'col_theorique', colB: 'col_reel' },
 ];
 
 type NewSysForm = {
@@ -150,8 +170,10 @@ type NewSysForm = {
   icon: string;
   color: string;
   inputType: 'daily' | 'reconciliation';
-  columns: CaisseColumn[];
+  columns: NewSysColumn[];
 };
+
+const SEL_CLS = 'rounded border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-700 outline-none focus:border-teal-400 transition';
 
 function NewSystemModal({ onClose, onCreate }: {
   onClose: () => void;
@@ -159,15 +181,30 @@ function NewSystemModal({ onClose, onCreate }: {
 }) {
   const [form, setForm] = useState<NewSysForm>({
     name: '', description: '', icon: 'CreditCard', color: '#0d9488',
-    inputType: 'daily', columns: DEFAULT_RECO_COLUMNS.map(c => ({ ...c })),
+    inputType: 'daily',
+    columns: DEFAULT_RECO_COLUMNS.map(c => ({ ...c })),
   });
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
-  const addCol = () => setForm(f => ({
-    ...f, columns: [...f.columns, { id: 'col_' + Date.now(), name: 'Nouvelle colonne', type: 'saisie' as const }],
-  }));
-  const removeCol = (id: string) => setForm(f => ({ ...f, columns: f.columns.filter(c => c.id !== id) }));
-  const updateCol = (id: string, patch: Partial<CaisseColumn>) =>
+  const updateCol = (id: string, patch: Partial<NewSysColumn>) =>
     setForm(f => ({ ...f, columns: f.columns.map(c => c.id === id ? { ...c, ...patch } : c) }));
+
+  const removeCol = (id: string) =>
+    setForm(f => ({ ...f, columns: f.columns.filter(c => c.id !== id) }));
+
+  const addCol = () =>
+    setForm(f => ({
+      ...f,
+      columns: [...f.columns, { id: 'col_' + Date.now(), name: 'Nouvelle colonne', type: 'saisie' as const }],
+    }));
+
+  const reorder = (from: number, to: number) => {
+    const arr = [...form.columns];
+    const [moved] = arr.splice(from, 1);
+    arr.splice(to, 0, moved);
+    setForm(f => ({ ...f, columns: arr }));
+  };
 
   const handleCreate = () => {
     if (!form.name.trim()) return;
@@ -179,89 +216,189 @@ function NewSystemModal({ onClose, onCreate }: {
       accentColor: form.color,
       custom: true,
       inputType: form.inputType,
-      columns: form.inputType === 'reconciliation' ? form.columns : undefined,
+      columns: form.inputType === 'reconciliation' ? (form.columns as CaisseColumn[]) : undefined,
     });
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="flex w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl" style={{ maxHeight: '90vh' }}>
-        {/* En-tête */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h3 className="text-base font-black text-slate-900">Nouveau système personnalisé</h3>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:text-slate-700">
-            <X className="h-4 w-4" />
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="flex w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" style={{ maxHeight: '92vh' }}>
+
+        {/* En-tête sombre */}
+        <div className="shrink-0 px-6 py-5" style={{ background: 'linear-gradient(135deg, #07111f, #0a2430, #073d43)' }}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-lg font-black text-white">Nouveau système d'encaissement</h3>
+              <p className="mt-0.5 text-xs" style={{ color: 'rgba(165,243,252,0.6)' }}>
+                Configurez l'identité, le type de tableau et les colonnes.
+              </p>
+            </div>
+            <button onClick={onClose} className="shrink-0 rounded-lg p-1.5 text-white/40 transition hover:text-white/90">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {/* Prévisualisation */}
+          <div className="mt-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+              style={{ background: form.color + '33', color: form.color }}>
+              <CaisseIcon name={form.icon} cls="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-black text-white">{form.name || <span className="opacity-40">Nom du système</span>}</div>
+              {form.description && <div className="truncate text-xs" style={{ color: 'rgba(165,243,252,0.6)' }}>{form.description}</div>}
+            </div>
+          </div>
         </div>
-        {/* Corps */}
-        <div className="flex flex-col gap-4 overflow-y-auto px-5 py-4">
-          <div className="flex flex-col gap-1.5">
-            <div className={LABEL}>Nom *</div>
-            <input className={INPUT} placeholder="Ex. : Lyf Pay" value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+
+        {/* Corps scrollable */}
+        <div className="flex flex-col gap-5 overflow-y-auto px-6 py-5">
+
+          {/* Identité */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <div className={LABEL}>Nom *</div>
+              <input className={INPUT} placeholder="Ex. : Lyf Pay" value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className={LABEL}>Description courte</div>
+              <input className={INPUT} placeholder="Optionnel" value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+            </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <div className={LABEL}>Description courte (optionnel)</div>
-            <input className={INPUT} placeholder="Ex. : Paiement sans contact" value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-          </div>
+
+          {/* Icône */}
           <div className="flex flex-col gap-2">
             <div className={LABEL}>Icône</div>
             <IconPicker value={form.icon} onChange={icon => setForm(f => ({ ...f, icon }))} />
           </div>
+
+          {/* Couleur */}
           <div className="flex flex-col gap-2">
             <div className={LABEL}>Couleur d'accent</div>
             <ColorPicker value={form.color} onChange={color => setForm(f => ({ ...f, color }))} />
           </div>
-          {/* Type de saisie */}
+
+          {/* Type de tableau */}
           <div className="flex flex-col gap-2">
-            <div className={LABEL}>Type de saisie</div>
+            <div className={LABEL}>Type de tableau</div>
             <div className="flex gap-3">
               {([
-                { value: 'daily', label: 'Montant journalier', desc: 'Montant + Commentaire par jour' },
-                { value: 'reconciliation', label: 'Rapprochement', desc: 'Colonnes configurables' },
+                { value: 'daily',         label: 'Montant journalier', desc: 'Idéal : espèces, pourboires, petite caisse.' },
+                { value: 'reconciliation', label: 'Rapprochement',      desc: 'Idéal : CB, tickets resto, livraison.' },
               ] as const).map(opt => (
-                <label key={opt.value} className={[
-                  'flex-1 cursor-pointer rounded-xl border-2 p-3 transition',
-                  form.inputType === opt.value ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300',
-                ].join(' ')}>
-                  <input type="radio" className="sr-only" checked={form.inputType === opt.value}
-                    onChange={() => setForm(f => ({ ...f, inputType: opt.value }))} />
-                  <div className={`text-xs font-black ${form.inputType === opt.value ? 'text-teal-700' : 'text-slate-700'}`}>{opt.label}</div>
-                  <div className="mt-0.5 text-[10px] text-slate-400">{opt.desc}</div>
-                </label>
+                <div
+                  key={opt.value}
+                  onClick={() => setForm(f => ({ ...f, inputType: opt.value }))}
+                  className={[
+                    'flex-1 cursor-pointer rounded-xl border-2 p-4 transition-all',
+                    form.inputType === opt.value
+                      ? 'border-[#0d9488] bg-[rgba(13,148,136,0.06)]'
+                      : 'border-slate-200 hover:border-slate-300',
+                  ].join(' ')}
+                >
+                  <div className={`text-sm font-black ${form.inputType === opt.value ? 'text-[#0d9488]' : 'text-slate-800'}`}>
+                    {opt.label}
+                  </div>
+                  <div className="mt-1 text-[11px] leading-snug text-slate-400">{opt.desc}</div>
+                </div>
               ))}
             </div>
           </div>
-          {/* Colonnes (rapprochement) */}
+
+          {/* Colonnes */}
           {form.inputType === 'reconciliation' && (
             <div className="flex flex-col gap-2">
-              <div className={LABEL}>Colonnes</div>
+              <div className={LABEL}>Colonnes du tableau</div>
               <div className="flex flex-col gap-1.5">
-                {form.columns.map(col => (
-                  <div key={col.id} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                    <input
-                      className="flex-1 bg-transparent text-sm font-semibold text-slate-800 outline-none"
-                      value={col.name}
-                      onChange={e => updateCol(col.id, { name: e.target.value })}
-                    />
-                    <select
-                      className="rounded border border-slate-200 bg-white px-1 py-1 text-xs text-slate-600 outline-none"
-                      value={col.type}
-                      onChange={e => updateCol(col.id, { type: e.target.value as CaisseColumn['type'] })}
-                    >
-                      <option value="saisie">Montant saisissable</option>
-                      <option value="calcule">Montant calculé</option>
-                      <option value="commentaire">Commentaire</option>
-                    </select>
-                    <button
-                      onClick={() => { if (form.columns.length > 2) removeCol(col.id); }}
-                      disabled={form.columns.length <= 2}
-                      className="rounded p-1 text-slate-300 disabled:opacity-20 hover:text-red-500"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                {form.columns.map((col, i) => (
+                  <div
+                    key={col.id}
+                    draggable
+                    onDragStart={() => setDragIdx(i)}
+                    onDragOver={e => { e.preventDefault(); if (dragIdx !== i) setDragOverIdx(i); }}
+                    onDragLeave={() => setDragOverIdx(null)}
+                    onDrop={e => {
+                      e.preventDefault();
+                      if (dragIdx !== null && dragIdx !== i) reorder(dragIdx, i);
+                      setDragIdx(null); setDragOverIdx(null);
+                    }}
+                    onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
+                    className={[
+                      'rounded-lg border p-2 transition-all',
+                      dragOverIdx === i && dragIdx !== i ? 'border-teal-500 bg-teal-50/50' : 'border-slate-200 bg-slate-50',
+                      dragIdx === i ? 'opacity-40' : '',
+                    ].join(' ')}
+                  >
+                    {/* Ligne principale */}
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-slate-300 active:cursor-grabbing" />
+                      <input
+                        className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-300"
+                        value={col.name}
+                        onChange={e => updateCol(col.id, { name: e.target.value })}
+                        placeholder="Nom de la colonne"
+                      />
+                      <select
+                        className={SEL_CLS}
+                        value={col.type}
+                        onChange={e => {
+                          const t = e.target.value as ColType;
+                          updateCol(col.id, {
+                            type: t,
+                            source: t === 'calculAuto' ? 'ca_ht' : undefined,
+                            colA: undefined,
+                            colB: undefined,
+                          });
+                        }}
+                      >
+                        {(Object.entries(COL_TYPE_LABELS) as [ColType, string][]).map(([v, l]) => (
+                          <option key={v} value={v}>{l}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => { if (form.columns.length > 2) removeCol(col.id); }}
+                        disabled={form.columns.length <= 2}
+                        className="shrink-0 rounded p-1 text-slate-300 disabled:opacity-20 hover:text-red-500"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    {/* Source (calculAuto) */}
+                    {col.type === 'calculAuto' && (
+                      <div className="ml-6 mt-1.5 flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wide text-slate-400">Source</span>
+                        <select className={SEL_CLS} value={col.source ?? 'ca_ht'}
+                          onChange={e => updateCol(col.id, { source: e.target.value as ColSource })}>
+                          {(Object.entries(COL_SOURCE_LABELS) as [ColSource, string][]).map(([v, l]) => (
+                            <option key={v} value={v}>{l}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {/* Colonnes A − B (ecartCalc) */}
+                    {col.type === 'ecartCalc' && (
+                      <div className="ml-6 mt-1.5 flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wide text-slate-400">A</span>
+                        <select className={SEL_CLS} value={col.colA ?? ''}
+                          onChange={e => updateCol(col.id, { colA: e.target.value })}>
+                          <option value="">— choisir —</option>
+                          {form.columns.filter(c => c.id !== col.id).map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                        <span className="text-xs font-black text-slate-400">−</span>
+                        <span className="text-[10px] font-black uppercase tracking-wide text-slate-400">B</span>
+                        <select className={SEL_CLS} value={col.colB ?? ''}
+                          onChange={e => updateCol(col.id, { colB: e.target.value })}>
+                          <option value="">— choisir —</option>
+                          {form.columns.filter(c => c.id !== col.id).map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                 ))}
                 <button onClick={addCol}
@@ -272,8 +409,9 @@ function NewSystemModal({ onClose, onCreate }: {
             </div>
           )}
         </div>
+
         {/* Pied */}
-        <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
+        <div className="shrink-0 flex justify-end gap-2 border-t border-slate-200 px-6 py-4">
           <button onClick={onClose}
             className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
             Annuler
@@ -281,7 +419,7 @@ function NewSystemModal({ onClose, onCreate }: {
           <button
             onClick={handleCreate}
             disabled={!form.name.trim()}
-            className="rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2 text-sm font-black text-white shadow-sm disabled:opacity-40"
+            className="rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-5 py-2 text-sm font-black text-white shadow-sm disabled:opacity-40"
           >
             Créer le système
           </button>

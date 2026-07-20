@@ -80,15 +80,30 @@ export default function SaisieCaisseDynamique({ systemId, month, year, onBack }:
   const rows = useMemo(() => buildMonthRows(year, activeMonth), [year, activeMonth]);
   const dayRows = rows.filter(r => r.type === 'day' && r.dayIndex != null);
 
-  // Colonnes "saisie" pour le calcul des colonnes "calcule"
-  const saisieCols = columns.filter(c => c.type === 'saisie');
+  const getCellValue = useCallback((day: number, col: typeof columns[number]): number => {
+    if (col.type === 'calculAuto') {
+      if (col.source === 'ca_ht') {
+        return parseMoneyValue(rawCaisse[`sys_saisie_theorique:${day}:montant`] ?? '');
+      }
+      // 'libre' ou 'couverts' → saisie manuelle stockée par id
+      return parseMoneyValue(getRaw(day, col.id));
+    }
+    if (col.type === 'ecartCalc') return 0; // calculé via getEcartCalc
+    if (col.type === 'commentaire') return 0;
+    // saisie, calcule (legacy)
+    return parseMoneyValue(getRaw(day, col.id));
+  }, [rawCaisse, getRaw]);
 
-  const calcEcart = useCallback((day: number): number => {
-    if (saisieCols.length < 2) return 0;
-    return parseMoneyValue(getRaw(day, saisieCols[0].id)) - parseMoneyValue(getRaw(day, saisieCols[1].id));
-  }, [saisieCols, getRaw]);
+  const getEcartCalc = useCallback((day: number, col: typeof columns[number]): number => {
+    const colADef = columns.find(c => c.id === col.colA);
+    const colBDef = columns.find(c => c.id === col.colB);
+    const a = colADef ? getCellValue(day, colADef) : 0;
+    const b = colBDef ? getCellValue(day, colBDef) : 0;
+    return a - b;
+  }, [columns, getCellValue]);
 
-  // KPIs
+  // KPIs — basés sur la première colonne saisie ou montant journalier
+  const firstSaisieCol = columns.find(c => c.type === 'saisie' || c.type === 'calcule');
   const { totalMontant, joursRenseignes } = useMemo(() => {
     let total = 0;
     let jours = 0;
@@ -96,14 +111,14 @@ export default function SaisieCaisseDynamique({ systemId, month, year, onBack }:
       const day = r.dayIndex! + 1;
       let val = 0;
       if (isReconciliation) {
-        val = saisieCols.length > 0 ? parseMoneyValue(getRaw(day, saisieCols[0].id)) : 0;
+        val = firstSaisieCol ? getCellValue(day, firstSaisieCol) : 0;
       } else {
         val = parseMoneyValue(getRaw(day, 'montant'));
       }
       if (val > 0) { total += val; jours++; }
     }
     return { totalMontant: total, joursRenseignes: jours };
-  }, [dayRows, isReconciliation, saisieCols, getRaw]);
+  }, [dayRows, isReconciliation, firstSaisieCol, getCellValue, getRaw]);
 
   return (
     <div className="min-h-screen p-4 sm:p-6" style={{ background: BG_PAGE }}>
@@ -206,8 +221,11 @@ export default function SaisieCaisseDynamique({ systemId, month, year, onBack }:
                     {columns.map(col => (
                       <th key={col.id} className={TH + ' text-right'} style={{ minWidth: 130 }}>
                         <span>{col.name}</span>
-                        {col.type === 'calcule' && (
-                          <span className="ml-1 rounded bg-violet-100 px-1 text-[8px] font-black text-violet-500">calc.</span>
+                        {(col.type === 'calcule' || col.type === 'calculAuto') && (
+                          <span className="ml-1 rounded bg-violet-100 px-1 text-[8px] font-black text-violet-500">auto</span>
+                        )}
+                        {col.type === 'ecartCalc' && (
+                          <span className="ml-1 rounded bg-blue-100 px-1 text-[8px] font-black text-blue-500">A−B</span>
                         )}
                       </th>
                     ))}
@@ -216,7 +234,6 @@ export default function SaisieCaisseDynamique({ systemId, month, year, onBack }:
                 <tbody>
                   {dayRows.map((row, ri) => {
                     const day = row.dayIndex! + 1;
-                    const ecart = calcEcart(day);
 
                     return (
                       <tr key={ri}>
@@ -224,15 +241,50 @@ export default function SaisieCaisseDynamique({ systemId, month, year, onBack }:
                           {row.label?.split(' ').slice(0, 2).join(' ')}
                         </td>
                         {columns.map(col => {
-                          if (col.type === 'calcule') {
+                          if (col.type === 'ecartCalc') {
+                            const ecart = getEcartCalc(day, col);
                             return (
                               <td key={col.id} className={TD + ' text-right bg-white'}>
-                                <span className="text-sm font-semibold text-slate-600">
+                                <span className="text-sm font-semibold">
                                   {ecart !== 0 ? (
                                     <span style={{ color: ecart >= 0 ? '#059669' : '#dc2626' }}>
                                       {formatEuro(ecart)}
                                     </span>
                                   ) : '—'}
+                                </span>
+                              </td>
+                            );
+                          }
+                          if (col.type === 'calcule') {
+                            // legacy — même rendu que ecartCalc simplifié
+                            const v = getCellValue(day, col);
+                            return (
+                              <td key={col.id} className={TD + ' text-right bg-white'}>
+                                <span className="text-sm font-semibold text-slate-500">
+                                  {v !== 0 ? formatEuro(v) : '—'}
+                                </span>
+                              </td>
+                            );
+                          }
+                          if (col.type === 'calculAuto') {
+                            const isEditable = col.source === 'libre' || col.source === 'couverts';
+                            const v = getCellValue(day, col);
+                            if (isEditable) {
+                              return (
+                                <td key={col.id} className={TD + ' text-right'} style={{ background: '#eff6ff' }}>
+                                  <EditCell
+                                    value={getRaw(day, col.id)}
+                                    onCommit={val => setRaw(day, col.id, parseMoneyValue(val) > 0 ? String(parseMoneyValue(val)) : '')}
+                                    placeholder="0,00"
+                                  />
+                                </td>
+                              );
+                            }
+                            // ca_ht → lecture seule
+                            return (
+                              <td key={col.id} className={TD + ' text-right'} style={{ background: '#f1f5f9' }}>
+                                <span className="text-sm font-semibold text-slate-500">
+                                  {v > 0 ? formatEuro(v) : '—'}
                                 </span>
                               </td>
                             );
@@ -249,7 +301,7 @@ export default function SaisieCaisseDynamique({ systemId, month, year, onBack }:
                               </td>
                             );
                           }
-                          // saisie
+                          // saisie (et fallback)
                           return (
                             <td key={col.id} className={TD + ' text-right'} style={{ background: '#fffbeb' }}>
                               <EditCell
@@ -270,12 +322,12 @@ export default function SaisieCaisseDynamique({ systemId, month, year, onBack }:
                       TOTAL {MONTH_NAMES[activeMonth].toUpperCase()} {year}
                     </td>
                     {columns.map(col => {
-                      if (col.type === 'calcule') {
-                        const totalEcart = dayRows.reduce((sum, r) => sum + calcEcart(r.dayIndex! + 1), 0);
+                      if (col.type === 'ecartCalc') {
+                        const t = dayRows.reduce((sum, r) => sum + getEcartCalc(r.dayIndex! + 1, col), 0);
                         return (
                           <td key={col.id} className={TD_TOTAL + ' text-right'}>
-                            <span style={{ color: totalEcart >= 0 ? '#059669' : '#dc2626' }}>
-                              {totalEcart !== 0 ? formatEuro(totalEcart) : '—'}
+                            <span style={{ color: t >= 0 ? '#059669' : '#dc2626' }}>
+                              {t !== 0 ? formatEuro(t) : '—'}
                             </span>
                           </td>
                         );
@@ -283,8 +335,7 @@ export default function SaisieCaisseDynamique({ systemId, month, year, onBack }:
                       if (col.type === 'commentaire') {
                         return <td key={col.id} className={TD_TOTAL} />;
                       }
-                      const colTotal = dayRows.reduce((sum, r) =>
-                        sum + parseMoneyValue(getRaw(r.dayIndex! + 1, col.id)), 0);
+                      const colTotal = dayRows.reduce((sum, r) => sum + getCellValue(r.dayIndex! + 1, col), 0);
                       return (
                         <td key={col.id} className={TD_TOTAL + ' text-right text-slate-900'}>
                           {colTotal > 0 ? formatEuro(colTotal) : '—'}
