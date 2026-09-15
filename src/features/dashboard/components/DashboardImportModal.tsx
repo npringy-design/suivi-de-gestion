@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload, X } from 'lucide-react';
+import { FileSpreadsheet, FileText, Receipt, Upload, Users, X } from 'lucide-react';
 
 import type {
   CaisseImportPreview,
@@ -54,6 +54,57 @@ export type DashboardImportModalProps = {
   importPreview: Array<{ label: string; value: string }>;
 };
 
+function ImportRow({
+  icon,
+  iconBg,
+  iconColor,
+  title,
+  subtitle,
+  badge,
+  onChange,
+  accept,
+  multiple,
+  isLast,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  iconColor: string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  accept: string;
+  multiple?: boolean;
+  isLast?: boolean;
+}) {
+  return (
+    <>
+      <label
+        style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', cursor: 'pointer' }}
+        onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+      >
+        <div style={{ width: 36, height: 36, borderRadius: 8, background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          {icon}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{title}</div>
+          <div style={{ fontSize: 13, color: '#64748b' }}>{subtitle}</div>
+        </div>
+        <div style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0 }}>{badge}</div>
+        <input
+          type="file"
+          accept={accept}
+          onChange={onChange}
+          multiple={multiple}
+          style={{ display: 'none' }}
+        />
+      </label>
+      {!isLast && <div style={{ height: 1, background: '#e2e8f0', margin: '0 16px' }} />}
+    </>
+  );
+}
+
 export default function DashboardImportModal({
   isMobile,
   setIsImportModalOpen,
@@ -88,7 +139,7 @@ export default function DashboardImportModal({
 }: DashboardImportModalProps) {
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 10 : 18 }}>
-      <div style={{ background: '#fff', borderRadius: 16, width: 'min(1120px, 100%)', maxWidth: 'calc(100vw - 36px)', maxHeight: 'calc(100vh - 36px)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#fff', borderRadius: 16, width: 'min(680px, 100%)', maxWidth: 'calc(100vw - 36px)', maxHeight: 'calc(100vh - 36px)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Upload size={20} color="#10b981" />
@@ -99,85 +150,75 @@ export default function DashboardImportModal({
           </button>
         </div>
         <div style={{ padding: isMobile ? 14 : 20, overflow: 'auto' }}>
-          <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, margin: '0 0 14px' }}>
-            Importez une feuille de caisse PDF. Seule la partie realise du suivi quotidien sera remplie :
-            VAE, CA midi, CA soir et couverts.
+          <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, margin: '0 0 16px' }}>
+            Sélectionnez un type d'import ci-dessous.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(240px, 1fr))', gap: 12 }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #93c5fd', borderRadius: 10, background: '#eff6ff' }}>
-              <span style={{ fontSize: 12, fontWeight: 900, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '.04em' }}>Feuille de caisse</span>
-              <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                Lecture locale de plusieurs feuilles possible, avec validation une par une avant application.
-              </span>
-              <input
-                type="file"
-                accept=".pdf,.txt,text/plain,application/pdf"
-                onChange={handleDailyRealiseImport}
-                multiple
-                style={{ fontSize: 13, color: '#0f172a' }}
-              />
-            </label>
+          <div style={{ marginBottom: 10, fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+            Imports quotidiens
+          </div>
+          <div style={{ background: '#f8fafc', borderRadius: 10, marginBottom: 20 }}>
+            <ImportRow
+              icon={<Receipt size={18} />}
+              iconBg="#eff6ff"
+              iconColor="#1d4ed8"
+              title="Feuille de caisse"
+              subtitle="Remplit le CA, VAE et couverts du jour"
+              badge="PDF · multi"
+              accept=".pdf,.txt,text/plain,application/pdf"
+              onChange={handleDailyRealiseImport}
+              multiple
+            />
+            <ImportRow
+              icon={<FileText size={18} />}
+              iconBg="#f0fdf4"
+              iconColor="#166534"
+              title="Facture fournisseur"
+              subtitle="Extrait fournisseur, date et montant HT"
+              badge="PDF · multi"
+              accept=".pdf,.txt,text/plain,application/pdf"
+              onChange={handleInvoiceImport}
+              multiple
+            />
+            <ImportRow
+              icon={<Users size={18} />}
+              iconBg="#faf5ff"
+              iconColor="#7e22ce"
+              title="PDF salaires"
+              subtitle="Met à jour les taux par statut et section"
+              badge="PDF"
+              accept=".pdf,.txt,text/plain,application/pdf"
+              onChange={handleSalaryPayrollImport}
+              multiple
+              isLast
+            />
+          </div>
 
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #86efac', borderRadius: 10, background: '#f0fdf4' }}>
-              <span style={{ fontSize: 12, fontWeight: 900, color: '#166534', textTransform: 'uppercase', letterSpacing: '.04em' }}>Facture fournisseur</span>
-              <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                Lecture locale : fournisseur, date et montant HT. Les fichiers ne sont pas conserves.
-              </span>
-              <input
-                type="file"
-                accept=".pdf,.txt,text/plain,application/pdf"
-                onChange={handleInvoiceImport}
-                multiple
-                style={{ fontSize: 13, color: '#0f172a' }}
-              />
-            </label>
-
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #c084fc', borderRadius: 10, background: '#faf5ff' }}>
-              <span style={{ fontSize: 12, fontWeight: 900, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '.04em' }}>PDF salaires</span>
-              <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                Lit les noms, heures et couts globaux puis met a jour les taux par statut et section.
-              </span>
-              <input
-                type="file"
-                accept=".pdf,.txt,text/plain,application/pdf"
-                multiple
-                onChange={handleSalaryPayrollImport}
-                style={{ fontSize: 13, color: '#0f172a' }}
-              />
-            </label>
-
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #f59e0b', borderRadius: 10, background: '#fffbeb' }}>
-              <span style={{ fontSize: 12, fontWeight: 900, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.04em' }}>Budget historique Excel</span>
-              <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                Importe tous les mois du classeur : prévisions couverts + TM, réalisé CA/couverts, coût matière, personnel, démarques et frais généraux.
-              </span>
-              <span style={{ fontSize: 11, color: '#92400e', fontStyle: 'italic' }}>
-                Année cible : <strong>{year}</strong>
-              </span>
-              <input
-                type="file"
-                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                onChange={handleHistoricalBudgetExcelImport}
-                style={{ fontSize: 13, color: '#0f172a' }}
-              />
-            </label>
-
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, border: '1px dashed #a78bfa', borderRadius: 10, background: '#f5f3ff' }}>
-              <span style={{ fontSize: 12, fontWeight: 900, color: '#5b21b6', textTransform: 'uppercase', letterSpacing: '.04em' }}>Historique Excel N-1 (V25)</span>
-              <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.45 }}>
-                Format V25 : importe le réalisé CA midi/soir/limo, couverts, coût matière, personnel, démarques et frais généraux sur tous les mois du classeur.
-              </span>
-              <span style={{ fontSize: 11, color: '#5b21b6', fontStyle: 'italic' }}>
-                Année cible : <strong>{year}</strong>
-              </span>
-              <input
-                type="file"
-                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                onChange={handleHistoricalV25ExcelImport}
-                style={{ fontSize: 13, color: '#0f172a' }}
-              />
-            </label>
+          <div style={{ marginBottom: 10, fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+            Imports historiques
+          </div>
+          <div style={{ background: '#f8fafc', borderRadius: 10 }}>
+            <ImportRow
+              icon={<FileSpreadsheet size={18} />}
+              iconBg="#fffbeb"
+              iconColor="#92400e"
+              title="Suivi de gestion V26"
+              subtitle="Prévisions, réalisé, coûts et frais généraux"
+              badge={`Excel · ${year}`}
+              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+              onChange={handleHistoricalBudgetExcelImport}
+            />
+            <ImportRow
+              icon={<FileSpreadsheet size={18} />}
+              iconBg="#fffbeb"
+              iconColor="#92400e"
+              title="Historique N-1 (V25)"
+              subtitle="CA, couverts, coûts et frais de l'année précédente"
+              badge={`Excel · ${year}`}
+              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+              onChange={handleHistoricalV25ExcelImport}
+              isLast
+            />
           </div>
 
           {historicalBudgetStatus && (
@@ -436,26 +477,6 @@ export default function DashboardImportModal({
 
           <div style={{ marginTop: 16, marginBottom: 18, padding: 12, borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: 12, lineHeight: 1.5, color: '#64748b' }}>
             Si la date du PDF correspond au mois affiche, l'import remplit directement ce jour. Sinon il remplit le jour actuellement selectionne.
-          </div>
-          <p style={{ display: 'none', fontSize: 14, color: '#475569', lineHeight: 1.6, marginBottom: 24 }}>
-            Pour importer vos données, nous devons définir le format exact de votre fichier source.
-            Veuillez nous indiquer comment vous souhaitez procéder :
-          </p>
-
-          <div style={{ display: 'none', flexDirection: 'column', gap: 16 }}>
-            <div style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
-              <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>Option A : Format CSV Standard</h4>
-              <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-                Nous pouvons définir un template CSV (colonnes spécifiques) que vous remplirez et importerez ici.
-              </p>
-            </div>
-
-            <div style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
-              <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px 0' }}>Option B : Logiciel Spécifique</h4>
-              <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-                Si vous utilisez un logiciel de caisse ou de gestion (ex: Zelty, Lightspeed, etc.), nous pouvons créer un importateur sur-mesure pour leur format d'export.
-              </p>
-            </div>
           </div>
         </div>
         <div style={{ padding: '16px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>

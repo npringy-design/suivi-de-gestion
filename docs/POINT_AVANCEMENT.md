@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 15/09/2026 (redesign modale d'import Dashboard)
+
+- **DashboardImportModal.tsx** : grille de 5 cartes colorées remplacée par un layout liste en 2 sections ("Imports quotidiens" / "Imports historiques"), lignes cliquables avec icône carrée pastel, titre/sous-titre et badge format. Largeur modale réduite à `min(680px, 100%)`. Suppression du texte d'intro obsolète et des deux blocs de code mort (`display: 'none'`). Aucun changement de logique/handlers/previews. build OK.
+
 ## 20/07/2026 (sélecteur d'icônes visuel + modale création système + SaisieCaisseDynamique enrichie)
 
 - **T1 — IconPicker visuel** : `ParametresEntreprise.tsx` — sélecteur `<select>` remplacé par grille cliquable 5×N (23 icônes Lucide). Composant `IconPicker` réutilisé dans `SystemeRow` (expand/collapse) et `SectionAchatsCard` (clic sur l'icône de section → picker inline). `ColorPicker` : 8 swatches couleur.
