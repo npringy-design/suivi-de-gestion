@@ -35,6 +35,9 @@ import {
   Cell,
 } from 'recharts';
 
+import HomePeriodCalendar from '@/components/HomePeriodCalendar';
+import HomePeriodMonthPicker from '@/components/HomePeriodMonthPicker';
+import HomePeriodYearPicker from '@/components/HomePeriodYearPicker';
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { getValidAccessToken } from '@/services/supabaseAuth';
@@ -1334,7 +1337,7 @@ export default function Home() {
       {isPeriodModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" onClick={() => setIsPeriodModalOpen(false)}>
           <div
-            className="w-full max-w-xl overflow-hidden rounded-2xl border border-cyan-100/25 bg-gradient-to-br from-[#052a34] via-[#0a4d58] to-[#0d6b6f] shadow-2xl ring-1 ring-white/20"
+            className="w-full max-w-2xl overflow-hidden rounded-2xl border border-cyan-100/25 bg-gradient-to-br from-[#052a34] via-[#0a4d58] to-[#0d6b6f] shadow-2xl ring-1 ring-white/20"
             onClick={event => event.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-cyan-100/20 px-4 py-3">
@@ -1372,64 +1375,44 @@ export default function Home() {
 
               <div className="rounded-2xl border border-cyan-100/15 bg-white/10 p-4 ring-1 ring-white/10">
                 {periodMode === 'day' && (
-                  <label className="grid gap-2 text-sm font-bold text-cyan-50">
-                    Jour à afficher
-                    <input
-                      type="date"
-                      value={periodDay}
-                      onChange={event => setPeriodDay(event.target.value)}
-                      className="h-10 rounded-xl border border-cyan-100/15 bg-[#062f3a] px-3 text-sm font-extrabold text-cyan-50 outline-none focus:ring-2 focus:ring-amber-100/45"
-                    />
-                  </label>
+                  <HomePeriodCalendar
+                    selectedDate={periodDay}
+                    onDateSelect={setPeriodDay}
+                    todayDate={today}
+                  />
                 )}
 
                 {periodMode === 'range' && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="grid gap-2 text-sm font-bold text-cyan-50">
-                      Début
-                      <input
-                        type="date"
-                        value={periodStart}
-                        onChange={event => setPeriodStart(event.target.value)}
-                        className="h-10 rounded-xl border border-cyan-100/15 bg-[#062f3a] px-3 text-sm font-extrabold text-cyan-50 outline-none focus:ring-2 focus:ring-amber-100/45"
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-2">
+                      <div className="text-xs font-black uppercase tracking-[0.08em] text-cyan-50/70">Début</div>
+                      <HomePeriodCalendar
+                        selectedDate={periodStart}
+                        onDateSelect={setPeriodStart}
+                        todayDate={today}
+                        rangeStart={periodStart}
+                        rangeEnd={periodEnd}
                       />
-                    </label>
-                    <label className="grid gap-2 text-sm font-bold text-cyan-50">
-                      Fin
-                      <input
-                        type="date"
-                        value={periodEnd}
-                        onChange={event => setPeriodEnd(event.target.value)}
-                        className="h-10 rounded-xl border border-cyan-100/15 bg-[#062f3a] px-3 text-sm font-extrabold text-cyan-50 outline-none focus:ring-2 focus:ring-amber-100/45"
+                    </div>
+                    <div className="grid gap-2">
+                      <div className="text-xs font-black uppercase tracking-[0.08em] text-cyan-50/70">Fin</div>
+                      <HomePeriodCalendar
+                        selectedDate={periodEnd}
+                        onDateSelect={setPeriodEnd}
+                        todayDate={today}
+                        rangeStart={periodStart}
+                        rangeEnd={periodEnd}
                       />
-                    </label>
+                    </div>
                   </div>
                 )}
 
                 {periodMode === 'month' && (
-                  <label className="grid gap-2 text-sm font-bold text-cyan-50">
-                    Mois entier
-                    <input
-                      type="month"
-                      value={periodMonth}
-                      onChange={event => setPeriodMonth(event.target.value)}
-                      className="h-10 rounded-xl border border-cyan-100/15 bg-[#062f3a] px-3 text-sm font-extrabold text-cyan-50 outline-none focus:ring-2 focus:ring-amber-100/45"
-                    />
-                  </label>
+                  <HomePeriodMonthPicker selectedMonth={periodMonth} onMonthSelect={setPeriodMonth} />
                 )}
 
                 {periodMode === 'year' && (
-                  <label className="grid gap-2 text-sm font-bold text-cyan-50">
-                    Année entière
-                    <input
-                      type="number"
-                      min="2024"
-                      max="2035"
-                      value={periodYear}
-                      onChange={event => setPeriodYear(event.target.value)}
-                      className="h-10 rounded-xl border border-cyan-100/15 bg-[#062f3a] px-3 text-sm font-extrabold text-cyan-50 outline-none focus:ring-2 focus:ring-amber-100/45"
-                    />
-                  </label>
+                  <HomePeriodYearPicker selectedYear={periodYear} onYearSelect={setPeriodYear} />
                 )}
               </div>
 

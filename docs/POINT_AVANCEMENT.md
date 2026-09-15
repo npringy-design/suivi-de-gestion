@@ -5,6 +5,13 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 15/09/2026 (refonte calendrier sélection de période Home)
+
+- **HomePeriodCalendar.tsx** (NOUVEAU, `src/components/`) : calendrier custom grille 7×N (Lun–Dim), navigation mois précédent/suivant, style ambre/teal repris de `DashboardDatePicker` (sélection dégradé ambre, "aujourd'hui" bordure ambre, jours normaux fond translucide teal). Props `rangeStart`/`rangeEnd` optionnelles pour surligner une plage (fond teal `rgba(45,212,191,.15)`).
+- **HomePeriodMonthPicker.tsx** (NOUVEAU) : grille 3×4 des 12 mois abrégés + navigation année, même style.
+- **HomePeriodYearPicker.tsx** (NOUVEAU) : grille 3×4 années 2024–2035, même style.
+- **Home.tsx** : modal "Sélection de période" — les `<input type="date">`/`type="month">`/`type="number">` sont remplacés par ces 3 composants (mode Jour → 1 calendrier, Période → 2 calendriers Début/Fin avec surbrillance de plage, Mois entier → month picker, Année entière → year picker). Modal élargie à `max-w-2xl` pour accueillir les deux calendriers du mode Période. Logique de calcul de période (`applyPeriodSelection`) inchangée. build OK.
+
 ## 15/09/2026 (redesign modale d'import Dashboard)
 
 - **DashboardImportModal.tsx** : grille de 5 cartes colorées remplacée par un layout liste en 2 sections ("Imports quotidiens" / "Imports historiques"), lignes cliquables avec icône carrée pastel, titre/sous-titre et badge format. Largeur modale réduite à `min(680px, 100%)`. Suppression du texte d'intro obsolète et des deux blocs de code mort (`display: 'none'`). Aucun changement de logique/handlers/previews. build OK.
