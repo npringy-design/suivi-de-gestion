@@ -215,22 +215,22 @@ export default function DashboardCaisseView({
         <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Réel</div>
         <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right' }}>Écart</div>
       </div>
-      {renderRealCaisseControl('CB', theorique?.cb || '', reelStr(nepting?.saisie_reel_nepting), value => updateNepting(month, day, 'saisie_reel_nepting', value))}
+      {renderRealCaisseControl('CB', reelStr(theorique?.cb), reelStr(nepting?.saisie_reel_nepting), value => updateNepting(month, day, 'saisie_reel_nepting', value))}
       {renderRealCaisseControl('Pourboires', '', reelStr(nepting?.pourboire_sunday), value => updateNepting(month, day, 'pourboire_sunday', value), { invertEcart: true })}
-      {renderRealCaisseControl('Espèces coffre', theorique?.especes || '', reelStr(especes?.mis_au_coffre), value => updateEspeces(month, day, 'mis_au_coffre', value))}
+      {renderRealCaisseControl('Espèces coffre', reelStr(theorique?.especes), reelStr(especes?.mis_au_coffre), value => updateEspeces(month, day, 'mis_au_coffre', value))}
       {renderRealCaisseControl('Pièces', '', reelStr(especes?.pieces), value => updateEspeces(month, day, 'pieces', value))}
-      {renderRealCaisseControl('AMEX/ANCV carte', theorique?.amex || '', reelStr(amexAncv?.reel_nepting), value => updateAmexAncv(month, day, 'reel_nepting', value))}
-      {renderRealCaisseControl('TR carte', theorique?.tr_carte || '', reelStr(conecs?.conecs_reel_nepting), value => updateConecs(month, day, 'conecs_reel_nepting', value))}
-      {renderRealCaisseControl('ANCV papier', theorique?.ancv || '', reelStr(ancv?.montant_total), () => {}, {
+      {renderRealCaisseControl('AMEX/ANCV carte', reelStr(theorique?.amex), reelStr(amexAncv?.reel_nepting), value => updateAmexAncv(month, day, 'reel_nepting', value))}
+      {renderRealCaisseControl('TR carte', reelStr(theorique?.tr_carte), reelStr(conecs?.conecs_reel_nepting), value => updateConecs(month, day, 'conecs_reel_nepting', value))}
+      {renderRealCaisseControl('ANCV papier', reelStr(theorique?.ancv), reelStr(ancv?.montant_total), () => {}, {
         onLabelClick: () => setIsAncvModalOpen(true),
       })}
-      {renderRealCaisseControl('TR papier', theorique?.tr_papier || '', trPapierDisplay, () => {}, {
+      {renderRealCaisseControl('TR papier', reelStr(theorique?.tr_papier), trPapierDisplay, () => {}, {
         onLabelClick: () => setIsTrModalOpen(true),
       })}
-      {renderRealCaisseControl('Sunday', theorique?.sunday || '', reelStr(sunday?.reel), value => updateSunday(month, day, 'reel', value))}
-      {renderRealCaisseControl('Uber', theorique?.uber || '', reelStr(uber?.reel), value => updateUber(month, day, 'reel', value))}
-      {renderRealCaisseControl('Deliveroo', theorique?.deliveroo || '', reelStr(deliveroo?.reel), value => updateDeliveroo(month, day, 'reel', value))}
-      {renderRealCaisseControl('Click & collect', theorique?.click_collect || '', reelStr(clickCollect?.reel), value => updateClickCollect(month, day, 'reel', value))}
+      {renderRealCaisseControl('Sunday', reelStr(theorique?.sunday), reelStr(sunday?.reel), value => updateSunday(month, day, 'reel', value))}
+      {renderRealCaisseControl('Uber', reelStr(theorique?.uber), reelStr(uber?.reel), value => updateUber(month, day, 'reel', value))}
+      {renderRealCaisseControl('Deliveroo', reelStr(theorique?.deliveroo), reelStr(deliveroo?.reel), value => updateDeliveroo(month, day, 'reel', value))}
+      {renderRealCaisseControl('Click & collect', reelStr(theorique?.click_collect), reelStr(clickCollect?.reel), value => updateClickCollect(month, day, 'reel', value))}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(132px, .66fr) repeat(3, minmax(0, 1fr))', gap: 6, alignItems: 'center', marginTop: 2, paddingTop: 7, borderTop: '1px solid #cbd5e1' }}>
         <div style={{ fontSize: 10, fontWeight: 950, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '.04em' }}>Total caisse</div>
         {renderCashAutoValue(totalTheorique.toFixed(2))}

@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 18/09/2026 (fix crash onglet Caisse après import feuille de caisse)
+
+- `DashboardCaisseView.tsx` : crash "x.replace is not a function" — les appels à `renderRealCaisseControl` passaient `theorique?.<champ> || ''` (number brut si non nul) à un paramètre `string` que `parseCaisseNumber` traite avec `.replace()`. Remplacé par `reelStr(theorique?.<champ>)` pour les 10 canaux (cb, especes, amex, tr_carte, ancv, tr_papier, sunday, uber, deliveroo, click_collect). tsc OK, build OK.
+
 ## 15/09/2026 (refonte calendrier sélection de période Home)
 
 - **HomePeriodCalendar.tsx** (NOUVEAU, `src/components/`) : calendrier custom grille 7×N (Lun–Dim), navigation mois précédent/suivant, style ambre/teal repris de `DashboardDatePicker` (sélection dégradé ambre, "aujourd'hui" bordure ambre, jours normaux fond translucide teal). Props `rangeStart`/`rangeEnd` optionnelles pour surligner une plage (fond teal `rgba(45,212,191,.15)`).
