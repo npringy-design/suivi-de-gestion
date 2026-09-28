@@ -91,6 +91,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     updateClickCollect,
     customEvents,
     personnelInfos,
+    updatePersonnelInfos,
     setSelectedYear,
     setSelectedMonth,
     updateSalariesConfig,
@@ -186,6 +187,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setHistoricalV25Previews,
     salaryImportStatus,
     setSalaryImportStatus,
+    salaryImportPreviews,
+    setSalaryImportPreviews,
     resetDashboardImportState,
   } = useDashboardImportState();
   const recapPreviewRef = useRef<HTMLDivElement>(null);
@@ -564,6 +567,9 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     handleInvoiceImport,
     updateInvoiceImportPreview,
     handleSalaryPayrollImport,
+    updateSalaryImportRow,
+    applySalaryImportPreview,
+    discardSalaryImportPreview,
     applyInvoiceImport,
     formatImportedCurrencyLabel,
     formatImportedIntegerLabel,
@@ -594,6 +600,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setHistoricalV25Previews,
     setHistoricalV25Status,
     setSalaryImportStatus,
+    salaryImportPreviews,
+    setSalaryImportPreviews,
     handleCellChange,
     updateDashboard,
     updateTheorique,
@@ -605,6 +613,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     markMonthsAsLoaded,
     saveNow,
     personnelInfos,
+    updatePersonnelInfos,
   });
 
   const {
@@ -1143,6 +1152,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           applyInvoiceImport={applyInvoiceImport}
           handleSalaryPayrollImport={handleSalaryPayrollImport}
           salaryImportStatus={salaryImportStatus}
+          salaryImportPreviews={salaryImportPreviews}
+          updateSalaryImportRow={updateSalaryImportRow}
+          applySalaryImportPreview={applySalaryImportPreview}
+          discardSalaryImportPreview={discardSalaryImportPreview}
           handleHistoricalBudgetExcelImport={handleHistoricalBudgetExcelImport}
           historicalBudgetStatus={historicalBudgetStatus}
           historicalBudgetPreviews={historicalBudgetPreviews}

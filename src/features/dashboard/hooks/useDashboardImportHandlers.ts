@@ -10,7 +10,15 @@ import type {
   PersonnelInfo,
   PersonnelSchema,
 } from '@/contexts/DataContext';
-import { buildPayrollImportFromText, getPayrollTargetPeriodFromText } from '@/features/dashboard/importHelpers/personnelSalaryImport';
+import {
+  buildPayrollCategories,
+  buildPayrollImportFromText,
+  extractPayrollCandidateLines,
+  extractPayrollLineName,
+  getPayrollTargetPeriodFromText,
+  mergePersonnelAlias,
+} from '@/features/dashboard/importHelpers/personnelSalaryImport';
+import type { SalaryImportPreview, SalaryImportPreviewRow } from '@/types/dataTypes';
 import { parseRecapPeriodeCaisse } from '@/features/caisse/caisseRecapPeriodeParser';
 import type {
   CaisseImportPreview,
@@ -89,6 +97,8 @@ type UseDashboardImportHandlersParams = {
   setHistoricalV25Previews: SetState<HistoricalBudgetPreview[]>;
   setHistoricalV25Status: (status: string) => void;
   setSalaryImportStatus: (status: string) => void;
+  salaryImportPreviews: SalaryImportPreview[];
+  setSalaryImportPreviews: SetState<SalaryImportPreview[]>;
   handleCellChange: (rowIndex: number, colIndex: number, value: string) => void;
   updateDashboard: (month: number, cellKey: string, value: string) => void;
   updateTheorique: (month: number, day: number, field: keyof DayDataTheorique, value: string | number) => void;
@@ -100,6 +110,7 @@ type UseDashboardImportHandlersParams = {
   markMonthsAsLoaded: (year: number, months: number[]) => void;
   saveNow: () => Promise<void>;
   personnelInfos: PersonnelInfo[];
+  updatePersonnelInfos: (rows: PersonnelInfo[]) => void;
 };
 
 export function useDashboardImportHandlers({
@@ -128,6 +139,8 @@ export function useDashboardImportHandlers({
   setHistoricalV25Previews,
   setHistoricalV25Status,
   setSalaryImportStatus,
+  salaryImportPreviews,
+  setSalaryImportPreviews,
   handleCellChange,
   updateDashboard,
   updateTheorique,
@@ -139,6 +152,7 @@ export function useDashboardImportHandlers({
   markMonthsAsLoaded,
   saveNow,
   personnelInfos,
+  updatePersonnelInfos,
 }: UseDashboardImportHandlersParams) {
   const pendingDemarquesRef = React.useRef<Array<{
     date: string; personnel: number; operationnel: number; explication: string;
@@ -1435,11 +1449,10 @@ export function useDashboardImportHandlers({
         return;
       }
 
-      const results: string[] = [];
       const errors: string[] = [];
-      let lastAppliedMonth: number | null = null;
+      const newPreviews: SalaryImportPreview[] = [];
 
-      for (const file of files) {
+      for (const [fileIndex, file] of files.entries()) {
         try {
           const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
           const text = isPdf ? await extractPdfLayoutText(file, undefined, false) : await file.text();
@@ -1459,22 +1472,48 @@ export function useDashboardImportHandlers({
             errors.push(`${file.name} : mois ${payrollPeriod.targetLabel} verrouillé`);
             continue;
           }
-          updateSalariesConfig(targetMonth, { ...currentConfig, categories: result.categories });
-          lastAppliedMonth = targetMonth;
-          const unmatchedText = result.unmatched.length > 0 ? ` (${result.unmatched.length} non matché(s))` : '';
-          results.push(`${payrollPeriod.targetLabel} : ${result.matches.length} salarié(s)${unmatchedText}`);
+          newPreviews.push({
+            id: `${Date.now()}-salaires-${fileIndex}-${file.name}`,
+            fileName: file.name,
+            sourceLabel: payrollPeriod.sourceLabel,
+            targetLabel: payrollPeriod.targetLabel,
+            targetMonth,
+            rows: [
+              ...result.matches.map((match): SalaryImportPreviewRow => ({
+                personnel: match.personnel,
+                status: 'matched',
+                origin: 'matched',
+                heures: match.heures,
+                coutGlobal: match.coutGlobal,
+                sourceLine: match.sourceLine,
+                saveAlias: false,
+              })),
+              ...result.unmatched.map((personnel): SalaryImportPreviewRow => ({
+                personnel,
+                status: 'unmatched',
+                origin: 'unmatched',
+                heures: 0,
+                coutGlobal: 0,
+                sourceLine: '',
+                saveAlias: false,
+              })),
+            ],
+            orphanLines: result.orphanLines,
+            candidateLines: extractPayrollCandidateLines(text),
+          });
         } catch {
           errors.push(`${file.name} : lecture impossible`);
         }
       }
 
-      if (lastAppliedMonth !== null) {
-        setMonth(lastAppliedMonth);
-        setSelectedMonth(lastAppliedMonth);
-      }
+      if (newPreviews.length > 0) setSalaryImportPreviews(prev => [...prev, ...newPreviews]);
 
       const statusParts: string[] = [];
-      if (results.length > 0) statusParts.push(results.join(' | '));
+      if (newPreviews.length > 0) {
+        const matchedCount = newPreviews.reduce((sum, preview) => sum + preview.rows.filter(row => row.status === 'matched').length, 0);
+        const unmatchedCount = newPreviews.reduce((sum, preview) => sum + preview.rows.filter(row => row.status === 'unmatched').length, 0);
+        statusParts.push(`Aperçu prêt : ${matchedCount} trouvés, ${unmatchedCount} non matchés — vérifiez puis validez.`);
+      }
       if (errors.length > 0) statusParts.push(`Erreurs : ${errors.join(', ')}`);
       setSalaryImportStatus(statusParts.join(' — ') || 'Aucun fichier traité.');
     } catch (error) {
@@ -1482,6 +1521,68 @@ export function useDashboardImportHandlers({
     } finally {
       event.target.value = '';
     }
+  };
+
+  const updateSalaryImportRow = (previewId: string, personnelId: string, updates: Partial<SalaryImportPreviewRow>) => {
+    setSalaryImportPreviews(prev => prev.map(preview => preview.id === previewId
+      ? { ...preview, rows: preview.rows.map(row => row.personnel.id === personnelId ? { ...row, ...updates } : row) }
+      : preview));
+  };
+
+  const discardSalaryImportPreview = (previewId: string) => {
+    setSalaryImportPreviews(prev => prev.filter(preview => preview.id !== previewId));
+  };
+
+  const applySalaryImportPreview = (previewId: string) => {
+    const preview = salaryImportPreviews.find(item => item.id === previewId);
+    if (!preview) return;
+
+    const currentConfig = globalData[preview.targetMonth]?.salariesConfig;
+    if (currentConfig?.locked) {
+      setSalaryImportStatus(`Erreur : ${preview.fileName} : mois ${preview.targetLabel} verrouillé`);
+      return;
+    }
+
+    const importedRows = preview.rows.filter(row => (row.status === 'matched' || row.status === 'manual') && row.heures > 0 && row.coutGlobal > 0);
+    if (importedRows.length === 0) {
+      setSalaryImportStatus(`Erreur : ${preview.fileName} : aucun salarié avec heures et coût global à importer`);
+      return;
+    }
+
+    const categories = buildPayrollCategories(importedRows);
+    updateSalariesConfig(preview.targetMonth, { ...(currentConfig || { locked: false }), categories });
+
+    const aliasByPersonnelId = new Map<string, string>();
+    preview.rows
+      .filter(row => row.saveAlias && row.sourceLine && row.status !== 'ignored')
+      .forEach(row => {
+        const alias = extractPayrollLineName(row.sourceLine);
+        if (alias) aliasByPersonnelId.set(row.personnel.id, alias);
+      });
+    let savedAliases = 0;
+    if (aliasByPersonnelId.size > 0) {
+      const nextPersonnelInfos = personnelInfos.map(personnel => {
+        const alias = aliasByPersonnelId.get(personnel.id);
+        if (!alias) return personnel;
+        const aliases = mergePersonnelAlias(personnel, alias);
+        if (aliases === personnel.aliases) return personnel;
+        savedAliases += 1;
+        return { ...personnel, aliases };
+      });
+      if (savedAliases > 0) updatePersonnelInfos(nextPersonnelInfos);
+    }
+
+    setMonth(preview.targetMonth);
+    setSelectedMonth(preview.targetMonth);
+    setSalaryImportPreviews(prev => prev.filter(item => item.id !== previewId));
+
+    const stillUnmatched = preview.rows.filter(row => row.status === 'unmatched').length;
+    const incomplete = preview.rows.filter(row => row.status === 'manual' && (row.heures <= 0 || row.coutGlobal <= 0)).length;
+    const statusParts = [`Paie ${preview.sourceLabel} importée sur ${preview.targetLabel} : ${importedRows.length} salarié(s)`];
+    if (savedAliases > 0) statusParts.push(`${savedAliases} alias mémorisé(s)`);
+    if (stillUnmatched > 0) statusParts.push(`Attention : ${stillUnmatched} non matché(s) traité(s) comme ignoré(s)`);
+    if (incomplete > 0) statusParts.push(`Attention : ${incomplete} ligne(s) sans heures ou coût non importée(s)`);
+    setSalaryImportStatus(statusParts.join(' — '));
   };
   
   const applyInvoiceImport = (invoiceImportPreview: InvoiceImportPreview) => {
@@ -1542,6 +1643,9 @@ export function useDashboardImportHandlers({
     handleInvoiceImport,
     updateInvoiceImportPreview,
     handleSalaryPayrollImport,
+    updateSalaryImportRow,
+    applySalaryImportPreview,
+    discardSalaryImportPreview,
     applyInvoiceImport,
     formatImportedNumber,
     formatImportedCurrencyLabel,

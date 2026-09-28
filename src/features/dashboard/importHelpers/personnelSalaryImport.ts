@@ -1,4 +1,5 @@
 import type { PersonnelInfo, SalarieRow } from '@/contexts/DataContext';
+import type { PayrollCandidateLine } from '@/types/dataTypes';
 import { parseHourInputToDecimal } from '@/lib/utils';
 
 export const PERSONNEL_CATEGORIES = ['cadre', 'maitrise', 'niv12', 'niv3', 'apprenti'] as const;
@@ -46,6 +47,14 @@ export type PayrollImportResult = {
   categories: SalariesCategories;
   matches: PayrollMatch[];
   unmatched: PersonnelInfo[];
+  // Lignes candidates du PDF qui ne sont la sourceLine d'aucun match
+  orphanLines: PayrollCandidateLine[];
+};
+
+export type PayrollCategoryInput = {
+  personnel: PersonnelInfo;
+  heures: number;
+  coutGlobal: number;
 };
 
 export const createEmptyPayrollCategories = (): SalariesCategories => ({
@@ -172,7 +181,7 @@ const extractPayrollTableValues = (sourceLine: string) => {
   return heures > 0 && coutGlobal > 0 ? { hours: heures, cost: coutGlobal } : null;
 };
 
-const extractPayrollValues = (sourceLine: string, context: string) => {
+export const extractPayrollValues = (sourceLine: string, context: string) => {
   const tableValues = extractPayrollTableValues(sourceLine);
   if (tableValues) return tableValues;
 
@@ -186,12 +195,78 @@ const extractPayrollValues = (sourceLine: string, context: string) => {
   return { hours, cost };
 };
 
-const findPersonnelLine = (text: string, personnel: PersonnelInfo) => {
-  const lines = text
+const splitPayrollLines = (text: string) =>
+  text
     .replace(/ /g, ' ')
     .split(/\r?\n/)
     .map(line => line.trim())
     .filter(Boolean);
+
+export const extractPayrollCandidateLines = (text: string): PayrollCandidateLine[] => {
+  const seen = new Set<string>();
+  const candidates: PayrollCandidateLine[] = [];
+
+  splitPayrollLines(text).forEach(line => {
+    if (seen.has(line)) return;
+    const tableValues = extractPayrollTableValues(line);
+    if (!tableValues) return;
+    seen.add(line);
+    candidates.push({ line, heures: tableValues.hours, coutGlobal: tableValues.cost });
+  });
+
+  return candidates;
+};
+
+// Nom porté par une ligne du PDF : texte avant le premier nombre ou la première date
+export const extractPayrollLineName = (line: string) => {
+  const beforeFirstDigit = (line.match(/^[^\d]*/)?.[0] || '')
+    .replace(/[\s\-–:;,.|/]+$/, '')
+    .trim();
+  return /[A-Za-zÀ-ÿ].*[A-Za-zÀ-ÿ]/.test(beforeFirstDigit) ? beforeFirstDigit : '';
+};
+
+// Ajoute un alias à la liste existante, sans doublon (comparaison normalisée), séparateur « ; »
+export const mergePersonnelAlias = (personnel: PersonnelInfo, alias: string) => {
+  const normalizedAlias = normalizePersonnelText(alias);
+  if (!normalizedAlias) return personnel.aliases;
+
+  const known = [personnel.nom, ...splitAliases(personnel.aliases)].map(normalizePersonnelText);
+  if (known.includes(normalizedAlias)) return personnel.aliases;
+
+  const current = personnel.aliases.trim();
+  return current ? `${current}; ${alias.trim()}` : alias.trim();
+};
+
+export const buildPayrollCategories = (rows: PayrollCategoryInput[]): SalariesCategories => {
+  const categories = createEmptyPayrollCategories();
+  const collected: Record<PersonnelCategory, SalarieRow[]> = {
+    cadre: [],
+    maitrise: [],
+    niv12: [],
+    niv3: [],
+    apprenti: [],
+  };
+
+  rows.forEach(({ personnel, heures, coutGlobal }) => {
+    collected[personnel.category].push({
+      nom: personnel.nom,
+      heures: formatPayrollNumber(heures),
+      coutGlobal: formatPayrollNumber(coutGlobal),
+      provision: '',
+      coutHoraire: '',
+      department: personnel.department,
+    });
+  });
+
+  PERSONNEL_CATEGORIES.forEach(category => {
+    categories[category] = collected[category].length > 0 ? collected[category] : categories[category];
+  });
+
+  return categories;
+};
+
+const findPersonnelLine = (text: string, personnel: PersonnelInfo) => {
+  const lines = splitPayrollLines(text);
 
   const names = [personnel.nom, ...splitAliases(personnel.aliases)];
   for (const name of names) {
@@ -213,14 +288,6 @@ const findPersonnelLine = (text: string, personnel: PersonnelInfo) => {
 };
 
 export const buildPayrollImportFromText = (text: string, personnelInfos: PersonnelInfo[]): PayrollImportResult => {
-  const categories = createEmptyPayrollCategories();
-  const collected: Record<PersonnelCategory, SalarieRow[]> = {
-    cadre: [],
-    maitrise: [],
-    niv12: [],
-    niv3: [],
-    apprenti: [],
-  };
   const matches: PayrollMatch[] = [];
   const unmatched: PersonnelInfo[] = [];
 
@@ -241,21 +308,13 @@ export const buildPayrollImportFromText = (text: string, personnelInfos: Personn
 
     const coutHoraire = (cost * getPayrollProvisionMultiplier(personnel.category)) / hours;
     matches.push({ personnel, heures: hours, coutGlobal: cost, coutHoraire, sourceLine });
-    collected[personnel.category].push({
-      nom: personnel.nom,
-      heures: formatPayrollNumber(hours),
-      coutGlobal: formatPayrollNumber(cost),
-      provision: '',
-      coutHoraire: '',
-      department: personnel.department,
-    });
   });
 
-  PERSONNEL_CATEGORIES.forEach(category => {
-    categories[category] = collected[category].length > 0 ? collected[category] : categories[category];
-  });
+  const categories = buildPayrollCategories(matches);
+  const matchedLines = new Set(matches.map(match => match.sourceLine));
+  const orphanLines = extractPayrollCandidateLines(text).filter(candidate => !matchedLines.has(candidate.line));
 
-  return { categories, matches, unmatched };
+  return { categories, matches, unmatched, orphanLines };
 };
 
 export const averagePayrollRate = (rows: SalarieRow[], department?: 'cuisine' | 'salle', category?: PersonnelCategory | string) => {

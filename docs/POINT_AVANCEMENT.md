@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 28/09/2026 (import PDF salaires avec aperçu)
+
+- Import PDF salaires : aperçu matchés/non-matchés, correction manuelle, association ligne PDF + alias, validation explicite. tsc OK.
+
 ## 18/09/2026 (fix crash onglet Caisse après import feuille de caisse)
 
 - `DashboardCaisseView.tsx` : crash "x.replace is not a function" — les appels à `renderRealCaisseControl` passaient `theorique?.<champ> || ''` (number brut si non nul) à un paramètre `string` que `parseCaisseNumber` traite avec `.replace()`. Remplacé par `reelStr(theorique?.<champ>)` pour les 10 canaux (cb, especes, amex, tr_carte, ancv, tr_papier, sunday, uber, deliveroo, click_collect). tsc OK, build OK.

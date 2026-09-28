@@ -204,6 +204,41 @@ export type PersonnelInfo = {
   aliases: string;
 };
 
+// Ligne du PDF salaires dont on sait extraire heures + coût global
+export type PayrollCandidateLine = {
+  line: string;
+  heures: number;
+  coutGlobal: number;
+};
+
+export type SalaryImportRowStatus = 'matched' | 'unmatched' | 'manual' | 'ignored';
+
+export type SalaryImportPreviewRow = {
+  personnel: PersonnelInfo;
+  status: SalaryImportRowStatus;
+  // Résultat du matching automatique, conservé pour le tri et l'association manuelle
+  origin: 'matched' | 'unmatched';
+  // Statut à restaurer quand on annule un « Ignorer »
+  statusBeforeIgnore?: Exclude<SalaryImportRowStatus, 'ignored'>;
+  heures: number;
+  coutGlobal: number;
+  sourceLine: string;
+  saveAlias: boolean;
+};
+
+export type SalaryImportPreview = {
+  id: string;
+  fileName: string;
+  sourceLabel: string;
+  targetLabel: string;
+  targetMonth: number;
+  rows: SalaryImportPreviewRow[];
+  // Lignes du PDF attribuées à aucun salarié d'Info personnel
+  orphanLines: PayrollCandidateLine[];
+  // Toutes les lignes exploitables du PDF (choix d'association manuelle)
+  candidateLines: PayrollCandidateLine[];
+};
+
 // ============================================================================
 // Types migrés depuis src/types.ts
 // ============================================================================

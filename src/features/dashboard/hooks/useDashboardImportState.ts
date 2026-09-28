@@ -5,6 +5,7 @@ import type {
   HistoricalBudgetPreview,
   InvoiceImportPreview,
 } from '@/features/dashboard/dashboardTypes';
+import type { SalaryImportPreview } from '@/types/dataTypes';
 
 export function useDashboardImportState() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -18,11 +19,13 @@ export function useDashboardImportState() {
   const [historicalV25Status, setHistoricalV25Status] = useState('');
   const [historicalV25Previews, setHistoricalV25Previews] = useState<HistoricalBudgetPreview[]>([]);
   const [salaryImportStatus, setSalaryImportStatus] = useState('');
+  const [salaryImportPreviews, setSalaryImportPreviews] = useState<SalaryImportPreview[]>([]);
 
   const resetDashboardImportState = () => {
     setInvoiceImportPreviews([]);
     setInvoiceImportStatus('');
     setSalaryImportStatus('');
+    setSalaryImportPreviews([]);
     setCaisseImportPreviews([]);
   };
 
@@ -49,6 +52,8 @@ export function useDashboardImportState() {
     setHistoricalV25Previews,
     salaryImportStatus,
     setSalaryImportStatus,
+    salaryImportPreviews,
+    setSalaryImportPreviews,
     resetDashboardImportState,
   };
 }
