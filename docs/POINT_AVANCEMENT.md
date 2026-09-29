@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 29/09/2026 (Analyse des écarts : couverts arrondis + ticket moyen)
+
+- Analyse des écarts : couverts affichés en entiers (moyennes et écarts) ; ticket moyen (TM = CA midi+soir / couverts, hors limonade et VAE) réel vs budget avec écart € et %, en carte de synthèse et dans chaque cellule du tableau croisé. tsc OK, build OK.
+
 ## 29/09/2026 (calendrier des vacances multi-zone, source unique)
 
 - Vacances scolaires : `src/lib/schoolHolidays.json` (zones A/B/C × 2024-2025 à 2026-2027, dates officielles) + `src/lib/schoolHolidays.ts` (`getSchoolHolidayCalendar(zone)`) = source unique, à compléter chaque rentrée (`end` = dernier jour de vacances inclus). Zone du restaurant : `CompanySettings.schoolZone` (défaut B), liste déroulante dans Paramètres Entreprise > Identité du site ; `companySettings` étant un segment cloud par site (`VITE_SITE_ID`), le réglage est bien par restaurant. Utilisée par la Vue Complète du Suivi Quotidien (liste en dur « Zone C » de `Dashboard.tsx` supprimée, « Pont Ascension » retiré) et par l'Analyse des écarts. `isDateInRange` corrigé (comparaison en dates calendaires : le premier jour de chaque période était exclu). tsc OK, build OK.

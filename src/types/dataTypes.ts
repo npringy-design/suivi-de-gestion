@@ -459,6 +459,11 @@ export type AnalyseAggregate = {
   cvBudget: number;
   cvEcart: number;
   cvEcartPct: number | null;
+  // Ticket moyen restaurant (CA midi + soir / couverts) ; null si aucun couvert.
+  tmReel: number | null;
+  tmBudget: number | null;
+  tmEcart: number | null;
+  tmEcartPct: number | null;
   caReel: number;
   caBudget: number;
   caEcart: number;

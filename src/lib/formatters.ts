@@ -13,8 +13,10 @@ export const formatPercentSigned = (v: number): string =>
 export const formatDecimal = (v: number, digits = 1): string =>
   new Intl.NumberFormat('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(v);
 
-export const formatDecimalSigned = (v: number, digits = 1): string =>
-  `${v > 0 ? '+' : ''}${formatDecimal(v, digits)}`;
+export const formatDecimalSigned = (v: number, digits = 1): string => {
+  const rounded = Number(v.toFixed(digits));
+  return `${rounded > 0 ? '+' : ''}${formatDecimal(rounded === 0 ? 0 : v, digits)}`;
+};
 
 export const formatEuroSigned = (v: number): string =>
   `${v > 0 ? '+' : ''}${formatEuroSymbol(v)}`;

@@ -168,6 +168,17 @@ describe('aggregateService', () => {
     expect(withLoss.impactCa).toBe(-200);
   });
 
+  it('calcule le ticket moyen restaurant réel vs budget (sans limonade)', () => {
+    const agg = aggregateService(samples, 'midi');
+    // midi : CA réel 400 / 20 cvts = 20 ; budget 400 / 20 = 20
+    expect(agg.tmReel).toBe(20);
+    expect(agg.tmBudget).toBe(20);
+    expect(agg.tmEcart).toBe(0);
+    const journee = aggregateService(samples, 'journee');
+    expect(journee.tmReel).toBeCloseTo(1600 / 60, 5);
+    expect(aggregateService([], 'midi').tmReel).toBeNull();
+  });
+
   it('inclut la limonade dans le CA journée mais pas dans les couverts', () => {
     const withLimo = [sample({
       date: '2026-03-02', weekday: 1,

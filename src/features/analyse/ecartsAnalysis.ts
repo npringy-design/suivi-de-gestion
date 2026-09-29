@@ -133,24 +133,28 @@ export function filterSamples(
 
 const emptyAggregate = (): AnalyseAggregate => ({
   n: 0, cvReel: 0, cvBudget: 0, cvEcart: 0, cvEcartPct: null,
+  tmReel: null, tmBudget: null, tmEcart: null, tmEcartPct: null,
   caReel: 0, caBudget: 0, caEcart: 0, caEcartPct: null, impactCa: 0,
 });
 
 const pct = (ecart: number, base: number): number | null => (base > 0 ? (ecart / base) * 100 : null);
 
-type ServiceFigures = { caReel: number; caBudget: number; cvReel: number; cvBudget: number };
+// tmCa* : CA restaurant (midi + soir, sans limonade ni VAE) servant au ticket moyen, cohérent avec les couverts restaurant.
+type ServiceFigures = { caReel: number; caBudget: number; cvReel: number; cvBudget: number; tmCaReel: number; tmCaBudget: number };
 
 // La journée = midi + soir + limonade en CA (budget col 3 inclut la limonade) ;
 // couverts restaurant uniquement (la limonade n'a pas d'écart de couverts comparé).
 const figuresFor = (sample: AnalyseDaySample, service: AnalyseService): ServiceFigures => {
   const { reel, budget } = sample;
-  if (service === 'midi') return { caReel: reel.caMidi, caBudget: budget.caMidi, cvReel: reel.cvMidi, cvBudget: budget.cvMidi };
-  if (service === 'soir') return { caReel: reel.caSoir, caBudget: budget.caSoir, cvReel: reel.cvSoir, cvBudget: budget.cvSoir };
+  if (service === 'midi') return { caReel: reel.caMidi, caBudget: budget.caMidi, cvReel: reel.cvMidi, cvBudget: budget.cvMidi, tmCaReel: reel.caMidi, tmCaBudget: budget.caMidi };
+  if (service === 'soir') return { caReel: reel.caSoir, caBudget: budget.caSoir, cvReel: reel.cvSoir, cvBudget: budget.cvSoir, tmCaReel: reel.caSoir, tmCaBudget: budget.caSoir };
   return {
     caReel: reel.caMidi + reel.caSoir + reel.caLimo,
     caBudget: budget.caMidi + budget.caSoir + budget.caLimo,
     cvReel: reel.cvMidi + reel.cvSoir,
     cvBudget: budget.cvMidi + budget.cvSoir,
+    tmCaReel: reel.caMidi + reel.caSoir,
+    tmCaBudget: budget.caMidi + budget.caSoir,
   };
 };
 
@@ -173,18 +177,27 @@ export function aggregateService(samples: AnalyseDaySample[], service: AnalyseSe
       caBudget: acc.caBudget + f.caBudget,
       cvReel: acc.cvReel + f.cvReel,
       cvBudget: acc.cvBudget + f.cvBudget,
+      tmCaReel: acc.tmCaReel + f.tmCaReel,
+      tmCaBudget: acc.tmCaBudget + f.tmCaBudget,
     };
-  }, { caReel: 0, caBudget: 0, cvReel: 0, cvBudget: 0 });
+  }, { caReel: 0, caBudget: 0, cvReel: 0, cvBudget: 0, tmCaReel: 0, tmCaBudget: 0 });
 
   const n = included.length;
   const caEcartTotal = totals.caReel - totals.caBudget;
   const cvEcartTotal = totals.cvReel - totals.cvBudget;
+  const tmReel = totals.cvReel > 0 ? totals.tmCaReel / totals.cvReel : null;
+  const tmBudget = totals.cvBudget > 0 ? totals.tmCaBudget / totals.cvBudget : null;
+  const tmEcart = tmReel !== null && tmBudget !== null ? tmReel - tmBudget : null;
   return {
     n,
     cvReel: totals.cvReel / n,
     cvBudget: totals.cvBudget / n,
     cvEcart: cvEcartTotal / n,
     cvEcartPct: pct(cvEcartTotal, totals.cvBudget),
+    tmReel,
+    tmBudget,
+    tmEcart,
+    tmEcartPct: tmEcart !== null && tmBudget !== null ? pct(tmEcart, tmBudget) : null,
     caReel: totals.caReel / n,
     caBudget: totals.caBudget / n,
     caEcart: caEcartTotal / n,

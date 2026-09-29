@@ -36,6 +36,7 @@ function Line({ label, value, className = 'text-white' }: { label: string; value
 }
 
 const pctLabel = (value: number | null) => (value === null ? '—' : formatPercentSigned(value));
+const euroOrDash = (value: number | null) => (value === null ? '—' : formatEuroSymbol(value));
 
 export default function AnalyseSummary({ service, summary, detail, thresholds }: Props) {
   if (summary.n === 0) {
@@ -53,16 +54,26 @@ export default function AnalyseSummary({ service, summary, detail, thresholds }:
 
   return (
     <div className="grid gap-4">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <MetricCard label={`Échantillon · ${SERVICE_LABEL[service]}`}>
           <div className="text-3xl font-black leading-none text-amber-50">{summary.n}</div>
           <div className="text-xs font-semibold text-cyan-50/60">jour(s) réalisé(s) analysé(s)</div>
         </MetricCard>
 
         <MetricCard label="Couverts / jour" level={cvLevel}>
-          <Line label="Réel moyen" value={formatDecimal(summary.cvReel)} />
-          <Line label="Budget moyen" value={formatDecimal(summary.cvBudget)} />
-          <Line label="Écart" value={`${formatDecimalSigned(summary.cvEcart)} · ${pctLabel(summary.cvEcartPct)}`} className={ecartColor(summary.cvEcart, cvLevel)} />
+          <Line label="Réel moyen" value={formatDecimal(summary.cvReel, 0)} />
+          <Line label="Budget moyen" value={formatDecimal(summary.cvBudget, 0)} />
+          <Line label="Écart" value={`${formatDecimalSigned(summary.cvEcart, 0)} · ${pctLabel(summary.cvEcartPct)}`} className={ecartColor(summary.cvEcart, cvLevel)} />
+        </MetricCard>
+
+        <MetricCard label="Ticket moyen (TM)">
+          <Line label="Réel" value={euroOrDash(summary.tmReel)} />
+          <Line label="Budget" value={euroOrDash(summary.tmBudget)} />
+          <Line
+            label="Écart"
+            value={summary.tmEcart === null ? '—' : `${formatEuroSigned(summary.tmEcart)} · ${pctLabel(summary.tmEcartPct)}`}
+            className={summary.tmEcart === null ? 'text-cyan-50' : ecartColor(summary.tmEcart, 'none')}
+          />
         </MetricCard>
 
         <MetricCard label="CA HT / jour" level={caLevel}>
@@ -91,7 +102,7 @@ export default function AnalyseSummary({ service, summary, detail, thresholds }:
             <Line label="CA réel moyen" value={formatEuroSymbol(detail.limoCaReel)} />
             <Line label="CA budget moyen" value={formatEuroSymbol(detail.limoCaBudget)} />
             <Line label="Écart CA" value={formatEuroSigned(limoEcart)} className={ecartColor(limoEcart, 'none')} />
-            <Line label="Couverts réel moyen" value={formatDecimal(detail.limoCvReel)} />
+            <Line label="Couverts réel moyen" value={formatDecimal(detail.limoCvReel, 0)} />
           </div>
           <div className="grid gap-1">
             <div className="text-[11px] font-black uppercase tracking-wider text-amber-200/80">VAE (vente à emporter)</div>

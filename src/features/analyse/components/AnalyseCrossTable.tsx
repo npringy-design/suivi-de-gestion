@@ -38,8 +38,10 @@ function Cell({ aggregate, thresholds }: { aggregate: AnalyseAggregate; threshol
       <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-cyan-50/40">n = {aggregate.n}</div>
       <div className="font-semibold text-cyan-50/70">CA {formatEuroSymbol(aggregate.caReel)} / {formatEuroSymbol(aggregate.caBudget)}</div>
       <div className={`font-black ${caColor}`}>{formatEuroSigned(aggregate.caEcart)} · {pctLabel(aggregate.caEcartPct)}</div>
-      <div className="mt-1 font-semibold text-cyan-50/70">Cvts {formatDecimal(aggregate.cvReel)} / {formatDecimal(aggregate.cvBudget)}</div>
-      <div className={`font-black ${cvColor}`}>{formatDecimalSigned(aggregate.cvEcart)} · {pctLabel(aggregate.cvEcartPct)}</div>
+      <div className="mt-1 font-semibold text-cyan-50/70">Cvts {formatDecimal(aggregate.cvReel, 0)} / {formatDecimal(aggregate.cvBudget, 0)}</div>
+      <div className={`font-black ${cvColor}`}>{formatDecimalSigned(aggregate.cvEcart, 0)} · {pctLabel(aggregate.cvEcartPct)}</div>
+      <div className="mt-1 font-semibold text-cyan-50/70">TM {aggregate.tmReel === null ? '—' : formatEuroSymbol(aggregate.tmReel)} / {aggregate.tmBudget === null ? '—' : formatEuroSymbol(aggregate.tmBudget)}</div>
+      <div className={`font-black ${aggregate.tmEcart !== null && aggregate.tmEcart >= 0 ? 'text-emerald-300' : 'text-cyan-50'}`}>{aggregate.tmEcart === null ? '—' : `${formatEuroSigned(aggregate.tmEcart)} · ${pctLabel(aggregate.tmEcartPct)}`}</div>
       <div className="mt-1 text-[10px] font-semibold text-cyan-50/50">Impact {formatEuroSigned(aggregate.impactCa)}</div>
     </td>
   );
