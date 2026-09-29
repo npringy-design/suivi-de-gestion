@@ -236,6 +236,7 @@ export default function Home() {
       goToRecapAnnuel: () => navigate('/recap-annuel'),
       goToReporting: () => navigate('/reporting'),
       goToAnalyseEcarts: () => navigate('/analyse-ecarts'),
+      goToPlanification: () => navigate('/planification'),
       goToEdg: () => navigate(`/edg-mensuel/${month}`),
       goToMiseEnPaiement: () => navigate(`/mise-en-paiement/${month}`),
       goToFactureDevis: () => navigate('/facture-devis'),
@@ -995,6 +996,7 @@ export default function Home() {
               <NavItem label="Récap Annuel" onClick={navigationHandlers.goToRecapAnnuel} />
               <NavItem label="Reporting" onClick={navigationHandlers.goToReporting} />
               <NavItem label="Analyse des écarts" onClick={navigationHandlers.goToAnalyseEcarts} />
+              <NavItem label="Planification budgétaire" onClick={navigationHandlers.goToPlanification} />
             </NavGroup>
 
             <NavGroup title="Gestion" icon={FileText}>

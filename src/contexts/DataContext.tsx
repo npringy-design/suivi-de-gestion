@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 
 import { fetchCloudAppBootstrap, fetchCloudMonth, fetchCloudYearMonths, isCloudSyncConfigured, saveCloudAppState, type CloudAppState } from '@/services/supabaseAppState';
-import { mergeEdgMensuelBudgetData, mergeEdgMensuelRealiseData, normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
+import { mergeDashboardCellsData, mergeEdgMensuelBudgetData, mergeEdgMensuelRealiseData, normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
 import { parseMoneyValue } from '@/lib/money';
 import { createDefaultEdgChargesConfig } from '@/features/edg/edgChargesConfigDefaults';
 import { DEFAULT_COMPANY_SETTINGS, DEFAULT_CAISSE_SYSTEMS } from '@/features/parametres/companySettingsDefaults';
@@ -107,6 +107,7 @@ type DataContextType = {
   updateEdgMensuel: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuelRealise: (month: number, cellKey: string, value: string) => void;
   importEdgBudget: (valuesByMonth: Record<number, Record<string, string>>) => void;
+  importBudgetPlan: (year: number, valuesByMonth: Record<number, Record<string, string>>) => void;
   importEdgRealise: (valuesByMonth: Record<number, Record<string, string>>) => void;
   updateMiseEnPaiement: (month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | number | boolean) => void;
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
@@ -841,6 +842,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }));
   }, [selectedYear]);
 
+  // Écriture en masse des prévisions (cellules dashboard) d'une année précisée, indépendante
+  // de selectedYear : utilisée par la planification budgétaire pour une année future.
+  const importBudgetPlan = useCallback((year: number, valuesByMonth: Record<number, Record<string, string>>) => {
+    const months = Object.keys(valuesByMonth);
+    if (months.length === 0) return;
+    months.forEach(month => dirtyMonthKeysRef.current.add(year + ':' + month));
+    setAllData(prev => ({
+      ...prev,
+      [year]: mergeDashboardCellsData(prev[year] || {}, valuesByMonth),
+    }));
+  }, []);
+
   // Import en lot du Réalisé EDG (même mécanisme qu'importEdgBudget, cible edgMensuelRealise).
   const importEdgRealise = useCallback((valuesByMonth: Record<number, Record<string, string>>) => {
     const months = Object.keys(valuesByMonth);
@@ -955,6 +968,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateEdgMensuel,
     updateEdgMensuelRealise,
     importEdgBudget,
+    importBudgetPlan,
     importEdgRealise,
     updateMiseEnPaiement,
     updateSalariesConfig,
@@ -999,6 +1013,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateEdgMensuel,
     updateEdgMensuelRealise,
     importEdgBudget,
+    importBudgetPlan,
     importEdgRealise,
     updateMiseEnPaiement,
     updateSalariesConfig,

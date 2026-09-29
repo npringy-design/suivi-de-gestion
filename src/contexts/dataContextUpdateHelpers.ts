@@ -105,6 +105,25 @@ export const mergeEdgMensuelBudgetData = (
   return next;
 };
 
+// Fusionne des cellules de prévision (clés "<ligne>-<colonne>") dans le dashboard de plusieurs
+// mois en une seule mise à jour : les clés fournies écrasent, toutes les autres cellules restent
+// intactes. Utilisé par l'écriture de la planification budgétaire.
+export const mergeDashboardCellsData = (
+  prev: Record<number, MonthData>,
+  valuesByMonth: Record<number, Record<string, string>>,
+): Record<number, MonthData> => {
+  const next = { ...prev };
+  Object.entries(valuesByMonth).forEach(([monthKey, values]) => {
+    const month = Number(monthKey);
+    const monthData = normalizeMonthData(next[month]);
+    next[month] = {
+      ...monthData,
+      dashboard: { ...(monthData.dashboard || {}), ...values },
+    };
+  });
+  return next;
+};
+
 // Même mécanisme que mergeEdgMensuelBudgetData, mais cible edgMensuelRealise. Utilisé par
 // l'import automatique du Réalisé EDG (onglets mensuels V25).
 export const mergeEdgMensuelRealiseData = (

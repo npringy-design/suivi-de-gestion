@@ -32,6 +32,16 @@ describe('schoolHolidays', () => {
     expect(winter('C')?.start).toBe('2026-02-21');
   });
 
+  it('couvre l\'année scolaire 2027-2028 (Toussaint et Noël) pour les 3 zones', () => {
+    SCHOOL_ZONES.forEach(zone => {
+      const periods = getSchoolHolidayCalendar(zone).periods.filter(p => p.schoolYear === '2027-2028');
+      expect(periods.map(p => [p.name, p.start, p.end])).toEqual([
+        ['Toussaint', '2027-10-23', '2027-11-07'],
+        ['Noël', '2027-12-18', '2028-01-02'],
+      ]);
+    });
+  });
+
   it('inclut le premier jour d\'une période même pour une date locale à minuit', () => {
     const zoneB = getSchoolHolidayCalendar('B').periods.find(p => p.name === 'Hiver' && p.schoolYear === '2025-2026');
     expect(zoneB).toBeDefined();

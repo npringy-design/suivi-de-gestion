@@ -490,3 +490,52 @@ export type AnalyseWeekdayRow = {
   soir: AnalyseAggregate;
   journee: AnalyseAggregate;
 };
+
+// --- Planification budgétaire (features/planification) ---
+
+export type PlanService = 'midi' | 'soir';
+
+export type PlanVacationStatus = 'vacances' | 'hors_vacances' | 'ete';
+
+// fiable : n >= 8 ; faible : 3 <= n < 8 (orange) ; critique : n < 3, repli ou aucune donnée (rouge).
+export type PlanConfidence = 'fiable' | 'faible' | 'critique';
+
+// groupe : moyenne du groupe exact ; repli : jour de semaine seul (statut vacances ignoré) ;
+// aucune : aucun historique ; ferme : service fermé la plupart du temps dans le groupe.
+export type PlanSource = 'groupe' | 'repli' | 'aucune' | 'ferme';
+
+export type PlanEstimator = 'moyenne' | 'mediane';
+
+export type PlanSettings = {
+  targetYear: number;
+  recentWeightPct: number; // poids de l'année N-1 en % (l'année N-2 pèse le complément)
+  cvGrowthPct: number;
+  tmGrowthPct: number;
+  cvGrowthByMonth: Record<number, number>; // surcharge par mois (0-11)
+  tmGrowthByMonth: Record<number, number>;
+};
+
+export type PlanServiceProposal = {
+  cv: number;
+  tm: number;
+  ca: number;
+  n: number;
+  confidence: PlanConfidence;
+  source: PlanSource;
+  estimator: PlanEstimator;
+  manual: boolean;
+};
+
+export type PlanDay = {
+  date: string; // YYYY-MM-DD
+  month: number;
+  day: number;
+  weekday: number;
+  status: PlanVacationStatus;
+  midi: PlanServiceProposal;
+  soir: PlanServiceProposal;
+};
+
+export type PlanManualOverride = Partial<Record<PlanService, { cv: number; tm: number }>>;
+
+export type PlanWriteMode = 'ecraser' | 'completer';

@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 29/09/2026 (planification budgétaire)
+
+- Planification budgétaire : page `/planification` (`features/planification/`, sidebar Analyse) qui propose les prévisions d'une année cible (2027 par défaut) jour par jour à partir des réalisés N-2/N-1 (couverts et TM réels par jour de semaine × statut vacances vacances/hors/été × service, zone du restaurant, moyenne pondérée réglable 40/60, médiane pondérée si n<5 ou outlier MAD, repli jour de semaine seul). Croissance couverts et TM séparées, surcharge par mois, édition manuelle par jour, badge de confiance par service en vue jour (rouge n<3 ou repli, orange n<8), export CSV. Simulation en mémoire ; écriture explicite via `importBudgetPlan(year, …)` (`DataContext`, cols 6-9 du dashboard, mois marqués dirty) avec modale compléter/écraser si des prévisions existent. Calendrier vacances : 2027-2028 ajouté (3 zones). tsc OK, build OK.
+
 ## 29/09/2026 (Analyse des écarts : couverts arrondis + ticket moyen)
 
 - Analyse des écarts : couverts affichés en entiers (moyennes et écarts) ; ticket moyen (TM = CA midi+soir / couverts, hors limonade et VAE) réel vs budget avec écart € et %, en carte de synthèse et dans chaque cellule du tableau croisé. tsc OK, build OK.
