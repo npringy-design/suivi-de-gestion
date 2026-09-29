@@ -212,6 +212,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const cloudApplyingRef = useRef(false);
   const cloudSaveTimerRef = useRef<number | null>(null);
   const loadedCloudMonthKeysRef = useRef<Set<string>>(new Set());
+  // Promesse résolue quand le bootstrap cloud est terminé (succès ou échec).
+  const cloudReadyRef = useRef<{ promise: Promise<void>; resolve: () => void } | null>(null);
+  if (!cloudReadyRef.current) {
+    let resolve: () => void = () => {};
+    const promise = new Promise<void>(res => { resolve = res; });
+    cloudReadyRef.current = { promise, resolve };
+  }
   const initialCloudYearRef = useRef(selectedYear);
   const initialCloudMonthRef = useRef(selectedMonth);
   // Snapshots "annee:mois" modifiés localement : seuls ces mois sont poussés vers Supabase,
@@ -387,7 +394,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         console.warn('Sauvegarde Supabase indisponible au chargement :', error);
         showCloudWarning(cloudErrorMessage('Sauvegarde Supabase indisponible au chargement', error));
       } finally {
-        if (!cancelled) cloudLoadedRef.current = true;
+        if (!cancelled) {
+          cloudLoadedRef.current = true;
+          cloudReadyRef.current?.resolve();
+        }
       }
     };
 
@@ -708,14 +718,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [cloudMonthKey]);
 
   const loadYearFromCloud = useCallback(async (year: number) => {
-    if (!isCloudSyncConfigured || !cloudLoadedRef.current) return;
+    if (!isCloudSyncConfigured) return;
+    // Attendre la fin du bootstrap : un appel précoce (montage de page) ne doit pas être perdu.
+    await cloudReadyRef.current?.promise;
+    if (!cloudLoadedRef.current) return;
     // Ne charger que si au moins un mois de l'année n'a pas encore été récupéré
     const anyMissing = Array.from({ length: 12 }, (_, m) => m)
       .some(m => !loadedCloudMonthKeysRef.current.has(cloudMonthKey(year, m)));
     if (!anyMissing) return;
     try {
       const months = await fetchCloudYearMonths(year);
-      months.forEach(({ month, value }) => applyCloudMonth(year, month, value));
+      months
+        // Un mois modifié localement et pas encore poussé ne doit pas être écrasé par la version cloud.
+        .filter(({ month }) => !dirtyMonthKeysRef.current.has(cloudMonthKey(year, month)))
+        .forEach(({ month, value }) => applyCloudMonth(year, month, value));
       // Marquer les 12 mois comme tentés pour éviter les doubles appels
       Array.from({ length: 12 }, (_, m) => m).forEach(m => {
         loadedCloudMonthKeysRef.current.add(cloudMonthKey(year, m));
@@ -725,6 +741,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       console.warn('Chargement année N-1 Supabase indisponible :', error);
     }
   }, [applyCloudMonth, cloudMonthKey, hideCloudWarning]);
+
+  // Le bootstrap ne récupère que le mois sélectionné : on complète avec les 12 mois de l'année
+  // affichée, pour que les vues annuelles ne dépendent jamais du cache local du poste.
+  useEffect(() => {
+    void loadYearFromCloud(selectedYear);
+  }, [selectedYear, loadYearFromCloud]);
 
   const saveNow = useCallback(async () => {
     if (!isCloudSyncConfigured || !cloudLoadedRef.current || !cloudBootstrapDoneRef.current) return;
