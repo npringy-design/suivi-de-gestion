@@ -235,6 +235,7 @@ export default function Home() {
       goToSyntheseCA: () => navigate('/synthese'),
       goToRecapAnnuel: () => navigate('/recap-annuel'),
       goToReporting: () => navigate('/reporting'),
+      goToAnalyseEcarts: () => navigate('/analyse-ecarts'),
       goToEdg: () => navigate(`/edg-mensuel/${month}`),
       goToMiseEnPaiement: () => navigate(`/mise-en-paiement/${month}`),
       goToFactureDevis: () => navigate('/facture-devis'),
@@ -993,6 +994,7 @@ export default function Home() {
               <NavItem label="Synthèse CA" onClick={navigationHandlers.goToSyntheseCA} />
               <NavItem label="Récap Annuel" onClick={navigationHandlers.goToRecapAnnuel} />
               <NavItem label="Reporting" onClick={navigationHandlers.goToReporting} />
+              <NavItem label="Analyse des écarts" onClick={navigationHandlers.goToAnalyseEcarts} />
             </NavGroup>
 
             <NavGroup title="Gestion" icon={FileText}>

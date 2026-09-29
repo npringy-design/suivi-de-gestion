@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 29/09/2026 (analyse des écarts réalisé vs budget)
+
+- Analyse des écarts : page `/analyse-ecarts` (`features/analyse/`, entrée sidebar Analyse + lien depuis l'onglet Analyse du Suivi Quotidien). Moyennes couverts/CA réel vs budget par jour de semaine × service (midi/soir/journée), filtres période (plage ou mois multiples) / jours / vacances (4 modes, été inclus ou non) et seuils d'alerte (défaut -15 % ou -100 €/jour, orange au seuil, rouge à 2×, stockés en localStorage). Calcul 100 % client via `computeMonthDashboard` : seuls les jours réalisés (col 21 > 0) et antérieurs à aujourd'hui comptent, budget et réel sur la même base ; un service fermé (0/0) ne dilue pas la moyenne. Limonade comprise dans le CA journée (détail séparé), VAE en réalisé seul + total « CA jour incluant VAE ». Calendrier vacances zone B éditable : `src/features/analyse/schoolHolidaysZoneB.json` (à mettre à jour chaque rentrée ; 2026-2027 partiel). 18 tests, tsc OK, build OK.
+
 ## 28/09/2026 (import PDF salaires avec aperçu)
 
 - Import PDF salaires : aperçu matchés/non-matchés, correction manuelle, association ligne PDF + alias, validation explicite. tsc OK.

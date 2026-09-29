@@ -175,6 +175,14 @@ export default function DashboardAnalysisView({ rows, calculatedData, salariesCo
 
   return (
     <div className="w-full min-h-full pb-6">
+      <div className="mb-3 flex justify-end">
+        <a
+          href="#/analyse-ecarts"
+          className="rounded-lg border border-cyan-200/30 bg-gradient-to-r from-[#078892] to-[#0f5d66] px-3 py-1.5 text-xs font-black uppercase tracking-wider text-white shadow-sm hover:brightness-110"
+        >
+          Analyse des écarts réalisé / budget →
+        </a>
+      </div>
       <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-4'}`}>
         <SummaryCard label="CA réalisé mois" value={euro(analysis.monthTotal.caTotal)} detail="Total suivi quotidien complet" colorClass="text-amber-50" />
         <SummaryCard label="S/C mois" value={percent(analysis.monthTotal.scTotal)} detail="Coût salarial / CA" colorClass="text-cyan-100" />

@@ -396,3 +396,88 @@ export type MonthData = {
   salariesConfig?: MonthDataSalariesConfig;
   personnelSchema?: PersonnelSchema;
 };
+
+// --- Analyse des écarts réalisé vs budget (features/analyse) ---
+
+export type SchoolHolidayPeriod = {
+  name: string;
+  schoolYear: string;
+  start: string; // YYYY-MM-DD, premier jour de vacances
+  end: string; // YYYY-MM-DD, dernier jour de vacances (inclus)
+  summer?: boolean;
+};
+
+export type SchoolHolidayCalendar = {
+  zone: string;
+  periods: SchoolHolidayPeriod[];
+};
+
+export type AnalyseService = 'midi' | 'soir' | 'journee';
+
+export type AnalyseVacationMode = 'all' | 'vacances' | 'hors_vacances' | 'hors_vacances_avec_ete';
+
+export type AnalysePeriodMode = 'plage' | 'mois';
+
+export type AnalyseThresholds = {
+  ecartPct: number; // ex. -15 : alerte si l'écart % est <= à cette valeur
+  ecartEuroJour: number; // ex. -100 : alerte si l'écart moyen €/jour est <= à cette valeur
+};
+
+export type AnalyseFilters = {
+  periodMode: AnalysePeriodMode;
+  startDate: string;
+  endDate: string;
+  monthKeys: string[]; // "YYYY-M" (mois 0-11)
+  weekdays: number[]; // 0 = dimanche ; vide = tous
+  service: AnalyseService;
+  vacationMode: AnalyseVacationMode;
+};
+
+export type AnalyseServiceValues = {
+  caMidi: number;
+  caSoir: number;
+  caLimo: number;
+  cvMidi: number;
+  cvSoir: number;
+  cvLimo: number;
+};
+
+export type AnalyseDaySample = {
+  date: string; // YYYY-MM-DD
+  weekday: number;
+  budget: AnalyseServiceValues;
+  reel: AnalyseServiceValues & { vae: number };
+};
+
+export type AnalyseAggregate = {
+  n: number;
+  cvReel: number; // moyennes par jour
+  cvBudget: number;
+  cvEcart: number;
+  cvEcartPct: number | null;
+  caReel: number;
+  caBudget: number;
+  caEcart: number;
+  caEcartPct: number | null;
+  impactCa: number; // écart moyen × n
+};
+
+export type AnalyseAlertLevel = 'none' | 'warning' | 'critical';
+
+export type AnalyseDetail = {
+  n: number;
+  restaurantCaReel: number; // midi + soir, moyenne par jour
+  restaurantCaBudget: number;
+  limoCaReel: number;
+  limoCaBudget: number;
+  limoCvReel: number; // réalisé seul, pas de budget de couverts comparé
+  vaeReel: number; // réalisé seul, pas de budget VAE
+  caJourAvecVae: number; // moyenne réalisée journée + VAE, sans budget
+};
+
+export type AnalyseWeekdayRow = {
+  weekday: number;
+  midi: AnalyseAggregate;
+  soir: AnalyseAggregate;
+  journee: AnalyseAggregate;
+};

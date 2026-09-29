@@ -13,6 +13,7 @@ const Dashboard = lazy(() => import('@/Dashboard'));
 const SyntheseCA = lazy(() => import('@/features/edg/SyntheseCA'));
 const RecapAnnuel = lazy(() => import('@/features/edg/RecapAnnuel'));
 const Reporting = lazy(() => import('@/features/edg/Reporting'));
+const AnalyseEcarts = lazy(() => import('@/features/analyse/AnalyseEcarts'));
 const SaisieTheorique = lazy(() => import('@/features/caisse/SaisieTheorique'));
 const CbNepting = lazy(() => import('@/features/caisse/CbNepting'));
 const Especes = lazy(() => import('@/features/caisse/Especes'));
@@ -151,6 +152,7 @@ const router = createHashRouter([
   { path: '/synthese/:month', element: <SyntheseRoute /> },
   { path: '/recap-annuel', element: <PageRoute Component={RecapAnnuel} backPath='/' /> },
   { path: '/reporting', element: <PageRoute Component={Reporting} backPath='/' /> },
+  { path: '/analyse-ecarts', element: <PageRoute Component={AnalyseEcarts} backPath='/' /> },
   { path: '/saisie-theorique', element: <MonthRoute Component={SaisieTheorique} backPath='/synthese' /> },
   { path: '/saisie-theorique/:month', element: <MonthParamRoute Component={SaisieTheorique} /> },
   { path: '/cb-nepting', element: <MonthRoute Component={CbNepting} backPath='/synthese' /> },
