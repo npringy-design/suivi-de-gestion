@@ -20,10 +20,11 @@ const getISOWeek = (date: Date): number => {
   return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
 };
 
+// Compare des dates calendaires (YYYY-MM-DD, bornes incluses) : new Date('YYYY-MM-DD') est en UTC,
+// ce qui excluait le premier jour de la plage pour une date locale à minuit.
 export const isDateInRange = (date: Date, startStr: string, endStr: string): boolean => {
-  const start = new Date(startStr);
-  const end = new Date(endStr);
-  return date >= start && date <= end;
+  const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  return iso >= startStr.slice(0, 10) && iso <= endStr.slice(0, 10);
 };
 
 export const isExactDate = (date: Date, dateStr: string): boolean => {

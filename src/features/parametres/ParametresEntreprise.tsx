@@ -11,6 +11,7 @@ import { useData } from '@/contexts/DataContext';
 import type { CompanySettings, PurchaseSection, PurchaseSupplier } from '@/contexts/DataContext';
 import type { CaisseSysteme, CaisseColumn } from '@/types/dataTypes';
 import { MONTH_NAMES_FULL } from '@/features/parametres/companySettingsDefaults';
+import { SCHOOL_ZONES, resolveSchoolZone } from '@/lib/schoolHolidays';
 
 type Props = { onBack: () => void };
 
@@ -476,7 +477,7 @@ function SectionIdentite({ settings, onChange }: {
         <Building2 className="h-4 w-4 text-teal-300" />
         <span className={CARD_TITLE}>Identité du site</span>
       </div>
-      <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex flex-col gap-1.5">
           <div className={LABEL}>Enseigne</div>
           <input className={INPUT} value={settings.companyName}
@@ -498,6 +499,14 @@ function SectionIdentite({ settings, onChange }: {
             onChange={e => onChange({ ...settings, fiscalStart: Number(e.target.value) })}>
             {MONTH_NAMES_FULL.map((m, i) => <option key={i} value={i}>{m}</option>)}
           </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <div className={LABEL}>Zone scolaire</div>
+          <select className={INPUT} value={resolveSchoolZone(settings.schoolZone)}
+            onChange={e => onChange({ ...settings, schoolZone: resolveSchoolZone(e.target.value) })}>
+            {SCHOOL_ZONES.map(zone => <option key={zone} value={zone}>Zone {zone}</option>)}
+          </select>
+          <p className="text-[10px] text-slate-400">Vacances scolaires du Suivi Quotidien et de l'Analyse des écarts.</p>
         </div>
       </div>
     </div>

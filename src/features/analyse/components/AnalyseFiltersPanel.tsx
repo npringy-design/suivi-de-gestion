@@ -125,7 +125,7 @@ export default function AnalyseFiltersPanel({ filters, onChange, thresholds, onT
           ))}
         </div>
         <div className="text-[11px] font-semibold text-cyan-50/50">
-          Été conservé : juillet-août reste dans l&apos;échantillon « hors vacances ». Calendrier : <code>src/features/analyse/schoolHolidaysZoneB.json</code>.
+          Été conservé : juillet-août reste dans l&apos;échantillon « hors vacances ». Zone du restaurant : Paramètres Entreprise. Calendrier : <code>src/lib/schoolHolidays.json</code>.
         </div>
       </div>
 

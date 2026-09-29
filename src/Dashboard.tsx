@@ -5,6 +5,7 @@ import { useData, type SalarieRow } from '@/contexts/DataContext';
 import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import { parseMoneyValue } from '@/lib/money';
 import { tint } from '@/lib/tableChrome';
+import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
 
 // ── Modèle Dashboard extrait (types, colonnes, configuration statique) ────────
 import type {
@@ -90,6 +91,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     updateDeliveroo,
     updateClickCollect,
     customEvents,
+    companySettings,
     personnelInfos,
     updatePersonnelInfos,
     setSelectedYear,
@@ -147,14 +149,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     `${year}-12-25`, // Noël
   ];
 
-  const schoolHolidays = [
-    { start: `${year - 1}-10-17`, end: `${year - 1}-11-02` }, // Toussaint
-    { start: `${year - 1}-12-19`, end: `${year}-01-04` }, // Noël
-    { start: `${year}-02-20`, end: `${year}-03-08` }, // Hiver Zone C
-    { start: `${year}-04-17`, end: `${year}-05-03` }, // Printemps Zone C
-    { start: `${year}-05-13`, end: `${year}-05-17` }, // Pont Ascension
-    { start: `${year}-07-03`, end: `${year}-08-30` }, // Grandes Vacances
-  ];
+  const schoolHolidays = useMemo(() => getSchoolHolidayCalendar(companySettings.schoolZone).periods, [companySettings.schoolZone]);
 
   const {
     month,

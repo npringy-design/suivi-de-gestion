@@ -37,7 +37,7 @@ const sample = (over: Partial<AnalyseDaySample> & { date: string; weekday: numbe
 });
 
 const calendar: SchoolHolidayCalendar = {
-  zone: 'B',
+  zone: 'B' as const,
   periods: [
     { name: 'Noël', schoolYear: '2025-2026', start: '2025-12-20', end: '2026-01-04' },
     { name: 'Été', schoolYear: '2025-2026', start: '2026-07-04', end: '2026-08-31', summer: true },

@@ -2,16 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import { loadJsonFromBrowserStorage, saveJsonToBrowserStorage } from '@/lib/browserStorage';
+import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
 import type {
   AnalyseAggregate,
   AnalyseDetail,
   AnalyseFilters,
   AnalyseThresholds,
   AnalyseWeekdayRow,
-  SchoolHolidayCalendar,
 } from '@/types/dataTypes';
 
-import holidaysZoneB from '../schoolHolidaysZoneB.json';
 import {
   aggregateByWeekday,
   aggregateDetail,
@@ -24,8 +23,6 @@ import {
 
 const THRESHOLDS_STORAGE_KEY = 'analyse_ecarts_thresholds_v1';
 const DEFAULT_THRESHOLDS: AnalyseThresholds = { ecartPct: -15, ecartEuroJour: -100 };
-
-const holidayCalendar = holidaysZoneB as SchoolHolidayCalendar;
 
 const defaultFilters = (): AnalyseFilters => {
   const year = new Date().getFullYear();
@@ -56,7 +53,8 @@ export type AnalyseEcartsResults = {
 };
 
 export function useAnalyseEcarts() {
-  const { allData, loadYearFromCloud } = useData();
+  const { allData, loadYearFromCloud, companySettings } = useData();
+  const holidayCalendar = useMemo(() => getSchoolHolidayCalendar(companySettings.schoolZone), [companySettings.schoolZone]);
   const [filters, setFilters] = useState<AnalyseFilters>(defaultFilters);
   const [thresholds, setThresholdsState] = useState<AnalyseThresholds>(loadThresholds);
   const requestedYearsRef = useRef(new Set<number>());
@@ -93,7 +91,7 @@ export function useAnalyseEcarts() {
       weekdayRows: aggregateByWeekday(filtered, filters.weekdays),
       sampleCount: filtered.length,
     };
-  }, [allData, period, filters]);
+  }, [allData, period, filters, holidayCalendar]);
 
   const availableYears = useMemo(() => {
     const currentYear = new Date().getFullYear();

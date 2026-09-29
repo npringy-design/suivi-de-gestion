@@ -25,6 +25,7 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   fiscalStart: 0,
   weatherLat: 49.2567,
   weatherLon: 3.955,
+  schoolZone: 'B',
   caisseSystemes: DEFAULT_CAISSE_SYSTEMS,
   purchaseSections: [
     {

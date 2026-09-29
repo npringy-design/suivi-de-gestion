@@ -370,6 +370,8 @@ export type CompanySettings = {
   // Coordonnées géographiques pour la météo.
   weatherLat?: number;
   weatherLon?: number;
+  // Zone scolaire (A/B/C) du restaurant : pilote le calendrier des vacances (défaut B).
+  schoolZone?: SchoolZone;
   caisseSystemes?: CaisseSysteme[];
 };
 
@@ -407,8 +409,10 @@ export type SchoolHolidayPeriod = {
   summer?: boolean;
 };
 
+export type SchoolZone = 'A' | 'B' | 'C';
+
 export type SchoolHolidayCalendar = {
-  zone: string;
+  zone: SchoolZone;
   periods: SchoolHolidayPeriod[];
 };
 
