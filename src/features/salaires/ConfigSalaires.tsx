@@ -9,8 +9,9 @@ import { MONTH_NAMES } from '@/lib/constants';
 
 import MoveCategoryMenu from './components/MoveCategoryMenu';
 import SalarieCategorySection from './components/SalarieCategorySection';
+import SalaryPeriodCalendar from './components/SalaryPeriodCalendar';
 import { useLongPress } from './hooks/useLongPress';
-import { moveSalarieRow } from './salaryCategoryMove';
+import { isBlankSalarieRow, moveSalarieRow } from './salaryCategoryMove';
 import { formatCurrency, inputStyle, tdStyle, thStyle } from './salaryTableShared';
 
 const NAV = '#1e293b';
@@ -31,7 +32,7 @@ interface ConfigSalairesProps {
 }
 
 export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
-  const { selectedYear: YEAR, data, updateSalariesConfig } = useData();
+  const { selectedYear: YEAR, setSelectedYear, data, updateSalariesConfig } = useData();
   const MONTHS = MONTH_NAMES.map(m => `${m} ${YEAR}`);
   
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0);
@@ -65,6 +66,13 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   const isMonthLocked = (monthIdx: number) => {
     return data[monthIdx]?.salariesConfig?.locked || false;
   };
+
+  // Repères du calendrier : mois contenant des salariés, mois verrouillés
+  const monthIndexes = Array.from({ length: 12 }, (_, index) => index);
+  const filledMonths = new Set(monthIndexes.filter(index =>
+    Object.values(getSalariesForMonth(index)).some(rows => rows.some(row => !isBlankSalarieRow(row))),
+  ));
+  const lockedMonths = new Set(monthIndexes.filter(isMonthLocked));
 
   const handleSalarieChange = (category: SalaryCategory, index: number, field: SalarieField, value: string) => {
     const currentConfig = getCurrentConfig(selectedMonthIndex);
@@ -195,21 +203,14 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   const renderTauxHorairesTable = () => {
     return (
       <>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', padding: '12px 24px', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.04)', border: '1px solid #e2e8f0' }}>
-            <label htmlFor="config-salaires-month" style={{ fontSize: 14, fontWeight: 700, color: '#475569' }}>Mois en cours :</label>
-            <select
-              id="config-salaires-month"
-              value={selectedMonthIndex}
-              onChange={e => setSelectedMonthIndex(parseInt(e.target.value))}
-              style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 15, fontWeight: 700, color: NAV, outline: 'none', cursor: 'pointer', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.05)' }}
-            >
-              {MONTHS.map((m, idx) => (
-                <option key={m} value={idx}>{m}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <SalaryPeriodCalendar
+          year={YEAR}
+          month={selectedMonthIndex}
+          filledMonths={filledMonths}
+          lockedMonths={lockedMonths}
+          onYearChange={setSelectedYear}
+          onMonthChange={setSelectedMonthIndex}
+        />
 
         <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.04)', marginBottom: 32 }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
