@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { PersonnelCategory } from '@/types/dataTypes';
@@ -11,7 +11,7 @@ const CATEGORIES: Array<{ id: PersonnelCategory; label: string }> = [
   { id: 'niv12', label: 'NIV I ET II' },
 ];
 
-const renderTable = (manual: Record<string, number>, calculated: Record<string, number>) =>
+const renderTable = (manual: Record<string, number>, calculated: Record<string, number>, onSetRate = vi.fn()) =>
   render(
     <TauxHorairesTable
       months={MONTHS}
@@ -20,7 +20,7 @@ const renderTable = (manual: Record<string, number>, calculated: Record<string, 
       getManualRate={(mi, cat) => manual[`${mi}-${cat}`] ?? 0}
       getCalculatedRate={(mi, cat) => calculated[`${mi}-${cat}`] ?? 0}
       getDisplayRate={(mi, cat) => manual[`${mi}-${cat}`] ?? calculated[`${mi}-${cat}`] ?? 0}
-      onSetRate={vi.fn()}
+      onSetRate={onSetRate}
       onToggleLock={vi.fn()}
     />,
   );
@@ -43,5 +43,32 @@ describe('TauxHorairesTable', () => {
 
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByText('TAUX MANUELS')).not.toBeInTheDocument();
+  });
+
+  it("un simple clic dans une case (sans modification) n'enregistre rien : le taux calculé ne devient pas manuel", () => {
+    const onSetRate = vi.fn();
+    renderTable({}, { '0-cadre': 15.17 }, onSetRate);
+
+    const input = screen.getAllByRole('textbox')[0];
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+
+    expect(onSetRate).not.toHaveBeenCalled();
+  });
+
+  it('une valeur modifiée est enregistrée à la sortie de la case, et vider la case aussi', () => {
+    const onSetRate = vi.fn();
+    renderTable({}, { '0-cadre': 15.17 }, onSetRate);
+
+    const input = screen.getAllByRole('textbox')[0];
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '16,5' } });
+    fireEvent.blur(input);
+    expect(onSetRate).toHaveBeenCalledWith(0, 'cadre', '16,5');
+
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input);
+    expect(onSetRate).toHaveBeenLastCalledWith(0, 'cadre', '');
   });
 });

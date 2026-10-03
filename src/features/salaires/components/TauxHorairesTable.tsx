@@ -33,8 +33,10 @@ export default function TauxHorairesTable({
   onSetRate,
   onToggleLock,
 }: TauxHorairesTableProps) {
-  // État local pour la cellule en cours de saisie (évite la perte de la virgule pendant la frappe)
-  const [editingCell, setEditingCell] = useState<{ mi: number; cat: PersonnelCategory; value: string } | null>(null);
+  // État local pour la cellule en cours de saisie (évite la perte de la virgule pendant la frappe).
+  // `initial` = valeur affichée au clic : sans modification, rien n'est enregistré (un simple clic ne doit pas
+  // transformer le taux calculé en taux manuel).
+  const [editingCell, setEditingCell] = useState<{ mi: number; cat: PersonnelCategory; value: string; initial: string } | null>(null);
 
   return (
     <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.04)', marginBottom: 32 }}>
@@ -79,11 +81,11 @@ export default function TauxHorairesTable({
                           type="text"
                           inputMode="decimal"
                           value={displayValue}
-                          onFocus={() => setEditingCell({ mi: i, cat: cat.id, value: displayValue })}
-                          onChange={e => setEditingCell({ mi: i, cat: cat.id, value: e.target.value })}
+                          onFocus={() => setEditingCell({ mi: i, cat: cat.id, value: displayValue, initial: displayValue })}
+                          onChange={e => setEditingCell({ mi: i, cat: cat.id, value: e.target.value, initial: editingCell?.initial ?? displayValue })}
                           onBlur={() => {
                             if (editingCell?.mi === i && editingCell?.cat === cat.id) {
-                              onSetRate(i, cat.id, editingCell.value);
+                              if (editingCell.value.trim() !== editingCell.initial.trim()) onSetRate(i, cat.id, editingCell.value);
                               setEditingCell(null);
                             }
                           }}
