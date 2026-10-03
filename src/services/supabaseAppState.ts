@@ -7,6 +7,7 @@ export type CloudAppState = {
   personnelInfos?: unknown;
   edgChargesConfig?: unknown;
   companySettings?: unknown;
+  payrollCosts?: unknown;
 };
 
 export type CloudSaveOptions = {
@@ -20,6 +21,7 @@ export type CloudSaveOptions = {
     personnelInfos?: boolean;
     edgChargesConfig?: boolean;
     companySettings?: boolean;
+    payrollCosts?: boolean;
   };
 };
 
@@ -43,6 +45,7 @@ type CloudSegmentManifest = {
     personnelInfos: boolean;
     edgChargesConfig: boolean;
     companySettings?: boolean;
+    payrollCosts?: boolean;
   };
   savedAt: string;
 };
@@ -165,6 +168,7 @@ const customEventsSegmentKey = `${segmentedPrefix}:customEvents`;
 const personnelInfosSegmentKey = `${segmentedPrefix}:personnelInfos`;
 const edgChargesConfigSegmentKey = `${segmentedPrefix}:edgChargesConfig`;
 const companySettingsSegmentKey = `${segmentedPrefix}:companySettings`;
+const payrollCostsSegmentKey = `${segmentedPrefix}:payrollCosts`;
 
 const fetchSegmentManifest = async (): Promise<CloudSegmentManifest | null> => {
   if (manifestCache !== undefined) return manifestCache;
@@ -177,12 +181,13 @@ const fetchSegmentManifest = async (): Promise<CloudSegmentManifest | null> => {
 };
 
 const fetchCommonSegments = async (manifest: CloudSegmentManifest) => {
-  const [configRow, customEventsRow, personnelInfosRow, edgChargesConfigRow, companySettingsRow] = await Promise.all([
+  const [configRow, customEventsRow, personnelInfosRow, edgChargesConfigRow, companySettingsRow, payrollCostsRow] = await Promise.all([
     manifest.segments?.config2025 ? fetchStateRecord(configSegmentKey) : Promise.resolve(null),
     manifest.segments?.customEvents ? fetchStateRecord(customEventsSegmentKey) : Promise.resolve(null),
     manifest.segments?.personnelInfos ? fetchStateRecord(personnelInfosSegmentKey) : Promise.resolve(null),
     manifest.segments?.edgChargesConfig ? fetchStateRecord(edgChargesConfigSegmentKey) : Promise.resolve(null),
     manifest.segments?.companySettings ? fetchStateRecord(companySettingsSegmentKey) : Promise.resolve(null),
+    manifest.segments?.payrollCosts ? fetchStateRecord(payrollCostsSegmentKey) : Promise.resolve(null),
   ]);
 
   return {
@@ -191,6 +196,7 @@ const fetchCommonSegments = async (manifest: CloudSegmentManifest) => {
     personnelInfos: personnelInfosRow?.value,
     edgChargesConfig: edgChargesConfigRow?.value,
     companySettings: companySettingsRow?.value,
+    payrollCosts: payrollCostsRow?.value,
   };
 };
 
@@ -359,6 +365,7 @@ export const saveCloudAppState = async (value: CloudAppState, options?: CloudSav
   const personnelInfos = Array.isArray(value.personnelInfos) ? value.personnelInfos : [];
   const edgChargesConfig = value.edgChargesConfig && typeof value.edgChargesConfig === 'object' ? value.edgChargesConfig : {};
   const companySettings = value.companySettings && typeof value.companySettings === 'object' ? value.companySettings : null;
+  const payrollCosts = value.payrollCosts && typeof value.payrollCosts === 'object' ? value.payrollCosts : null;
 
   const existingManifest = await fetchSegmentManifest().catch(() => null);
   const manifestMonths = mergeMonthRefs(
@@ -375,6 +382,9 @@ export const saveCloudAppState = async (value: CloudAppState, options?: CloudSav
     (shouldSaveSegment as (s: string) => boolean)('companySettings') && companySettings
       ? saveStateRecord(companySettingsSegmentKey, companySettings)
       : Promise.resolve(null),
+    (shouldSaveSegment as (s: string) => boolean)('payrollCosts') && payrollCosts
+      ? saveStateRecord(payrollCostsSegmentKey, payrollCosts)
+      : Promise.resolve(null),
   ]);
 
   const manifest: CloudSegmentManifest = {
@@ -387,6 +397,7 @@ export const saveCloudAppState = async (value: CloudAppState, options?: CloudSav
       personnelInfos: true,
       edgChargesConfig: true,
       companySettings: companySettings != null,
+      payrollCosts: payrollCosts != null || existingManifest?.segments?.payrollCosts === true,
     },
     savedAt: existingManifest?.savedAt || new Date().toISOString(),
   };

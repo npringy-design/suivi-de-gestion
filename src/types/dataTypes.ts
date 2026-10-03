@@ -539,3 +539,34 @@ export type PlanDay = {
 export type PlanManualOverride = Partial<Record<PlanService, { cv: number; tm: number }>>;
 
 export type PlanWriteMode = 'ecraser' | 'completer';
+
+// --- Masse salariale & charges (features/masseSalariale) ---
+
+// Ligne par salarié : structure prévue pour une saisie/import détaillé ultérieur.
+export type PayrollEmployeeLine = {
+  name: string;
+  hours?: number;
+  gross: number;
+  employerCharges: number;
+};
+
+export type PayrollMonthEntry = {
+  gross: number; // masse salariale brute totale
+  employerCharges: number; // charges patronales totales
+  hours?: number; // heures normales + majorées
+  budgetGross?: number; // budget masse salariale brute (optionnel)
+  budgetEmployerCharges?: number; // budget charges patronales (optionnel)
+  note?: string; // annotation libre (absence prolongée, apprentis…)
+  employees?: PayrollEmployeeLine[];
+};
+
+export type PayrollAlertThresholds = {
+  grossToRevenuePct: number; // seuil masse salariale brute / CA
+  totalCostToRevenuePct: number; // seuil coût global / CA
+};
+
+// Clé des mois : "AAAA-MM" (MM de 01 à 12).
+export type PayrollCostsData = {
+  months: Record<string, PayrollMonthEntry>;
+  alertThresholds: PayrollAlertThresholds;
+};

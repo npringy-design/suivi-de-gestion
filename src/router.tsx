@@ -38,6 +38,7 @@ const FactureDevis = lazy(() => import('@/features/facturation/FactureDevis'));
 const ConfigSalaires = lazy(() => import('@/features/salaires/ConfigSalaires'));
 const CalculetteSalaires = lazy(() => import('@/features/salaires/CalculetteSalaires'));
 const ConfigurationChiffre2025 = lazy(() => import('@/features/salaires/ConfigurationChiffre2025'));
+const MasseSalariale = lazy(() => import('@/features/masseSalariale/MasseSalariale'));
 const VisuelVacances = lazy(() => import('@/features/salaires/VisuelVacances'));
 const EdgAnnuelTabs = lazy(() => import('@/features/edg/EdgAnnuelTabs'));
 const ParametrageComptable = lazy(() => import('@/features/comptabilite/ParametrageComptable'));
@@ -154,6 +155,7 @@ const router = createHashRouter([
   { path: '/recap-annuel', element: <PageRoute Component={RecapAnnuel} backPath='/' /> },
   { path: '/reporting', element: <PageRoute Component={Reporting} backPath='/' /> },
   { path: '/analyse-ecarts', element: <PageRoute Component={AnalyseEcarts} backPath='/' /> },
+  { path: '/masse-salariale', element: <PageRoute Component={MasseSalariale} backPath='/' /> },
   { path: '/planification', element: <PageRoute Component={Planification} backPath='/' /> },
   { path: '/saisie-theorique', element: <MonthRoute Component={SaisieTheorique} backPath='/synthese' /> },
   { path: '/saisie-theorique/:month', element: <MonthParamRoute Component={SaisieTheorique} /> },

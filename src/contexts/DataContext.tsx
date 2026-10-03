@@ -5,9 +5,11 @@ import { mergeDashboardCellsData, mergeEdgMensuelBudgetData, mergeEdgMensuelReal
 import { parseMoneyValue } from '@/lib/money';
 import { createDefaultEdgChargesConfig } from '@/features/edg/edgChargesConfigDefaults';
 import { DEFAULT_COMPANY_SETTINGS, DEFAULT_CAISSE_SYSTEMS } from '@/features/parametres/companySettingsDefaults';
+import { normalizePayrollCosts } from '@/features/masseSalariale/payrollDefaults';
 
 export type {
   CompanySettings,
+  PayrollCostsData,
   PurchaseSection,
   PurchaseSupplier,
   DayDataTheorique,
@@ -45,6 +47,7 @@ export type {
 
 import type {
   CompanySettings,
+  PayrollCostsData,
   PurchaseSection,
   PurchaseSupplier,
   DayDataTheorique,
@@ -121,6 +124,8 @@ type DataContextType = {
   updateEdgChargesConfig: (key: string, config: EdgChargeConfig) => void;
   companySettings: CompanySettings;
   updateCompanySettings: (settings: CompanySettings) => void;
+  payrollCosts: PayrollCostsData;
+  updatePayrollCosts: (updater: (prev: PayrollCostsData) => PayrollCostsData) => void;
   customEvents: CustomEvent[];
   addCustomEvent: (event: CustomEvent) => void;
   removeCustomEvent: (id: string) => void;
@@ -135,6 +140,7 @@ const CONFIG_2025_STORAGE_KEY = 'config2025_data_v1';
 const CUSTOM_EVENTS_STORAGE_KEY = 'custom_events_v1';
 const EDG_CHARGES_CONFIG_STORAGE_KEY = 'edg_charges_config_v1';
 const COMPANY_SETTINGS_STORAGE_KEY = 'company_settings_v1';
+const PAYROLL_COSTS_STORAGE_KEY = 'payroll_costs_v1';
 
 const DEFAULT_THEORIQUE_DAY: DayDataTheorique = {
   total_ca: 0, cb: 0, amex: 0, tr_papier: 0, tr_carte: 0, ancv: 0,
@@ -185,6 +191,7 @@ type CloudSnapshot = {
   personnelInfos: PersonnelInfo[];
   edgChargesConfig: EdgChargesConfig;
   companySettings: CompanySettings;
+  payrollCosts: PayrollCostsData;
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -205,6 +212,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     return loaded;
   });
 
+  const [payrollCosts, setPayrollCosts] = useState<PayrollCostsData>(() => normalizePayrollCosts(loadJson<Partial<PayrollCostsData>>(PAYROLL_COSTS_STORAGE_KEY, {})));
+
   const data = allData[selectedYear] || EMPTY_YEAR_DATA;
 
   const cloudLoadedRef = useRef(!isCloudSyncConfigured);
@@ -224,8 +233,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   // Snapshots "annee:mois" modifiés localement : seuls ces mois sont poussés vers Supabase,
   // pour ne jamais écraser avec des données localStorage périmées les saisies d'un autre poste.
   const dirtyMonthKeysRef = useRef<Set<string>>(new Set());
-  const dirtySegmentsRef = useRef({ config2025: false, customEvents: false, personnelInfos: false, edgChargesConfig: false, companySettings: false });
-  const latestSnapshotRef = useRef<CloudSnapshot>({ allData, config2025, customEvents, personnelInfos, edgChargesConfig, companySettings });
+  const dirtySegmentsRef = useRef({ config2025: false, customEvents: false, personnelInfos: false, edgChargesConfig: false, companySettings: false, payrollCosts: false });
+  const latestSnapshotRef = useRef<CloudSnapshot>({ allData, config2025, customEvents, personnelInfos, edgChargesConfig, companySettings, payrollCosts });
 
   const updateDataForYear = useCallback((month: number, updater: (prevYearData: Record<number, MonthData>) => Record<number, MonthData>) => {
     dirtyMonthKeysRef.current.add(selectedYear + ':' + month);
@@ -321,6 +330,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         return merged;
       });
     }
+    if (cloudState.payrollCosts && typeof cloudState.payrollCosts === 'object') {
+      setPayrollCosts(normalizePayrollCosts(cloudState.payrollCosts as Partial<PayrollCostsData>));
+    }
   }, [rememberLoadedCloudMonths]);
 
   const applyCloudMonth = useCallback((year: number, month: number, monthData: unknown) => {
@@ -362,6 +374,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [companySettings]);
 
   useEffect(() => {
+    saveJson(PAYROLL_COSTS_STORAGE_KEY, payrollCosts);
+  }, [payrollCosts]);
+
+  useEffect(() => {
     if (!isCloudSyncConfigured) {
       showCloudWarning('Sauvegarde Supabase non configuree : les donnees restent uniquement sur ce PC.');
     }
@@ -384,7 +400,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         } else {
           loadedCloudMonthKeysRef.current.add(cloudMonthKey(bootYear, bootMonth));
           cloudBootstrapDoneRef.current = true;
-          await saveCloudAppState({ allData, config2025, customEvents, personnelInfos, edgChargesConfig, companySettings });
+          await saveCloudAppState({ allData, config2025, customEvents, personnelInfos, edgChargesConfig, companySettings, payrollCosts });
         }
         hideCloudWarning();
         if (!cloudBootstrapDoneRef.current) {
@@ -444,19 +460,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const performCloudSave = useCallback(async () => {
     const dirtyMonths = new Set(dirtyMonthKeysRef.current);
     const dirtySegments = { ...dirtySegmentsRef.current };
-    const hasDirtySegment = dirtySegments.config2025 || dirtySegments.customEvents || dirtySegments.personnelInfos || dirtySegments.edgChargesConfig || dirtySegments.companySettings;
+    const hasDirtySegment = dirtySegments.config2025 || dirtySegments.customEvents || dirtySegments.personnelInfos || dirtySegments.edgChargesConfig || dirtySegments.companySettings || dirtySegments.payrollCosts;
     if (dirtyMonths.size === 0 && !hasDirtySegment) return;
 
     await saveCloudAppState(latestSnapshotRef.current, { dirtyMonths, dirtySegments });
 
     dirtyMonths.forEach(key => dirtyMonthKeysRef.current.delete(key));
-    (['config2025', 'customEvents', 'personnelInfos', 'edgChargesConfig', 'companySettings'] as const).forEach(segment => {
+    (['config2025', 'customEvents', 'personnelInfos', 'edgChargesConfig', 'companySettings', 'payrollCosts'] as const).forEach(segment => {
       if (dirtySegments[segment]) dirtySegmentsRef.current[segment] = false;
     });
   }, []);
 
   useEffect(() => {
-    latestSnapshotRef.current = { allData, config2025, customEvents, personnelInfos, edgChargesConfig, companySettings };
+    latestSnapshotRef.current = { allData, config2025, customEvents, personnelInfos, edgChargesConfig, companySettings, payrollCosts };
 
     if (!isCloudSyncConfigured || !cloudLoadedRef.current || !cloudBootstrapDoneRef.current) return;
     if (cloudApplyingRef.current) {
@@ -483,7 +499,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         window.clearTimeout(cloudSaveTimerRef.current);
       }
     };
-  }, [allData, config2025, customEvents, personnelInfos, edgChargesConfig, companySettings, cloudErrorMessage, hideCloudWarning, performCloudSave, showCloudWarning]);
+  }, [allData, config2025, customEvents, personnelInfos, edgChargesConfig, companySettings, payrollCosts, cloudErrorMessage, hideCloudWarning, performCloudSave, showCloudWarning]);
 
   // Fermeture ou bascule d'onglet : flush immédiat de la sauvegarde débouncée
   // pour ne pas perdre la dernière saisie (le débounce est de 900 ms).
@@ -938,6 +954,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setCompanySettings(settings);
   }, []);
 
+  const updatePayrollCosts = useCallback((updater: (prev: PayrollCostsData) => PayrollCostsData) => {
+    dirtySegmentsRef.current.payrollCosts = true;
+    setPayrollCosts(updater);
+  }, []);
+
   const resetLocalData = useCallback(() => {
     try {
       localStorage.removeItem(STORAGE_KEY_V2);
@@ -947,6 +968,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem(PERSONNEL_INFOS_STORAGE_KEY);
       localStorage.removeItem(EDG_CHARGES_CONFIG_STORAGE_KEY);
       localStorage.removeItem(COMPANY_SETTINGS_STORAGE_KEY);
+      localStorage.removeItem(PAYROLL_COSTS_STORAGE_KEY);
     } catch {
       // La remise a zero reste possible en memoire meme si le stockage navigateur est indisponible.
     }
@@ -954,13 +976,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // sauvegarde automatique n'écrase pas les données Supabase avec du vide.
     // Recharger la page restaure les données depuis le cloud.
     dirtyMonthKeysRef.current.clear();
-    dirtySegmentsRef.current = { config2025: false, customEvents: false, personnelInfos: false, edgChargesConfig: false, companySettings: false };
+    dirtySegmentsRef.current = { config2025: false, customEvents: false, personnelInfos: false, edgChargesConfig: false, companySettings: false, payrollCosts: false };
     setAllData({});
     setConfig2025({ mensuel: {}, hebdo: {} });
     setCustomEvents([]);
     setPersonnelInfos([]);
     setEdgChargesConfig(createDefaultEdgChargesConfig());
     setCompanySettings(DEFAULT_COMPANY_SETTINGS);
+    setPayrollCosts(normalizePayrollCosts({}));
   }, []);
 
   const value = useMemo<DataContextType>(() => ({
@@ -1004,6 +1027,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateEdgChargesConfig,
     companySettings,
     updateCompanySettings,
+    payrollCosts,
+    updatePayrollCosts,
     customEvents,
     addCustomEvent,
     removeCustomEvent,
@@ -1049,6 +1074,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateEdgChargesConfig,
     companySettings,
     updateCompanySettings,
+    payrollCosts,
+    updatePayrollCosts,
     customEvents,
     addCustomEvent,
     removeCustomEvent,

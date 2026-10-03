@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 03/10/2026 (masse salariale & charges)
+
+- Masse salariale & charges : page `/masse-salariale` (`features/masseSalariale/`, sidebar Analyse, accès non restreint pour l'instant — gestion des habilitations à décider plus tard). Saisie mensuelle (brut, charges patronales, heures optionnelles, budget brut/charges optionnels, note), valeurs calculées en direct (% charges, coût global, brut/CA, coût global/CA, coût horaire). CA réel lu depuis le Suivi Quotidien (`getCaRealiseMonth`), jamais ressaisi. Cartes avec variations vs mois précédent, vs N-1 et vs budget (écarts de ratio en points, sans jugement de couleur), alerte au-dessus de seuils configurables, courbes 12 mois glissants (montants et ratios). Stockage : segment cloud `payrollCosts` (`PayrollCostsData`, mois clés `AAAA-MM`, `employees?` prévu pour le détail par salarié) sur le modèle `companySettings`, marqué dirty via `updatePayrollCosts`. Pas de migration SQL : si l'accès est restreint plus tard, déplacer le segment vers une table à RLS dédiée. Vérifié sur sept. 2025/2026 (brut 35 676,92 → 38 091,35 ; charges 8 296,73 → 9 244,53). 11 tests, tsc OK, build OK.
+
 ## 29/09/2026 (fix mois à 0 sur postes sans cache local)
 
 - Chargement cloud : le bootstrap ne récupère que le mois sélectionné et `RecapAnnuel` ne demandait que N-1, donc les autres mois de l'année (ex. oct/nov/déc-26) restaient vides sans localStorage. `DataContext` charge désormais les 12 mois de `selectedYear` via `loadYearFromCloud` ; celui-ci attend la fin du bootstrap (`cloudReadyRef`, l'appel précoce n'est plus perdu) et n'écrase pas un mois modifié localement non poussé (`dirtyMonthKeysRef`). tsc OK.
