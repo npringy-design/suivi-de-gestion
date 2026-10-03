@@ -5,7 +5,7 @@ import { computeMonthDashboard, getCaRealiseMonth } from '@/features/edg/edgReal
 import type { PayrollAlertThresholds, PayrollMonthEntry } from '@/types/dataTypes';
 
 import {
-  buildRollingSeries,
+  buildYearSeries,
   compareMetrics,
   compareToBudget,
   computePayrollMetrics,
@@ -14,6 +14,7 @@ import {
 } from '../payrollCalculations';
 import { payrollMonthKey } from '../payrollDefaults';
 import { getAutoPayrollFromConfig } from '../payrollSources';
+import { computeYearSummary } from '../payrollYearSummary';
 
 export function usePayrollCosts() {
   const { allData, loadYearFromCloud, payrollCosts, updatePayrollCosts } = useData();
@@ -45,6 +46,7 @@ export function usePayrollCosts() {
   const getAuto = useCallback((y: number, m: number) => getAutoPayrollFromConfig(allData[y]?.[m]), [allData]);
 
   const entries = payrollCosts.months;
+  const thresholds = payrollCosts.alertThresholds;
   const key = payrollMonthKey(year, month);
   const entry = entries[key];
 
@@ -56,6 +58,8 @@ export function usePayrollCosts() {
     const vsPrevious = current ? compareMetrics(current, metricsAt(prev.year, prev.month)) : {};
     const vsLastYear = current ? compareMetrics(current, metricsAt(year - 1, month)) : {};
     const vsBudget = current ? compareToBudget(current, entry) : {};
+    const series = buildYearSeries(year, resolvedAt, getRevenue);
+    const lastYearSeries = buildYearSeries(year - 1, resolvedAt, getRevenue);
     return {
       current,
       revenue: getRevenue(year, month),
@@ -64,20 +68,20 @@ export function usePayrollCosts() {
       vsBudget,
       hasPrevious: resolvedAt(prev.year, prev.month) !== null,
       hasLastYear: resolvedAt(year - 1, month) !== null,
-      // 12 mois glissants se terminant en décembre = janvier→décembre de l'année affichée.
-      series: buildRollingSeries(year, 11, resolvedAt, getRevenue),
-      yearRows: Array.from({ length: 12 }, (_, m) => {
-        const metrics = metricsAt(year, m);
+      series,
+      summary: computeYearSummary(series, lastYearSeries, thresholds.totalCostToRevenuePct),
+      // Comparaison au même mois de l'année précédente, calculable pour chaque mois de la série.
+      monthDetails: series.map(point => {
+        const monthCurrent = metricsAt(year, point.month);
+        const monthLastYear = metricsAt(year - 1, point.month);
         return {
-          month: m,
-          totalCost: metrics?.totalCost ?? null,
-          gross: metrics?.gross ?? null,
-          revenue: metrics?.revenue ?? null,
-          totalCostToRevenuePct: metrics?.totalCostToRevenuePct ?? null,
+          current: monthCurrent,
+          lastYear: monthLastYear,
+          vsLastYear: monthCurrent ? compareMetrics(monthCurrent, monthLastYear) : {},
         };
       }),
     };
-  }, [entries, entry, getAuto, getRevenue, year, month]);
+  }, [entries, entry, getAuto, getRevenue, year, month, thresholds.totalCostToRevenuePct]);
 
   const saveEntry = useCallback((next: PayrollMonthEntry) => {
     updatePayrollCosts(prev => ({ ...prev, months: { ...prev.months, [key]: next } }));
@@ -102,7 +106,7 @@ export function usePayrollCosts() {
     setMonth,
     entry,
     auto: getAuto(year, month),
-    thresholds: payrollCosts.alertThresholds,
+    thresholds,
     setThresholds,
     saveEntry,
     deleteEntry,

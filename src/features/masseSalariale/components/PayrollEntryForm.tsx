@@ -20,12 +20,12 @@ const toInput = (value: number | undefined): string => (value === undefined ? ''
 const toOptional = (raw: string): number | undefined => (raw.trim() === '' ? undefined : parseMoneyValue(raw));
 
 const inputClass =
-  'w-full rounded-lg border border-white/15 bg-white/10 px-3 py-2.5 text-base font-semibold text-white outline-none placeholder:text-white/30 focus:border-amber-300/70';
+  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-amber-500';
 
 function Field({ label, value, onChange, hint }: { label: string; value: string; onChange: (v: string) => void; hint?: string }) {
   return (
     <label className="grid gap-1">
-      <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-100/70">{label}</span>
+      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{label}</span>
       <input
         inputMode="decimal"
         value={value}
@@ -33,16 +33,16 @@ function Field({ label, value, onChange, hint }: { label: string; value: string;
         placeholder="0,00"
         className={inputClass}
       />
-      {hint && <span className="text-[11px] text-cyan-50/50">{hint}</span>}
+      {hint && <span className="text-[11px] text-slate-400">{hint}</span>}
     </label>
   );
 }
 
 function Computed({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-white/5 px-3 py-2">
-      <div className="text-[10px] font-bold uppercase tracking-wider text-cyan-100/60">{label}</div>
-      <div className="text-sm font-black text-amber-50">{value}</div>
+    <div className="rounded-lg bg-white px-3 py-2">
+      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="text-sm font-black text-slate-900">{value}</div>
     </div>
   );
 }
@@ -84,17 +84,17 @@ export default function PayrollEntryForm({ entry, auto, revenue, monthLabel, onS
   };
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 sm:p-5">
+    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-black uppercase tracking-[0.12em] text-amber-50">Saisie · {monthLabel}</h2>
-        <div className="text-xs font-semibold text-cyan-50/70">
-          CA réel du mois (Suivi Quotidien) : <span className="font-black text-amber-50">{revenue === null ? 'non disponible' : formatEuroSymbol(revenue)}</span>
+        <h2 className="text-sm font-black uppercase tracking-[0.12em] text-slate-900">Saisie · {monthLabel}</h2>
+        <div className="text-xs font-semibold text-slate-600">
+          CA réel du mois (Suivi Quotidien) : <span className="font-black text-slate-900">{revenue === null ? 'non disponible' : formatEuroSymbol(revenue)}</span>
         </div>
       </div>
 
-      <p className="mb-3 rounded-lg bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-50/80">
+      <p className="mb-3 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-600">
         {auto
-          ? <>Repris de Config Salaires : coût global <strong className="text-amber-50">{formatEuroSymbol(auto.totalCost)}</strong> · <strong className="text-amber-50">{formatDecimal(auto.hours, 2)} h</strong>. Saisissez le brut : les charges patronales en sont déduites (ou saisissez-les pour forcer une valeur).</>
+          ? <>Repris de Config Salaires : coût global <strong className="text-slate-900">{formatEuroSymbol(auto.totalCost)}</strong> · <strong className="text-slate-900">{formatDecimal(auto.hours, 2)} h</strong>. Saisissez le brut : les charges patronales en sont déduites (ou saisissez-les pour forcer une valeur).</>
           : 'Aucun coût salarial dans Config Salaires pour ce mois : saisissez le brut et les charges.'}
       </p>
 
@@ -118,7 +118,7 @@ export default function PayrollEntryForm({ entry, auto, revenue, monthLabel, onS
       </div>
 
       <label className="mt-4 grid gap-1">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-100/70">Note du mois</span>
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Note du mois</span>
         <textarea
           value={note}
           onChange={event => setNote(event.target.value)}
@@ -141,12 +141,12 @@ export default function PayrollEntryForm({ entry, auto, revenue, monthLabel, onS
           <button
             type="button"
             onClick={() => { if (window.confirm(`Supprimer la saisie de ${monthLabel} ?`)) onDelete(); }}
-            className="rounded-lg border border-white/20 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-cyan-50/80 hover:bg-white/10"
+            className="rounded-lg border border-slate-300 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-600 hover:bg-slate-100"
           >
             Supprimer
           </button>
         )}
-        {saved && <span role="status" className="text-xs font-bold text-emerald-300">Enregistré</span>}
+        {saved && <span role="status" className="text-xs font-bold text-emerald-700">Enregistré</span>}
       </div>
     </section>
   );

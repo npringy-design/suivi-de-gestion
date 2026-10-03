@@ -41,8 +41,8 @@ const formatVariation = (variation: PayrollVariation | undefined, isRatio: boole
 function Line({ label, text }: { label: string; text: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3 text-xs">
-      <span className="font-semibold text-cyan-50/60">{label}</span>
-      <span className="text-right font-bold tabular-nums text-cyan-50">{text}</span>
+      <span className="font-semibold text-slate-500">{label}</span>
+      <span className="text-right font-bold tabular-nums text-slate-800">{text}</span>
     </div>
   );
 }
@@ -66,16 +66,16 @@ export default function PayrollComparisonCards({
           return (
             <div
               key={def.key}
-              className={`rounded-2xl border p-4 ${overThreshold ? 'border-amber-300/60 bg-amber-300/10' : 'border-white/10 bg-white/[0.06]'}`}
+              className={`rounded-2xl border p-4 ${overThreshold ? 'border-amber-500/60 bg-amber-50' : 'border-slate-200 bg-white'}`}
             >
-              <div className="text-[11px] font-bold uppercase tracking-wider text-cyan-100/70">{def.label}</div>
-              <div className="mt-1 text-xl font-black tabular-nums text-amber-50">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{def.label}</div>
+              <div className="mt-1 text-xl font-black tabular-nums text-slate-900">
                 {value === null ? '—' : def.isRatio ? formatPercent(value) : formatEuroSymbol(value)}
               </div>
               {overThreshold && (
-                <div className="mt-1 text-[11px] font-black text-amber-300">▲ Au-dessus du seuil ({formatPercent(threshold)})</div>
+                <div className="mt-1 text-[11px] font-black text-amber-700">▲ Au-dessus du seuil ({formatPercent(threshold)})</div>
               )}
-              <div className="mt-3 grid gap-1 border-t border-white/10 pt-2">
+              <div className="mt-3 grid gap-1 border-t border-slate-200 pt-2">
                 <Line label="vs mois précédent" text={hasPrevious ? formatVariation(vsPrevious[def.key], def.isRatio) : 'pas de saisie'} />
                 <Line label="vs N-1" text={hasLastYear ? formatVariation(vsLastYear[def.key], def.isRatio) : 'pas de saisie'} />
                 {!def.isRatio && <Line label="vs budget" text={formatVariation(vsBudget[def.key], false)} />}
@@ -84,8 +84,8 @@ export default function PayrollComparisonCards({
           );
         })}
       </div>
-      <p className="text-xs leading-relaxed text-cyan-50/60">
-        % de charges patronales du mois : <strong className="text-cyan-50">{metrics.chargesRatePct === null ? '—' : formatPercent(metrics.chargesRatePct)}</strong>.
+      <p className="text-xs leading-relaxed text-slate-500">
+        % de charges patronales du mois : <strong className="text-slate-900">{metrics.chargesRatePct === null ? '—' : formatPercent(metrics.chargesRatePct)}</strong>.
         Il peut varier sensiblement d'un mois à l'autre sans anomalie (apprentis, CDI, promotions, forfait jour…) :
         lisez les montants avant les ratios. Les écarts de ratio sont exprimés en points (pt).
       </p>

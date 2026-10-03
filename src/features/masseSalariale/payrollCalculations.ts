@@ -115,6 +115,7 @@ export type PayrollSeriesPoint = {
   gross: number | null;
   employerCharges: number | null;
   totalCost: number | null;
+  revenue: number | null;
   grossToRevenuePct: number | null;
   totalCostToRevenuePct: number | null;
 };
@@ -140,6 +141,7 @@ export const buildRollingSeries = (
       gross: metrics?.gross ?? null,
       employerCharges: metrics?.employerCharges ?? null,
       totalCost: metrics?.totalCost ?? null,
+      revenue: metrics?.revenue ?? null,
       grossToRevenuePct: metrics?.grossToRevenuePct ?? null,
       totalCostToRevenuePct: metrics?.totalCostToRevenuePct ?? null,
     });
@@ -150,11 +152,9 @@ export const buildRollingSeries = (
 export const previousMonth = (year: number, month: number): { year: number; month: number } =>
   month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 };
 
-// Ligne du tableau récapitulatif annuel (mois 0-11).
-export type PayrollYearRow = {
-  month: number;
-  totalCost: number | null;
-  gross: number | null;
-  revenue: number | null;
-  totalCostToRevenuePct: number | null;
-};
+// Série de l'année civile : janvier → décembre (12 mois glissants se terminant en décembre).
+export const buildYearSeries = (
+  year: number,
+  getResolved: (year: number, month: number) => ResolvedPayroll | null,
+  getRevenue: (year: number, month: number) => number | null,
+): PayrollSeriesPoint[] => buildRollingSeries(year, 11, getResolved, getRevenue);

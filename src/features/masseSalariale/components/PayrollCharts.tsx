@@ -1,4 +1,4 @@
-import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, CartesianGrid, ComposedChart, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { MONTH_NAMES_SHORT } from '@/lib/constants';
 import { formatEuroSymbol, formatPercent } from '@/lib/formatters';
@@ -7,68 +7,91 @@ import type { PayrollAlertThresholds } from '@/types/dataTypes';
 import type { PayrollSeriesPoint } from '../payrollCalculations';
 
 type PayrollChartsProps = {
+  year: number;
   series: PayrollSeriesPoint[];
   thresholds: PayrollAlertThresholds;
 };
 
-const AXIS_STYLE = { fontSize: 11, fill: 'rgba(207,250,254,0.7)' };
-const TOOLTIP_STYLE = { background: '#0a2430', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, fontSize: 12 };
-
-const toChartData = (series: PayrollSeriesPoint[]) =>
-  series.map(point => ({ ...point, label: `${MONTH_NAMES_SHORT[point.month]} ${String(point.year).slice(2)}` }));
+const COLORS = { cost: '#fbbf24', revenue: '#0369a1', alert: '#be185d', good: '#047857', ink: '#5c6d75', faint: '#93a2a9' };
+const AXIS_STYLE = { fontSize: 11, fill: COLORS.ink, fontWeight: 700 };
+const GRID_STROKE = 'rgba(19,32,38,0.08)';
+const PANEL = 'rounded-2xl border border-slate-900/10 bg-white p-4 shadow-lg shadow-black/20';
 
 const formatAxisEuro = (value: number) => `${Math.round(value / 1000)} k€`;
 
-export default function PayrollCharts({ series, thresholds }: PayrollChartsProps) {
-  const data = toChartData(series);
-  const hasData = series.some(point => point.totalCost !== null);
+type DotProps = { cx?: number; cy?: number; value?: number | null; index?: number };
 
-  if (!hasData) {
-    return (
-      <section className="rounded-2xl border border-white/10 bg-white/[0.06] p-6 text-center text-sm font-semibold text-cyan-50/60">
-        Aucun coût salarial sur cette année (Config Salaires vide et aucune saisie) : les graphiques apparaîtront dès qu'un mois est renseigné.
-      </section>
-    );
-  }
+export default function PayrollCharts({ year, series, thresholds }: PayrollChartsProps) {
+  const data = series.map(point => ({ ...point, label: MONTH_NAMES_SHORT[point.month] }));
+  const threshold = thresholds.totalCostToRevenuePct;
+
+  const renderRatioDot = ({ cx, cy, value, index }: DotProps) => {
+    if (cx === undefined || cy === undefined || value === null || value === undefined) return <g key={`dot-${index}`} />;
+    return <circle key={`dot-${index}`} cx={cx} cy={cy} r={3.5} fill={value > threshold ? COLORS.alert : COLORS.good} stroke="#fff" strokeWidth={1.5} />;
+  };
 
   return (
-    <section className="grid gap-4 lg:grid-cols-2">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-        <h3 className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-amber-50">Évolution mensuelle (janvier → décembre)</h3>
-        <div className="h-64 sm:h-72" role="img" aria-label="Courbes brut, charges patronales et coût global sur l'année">
+    <section className="grid gap-3 lg:grid-cols-[1.3fr_1fr]">
+      <div className={PANEL}>
+        <h2 className="text-xs font-extrabold uppercase tracking-[0.1em] text-slate-900">Évolution mensuelle</h2>
+        <p className="mb-3 text-[11.5px] font-bold text-slate-400">Coût salarial importé vs CA réalisé — janvier à décembre {year}</p>
+        <div className="h-64" role="img" aria-label="Coût salarial en barres et CA réalisé en courbe, par mois">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 5, right: 8, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke="rgba(255,255,255,0.08)" />
-              <XAxis dataKey="label" tick={AXIS_STYLE} interval="preserveStartEnd" />
-              <YAxis tick={AXIS_STYLE} tickFormatter={formatAxisEuro} width={48} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={value => formatEuroSymbol(Number(value))} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line type="monotone" dataKey="gross" name="Brut" stroke="#fbbf24" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
-              <Line type="monotone" dataKey="employerCharges" name="Charges patronales" stroke="#38bdf8" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
-              <Line type="monotone" dataKey="totalCost" name="Coût global" stroke="#f472b6" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
-            </LineChart>
+            <ComposedChart data={data} margin={{ top: 5, right: 8, bottom: 0, left: 0 }}>
+              <CartesianGrid stroke={GRID_STROKE} vertical={false} />
+              <XAxis dataKey="label" tick={{ ...AXIS_STYLE, fontSize: 10 }} interval={0} />
+              <YAxis tick={{ ...AXIS_STYLE, fontSize: 10 }} tickFormatter={formatAxisEuro} width={46} />
+              <Tooltip formatter={value => formatEuroSymbol(Number(value))} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 11, fontWeight: 800 }} />
+              <Bar dataKey="totalCost" name="Coût salarial (importé)" fill={COLORS.cost} radius={[3, 3, 0, 0]} maxBarSize={22} />
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                name="CA réalisé"
+                stroke={COLORS.revenue}
+                strokeWidth={2.5}
+                dot={{ r: 3.5, fill: COLORS.revenue, stroke: '#fff', strokeWidth: 1.5 }}
+                connectNulls={false}
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-        <h3 className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-amber-50">Ratios sur CA réel</h3>
-        <div className="h-64 sm:h-72" role="img" aria-label="Courbes des ratios brut sur CA et coût global sur CA, avec seuils d'alerte">
+      <div className={PANEL}>
+        <h2 className="text-xs font-extrabold uppercase tracking-[0.1em] text-slate-900">Ratio coût / CA</h2>
+        <p className="mb-3 text-[11.5px] font-bold text-slate-400">Pointillé = seuil d'alerte configuré ({formatPercent(threshold)})</p>
+        <div className="h-64" role="img" aria-label="Ratio du coût salarial sur le CA par mois, avec seuil d'alerte">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 5, right: 8, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke="rgba(255,255,255,0.08)" />
-              <XAxis dataKey="label" tick={AXIS_STYLE} interval="preserveStartEnd" />
-              <YAxis tick={AXIS_STYLE} tickFormatter={value => `${Math.round(value)} %`} width={44} domain={['auto', 'auto']} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={value => formatPercent(Number(value))} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <ReferenceLine y={thresholds.grossToRevenuePct} stroke="#fbbf24" strokeDasharray="4 4" />
-              <ReferenceLine y={thresholds.totalCostToRevenuePct} stroke="#f472b6" strokeDasharray="4 4" />
-              <Line type="monotone" dataKey="grossToRevenuePct" name="Brut / CA" stroke="#fbbf24" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
-              <Line type="monotone" dataKey="totalCostToRevenuePct" name="Coût global / CA" stroke="#f472b6" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
+              <CartesianGrid stroke={GRID_STROKE} vertical={false} />
+              <XAxis dataKey="label" tick={{ ...AXIS_STYLE, fontSize: 10 }} interval={0} />
+              <YAxis
+                tick={{ ...AXIS_STYLE, fontSize: 10 }}
+                tickFormatter={value => `${Math.round(value)} %`}
+                width={40}
+                domain={[0, (max: number) => Math.max(Math.ceil(max / 5) * 5, Math.ceil(threshold / 5) * 5 + 5)]}
+              />
+              <Tooltip formatter={value => formatPercent(Number(value))} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+              <ReferenceLine
+                y={threshold}
+                stroke={COLORS.alert}
+                strokeDasharray="4 4"
+                strokeWidth={1.5}
+                label={{ value: `seuil ${threshold} %`, position: 'insideTopRight', fill: COLORS.alert, fontSize: 10, fontWeight: 700 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="totalCostToRevenuePct"
+                name="Coût global / CA"
+                stroke={COLORS.faint}
+                strokeWidth={2}
+                connectNulls={false}
+                dot={props => renderRatioDot(props as DotProps)}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <p className="mt-1 text-[11px] text-cyan-50/50">Traits pointillés : seuils d'alerte configurés.</p>
       </div>
     </section>
   );
