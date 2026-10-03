@@ -149,3 +149,12 @@ export const buildRollingSeries = (
 
 export const previousMonth = (year: number, month: number): { year: number; month: number } =>
   month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 };
+
+// Ligne du tableau récapitulatif annuel (mois 0-11).
+export type PayrollYearRow = {
+  month: number;
+  totalCost: number | null;
+  gross: number | null;
+  revenue: number | null;
+  totalCostToRevenuePct: number | null;
+};

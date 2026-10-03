@@ -1,12 +1,12 @@
-import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
-import { MONTH_NAMES, MONTH_NAMES_SHORT } from '@/lib/constants';
-import { sanitizeMoneyInput, parseMoneyValue } from '@/lib/money';
+import { MONTH_NAMES } from '@/lib/constants';
 
 import PayrollCharts from './components/PayrollCharts';
 import PayrollComparisonCards from './components/PayrollComparisonCards';
-import PayrollEntryForm from './components/PayrollEntryForm';
+import PayrollCorrectionSection from './components/PayrollCorrectionSection';
+import PayrollMonthlyTable from './components/PayrollMonthlyTable';
+import PayrollThresholdsPanel from './components/PayrollThresholdsPanel';
 import { usePayrollCosts } from './hooks/usePayrollCosts';
 
 type MasseSalarialeProps = {
@@ -16,15 +16,6 @@ type MasseSalarialeProps = {
 export default function MasseSalariale({ onBack }: MasseSalarialeProps) {
   const payroll = usePayrollCosts();
   const { year, month, entry, thresholds, current } = payroll;
-  const [grossThreshold, setGrossThreshold] = useState(String(thresholds.grossToRevenuePct).replace('.', ','));
-  const [totalThreshold, setTotalThreshold] = useState(String(thresholds.totalCostToRevenuePct).replace('.', ','));
-
-  const commitThresholds = () => {
-    const gross = parseMoneyValue(grossThreshold);
-    const total = parseMoneyValue(totalThreshold);
-    if (gross > 0 && total > 0) payroll.setThresholds({ grossToRevenuePct: gross, totalCostToRevenuePct: total });
-  };
-
   const years = [year - 2, year - 1, year, year + 1];
 
   return (
@@ -41,96 +32,65 @@ export default function MasseSalariale({ onBack }: MasseSalarialeProps) {
           </button>
           <div className="text-center">
             <div className="text-base font-black uppercase tracking-[0.14em] text-amber-50">Masse salariale & charges</div>
-            <div className="text-xs font-semibold text-cyan-50/60">Suivi mensuel · ratios sur CA réel · comparaisons</div>
+            <div className="text-xs font-semibold text-cyan-50/60">Coût salarial importé vs CA réel · analyse annuelle</div>
           </div>
           <div className="w-24" />
         </header>
 
-        <div className="grid gap-2 rounded-2xl border border-white/10 bg-white/[0.06] p-3">
-          <div className="flex items-center gap-2">
-            <select
-              aria-label="Année"
-              value={year}
-              onChange={event => payroll.setYear(Number(event.target.value))}
-              className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-bold text-white"
-            >
-              {years.map(y => <option key={y} value={y} className="text-slate-900">{y}</option>)}
-            </select>
-          </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {MONTH_NAMES_SHORT.map((label, index) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => payroll.setMonth(index)}
-                aria-pressed={index === month}
-                className={`shrink-0 rounded-lg px-3 py-2 text-xs font-black uppercase tracking-wider ${index === month ? 'bg-amber-400 text-slate-900' : 'bg-white/10 text-cyan-50/80 hover:bg-white/20'}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] p-3">
+          <select
+            aria-label="Année"
+            value={year}
+            onChange={event => payroll.setYear(Number(event.target.value))}
+            className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-bold text-white"
+          >
+            {years.map(y => <option key={y} value={y} className="text-slate-900">{y}</option>)}
+          </select>
+          <span className="text-xs font-semibold text-cyan-50/60">Janvier → décembre {year}</span>
         </div>
 
-        <PayrollEntryForm
-          key={`${year}-${month}-${entry ? 'saisi' : 'vide'}`}
+        <PayrollCharts series={payroll.series} thresholds={thresholds} />
+
+        <PayrollMonthlyTable
+          year={year}
+          rows={payroll.yearRows}
+          thresholds={thresholds}
+          selectedMonth={month}
+          onSelectMonth={payroll.setMonth}
+        />
+
+        {current && (
+          <div className="grid gap-3">
+            <h3 className="text-xs font-black uppercase tracking-[0.12em] text-amber-50">Détail · {MONTH_NAMES[month]} {year}</h3>
+            {entry?.note && (
+              <div className="rounded-xl border border-sky-300/30 bg-sky-400/10 px-4 py-2.5 text-xs font-semibold text-sky-100">
+                <span className="font-black uppercase tracking-wider">Note · </span>{entry.note}
+              </div>
+            )}
+            <PayrollComparisonCards
+              metrics={current}
+              vsPrevious={payroll.vsPrevious}
+              vsLastYear={payroll.vsLastYear}
+              vsBudget={payroll.vsBudget}
+              hasPrevious={payroll.hasPrevious}
+              hasLastYear={payroll.hasLastYear}
+              thresholds={thresholds}
+            />
+          </div>
+        )}
+
+        <PayrollCorrectionSection
+          year={year}
+          month={month}
+          onSelectMonth={payroll.setMonth}
           entry={entry}
           auto={payroll.auto}
           revenue={payroll.revenue}
-          monthLabel={`${MONTH_NAMES[month]} ${year}`}
           onSave={payroll.saveEntry}
           onDelete={payroll.deleteEntry}
         />
 
-        {entry?.note && (
-          <div className="rounded-xl border border-sky-300/30 bg-sky-400/10 px-4 py-2.5 text-xs font-semibold text-sky-100">
-            <span className="font-black uppercase tracking-wider">Note · </span>{entry.note}
-          </div>
-        )}
-
-        {current ? (
-          <PayrollComparisonCards
-            metrics={current}
-            vsPrevious={payroll.vsPrevious}
-            vsLastYear={payroll.vsLastYear}
-            vsBudget={payroll.vsBudget}
-            hasPrevious={payroll.hasPrevious}
-            hasLastYear={payroll.hasLastYear}
-            thresholds={thresholds}
-          />
-        ) : (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 text-center text-sm font-semibold text-cyan-50/60">
-            Aucun coût salarial pour ce mois (Config Salaires vide et pas de saisie) : renseignez Config Salaires ou saisissez le brut ci-dessus.
-          </div>
-        )}
-
-        <PayrollCharts series={payroll.series} thresholds={thresholds} />
-
-        <section className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-          <h3 className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-amber-50">Seuils d'alerte (% du CA)</h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-[11px] font-bold uppercase tracking-wider text-cyan-100/70">
-              Brut / CA
-              <input
-                inputMode="decimal"
-                value={grossThreshold}
-                onChange={event => setGrossThreshold(sanitizeMoneyInput(event.target.value))}
-                onBlur={commitThresholds}
-                className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-base font-semibold text-white outline-none focus:border-amber-300/70"
-              />
-            </label>
-            <label className="grid gap-1 text-[11px] font-bold uppercase tracking-wider text-cyan-100/70">
-              Coût global / CA
-              <input
-                inputMode="decimal"
-                value={totalThreshold}
-                onChange={event => setTotalThreshold(sanitizeMoneyInput(event.target.value))}
-                onBlur={commitThresholds}
-                className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-base font-semibold text-white outline-none focus:border-amber-300/70"
-              />
-            </label>
-          </div>
-        </section>
+        <PayrollThresholdsPanel thresholds={thresholds} onChange={payroll.setThresholds} />
       </div>
     </div>
   );

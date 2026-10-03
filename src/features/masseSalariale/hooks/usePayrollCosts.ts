@@ -64,7 +64,18 @@ export function usePayrollCosts() {
       vsBudget,
       hasPrevious: resolvedAt(prev.year, prev.month) !== null,
       hasLastYear: resolvedAt(year - 1, month) !== null,
-      series: buildRollingSeries(year, month, resolvedAt, getRevenue),
+      // 12 mois glissants se terminant en décembre = janvier→décembre de l'année affichée.
+      series: buildRollingSeries(year, 11, resolvedAt, getRevenue),
+      yearRows: Array.from({ length: 12 }, (_, m) => {
+        const metrics = metricsAt(year, m);
+        return {
+          month: m,
+          totalCost: metrics?.totalCost ?? null,
+          gross: metrics?.gross ?? null,
+          revenue: metrics?.revenue ?? null,
+          totalCostToRevenuePct: metrics?.totalCostToRevenuePct ?? null,
+        };
+      }),
     };
   }, [entries, entry, getAuto, getRevenue, year, month]);
 

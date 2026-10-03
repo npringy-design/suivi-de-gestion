@@ -26,7 +26,7 @@ export default function PayrollCharts({ series, thresholds }: PayrollChartsProps
   if (!hasData) {
     return (
       <section className="rounded-2xl border border-white/10 bg-white/[0.06] p-6 text-center text-sm font-semibold text-cyan-50/60">
-        Aucune saisie sur les 12 derniers mois : les graphiques apparaîtront dès le premier mois enregistré.
+        Aucun coût salarial sur cette année (Config Salaires vide et aucune saisie) : les graphiques apparaîtront dès qu'un mois est renseigné.
       </section>
     );
   }
@@ -34,8 +34,8 @@ export default function PayrollCharts({ series, thresholds }: PayrollChartsProps
   return (
     <section className="grid gap-4 lg:grid-cols-2">
       <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-        <h3 className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-amber-50">Évolution mensuelle (12 mois glissants)</h3>
-        <div className="h-64 sm:h-72" role="img" aria-label="Courbes brut, charges patronales et coût global sur 12 mois">
+        <h3 className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-amber-50">Évolution mensuelle (janvier → décembre)</h3>
+        <div className="h-64 sm:h-72" role="img" aria-label="Courbes brut, charges patronales et coût global sur l'année">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 5, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid stroke="rgba(255,255,255,0.08)" />
