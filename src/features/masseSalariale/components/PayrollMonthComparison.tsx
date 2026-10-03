@@ -1,7 +1,10 @@
-import { MONTH_NAMES } from '@/lib/constants';
-import { formatDecimal, formatEuroSymbol, formatPercent } from '@/lib/formatters';
+import { MONTH_NAMES, MONTH_NAMES_SHORT } from '@/lib/constants';
 
-import type { PayrollComparison, PayrollIndicatorKey, PayrollMetrics } from '../payrollCalculations';
+import { computeVariation } from '../payrollCalculations';
+import type { PayrollComparison, PayrollMetrics } from '../payrollCalculations';
+import { ESTIMATE_HINT, PAYROLL_MEASURES } from '../payrollMeasures';
+import type { PayrollDetailRow, PayrollMeasure } from '../payrollMeasures';
+import PayrollVariation from './PayrollVariation';
 
 export type PayrollMonthDetail = {
   current: PayrollMetrics | null;
@@ -12,81 +15,66 @@ export type PayrollMonthDetail = {
 type PayrollMonthComparisonProps = {
   year: number;
   month: number;
+  measure: PayrollMeasure;
   detail: PayrollMonthDetail;
 };
 
-const euro = (value: number | null | undefined) => (value == null ? '—' : formatEuroSymbol(value));
+const cell = 'px-2 py-1.5 text-right tabular-nums';
 
-type BadgeTone = 'better' | 'worse' | 'flat';
+const valueOf = (row: PayrollDetailRow, metrics: PayrollMetrics | null) => (metrics ? row.value(metrics) : null);
+const isEmpty = (value: number | null) => value === null || Math.abs(value) < 0.005;
 
-const TONE_CLASS: Record<BadgeTone, string> = {
-  better: 'bg-emerald-700/10 text-emerald-700',
-  worse: 'bg-pink-700/10 text-pink-700',
-  flat: 'bg-slate-900/10 text-slate-500',
-};
-
-// Une baisse du coût est affichée en vert, une hausse en rose.
-function Badge({ pct, label }: { pct: number | null | undefined; label: string }) {
-  if (pct == null) return <span className={`rounded-full px-2.5 py-0.5 text-[11.5px] font-extrabold ${TONE_CLASS.flat}`}>{label} —</span>;
-  const tone: BadgeTone = Math.abs(pct) < 0.05 ? 'flat' : pct < 0 ? 'better' : 'worse';
+function DetailCell({ row, metrics, className }: { row: PayrollDetailRow; metrics: PayrollMetrics | null; className: string }) {
+  const value = valueOf(row, metrics);
+  const estimated = value !== null && metrics !== null && row.isEstimated?.(metrics) === true;
   return (
-    <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11.5px] font-extrabold ${TONE_CLASS[tone]}`}>
-      {label} {pct > 0 ? '+' : ''}{pct.toFixed(1).replace('.', ',')} %
-    </span>
+    <td className={className} title={estimated ? ESTIMATE_HINT : undefined}>
+      {value === null ? '—' : `${estimated ? '~' : ''}${row.formatValue(value)}`}
+    </td>
   );
 }
 
-const ESTIMATE_HINT = 'estimation : forfaits jour selon le réglage, réimporter le PDF pour l\'exact';
-
-// Une valeur estimée (ETP des mois importés avant l'ETP exact) s'affiche avec « ~ » et une infobulle.
-const withEstimate = (value: number | null | undefined, estimated: boolean | undefined, format: (v: number) => string) =>
-  value == null ? { text: '—' } : { text: `${estimated ? '~' : ''}${format(value)}`, hint: estimated ? ESTIMATE_HINT : undefined };
-
-function Side({ title, metrics }: { title: string; metrics: PayrollMetrics | null }) {
-  const rows: Array<{ label: string; text: string; hint?: string }> = [
-    { label: 'Coût salarial global', text: euro(metrics?.totalCost) },
-    { label: 'Brut', text: euro(metrics?.gross) },
-    { label: 'Charges patronales', text: euro(metrics?.employerCharges) },
-    { label: '% charges patronales', text: metrics?.chargesRatePct == null ? '—' : formatPercent(metrics.chargesRatePct) },
-    { label: 'ETP', ...withEstimate(metrics?.etp, metrics?.etpEstimated, value => formatDecimal(value, 2)) },
-    { label: 'Coût par ETP', ...withEstimate(metrics?.costPerEtp, metrics?.etpEstimated, formatEuroSymbol) },
-  ];
-  return (
-    <div className="grid gap-2">
-      <div className="text-sm font-black uppercase tracking-wide text-slate-500">{title}</div>
-      {rows.map(({ label, text, hint }) => (
-        <div key={label} className="flex justify-between gap-3 text-[12.5px]">
-          <span className="font-bold text-slate-400">{label}</span>
-          <span title={hint} className={`font-extrabold tabular-nums text-slate-900 ${hint ? 'cursor-help' : ''}`}>{text}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export default function PayrollMonthComparison({ year, month, detail }: PayrollMonthComparisonProps) {
-  const { current, lastYear, vsLastYear } = detail;
-  const monthName = MONTH_NAMES[month];
-  const pctOf = (key: PayrollIndicatorKey) => vsLastYear[key]?.pct;
+// Détail du mois : N-1 face à N, lignes définies par grandeur (PAYROLL_MEASURES[measure].detailRows).
+export default function PayrollMonthComparison({ year, month, measure, detail }: PayrollMonthComparisonProps) {
+  const { current, lastYear } = detail;
 
   if (!current) {
     return <p className="m-0 text-[11.5px] font-bold text-slate-400">Aucun coût salarial pour ce mois : comparatif disponible une fois le coût importé.</p>;
   }
 
+  const rows = PAYROLL_MEASURES[measure].detailRows.filter(
+    row => !row.hideWhenEmpty || !(isEmpty(valueOf(row, current)) && isEmpty(valueOf(row, lastYear))),
+  );
+  const shortMonth = MONTH_NAMES_SHORT[month];
+
   return (
-    <div className="grid items-center gap-3.5 sm:grid-cols-[1fr_auto_1fr]">
-      <Side title={`${monthName} ${year - 1} (N-1)`} metrics={lastYear} />
-      <div className="grid justify-items-center gap-2.5 text-center">
-        <div className="text-xl font-black text-slate-400">→</div>
-        <div className="grid gap-1">
-          <Badge pct={pctOf('totalCost')} label="coût global" />
-          <Badge pct={pctOf('gross')} label="brut" />
-          <Badge pct={pctOf('employerCharges')} label="charges" />
-          <Badge pct={pctOf('etp')} label="ETP" />
-          <Badge pct={pctOf('costPerEtp')} label="coût/ETP" />
-        </div>
-      </div>
-      <Side title={`${monthName} ${year}`} metrics={current} />
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-[12px]">
+        <thead>
+          <tr className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-slate-400">
+            <th className="px-2 pb-1.5 text-left">{MONTH_NAMES[month]}</th>
+            <th className="px-2 pb-1.5 text-right">{shortMonth} {year - 1}</th>
+            <th className="px-2 pb-1.5 text-right">{shortMonth} {year}</th>
+            <th className="px-2 pb-1.5 text-right">Écart</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(row => {
+            const variation = computeVariation(valueOf(row, current), valueOf(row, lastYear), row.kind === 'ratio');
+            return (
+              <tr key={row.key} className="border-t border-slate-900/10 font-bold text-slate-900">
+                <td className="px-2 py-1.5 text-left font-bold text-slate-500">{row.label}</td>
+                {/* computeVariation(courant, référence) : l'écart est courant − N-1 */}
+                <DetailCell row={row} metrics={lastYear} className={`${cell} text-slate-500`} />
+                <DetailCell row={row} metrics={current} className={`${cell} font-extrabold`} />
+                <td className={cell}>
+                  <PayrollVariation delta={variation?.delta ?? null} pct={variation?.pct ?? null} formatDelta={row.formatDelta} />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

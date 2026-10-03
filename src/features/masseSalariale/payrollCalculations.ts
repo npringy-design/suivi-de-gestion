@@ -21,6 +21,7 @@ export type PayrollMetrics = {
   employerCharges: number | null;
   totalCost: number | null; // brut + charges patronales
   chargesRatePct: number | null; // charges / brut
+  hours: number | null; // heures hors forfaits jour (PDF), saisie prioritaire
   etp: number | null;
   etpEstimated: boolean;
   costPerEtp: number | null; // coût global / ETP
@@ -81,6 +82,7 @@ export const computePayrollMetrics = (resolved: ResolvedPayroll | null, revenue:
     employerCharges,
     totalCost,
     chargesRatePct: gross !== null && employerCharges !== null ? ratioPct(employerCharges, gross) : null,
+    hours: resolved.hours,
     etp: etp ?? null,
     etpEstimated: resolved.etpEstimated ?? false,
     costPerEtp: totalCost !== null && etp && etp > 0 ? totalCost / etp : null,
