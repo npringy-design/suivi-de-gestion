@@ -551,8 +551,10 @@ export type PayrollEmployeeLine = {
 };
 
 export type PayrollMonthEntry = {
-  gross: number; // masse salariale brute totale
-  employerCharges: number; // charges patronales totales
+  // Brut et charges saisis : facultatifs. Le coût global (brut + charges) est repris automatiquement
+  // de Config Salaires ; saisir le brut suffit alors à en déduire les charges.
+  gross?: number; // masse salariale brute totale
+  employerCharges?: number; // charges patronales totales
   hours?: number; // heures normales + majorées
   budgetGross?: number; // budget masse salariale brute (optionnel)
   budgetEmployerCharges?: number; // budget charges patronales (optionnel)

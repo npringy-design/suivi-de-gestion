@@ -21,7 +21,7 @@ const formatAxisEuro = (value: number) => `${Math.round(value / 1000)} k€`;
 
 export default function PayrollCharts({ series, thresholds }: PayrollChartsProps) {
   const data = toChartData(series);
-  const hasData = series.some(point => point.gross !== null);
+  const hasData = series.some(point => point.totalCost !== null);
 
   if (!hasData) {
     return (

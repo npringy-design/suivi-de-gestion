@@ -2,10 +2,20 @@ import type { PayrollMonthEntry } from '@/types/dataTypes';
 
 import { payrollMonthKey } from './payrollDefaults';
 
+// Valeurs reprises automatiquement de Config Salaires (somme des salariés du mois).
+export type AutoPayroll = { totalCost: number; hours: number };
+
+export type ResolvedPayroll = {
+  gross: number | null;
+  employerCharges: number | null;
+  totalCost: number | null;
+  hours: number | null;
+};
+
 export type PayrollMetrics = {
-  gross: number;
-  employerCharges: number;
-  totalCost: number; // brut + charges patronales
+  gross: number | null;
+  employerCharges: number | null;
+  totalCost: number | null; // brut + charges patronales
   chargesRatePct: number | null; // charges / brut
   hourlyCost: number | null; // coût global / heures
   revenue: number | null; // CA réel du mois (null si indisponible)
@@ -25,19 +35,40 @@ export type PayrollComparison = Partial<Record<PayrollIndicatorKey, PayrollVaria
 const ratioPct = (numerator: number, denominator: number | null | undefined): number | null =>
   denominator && denominator > 0 ? (numerator / denominator) * 100 : null;
 
-export const computePayrollMetrics = (entry: PayrollMonthEntry | undefined, revenue: number | null): PayrollMetrics | null => {
-  if (!entry) return null;
-  const totalCost = entry.gross + entry.employerCharges;
+// Priorité à la saisie manuelle ; le coût global de Config Salaires complète ce qui manque
+// (charges = coût global − brut, ou brut = coût global − charges).
+export const resolvePayroll = (entry: PayrollMonthEntry | undefined, auto: AutoPayroll | null): ResolvedPayroll | null => {
+  const autoTotal = auto && auto.totalCost > 0 ? auto.totalCost : null;
+  const hours = entry?.hours ?? (auto && auto.hours > 0 ? auto.hours : null);
+  let gross = entry?.gross ?? null;
+  let employerCharges = entry?.employerCharges ?? null;
+  let totalCost: number | null = null;
+
+  if (gross !== null && employerCharges !== null) {
+    totalCost = gross + employerCharges;
+  } else if (autoTotal !== null) {
+    totalCost = autoTotal;
+    if (gross !== null) employerCharges = autoTotal - gross;
+    else if (employerCharges !== null) gross = autoTotal - employerCharges;
+  }
+
+  if (gross === null && employerCharges === null && totalCost === null) return null;
+  return { gross, employerCharges, totalCost, hours };
+};
+
+export const computePayrollMetrics = (resolved: ResolvedPayroll | null, revenue: number | null): PayrollMetrics | null => {
+  if (!resolved) return null;
+  const { gross, employerCharges, totalCost, hours } = resolved;
   const safeRevenue = revenue && revenue > 0 ? revenue : null;
   return {
-    gross: entry.gross,
-    employerCharges: entry.employerCharges,
+    gross,
+    employerCharges,
     totalCost,
-    chargesRatePct: ratioPct(entry.employerCharges, entry.gross),
-    hourlyCost: entry.hours && entry.hours > 0 ? totalCost / entry.hours : null,
+    chargesRatePct: gross !== null && employerCharges !== null ? ratioPct(employerCharges, gross) : null,
+    hourlyCost: totalCost !== null && hours && hours > 0 ? totalCost / hours : null,
     revenue: safeRevenue,
-    grossToRevenuePct: ratioPct(entry.gross, safeRevenue),
-    totalCostToRevenuePct: ratioPct(totalCost, safeRevenue),
+    grossToRevenuePct: gross !== null ? ratioPct(gross, safeRevenue) : null,
+    totalCostToRevenuePct: totalCost !== null ? ratioPct(totalCost, safeRevenue) : null,
   };
 };
 
@@ -92,7 +123,7 @@ export type PayrollSeriesPoint = {
 export const buildRollingSeries = (
   endYear: number,
   endMonth: number,
-  entries: Record<string, PayrollMonthEntry>,
+  getResolved: (year: number, month: number) => ResolvedPayroll | null,
   getRevenue: (year: number, month: number) => number | null,
 ): PayrollSeriesPoint[] => {
   const points: PayrollSeriesPoint[] = [];
@@ -101,7 +132,7 @@ export const buildRollingSeries = (
     const year = Math.floor(index / 12);
     const month = index % 12;
     const key = payrollMonthKey(year, month);
-    const metrics = computePayrollMetrics(entries[key], getRevenue(year, month));
+    const metrics = computePayrollMetrics(getResolved(year, month), getRevenue(year, month));
     points.push({
       key,
       year,

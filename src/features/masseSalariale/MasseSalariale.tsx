@@ -75,6 +75,7 @@ export default function MasseSalariale({ onBack }: MasseSalarialeProps) {
         <PayrollEntryForm
           key={`${year}-${month}-${entry ? 'saisi' : 'vide'}`}
           entry={entry}
+          auto={payroll.auto}
           revenue={payroll.revenue}
           monthLabel={`${MONTH_NAMES[month]} ${year}`}
           onSave={payroll.saveEntry}
@@ -99,7 +100,7 @@ export default function MasseSalariale({ onBack }: MasseSalarialeProps) {
           />
         ) : (
           <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 text-center text-sm font-semibold text-cyan-50/60">
-            Saisissez le brut et les charges du mois pour afficher les indicateurs et comparaisons.
+            Aucun coût salarial pour ce mois (Config Salaires vide et pas de saisie) : renseignez Config Salaires ou saisissez le brut ci-dessus.
           </div>
         )}
 

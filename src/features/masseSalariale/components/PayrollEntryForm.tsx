@@ -4,10 +4,12 @@ import { formatDecimal, formatEuroSymbol, formatPercent } from '@/lib/formatters
 import { parseMoneyValue, sanitizeMoneyInput } from '@/lib/money';
 import type { PayrollMonthEntry } from '@/types/dataTypes';
 
-import type { PayrollMetrics } from '../payrollCalculations';
+import { computePayrollMetrics, resolvePayroll } from '../payrollCalculations';
+import type { AutoPayroll } from '../payrollCalculations';
 
 type PayrollEntryFormProps = {
   entry: PayrollMonthEntry | undefined;
+  auto: AutoPayroll | null;
   revenue: number | null;
   monthLabel: string;
   onSave: (entry: PayrollMonthEntry) => void;
@@ -45,25 +47,9 @@ function Computed({ label, value }: { label: string; value: string }) {
   );
 }
 
-// Aperçu en direct, calculé à partir des champs saisis (avant enregistrement).
-const previewMetrics = (gross: number, charges: number, hours: number | undefined, revenue: number | null): PayrollMetrics => {
-  const totalCost = gross + charges;
-  const safeRevenue = revenue && revenue > 0 ? revenue : null;
-  return {
-    gross,
-    employerCharges: charges,
-    totalCost,
-    chargesRatePct: gross > 0 ? (charges / gross) * 100 : null,
-    hourlyCost: hours && hours > 0 ? totalCost / hours : null,
-    revenue: safeRevenue,
-    grossToRevenuePct: safeRevenue ? (gross / safeRevenue) * 100 : null,
-    totalCostToRevenuePct: safeRevenue ? (totalCost / safeRevenue) * 100 : null,
-  };
-};
-
 const pct = (value: number | null) => (value === null ? '—' : formatPercent(value));
 
-export default function PayrollEntryForm({ entry, revenue, monthLabel, onSave, onDelete }: PayrollEntryFormProps) {
+export default function PayrollEntryForm({ entry, auto, revenue, monthLabel, onSave, onDelete }: PayrollEntryFormProps) {
   const [gross, setGross] = useState(toInput(entry?.gross));
   const [charges, setCharges] = useState(toInput(entry?.employerCharges));
   const [hours, setHours] = useState(toInput(entry?.hours));
@@ -72,20 +58,23 @@ export default function PayrollEntryForm({ entry, revenue, monthLabel, onSave, o
   const [note, setNote] = useState(entry?.note ?? '');
   const [saved, setSaved] = useState(false);
 
-  const grossValue = parseMoneyValue(gross);
-  const chargesValue = parseMoneyValue(charges);
-  const hoursValue = toOptional(hours);
-  const preview = previewMetrics(grossValue, chargesValue, hoursValue, revenue);
-  const canSave = gross.trim() !== '' && charges.trim() !== '';
+  const draft: PayrollMonthEntry = {
+    gross: toOptional(gross),
+    employerCharges: toOptional(charges),
+    hours: toOptional(hours),
+  };
+  // Aperçu en direct (avant enregistrement), avec reprise de Config Salaires pour ce qui manque.
+  const preview = computePayrollMetrics(resolvePayroll(draft, auto), revenue);
+  const canSave = [gross, charges, hours, budgetGross, budgetCharges, note].some(value => value.trim() !== '');
 
   const handleSave = () => {
     if (!canSave) return;
     onSave({
       // Les lignes par salarié (futur) sont conservées telles quelles à l'enregistrement.
       ...entry,
-      gross: grossValue,
-      employerCharges: chargesValue,
-      hours: hoursValue,
+      gross: draft.gross,
+      employerCharges: draft.employerCharges,
+      hours: draft.hours,
       budgetGross: toOptional(budgetGross),
       budgetEmployerCharges: toOptional(budgetCharges),
       note: note.trim() === '' ? undefined : note.trim(),
@@ -103,18 +92,24 @@ export default function PayrollEntryForm({ entry, revenue, monthLabel, onSave, o
         </div>
       </div>
 
+      <p className="mb-3 rounded-lg bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-50/80">
+        {auto
+          ? <>Repris de Config Salaires : coût global <strong className="text-amber-50">{formatEuroSymbol(auto.totalCost)}</strong> · <strong className="text-amber-50">{formatDecimal(auto.hours, 2)} h</strong>. Saisissez le brut : les charges patronales en sont déduites (ou saisissez-les pour forcer une valeur).</>
+          : 'Aucun coût salarial dans Config Salaires pour ce mois : saisissez le brut et les charges.'}
+      </p>
+
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="Masse salariale brute (€)" value={gross} onChange={setGross} />
-        <Field label="Charges patronales (€)" value={charges} onChange={setCharges} />
-        <Field label="Heures totales (optionnel)" value={hours} onChange={setHours} hint="Normales + majorées" />
+        <Field label="Charges patronales (€)" value={charges} onChange={setCharges} hint={charges === '' && preview?.employerCharges != null ? `Déduit : ${formatEuroSymbol(preview.employerCharges)}` : undefined} />
+        <Field label="Heures totales (optionnel)" value={hours} onChange={setHours} hint={hours === '' && auto?.hours ? `Config Salaires : ${formatDecimal(auto.hours, 2)} h` : 'Normales + majorées'} />
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
-        <Computed label="% charges patronales" value={pct(preview.chargesRatePct)} />
-        <Computed label="Coût salarial global" value={formatEuroSymbol(preview.totalCost)} />
-        <Computed label="Brut / CA" value={pct(preview.grossToRevenuePct)} />
-        <Computed label="Coût global / CA" value={pct(preview.totalCostToRevenuePct)} />
-        <Computed label="Coût horaire moyen" value={preview.hourlyCost === null ? '—' : `${formatDecimal(preview.hourlyCost, 2)} €/h`} />
+        <Computed label="% charges patronales" value={pct(preview?.chargesRatePct ?? null)} />
+        <Computed label="Coût salarial global" value={preview?.totalCost == null ? '—' : formatEuroSymbol(preview.totalCost)} />
+        <Computed label="Brut / CA" value={pct(preview?.grossToRevenuePct ?? null)} />
+        <Computed label="Coût global / CA" value={pct(preview?.totalCostToRevenuePct ?? null)} />
+        <Computed label="Coût horaire moyen" value={preview?.hourlyCost == null ? '—' : `${formatDecimal(preview.hourlyCost, 2)} €/h`} />
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
