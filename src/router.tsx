@@ -36,7 +36,6 @@ const RealiseEdgAnneeFiscale = lazy(() => import('@/features/edg/RealiseEdgAnnee
 const MiseEnPaiement = lazy(() => import('@/features/facturation/MiseEnPaiement'));
 const FactureDevis = lazy(() => import('@/features/facturation/FactureDevis'));
 const ConfigSalaires = lazy(() => import('@/features/salaires/ConfigSalaires'));
-const CalculetteSalaires = lazy(() => import('@/features/salaires/CalculetteSalaires'));
 const ConfigurationChiffre2025 = lazy(() => import('@/features/salaires/ConfigurationChiffre2025'));
 const MasseSalariale = lazy(() => import('@/features/masseSalariale/MasseSalariale'));
 const VisuelVacances = lazy(() => import('@/features/salaires/VisuelVacances'));
@@ -195,7 +194,6 @@ const router = createHashRouter([
   { path: '/mise-en-paiement/:month', element: <MonthRouteWithSetMonth Component={MiseEnPaiement} backPath='/' /> },
   { path: '/facture-devis', element: <PageRoute Component={FactureDevis} backPath='/' /> },
   { path: '/config-salaires', element: <PageRoute Component={ConfigSalaires} backPath='/' /> },
-  { path: '/calculette-salaires', element: <PageRoute Component={CalculetteSalaires} backPath='/' /> },
   { path: '/configuration-chiffre-2025', element: <PageRoute Component={ConfigurationChiffre2025} backPath='/' /> },
   { path: '/visuel-vacances', element: <PageRoute Component={VisuelVacances} backPath='/' /> },
   { path: '/edg-annuel-tabs', element: <PageRoute Component={EdgAnnuelTabs} backPath='/' /> },

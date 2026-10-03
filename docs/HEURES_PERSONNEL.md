@@ -55,18 +55,13 @@ La logique commune est centralisee dans `src/utils.ts`, fonction `parseHourInput
 
 Cette fonction convertit les formats heures/minutes en nombre decimal utilisable pour les calculs.
 
-## Referentiel personnel
+## Categorie et service des salaries
 
-La page `Info personnel` sert a faire le lien entre le nom lu dans un PDF de paie et la colonne du suivi quotidien.
+Il n'y a plus de liste de personnel a maintenir : chaque ligne du PDF propose sa categorie (cadre, agent de maitrise, niveau I et II, niveau III, apprenti) et son service (salle ou cuisine).
 
-Chaque ligne contient :
-
-- nom attendu dans le PDF ;
-- statut : cadre, agent de maitrise, niveau I et II, niveau III, apprenti ;
-- section : salle ou cuisine ;
-- alias eventuels pour les variantes de nom.
-
-Exemple : `Pringy Nicolas | Cadre | Salle`.
+1. Si le meme nom (casse, accents et ordre prenom/nom ignores) figure dans un import precedent (`salariesConfig` du mois cible, puis des mois precedents), sa categorie et son service sont repris : statut `Reconnu`.
+2. Sinon ils sont deduits de l'emploi du PDF avec la table `payrollJobCategories.ts` : statut `Nouveau, a confirmer`.
+3. Categorie et service restent modifiables par liste deroulante sur toutes les lignes de l'apercu.
 
 ## Import PDF salaires
 
@@ -77,8 +72,9 @@ Mecanique retenue :
 - le PDF est lu localement ;
 - le PDF n'est pas conserve ;
 - le texte brut de l'import n'est pas conserve ;
-- les noms sont compares au referentiel `Info personnel` ;
-- pour chaque salarie retrouve, l'import lit la colonne `Total heures` ;
+- l'apercu part des lignes du PDF (matricule, nom, entree, sortie eventuelle, emploi, periode) ;
+- un salarie avec une date de sortie est ignore par defaut des taux horaires (son cout inclut le solde de tout compte), reintegrable d'un clic ; il reste compte dans les totaux de bas de page (`salariesConfig.totals`) ;
+- pour chaque ligne retenue, l'import lit la colonne `Total heures` ;
 - le cout utilise est la colonne `Cout global` ;
 - le taux horaire est calcule avec provision CP : `cout global * coefficient CP / heures` ;
 - coefficient CP cadre : `1,18` ;

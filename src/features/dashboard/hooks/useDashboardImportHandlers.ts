@@ -7,9 +7,9 @@ import type {
   DayDataTheorique,
   MonthData,
   MonthDataSalariesConfig,
-  PersonnelInfo,
   PersonnelSchema,
 } from '@/contexts/DataContext';
+import { buildCategoryReference } from '@/features/dashboard/importHelpers/payrollCategoryReference';
 import {
   buildPayrollCategories,
   buildPayrollRowsFromText,
@@ -17,7 +17,6 @@ import {
   extractPayrollPageTotals,
   getPayrollTargetPeriodFromText,
 } from '@/features/dashboard/importHelpers/personnelSalaryImport';
-import { applyImportedPersonnel } from '@/features/dashboard/importHelpers/salaryImportApply';
 import type { SalaryImportPreview, SalaryImportPreviewRow } from '@/types/dataTypes';
 import { parseRecapPeriodeCaisse } from '@/features/caisse/caisseRecapPeriodeParser';
 import type {
@@ -109,8 +108,8 @@ type UseDashboardImportHandlersParams = {
   importEdgRealise: (valuesByMonth: Record<number, Record<string, string>>) => void;
   markMonthsAsLoaded: (year: number, months: number[]) => void;
   saveNow: () => Promise<void>;
-  personnelInfos: PersonnelInfo[];
-  updatePersonnelInfos: (rows: PersonnelInfo[]) => void;
+  // Tous les mois chargés : le dernier import où figure un nom donne sa catégorie et son service.
+  allData: Record<number, Record<number, MonthData>>;
 };
 
 export function useDashboardImportHandlers({
@@ -151,8 +150,7 @@ export function useDashboardImportHandlers({
   importEdgRealise,
   markMonthsAsLoaded,
   saveNow,
-  personnelInfos,
-  updatePersonnelInfos,
+  allData,
 }: UseDashboardImportHandlersParams) {
   const pendingDemarquesRef = React.useRef<Array<{
     date: string; personnel: number; operationnel: number; explication: string;
@@ -1443,8 +1441,6 @@ export function useDashboardImportHandlers({
     setSalaryImportStatus(`Lecture de ${files.length} PDF salaires...`);
 
     try {
-      const configuredPersonnel = personnelInfos.filter(item => item.nom.trim());
-
       const errors: string[] = [];
       const newPreviews: SalaryImportPreview[] = [];
 
@@ -1457,9 +1453,10 @@ export function useDashboardImportHandlers({
             errors.push(`${file.name} : mois non détecté`);
             continue;
           }
-          // On part des lignes du PDF : fiches Info personnel rapprochées, nouveaux salariés proposés,
-          // sortants (date de sortie) exclus par défaut des taux horaires.
-          const pdfRows = buildPayrollRowsFromText(text, configuredPersonnel);
+          // On part des lignes du PDF : catégorie et service repris du dernier import où le nom figure, sinon déduits
+          // de l'emploi ; sortants (date de sortie) exclus par défaut des taux horaires.
+          const reference = buildCategoryReference(allData, payrollPeriod.targetYear, payrollPeriod.targetMonth);
+          const pdfRows = buildPayrollRowsFromText(text, reference);
           if (pdfRows.length === 0) {
             errors.push(`${file.name} : aucune ligne salarié reconnue`);
             continue;
@@ -1469,7 +1466,6 @@ export function useDashboardImportHandlers({
             errors.push(`${file.name} : mois ${payrollPeriod.targetLabel} verrouillé`);
             continue;
           }
-          const matchedIds = new Set(pdfRows.filter(row => !row.isNew).map(row => row.personnel.id));
           newPreviews.push({
             id: `${Date.now()}-salaires-${fileIndex}-${file.name}`,
             fileName: file.name,
@@ -1477,7 +1473,6 @@ export function useDashboardImportHandlers({
             targetLabel: payrollPeriod.targetLabel,
             targetMonth,
             rows: buildSalaryPreviewRows(pdfRows),
-            availablePersonnel: configuredPersonnel.filter(personnel => !matchedIds.has(personnel.id)),
             totals: extractPayrollPageTotals(text),
           });
         } catch {
@@ -1492,8 +1487,8 @@ export function useDashboardImportHandlers({
         const previewRows = newPreviews.flatMap(preview => preview.rows);
         const leaverCount = previewRows.filter(row => row.exitDate).length;
         const newCount = previewRows.filter(row => row.origin === 'new' && !row.exitDate).length;
-        const foundCount = previewRows.filter(row => row.origin === 'matched' && !row.exitDate).length;
-        statusParts.push(`Aperçu prêt : ${foundCount} rapproché(s), ${newCount} nouveau(x) à confirmer, ${leaverCount} sortant(s) exclu(s) des taux horaires — vérifiez puis validez.`);
+        const foundCount = previewRows.filter(row => row.origin === 'recognized' && !row.exitDate).length;
+        statusParts.push(`Aperçu prêt : ${foundCount} reconnu(s), ${newCount} nouveau(x) à confirmer, ${leaverCount} sortant(s) exclu(s) des taux horaires — vérifiez puis validez.`);
       }
       if (errors.length > 0) statusParts.push(`Erreurs : ${errors.join(', ')}`);
       setSalaryImportStatus(statusParts.join(' — ') || 'Aucun fichier traité.');
@@ -1524,7 +1519,7 @@ export function useDashboardImportHandlers({
       return;
     }
 
-    const importedRows = preview.rows.filter(row => (row.status === 'matched' || row.status === 'manual' || row.status === 'new') && row.heures > 0 && row.coutGlobal > 0);
+    const importedRows = preview.rows.filter(row => (row.status === 'recognized' || row.status === 'manual' || row.status === 'new') && row.heures > 0 && row.coutGlobal > 0);
     if (importedRows.length === 0) {
       setSalaryImportStatus(`Erreur : ${preview.fileName} : aucun salarié avec heures et coût global à importer`);
       return;
@@ -1535,14 +1530,6 @@ export function useDashboardImportHandlers({
     const categories = buildPayrollCategories(importedRows);
     updateSalariesConfig(preview.targetMonth, { ...(currentConfig || { locked: false }), categories, totals: preview.totals ?? undefined });
 
-    // Nouveaux salariés confirmés : fiche créée dans Info personnel pour être reconnue aux imports suivants.
-    const { personnelInfos: nextPersonnelInfos, createdCount, savedAliases } = applyImportedPersonnel(
-      personnelInfos,
-      importedRows,
-      () => `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    );
-    if (createdCount > 0 || savedAliases > 0) updatePersonnelInfos(nextPersonnelInfos);
-
     setMonth(preview.targetMonth);
     setSelectedMonth(preview.targetMonth);
     setSalaryImportPreviews(prev => prev.filter(item => item.id !== previewId));
@@ -1550,8 +1537,6 @@ export function useDashboardImportHandlers({
     const excludedLeavers = preview.rows.filter(row => row.status === 'ignored' && row.exitDate).length;
     const incomplete = preview.rows.filter(row => row.status === 'manual' && (row.heures <= 0 || row.coutGlobal <= 0)).length;
     const statusParts = [`Paie ${preview.sourceLabel} importée sur ${preview.targetLabel} : ${importedRows.length} salarié(s)`];
-    if (savedAliases > 0) statusParts.push(`${savedAliases} alias mémorisé(s)`);
-    if (createdCount > 0) statusParts.push(`${createdCount} nouvelle(s) fiche(s) créée(s) dans Info personnel`);
     if (excludedLeavers > 0) statusParts.push(`${excludedLeavers} sortant(s) exclu(s) des taux horaires`);
     if (incomplete > 0) statusParts.push(`Attention : ${incomplete} ligne(s) sans heures ou coût non importée(s)`);
     setSalaryImportStatus(statusParts.join(' — '));

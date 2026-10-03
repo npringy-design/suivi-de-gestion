@@ -4,7 +4,6 @@ export type CloudAppState = {
   allData?: unknown;
   config2025?: unknown;
   customEvents?: unknown;
-  personnelInfos?: unknown;
   edgChargesConfig?: unknown;
   companySettings?: unknown;
   payrollCosts?: unknown;
@@ -18,7 +17,6 @@ export type CloudSaveOptions = {
   dirtySegments?: {
     config2025?: boolean;
     customEvents?: boolean;
-    personnelInfos?: boolean;
     edgChargesConfig?: boolean;
     companySettings?: boolean;
     payrollCosts?: boolean;
@@ -42,7 +40,6 @@ type CloudSegmentManifest = {
   segments: {
     config2025: boolean;
     customEvents: boolean;
-    personnelInfos: boolean;
     edgChargesConfig: boolean;
     companySettings?: boolean;
     payrollCosts?: boolean;
@@ -165,7 +162,6 @@ const monthSegmentKey = (year: string | number, month: string | number) => {
 };
 const configSegmentKey = `${segmentedPrefix}:config2025`;
 const customEventsSegmentKey = `${segmentedPrefix}:customEvents`;
-const personnelInfosSegmentKey = `${segmentedPrefix}:personnelInfos`;
 const edgChargesConfigSegmentKey = `${segmentedPrefix}:edgChargesConfig`;
 const companySettingsSegmentKey = `${segmentedPrefix}:companySettings`;
 const payrollCostsSegmentKey = `${segmentedPrefix}:payrollCosts`;
@@ -181,10 +177,9 @@ const fetchSegmentManifest = async (): Promise<CloudSegmentManifest | null> => {
 };
 
 const fetchCommonSegments = async (manifest: CloudSegmentManifest) => {
-  const [configRow, customEventsRow, personnelInfosRow, edgChargesConfigRow, companySettingsRow, payrollCostsRow] = await Promise.all([
+  const [configRow, customEventsRow, edgChargesConfigRow, companySettingsRow, payrollCostsRow] = await Promise.all([
     manifest.segments?.config2025 ? fetchStateRecord(configSegmentKey) : Promise.resolve(null),
     manifest.segments?.customEvents ? fetchStateRecord(customEventsSegmentKey) : Promise.resolve(null),
-    manifest.segments?.personnelInfos ? fetchStateRecord(personnelInfosSegmentKey) : Promise.resolve(null),
     manifest.segments?.edgChargesConfig ? fetchStateRecord(edgChargesConfigSegmentKey) : Promise.resolve(null),
     manifest.segments?.companySettings ? fetchStateRecord(companySettingsSegmentKey) : Promise.resolve(null),
     manifest.segments?.payrollCosts ? fetchStateRecord(payrollCostsSegmentKey) : Promise.resolve(null),
@@ -193,7 +188,6 @@ const fetchCommonSegments = async (manifest: CloudSegmentManifest) => {
   return {
     config2025: configRow?.value,
     customEvents: customEventsRow?.value,
-    personnelInfos: personnelInfosRow?.value,
     edgChargesConfig: edgChargesConfigRow?.value,
     companySettings: companySettingsRow?.value,
     payrollCosts: payrollCostsRow?.value,
@@ -349,7 +343,7 @@ export const saveCloudAppState = async (value: CloudAppState, options?: CloudSav
   // Avec options : seuls les snapshots marqués modifiés sont poussés.
   const shouldSaveMonth = (year: string, month: string) =>
     !options?.dirtyMonths || options.dirtyMonths.has(`${year}:${month}`);
-  const shouldSaveSegment = (segment: 'config2025' | 'customEvents' | 'personnelInfos' | 'edgChargesConfig') =>
+  const shouldSaveSegment = (segment: 'config2025' | 'customEvents' | 'edgChargesConfig') =>
     !options?.dirtySegments || options.dirtySegments[segment] === true;
 
   const monthEntries = Object.entries(allData).flatMap(([year, months]) => {
@@ -362,7 +356,6 @@ export const saveCloudAppState = async (value: CloudAppState, options?: CloudSav
 
   const config2025 = value.config2025 && typeof value.config2025 === 'object' ? value.config2025 : {};
   const customEvents = Array.isArray(value.customEvents) ? value.customEvents : [];
-  const personnelInfos = Array.isArray(value.personnelInfos) ? value.personnelInfos : [];
   const edgChargesConfig = value.edgChargesConfig && typeof value.edgChargesConfig === 'object' ? value.edgChargesConfig : {};
   const companySettings = value.companySettings && typeof value.companySettings === 'object' ? value.companySettings : null;
   const payrollCosts = value.payrollCosts && typeof value.payrollCosts === 'object' ? value.payrollCosts : null;
@@ -377,7 +370,6 @@ export const saveCloudAppState = async (value: CloudAppState, options?: CloudSav
   await Promise.all([
     shouldSaveSegment('config2025') ? saveStateRecord(configSegmentKey, config2025) : Promise.resolve(null),
     shouldSaveSegment('customEvents') ? saveStateRecord(customEventsSegmentKey, customEvents) : Promise.resolve(null),
-    shouldSaveSegment('personnelInfos') ? saveStateRecord(personnelInfosSegmentKey, personnelInfos) : Promise.resolve(null),
     shouldSaveSegment('edgChargesConfig') ? saveStateRecord(edgChargesConfigSegmentKey, edgChargesConfig) : Promise.resolve(null),
     (shouldSaveSegment as (s: string) => boolean)('companySettings') && companySettings
       ? saveStateRecord(companySettingsSegmentKey, companySettings)
@@ -394,7 +386,6 @@ export const saveCloudAppState = async (value: CloudAppState, options?: CloudSav
     segments: {
       config2025: true,
       customEvents: true,
-      personnelInfos: true,
       edgChargesConfig: true,
       companySettings: companySettings != null,
       payrollCosts: payrollCosts != null || existingManifest?.segments?.payrollCosts === true,

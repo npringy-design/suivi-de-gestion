@@ -42,7 +42,7 @@
 - **Ne pas compresser le code métier.** `dashboardCalculations.ts` et les parseurs d'import sont volontairement explicites et défensifs : la réduction de lignes n'y est pas un objectif.
 
 ### Sauvegarde cloud (DataContext)
-- La sync Supabase ne pousse que les **snapshots marqués modifiés** (`dirtyMonthKeysRef` par mois, `dirtySegmentsRef` pour config2025/customEvents/personnelInfos).
+- La sync Supabase ne pousse que les **snapshots marqués modifiés** (`dirtyMonthKeysRef` par mois, `dirtySegmentsRef` pour config2025/customEvents).
 - **Piège** : toute nouvelle donnée persistée doit passer par `updateDataForYear(month, ...)` (qui marque le mois modifié) ou marquer son segment dirty — sinon elle sera sauvée en localStorage mais **jamais poussée vers Supabase**.
 - Ne jamais réintroduire une sauvegarde de l'état complet : c'est ce qui permettait à un poste d'écraser les saisies d'un autre (appli multi-utilisateurs, bientôt multi-site).
 

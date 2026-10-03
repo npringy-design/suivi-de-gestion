@@ -206,12 +206,12 @@ export type PersonnelSchema = 'global' | 'cuisine_salle';
 export type PersonnelCategory = 'cadre' | 'maitrise' | 'niv12' | 'niv3' | 'apprenti';
 export type PersonnelDepartment = 'cuisine' | 'salle';
 
-export type PersonnelInfo = {
-  id: string;
+// Salarié d'une ligne du PDF coûts salariaux : catégorie et service proposés (dernier import ou emploi), modifiables dans l'aperçu.
+export type PayrollPerson = {
+  id: string; // identifiant de ligne dans l'aperçu (« ligne-N »)
   nom: string;
   category: PersonnelCategory;
   department: PersonnelDepartment;
-  aliases: string;
 };
 
 // Ligne du PDF salaires dont on sait extraire heures + coût global
@@ -221,21 +221,20 @@ export type PayrollCandidateLine = {
   coutGlobal: number;
 };
 
-// 'new' : ligne du PDF sans fiche Info personnel (« Nouveau, à confirmer »), fiche créée à la validation.
-export type SalaryImportRowStatus = 'matched' | 'new' | 'manual' | 'ignored';
+// 'recognized' : nom déjà présent dans un import précédent (catégorie et service repris) ;
+// 'new' : nom jamais vu, catégorie et service déduits de l'emploi (« Nouveau, à confirmer »).
+export type SalaryImportRowStatus = 'recognized' | 'new' | 'manual' | 'ignored';
 
 export type SalaryImportPreviewRow = {
-  // Fiche existante, ou brouillon (id « nouveau-N ») pour une ligne sans fiche
-  personnel: PersonnelInfo;
+  personnel: PayrollPerson;
   status: SalaryImportRowStatus;
-  // Résultat du rapprochement ligne PDF → fiche, conservé pour le tri et la création de fiche
-  origin: 'matched' | 'new';
+  // Provenance de la catégorie proposée, conservée pour le tri et pour rétablir le statut après « Ignorer »
+  origin: 'recognized' | 'new';
   // Statut à restaurer quand on annule un « Ignorer »
   statusBeforeIgnore?: Exclude<SalaryImportRowStatus, 'ignored'>;
   heures: number;
   coutGlobal: number;
   sourceLine: string;
-  saveAlias: boolean;
   // Emploi lu dans le PDF (aide à confirmer catégorie et service d'un nouveau salarié)
   jobTitle?: string;
   // Date de sortie du PDF : salarié sortant, exclu par défaut des taux horaires (solde de tout compte)
@@ -249,8 +248,6 @@ export type SalaryImportPreview = {
   targetLabel: string;
   targetMonth: number;
   rows: SalaryImportPreviewRow[];
-  // Fiches Info personnel absentes du PDF : proposées pour associer une ligne « nouveau salarié »
-  availablePersonnel: PersonnelInfo[];
   // Totaux de bas de page du PDF (null si le format n'est pas reconnu)
   totals: PayrollPageTotals | null;
 };

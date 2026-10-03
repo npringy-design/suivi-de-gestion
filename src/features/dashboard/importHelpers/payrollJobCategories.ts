@@ -1,11 +1,11 @@
 import type { PersonnelCategory, PersonnelDepartment } from '@/types/dataTypes';
 
 // Correspondance emploi du PDF (colonne entre la date d'entrée et la période) → catégorie et service,
-// utilisée pour pré-remplir un salarié sans fiche Info personnel. Les suggestions sont toujours
-// à confirmer dans l'aperçu : cette table se modifie ici, sans toucher au reste de l'import.
+// utilisée pour pré-remplir un salarié dont le nom ne figure dans aucun import précédent. Les suggestions
+// sont toujours à confirmer dans l'aperçu : cette table se modifie ici, sans toucher au reste de l'import.
 //
 // Les mots-clés sont comparés sans accent ni casse, en début de mot ; la première règle qui correspond
-// l'emporte (les plus spécifiques en premier). À ajuster avec les catégories des fiches existantes.
+// l'emporte (les plus spécifiques en premier). À ajuster avec les catégories déjà utilisées dans Config Salaires.
 
 type JobCategoryRule = { keywords: string[]; category: PersonnelCategory };
 type JobDepartmentRule = { keywords: string[]; department: PersonnelDepartment };

@@ -4,9 +4,9 @@ import { getPayrollProvisionMultiplier } from '@/features/dashboard/importHelper
 import { formatEuroSymbol } from '@/lib/formatters';
 import { parseMoneyValue } from '@/lib/money';
 import type {
+  PayrollPerson,
   PersonnelCategory,
   PersonnelDepartment,
-  PersonnelInfo,
   SalaryImportPreview,
   SalaryImportPreviewRow,
   SalaryImportRowStatus,
@@ -26,7 +26,7 @@ const SALARY_DEPARTMENT_LABELS: Record<PersonnelDepartment, string> = {
 };
 
 const SALARY_STATUS_BADGES: Record<SalaryImportRowStatus, { label: string; color: string; background: string }> = {
-  matched: { label: '✓ Trouvé', color: '#166534', background: '#f0fdf4' },
+  recognized: { label: '✓ Reconnu', color: '#166534', background: '#f0fdf4' },
   new: { label: 'Nouveau, à confirmer', color: '#92400e', background: '#fffbeb' },
   manual: { label: 'Modifié', color: '#1d4ed8', background: '#eff6ff' },
   ignored: { label: 'Ignoré', color: '#64748b', background: '#f1f5f9' },
@@ -69,12 +69,10 @@ const salarySelectStyle: React.CSSProperties = {
   background: '#fff',
 };
 
-// Statut retrouvé quand on annule un « Ignorer » : une ligne sans fiche redevient « nouveau »,
-// une ligne rapprochée (ou associée entre-temps à une fiche) redevient « trouvé » ou « modifié ».
-const restoredStatus = (row: SalaryImportPreviewRow): SalaryImportRowStatus => {
-  if (row.origin === 'new') return row.statusBeforeIgnore === 'manual' ? 'manual' : 'new';
-  return row.statusBeforeIgnore === 'manual' ? 'manual' : 'matched';
-};
+// Statut retrouvé quand on annule un « Ignorer » : « reconnu » ou « nouveau » selon la provenance de la catégorie,
+// « modifié » si la ligne avait été éditée.
+const restoredStatus = (row: SalaryImportPreviewRow): SalaryImportRowStatus =>
+  row.statusBeforeIgnore === 'manual' ? 'manual' : row.origin;
 
 type SalaryImportPreviewCardProps = {
   preview: SalaryImportPreview;
@@ -89,12 +87,10 @@ export default function SalaryImportPreviewCard({
   applySalaryImportPreview,
   discardSalaryImportPreview,
 }: SalaryImportPreviewCardProps) {
-  const usedPersonnelIds = new Set(preview.rows.map(row => row.personnel.id));
-  const freePersonnel = preview.availablePersonnel.filter(personnel => !usedPersonnelIds.has(personnel.id));
-  const foundCount = preview.rows.filter(row => row.origin === 'matched' && row.status !== 'ignored').length;
+  const recognizedCount = preview.rows.filter(row => row.origin === 'recognized' && row.status !== 'ignored').length;
   const newCount = preview.rows.filter(row => row.origin === 'new' && row.status !== 'ignored').length;
   const leaverCount = preview.rows.filter(row => row.exitDate && row.status === 'ignored').length;
-  // Lignes sans fiche en premier (à confirmer), puis le reste dans l'ordre du PDF
+  // Nouveaux salariés (à confirmer) en premier, puis le reste dans l'ordre du PDF
   const sortedRows = [...preview.rows].sort((a, b) => Number(b.origin === 'new') - Number(a.origin === 'new'));
 
   const update = (row: SalaryImportPreviewRow, updates: Partial<SalaryImportPreviewRow>) => {
@@ -105,21 +101,8 @@ export default function SalaryImportPreviewCard({
     update(row, { ...updates, status: 'manual' });
   };
 
-  const editPersonnel = (row: SalaryImportPreviewRow, updates: Partial<PersonnelInfo>) => {
+  const editPersonnel = (row: SalaryImportPreviewRow, updates: Partial<PayrollPerson>) => {
     update(row, { personnel: { ...row.personnel, ...updates } });
-  };
-
-  // Le nom du PDF est mémorisé en alias de la fiche choisie (reconnu aux imports suivants).
-  const associatePersonnel = (row: SalaryImportPreviewRow, personnelId: string) => {
-    const personnel = freePersonnel.find(item => item.id === personnelId);
-    if (!personnel) return;
-    update(row, {
-      personnel,
-      origin: 'matched',
-      status: row.status === 'new' ? 'matched' : row.status,
-      statusBeforeIgnore: row.statusBeforeIgnore === 'new' ? 'matched' : row.statusBeforeIgnore,
-      saveAlias: true,
-    });
   };
 
   const headerCellStyle: React.CSSProperties = { padding: '8px 10px', fontSize: 10, fontWeight: 900, color: '#6b21a8', textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'left', whiteSpace: 'nowrap', borderBottom: '1px solid #e9d5ff' };
@@ -132,7 +115,7 @@ export default function SalaryImportPreviewCard({
           <div style={{ marginTop: 2, fontSize: 12, fontWeight: 800, color: '#6b21a8' }}>Paie {preview.sourceLabel} → {preview.targetLabel}</div>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          <span style={salaryPillStyle('#166534', '#f0fdf4')}>✓ {foundCount} rapprochés</span>
+          <span style={salaryPillStyle('#166534', '#f0fdf4')}>✓ {recognizedCount} reconnus</span>
           <span style={salaryPillStyle('#92400e', '#fffbeb')}>{newCount} nouveaux à confirmer</span>
           <span style={salaryPillStyle('#64748b', '#f1f5f9')}>{leaverCount} sortants exclus</span>
         </div>
@@ -148,7 +131,7 @@ export default function SalaryImportPreviewCard({
         <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr>
-              {['Salarié', 'Catégorie', 'Heures', 'Coût global', 'Coût horaire', 'Ligne PDF', 'Statut'].map(label => (
+              {['Salarié', 'Catégorie / service', 'Heures', 'Coût global', 'Coût horaire', 'Ligne PDF', 'Statut'].map(label => (
                 <th key={label} style={headerCellStyle}>{label}</th>
               ))}
             </tr>
@@ -178,47 +161,32 @@ export default function SalaryImportPreviewCard({
                         Sortant le {row.exitDate}{isIgnored ? ' : exclu des taux horaires' : ' : réintégré aux taux horaires'}
                       </div>
                     )}
-                    {isNew && !isIgnored && freePersonnel.length > 0 && (
-                      <select
-                        value=""
-                        onChange={event => associatePersonnel(row, event.target.value)}
-                        style={{ ...salarySelectStyle, marginTop: 6, textDecoration: 'none' }}
-                      >
-                        <option value="">Associer à une fiche existante…</option>
-                        {freePersonnel.map(personnel => (
-                          <option key={personnel.id} value={personnel.id}>{personnel.nom}</option>
-                        ))}
-                      </select>
-                    )}
                   </td>
                   <td style={cellStyle}>
-                    {isNew && !isIgnored ? (
-                      <div style={{ display: 'grid', gap: 4, textDecoration: 'none' }}>
-                        <select
-                          value={row.personnel.category}
-                          onChange={event => editPersonnel(row, { category: event.target.value as PersonnelCategory })}
-                          style={salarySelectStyle}
-                        >
-                          {(Object.keys(SALARY_CATEGORY_LABELS) as PersonnelCategory[]).map(category => (
-                            <option key={category} value={category}>{SALARY_CATEGORY_LABELS[category]}</option>
-                          ))}
-                        </select>
-                        <select
-                          value={row.personnel.department}
-                          onChange={event => editPersonnel(row, { department: event.target.value as PersonnelDepartment })}
-                          style={salarySelectStyle}
-                        >
-                          {(Object.keys(SALARY_DEPARTMENT_LABELS) as PersonnelDepartment[]).map(department => (
-                            <option key={department} value={department}>{SALARY_DEPARTMENT_LABELS[department]}</option>
-                          ))}
-                        </select>
-                      </div>
-                    ) : (
-                      <>
-                        {SALARY_CATEGORY_LABELS[row.personnel.category]}
-                        <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700 }}>{SALARY_DEPARTMENT_LABELS[row.personnel.department]}</div>
-                      </>
-                    )}
+                    <div style={{ display: 'grid', gap: 4, textDecoration: 'none' }}>
+                      <select
+                        aria-label={`Catégorie de ${row.personnel.nom}`}
+                        disabled={isIgnored}
+                        value={row.personnel.category}
+                        onChange={event => editPersonnel(row, { category: event.target.value as PersonnelCategory })}
+                        style={salarySelectStyle}
+                      >
+                        {(Object.keys(SALARY_CATEGORY_LABELS) as PersonnelCategory[]).map(category => (
+                          <option key={category} value={category}>{SALARY_CATEGORY_LABELS[category]}</option>
+                        ))}
+                      </select>
+                      <select
+                        aria-label={`Service de ${row.personnel.nom}`}
+                        disabled={isIgnored}
+                        value={row.personnel.department}
+                        onChange={event => editPersonnel(row, { department: event.target.value as PersonnelDepartment })}
+                        style={salarySelectStyle}
+                      >
+                        {(Object.keys(SALARY_DEPARTMENT_LABELS) as PersonnelDepartment[]).map(department => (
+                          <option key={department} value={department}>{SALARY_DEPARTMENT_LABELS[department]}</option>
+                        ))}
+                      </select>
+                    </div>
                   </td>
                   <td style={{ ...cellStyle, width: 96, minWidth: 96 }}>
                     <input
@@ -281,7 +249,7 @@ export default function SalaryImportPreviewCard({
 
       {newCount > 0 && (
         <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>
-          {newCount} nouveau(x) salarié(s) : une fiche sera créée dans Info personnel à la validation (catégorie et service modifiables ci-dessus), ou associez la ligne à une fiche existante. « Ignorer » exclut la ligne.
+          {newCount} nouveau(x) salarié(s) : catégorie et service déduits de l'emploi du PDF, à confirmer avant de valider. « Ignorer » exclut la ligne.
         </div>
       )}
       {leaverCount > 0 && (

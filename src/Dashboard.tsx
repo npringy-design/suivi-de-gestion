@@ -92,8 +92,6 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     updateClickCollect,
     customEvents,
     companySettings,
-    personnelInfos,
-    updatePersonnelInfos,
     setSelectedYear,
     setSelectedMonth,
     updateSalariesConfig,
@@ -607,8 +605,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     importEdgRealise,
     markMonthsAsLoaded,
     saveNow,
-    personnelInfos,
-    updatePersonnelInfos,
+    allData,
   });
 
   const {

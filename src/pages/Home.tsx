@@ -242,7 +242,6 @@ export default function Home() {
       goToMiseEnPaiement: () => navigate(`/mise-en-paiement/${month}`),
       goToFactureDevis: () => navigate('/facture-devis'),
       goToConfigSalaires: () => navigate('/config-salaires'),
-      goToCalculetteSalaires: () => navigate('/calculette-salaires'),
       goToVisuelVacances: () => navigate('/visuel-vacances'),
       goToEcrituresComptables: () => navigate('/ecritures-comptables'),
       goToParametrageEdg: () => navigate('/parametrage-edg'),
@@ -1009,7 +1008,6 @@ export default function Home() {
 
             <NavGroup title="Outils" icon={Settings}>
               <NavItem label="Config Salaires" onClick={navigationHandlers.goToConfigSalaires} />
-              <NavItem label="Info personnel" onClick={navigationHandlers.goToCalculetteSalaires} />
               <NavItem label="Vacances" onClick={navigationHandlers.goToVisuelVacances} />
               <NavItem label="Ecritures comptables" onClick={navigationHandlers.goToEcrituresComptables} />
               <NavItem label="Paramètre EDG" onClick={navigationHandlers.goToParametrageEdg} />

@@ -1,7 +1,9 @@
-import type { PersonnelInfo, SalarieRow } from '@/contexts/DataContext';
-import type { PayrollCandidateLine, PayrollPageTotals, SalaryImportPreviewRow } from '@/types/dataTypes';
-import { inferPersonnelFromJob } from './payrollJobCategories';
+import type { SalarieRow } from '@/contexts/DataContext';
+import type { PayrollCandidateLine, PayrollPageTotals, PayrollPerson, SalaryImportPreviewRow } from '@/types/dataTypes';
 import { parseHourInputToDecimal } from '@/lib/utils';
+
+import { inferPersonnelFromJob } from './payrollJobCategories';
+import type { PayrollCategoryReference } from './payrollCategoryReference';
 
 export const PERSONNEL_CATEGORIES = ['cadre', 'maitrise', 'niv12', 'niv3', 'apprenti'] as const;
 
@@ -37,7 +39,7 @@ export type PayrollTargetPeriod = {
 };
 
 export type PayrollCategoryInput = {
-  personnel: PersonnelInfo;
+  personnel: PayrollPerson;
   heures: number;
   coutGlobal: number;
 };
@@ -58,7 +60,8 @@ export const normalizePersonnelText = (value: string) =>
     .replace(/[^A-Z0-9]+/g, ' ')
     .trim();
 
-const compactPersonnelText = (value: string) => normalizePersonnelText(value).replace(/\s+/g, '');
+// Clé de comparaison d'un nom : mots normalisés et triés, donc insensible à la casse, aux accents et à l'ordre prénom/nom.
+export const payrollNameKey = (name: string) => normalizePersonnelText(name).split(' ').filter(Boolean).sort().join(' ');
 
 const formatPayrollMonthLabel = (month: number, year: number) => `${PAYROLL_MONTHS[month]} ${year}`;
 
@@ -108,12 +111,6 @@ export const getPayrollTargetPeriodFromText = (text: string): PayrollTargetPerio
     targetLabel: formatPayrollMonthLabel(targetMonth, targetYear),
   };
 };
-
-const splitAliases = (value: string) =>
-  value
-    .split(/[;,\n]/)
-    .map(item => item.trim())
-    .filter(Boolean);
 
 const parsePayrollNumber = (value: string) => {
   const normalized = value.replace(/\s/g, '').replace(/[€]/g, '').replace(',', '.');
@@ -206,21 +203,6 @@ export const parsePayrollLine = (sourceLine: string): ParsedPayrollLine => {
   return { identity, entryDate: dates[0]?.[0], exitDate: dates[1]?.[0], jobTitle };
 };
 
-// Nom porté par une ligne du PDF (utilisé comme alias mémorisé)
-export const extractPayrollLineName = (line: string) => parsePayrollLine(line).identity;
-
-// Ajoute un alias à la liste existante, sans doublon (comparaison normalisée), séparateur « ; »
-export const mergePersonnelAlias = (personnel: PersonnelInfo, alias: string) => {
-  const normalizedAlias = normalizePersonnelText(alias);
-  if (!normalizedAlias) return personnel.aliases;
-
-  const known = [personnel.nom, ...splitAliases(personnel.aliases)].map(normalizePersonnelText);
-  if (known.includes(normalizedAlias)) return personnel.aliases;
-
-  const current = personnel.aliases.trim();
-  return current ? `${current}; ${alias.trim()}` : alias.trim();
-};
-
 export const buildPayrollCategories = (rows: PayrollCategoryInput[]): SalariesCategories => {
   const categories = createEmptyPayrollCategories();
   const collected: Record<PersonnelCategory, SalarieRow[]> = {
@@ -285,42 +267,11 @@ export const extractPayrollPageTotals = (text: string): PayrollPageTotals | null
   };
 };
 
-// Rapproche le nom lu dans une ligne du PDF d'une fiche Info personnel (nom ou alias).
-// Insensible à la casse, aux accents et à l'ordre prénom/nom. À score égal la première fiche l'emporte ;
-// un nom complet retrouvé dans la ligne (score ≥ 1000) prime sur un simple recoupement de mots.
-export const findPersonnelForIdentity = (identity: string, personnelInfos: PersonnelInfo[]): PersonnelInfo | null => {
-  const compactIdentity = compactPersonnelText(identity);
-  if (!compactIdentity) return null;
-  const words = new Set(normalizePersonnelText(identity).split(' ').filter(Boolean));
-
-  let best: PersonnelInfo | null = null;
-  let bestScore = 0;
-  for (const personnel of personnelInfos) {
-    for (const name of [personnel.nom, ...splitAliases(personnel.aliases)]) {
-      const compactName = compactPersonnelText(name);
-      if (!compactName) continue;
-
-      let score = 0;
-      if (compactName.length >= 4 && compactIdentity.includes(compactName)) {
-        score = 1000 + compactName.length;
-      } else {
-        const tokens = normalizePersonnelText(name).split(' ').filter(token => token.length >= 2);
-        if (tokens.length > 0 && tokens.every(token => words.has(token))) score = tokens.join('').length;
-      }
-      if (score > bestScore) {
-        best = personnel;
-        bestScore = score;
-      }
-    }
-  }
-
-  return best;
-};
-
-// Ligne du PDF rapprochée d'une fiche (ou d'un nouveau salarié) : base de l'aperçu d'import.
+// Ligne du PDF : nom, catégorie et service proposés, base de l'aperçu d'import.
+// Catégorie et service viennent du dernier import où ce nom figure (recognized), sinon de l'emploi du PDF.
 export type PayrollPdfRow = {
-  personnel: PersonnelInfo; // fiche existante, ou brouillon (id « nouveau-N ») si isNew
-  isNew: boolean;
+  personnel: PayrollPerson;
+  recognized: boolean;
   heures: number;
   coutGlobal: number;
   sourceLine: string;
@@ -328,22 +279,21 @@ export type PayrollPdfRow = {
   exitDate?: string;
 };
 
-const formatNewPersonnelName = (identity: string) =>
+const formatPayrollPersonName = (identity: string) =>
   identity.toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu, (_match, separator: string, letter: string) => `${separator}${letter.toUpperCase()}`);
 
-// Parcourt les lignes du PDF (et non la liste Info personnel) : un ancien salarié absent des fiches est lu,
-// une fiche absente du PDF est simplement hors période. Plusieurs lignes d'une même personne sont cumulées.
-export const buildPayrollRowsFromText = (text: string, personnelInfos: PersonnelInfo[]): PayrollPdfRow[] => {
+// Parcourt les lignes du PDF : aucune liste de personnel à maintenir. Plusieurs lignes d'une même personne
+// (changement de contrat en cours de mois) sont cumulées.
+export const buildPayrollRowsFromText = (text: string, reference: PayrollCategoryReference): PayrollPdfRow[] => {
   const rows: PayrollPdfRow[] = [];
-  const rowByKey = new Map<string, PayrollPdfRow>();
+  const rowByName = new Map<string, PayrollPdfRow>();
 
   extractPayrollCandidateLines(text).forEach(candidate => {
     const parsed = parsePayrollLine(candidate.line);
-    if (!parsed.identity) return;
+    const nameKey = payrollNameKey(parsed.identity);
+    if (!nameKey) return;
 
-    const known = findPersonnelForIdentity(parsed.identity, personnelInfos);
-    const key = known ? `fiche:${known.id}` : `pdf:${compactPersonnelText(parsed.identity)}`;
-    const existing = rowByKey.get(key);
+    const existing = rowByName.get(nameKey);
     if (existing) {
       existing.heures += candidate.heures;
       existing.coutGlobal += candidate.coutGlobal;
@@ -351,16 +301,16 @@ export const buildPayrollRowsFromText = (text: string, personnelInfos: Personnel
       return;
     }
 
+    const known = reference.get(nameKey);
     const inferred = inferPersonnelFromJob(parsed.jobTitle);
     const row: PayrollPdfRow = {
-      personnel: known ?? {
-        id: `nouveau-${rows.length + 1}`,
-        nom: formatNewPersonnelName(parsed.identity),
-        category: inferred.category,
-        department: inferred.department,
-        aliases: '',
+      personnel: {
+        id: `ligne-${rows.length + 1}`,
+        nom: formatPayrollPersonName(parsed.identity),
+        category: known?.category ?? inferred.category,
+        department: known?.department ?? inferred.department,
       },
-      isNew: !known,
+      recognized: known !== undefined,
       heures: candidate.heures,
       coutGlobal: candidate.coutGlobal,
       sourceLine: candidate.line,
@@ -368,7 +318,7 @@ export const buildPayrollRowsFromText = (text: string, personnelInfos: Personnel
       exitDate: parsed.exitDate,
     };
     rows.push(row);
-    rowByKey.set(key, row);
+    rowByName.set(nameKey, row);
   });
 
   return rows;
@@ -378,7 +328,7 @@ export const buildPayrollRowsFromText = (text: string, personnelInfos: Personnel
 // par le solde de tout compte —, réintégrable d'un clic. Il reste compté dans les totaux de bas de page.
 export const buildSalaryPreviewRows = (rows: PayrollPdfRow[]): SalaryImportPreviewRow[] =>
   rows.map(row => {
-    const origin = row.isNew ? 'new' : 'matched';
+    const origin = row.recognized ? 'recognized' : 'new';
     return {
       personnel: row.personnel,
       status: row.exitDate ? 'ignored' : origin,
@@ -387,7 +337,6 @@ export const buildSalaryPreviewRows = (rows: PayrollPdfRow[]): SalaryImportPrevi
       heures: row.heures,
       coutGlobal: row.coutGlobal,
       sourceLine: row.sourceLine,
-      saveAlias: false,
       jobTitle: row.jobTitle,
       exitDate: row.exitDate,
     };

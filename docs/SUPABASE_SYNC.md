@@ -70,8 +70,7 @@ Depuis le changement du 27/05/2026, `src/services/supabaseAppState.ts` sauvegard
 - un manifeste : `...:segments_v2:manifest` ;
 - un segment par mois : `...:segments_v2:allData:<annee>:<mois>` ;
 - un segment `config2025` ;
-- un segment `customEvents` ;
-- un segment `personnelInfos`.
+- un segment `customEvents`.
 
 Avantage : modifier ou importer une donnee sur un mois ne force plus la reecriture complete de plusieurs annees de donnees.
 
@@ -114,15 +113,15 @@ Segments sauvegardes :
 
 - `allData` par annee et par mois ;
 - `config2025` ;
-- `customEvents` ;
-- `personnelInfos`.
+- `customEvents`.
 
 Ancien format encore relisible :
 
 - `allData` ;
 - `config2025` ;
-- `customEvents` ;
-- `personnelInfos` dans un snapshot global unique.
+- `customEvents` dans un snapshot global unique.
+
+Un ancien segment ou champ `personnelInfos` (page Info personnel supprimee) peut subsister en base : il n'est plus lu ni ecrit, sans erreur.
 
 ## Configuration requise
 
