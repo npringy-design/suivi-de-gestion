@@ -10,9 +10,9 @@ import { MONTH_NAMES } from '@/lib/constants';
 import MoveCategoryMenu from './components/MoveCategoryMenu';
 import SalarieCategorySection from './components/SalarieCategorySection';
 import SalaryPeriodCalendar from './components/SalaryPeriodCalendar';
+import TauxHorairesTable from './components/TauxHorairesTable';
 import { useLongPress } from './hooks/useLongPress';
 import { isBlankSalarieRow, moveSalarieRow } from './salaryCategoryMove';
-import { formatCurrency, inputStyle, tdStyle, thStyle } from './salaryTableShared';
 
 const NAV = '#1e293b';
 
@@ -37,8 +37,6 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
   
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0);
   const selectedMonth = MONTHS[selectedMonthIndex];
-  // État local pour la cellule en cours de saisie (évite la perte de la virgule pendant la frappe)
-  const [editingCell, setEditingCell] = useState<{ mi: number; cat: SalaryCategory; value: string } | null>(null);
   // Menu « Déplacer vers » ouvert par un clic maintenu sur la ligne d'un salarié
   const [moveMenu, setMoveMenu] = useState<{ x: number; y: number; category: SalaryCategory; index: number } | null>(null);
   const closeMoveMenu = useCallback(() => setMoveMenu(null), []);
@@ -171,9 +169,10 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     { id: 'apprenti', label: 'APPRENTI' },
   ];
 
-  const getTauxCible = (monthIdx: number, cat: SalaryCategory): string => {
+  // Taux saisi à la main pour ce mois et ce niveau (0 si aucun)
+  const getManualRate = (monthIdx: number, cat: SalaryCategory): number => {
     const val = data[monthIdx]?.salariesConfig?.tauxCibles?.[cat];
-    return val && val > 0 ? String(val).replace('.', ',') : '';
+    return val && val > 0 ? val : 0;
   };
 
   const setTauxCible = (mi: number, cat: SalaryCategory, raw: string) => {
@@ -190,6 +189,19 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
       if (mi === selectedMonthIndex) continue;
       const cfg = getCurrentConfig(mi);
       updateSalariesConfig(mi, { ...cfg, tauxCibles: { ...ref } });
+    }
+  };
+
+  // Supprime les taux manuels d'un mois : le taux calculé depuis les salariés importés s'applique de nouveau.
+  const resetTauxMonth = (mi: number) => {
+    if (isMonthLocked(mi)) return;
+    updateSalariesConfig(mi, { ...getCurrentConfig(mi), tauxCibles: undefined });
+  };
+
+  const resetAllTaux = () => {
+    for (let mi = 0; mi <= 11; mi++) {
+      if (isMonthLocked(mi) || !data[mi]?.salariesConfig?.tauxCibles) continue;
+      resetTauxMonth(mi);
     }
   };
 
@@ -212,108 +224,20 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
           onMonthChange={setSelectedMonthIndex}
         />
 
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.04)', marginBottom: 32 }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: NAV, textTransform: 'uppercase', letterSpacing: '.03em' }}>
-                Configuration Taux Horaires
-              </h2>
-              <p style={{ margin: '4px 0 0', fontSize: 11, color: '#64748b' }}>
-                Saisir manuellement le taux €/h par niveau et par mois (virgule ou point acceptés). Si vide, le taux calculé depuis les bulletins est utilisé.
-              </p>
-            </div>
-            <button
-              onClick={propagateTauxCibles}
-              style={{ background: '#f59e0b', color: '#1c1917', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 11, fontWeight: 800, cursor: 'pointer', letterSpacing: '.02em', whiteSpace: 'nowrap' }}
-            >
-              Appliquer à tous les mois →
-            </button>
-          </div>
-          <div style={{ overflowX: 'auto', padding: '20px' }}>
-            <table style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', maxWidth: '1000px' }}>
-              <thead>
-                <tr>
-                  <th style={{ ...thStyle, background: 'transparent', border: 'none' }}></th>
-                  {CATEGORIES_LIST.map(cat => (
-                    <th key={cat.id} style={{ ...thStyle, background: '#fce4d6', color: '#9a3412' }}>{cat.label}</th>
-                  ))}
-                  <th style={{ ...thStyle, background: '#f8fafc', width: 100 }}>VERROUILLER</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MONTHS.map((month, i) => (
-                  <tr key={month}>
-                    <td style={{ ...tdStyle, background: i % 2 === 0 ? '#fff' : '#f1f5f9', fontWeight: 700, textAlign: 'center', color: '#64748b' }}>
-                      {month}
-                    </td>
-                    {CATEGORIES_LIST.map(cat => {
-                      const rawVal = getTauxCible(i, cat.id);
-                      const hasManual = rawVal !== '';
-                      const calculated = getAverageForCategory(i, cat.id);
-                      const isEditing = editingCell?.mi === i && editingCell?.cat === cat.id;
-                      // Pendant la saisie : valeur locale brute ; sinon : manuelle > calculée > vide
-                      const displayValue = isEditing
-                        ? editingCell.value
-                        : hasManual ? rawVal : calculated > 0 ? calculated.toFixed(2).replace('.', ',') : '';
-                      return (
-                        <td key={cat.id} style={{ ...tdStyle, padding: '4px 6px', background: hasManual ? '#fefce8' : '#fff' }}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={displayValue}
-                            onFocus={() => setEditingCell({ mi: i, cat: cat.id, value: displayValue })}
-                            onChange={e => setEditingCell({ mi: i, cat: cat.id, value: e.target.value })}
-                            onBlur={() => {
-                              if (editingCell?.mi === i && editingCell?.cat === cat.id) {
-                                setTauxCible(i, cat.id, editingCell.value);
-                                setEditingCell(null);
-                              }
-                            }}
-                            style={{
-                              ...inputStyle,
-                              border: isEditing ? '2px solid #3b82f6' : hasManual ? '2px solid #f59e0b' : '1px solid transparent',
-                              borderRadius: 6,
-                              padding: '5px 8px',
-                              background: 'transparent',
-                              color: isEditing ? '#1e293b' : hasManual ? '#92400e' : '#475569',
-                              fontWeight: hasManual || isEditing ? 700 : 600,
-                            }}
-                          />
-                        </td>
-                      );
-                    })}
-                    <td style={{ ...tdStyle, background: i % 2 === 0 ? '#fff' : '#f1f5f9' }}>
-                      <input
-                        type="checkbox"
-                        checked={isMonthLocked(i)}
-                        onChange={() => toggleLock(i)}
-                        style={{ cursor: 'pointer', width: 16, height: 16, accentColor: '#ef4444' }}
-                      />
-                    </td>
-                  </tr>
-                ))}
-                <tr>
-                  <td style={{ ...tdStyle, background: '#fef08a', fontWeight: 800, color: '#854d0e' }}>MOYENNE</td>
-                  {CATEGORIES_LIST.map(cat => {
-                    let total = 0;
-                    let count = 0;
-                    MONTHS.forEach((_, idx) => {
-                      const v = getDisplayTaux(idx, cat.id);
-                      if (v > 0) { total += v; count++; }
-                    });
-                    const avg = count > 0 ? total / count : 0;
-                    return (
-                      <td key={cat.id} style={{ ...tdStyle, background: '#fef08a', fontWeight: 800 }}>
-                        {avg > 0 ? formatCurrency(avg) : '-'}
-                      </td>
-                    );
-                  })}
-                  <td style={{ ...tdStyle, background: '#fef08a' }}></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <TauxHorairesTable
+          year={YEAR}
+          months={MONTHS}
+          categories={CATEGORIES_LIST}
+          isMonthLocked={isMonthLocked}
+          getManualRate={getManualRate}
+          getCalculatedRate={getAverageForCategory}
+          getDisplayRate={getDisplayTaux}
+          onSetRate={setTauxCible}
+          onToggleLock={toggleLock}
+          onPropagate={propagateTauxCibles}
+          onResetMonth={resetTauxMonth}
+          onResetAll={resetAllTaux}
+        />
       </>
     );
   };
