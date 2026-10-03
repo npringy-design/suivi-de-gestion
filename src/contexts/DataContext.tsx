@@ -112,9 +112,16 @@ type DataContextType = {
   importEdgRealise: (valuesByMonth: Record<number, Record<string, string>>) => void;
   updateMiseEnPaiement: (month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | number | boolean) => void;
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
+  // Écrit sur une année précise (import PDF d'une autre année que celle affichée) ; accepte un updater qui relit la config existante.
+  updateSalariesConfigForYear: (
+    year: number,
+    month: number,
+    config: MonthDataSalariesConfig | ((current: MonthDataSalariesConfig | undefined) => MonthDataSalariesConfig),
+  ) => void;
   updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
   markMonthsAsLoaded: (year: number, months: number[]) => void;
-  loadYearFromCloud: (year: number) => Promise<void>;
+  // Retourne les mois qui viennent d'être chargés depuis le cloud (hors mois modifiés localement).
+  loadYearFromCloud: (year: number) => Promise<Record<number, MonthData>>;
   saveNow: () => Promise<void>;
   config2025: Config2025Data;
   updateConfig2025: (type: 'mensuel' | 'hebdo', index: number, field: string, value: string) => void;
@@ -684,18 +691,29 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [updateDataForYear]);
 
-  const updateSalariesConfig = useCallback((month: number, configData: MonthDataSalariesConfig) => {
-    updateDataForYear(month, prev => {
-      const monthData = normalizeMonthData(prev[month]);
+  // Même règle de sauvegarde cloud qu'updateDataForYear : le mois year:month est marqué modifié.
+  const updateSalariesConfigForYear = useCallback((
+    year: number,
+    month: number,
+    config: MonthDataSalariesConfig | ((current: MonthDataSalariesConfig | undefined) => MonthDataSalariesConfig),
+  ) => {
+    dirtyMonthKeysRef.current.add(cloudMonthKey(year, month));
+    setAllData(prev => {
+      const monthData = normalizeMonthData(prev[year]?.[month]);
+      const salariesConfig = typeof config === 'function' ? config(monthData.salariesConfig) : config;
       return {
         ...prev,
-        [month]: {
-          ...monthData,
-          salariesConfig: configData,
+        [year]: {
+          ...(prev[year] || {}),
+          [month]: { ...monthData, salariesConfig },
         },
       };
     });
-  }, [updateDataForYear]);
+  }, [cloudMonthKey]);
+
+  const updateSalariesConfig = useCallback((month: number, configData: MonthDataSalariesConfig) => {
+    updateSalariesConfigForYear(selectedYear, month, configData);
+  }, [selectedYear, updateSalariesConfigForYear]);
 
   const updatePersonnelSchema = useCallback((month: number, schema: PersonnelSchema) => {
     updateDataForYear(month, prev => {
@@ -714,21 +732,25 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     months.forEach(m => loadedCloudMonthKeysRef.current.add(cloudMonthKey(targetYear, m)));
   }, [cloudMonthKey]);
 
-  const loadYearFromCloud = useCallback(async (year: number) => {
-    if (!isCloudSyncConfigured) return;
+  const loadYearFromCloud = useCallback(async (year: number): Promise<Record<number, MonthData>> => {
+    const loaded: Record<number, MonthData> = {};
+    if (!isCloudSyncConfigured) return loaded;
     // Attendre la fin du bootstrap : un appel précoce (montage de page) ne doit pas être perdu.
     await cloudReadyRef.current?.promise;
-    if (!cloudLoadedRef.current) return;
+    if (!cloudLoadedRef.current) return loaded;
     // Ne charger que si au moins un mois de l'année n'a pas encore été récupéré
     const anyMissing = Array.from({ length: 12 }, (_, m) => m)
       .some(m => !loadedCloudMonthKeysRef.current.has(cloudMonthKey(year, m)));
-    if (!anyMissing) return;
+    if (!anyMissing) return loaded;
     try {
       const months = await fetchCloudYearMonths(year);
       months
         // Un mois modifié localement et pas encore poussé ne doit pas être écrasé par la version cloud.
         .filter(({ month }) => !dirtyMonthKeysRef.current.has(cloudMonthKey(year, month)))
-        .forEach(({ month, value }) => applyCloudMonth(year, month, value));
+        .forEach(({ month, value }) => {
+          applyCloudMonth(year, month, value);
+          if (value && typeof value === 'object') loaded[month] = value as MonthData;
+        });
       // Marquer les 12 mois comme tentés pour éviter les doubles appels
       Array.from({ length: 12 }, (_, m) => m).forEach(m => {
         loadedCloudMonthKeysRef.current.add(cloudMonthKey(year, m));
@@ -737,6 +759,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.warn('Chargement année N-1 Supabase indisponible :', error);
     }
+    return loaded;
   }, [applyCloudMonth, cloudMonthKey, hideCloudWarning]);
 
   // Le bootstrap ne récupère que le mois sélectionné : on complète avec les 12 mois de l'année
@@ -996,6 +1019,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     importEdgRealise,
     updateMiseEnPaiement,
     updateSalariesConfig,
+    updateSalariesConfigForYear,
     updatePersonnelSchema,
     markMonthsAsLoaded,
     loadYearFromCloud,
@@ -1041,6 +1065,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     importEdgRealise,
     updateMiseEnPaiement,
     updateSalariesConfig,
+    updateSalariesConfigForYear,
     updatePersonnelSchema,
     markMonthsAsLoaded,
     loadYearFromCloud,

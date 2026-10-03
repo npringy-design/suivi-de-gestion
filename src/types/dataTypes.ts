@@ -247,6 +247,7 @@ export type SalaryImportPreview = {
   sourceLabel: string;
   targetLabel: string;
   targetMonth: number;
+  targetYear: number; // année du mois cible (peut différer de l'année affichée)
   rows: SalaryImportPreviewRow[];
   // Totaux de bas de page du PDF (null si le format n'est pas reconnu)
   totals: PayrollPageTotals | null;

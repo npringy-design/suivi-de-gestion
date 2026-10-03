@@ -102,7 +102,13 @@ type UseDashboardImportHandlersParams = {
   updateDashboard: (month: number, cellKey: string, value: string) => void;
   updateTheorique: (month: number, day: number, field: keyof DayDataTheorique, value: string | number) => void;
   updateBilanSynthese: (month: number, day: number, field: keyof DayDataBilanSynthese, value: string | number) => void;
-  updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
+  updateSalariesConfigForYear: (
+    year: number,
+    month: number,
+    config: MonthDataSalariesConfig | ((current: MonthDataSalariesConfig | undefined) => MonthDataSalariesConfig),
+  ) => void;
+  loadYearFromCloud: (year: number) => Promise<Record<number, MonthData>>;
+  setSelectedYear: (year: number) => void;
   updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
   importEdgBudget: (valuesByMonth: Record<number, Record<string, string>>) => void;
   importEdgRealise: (valuesByMonth: Record<number, Record<string, string>>) => void;
@@ -144,7 +150,9 @@ export function useDashboardImportHandlers({
   updateDashboard,
   updateTheorique,
   updateBilanSynthese,
-  updateSalariesConfig,
+  updateSalariesConfigForYear,
+  loadYearFromCloud,
+  setSelectedYear,
   updatePersonnelSchema,
   importEdgBudget,
   importEdgRealise,
@@ -1434,6 +1442,14 @@ export function useDashboardImportHandlers({
       : item));
   };
   
+  // Mois de l'année demandée : ceux déjà en mémoire + ceux qu'on vient de charger depuis le cloud
+  // (l'année affichée est déjà chargée par DataContext).
+  const loadTargetYearData = async (targetYear: number): Promise<Record<number, MonthData>> => {
+    const inMemory = allData[targetYear] ?? {};
+    if (targetYear === year) return inMemory;
+    return { ...inMemory, ...(await loadYearFromCloud(targetYear)) };
+  };
+
   const handleSalaryPayrollImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
@@ -1455,14 +1471,22 @@ export function useDashboardImportHandlers({
           }
           // On part des lignes du PDF : catégorie et service repris du dernier import où le nom figure, sinon déduits
           // de l'emploi ; sortants (date de sortie) exclus par défaut des taux horaires.
-          const reference = buildCategoryReference(allData, payrollPeriod.targetYear, payrollPeriod.targetMonth);
+          const targetYear = payrollPeriod.targetYear;
+          const targetMonth = payrollPeriod.targetMonth;
+          // L'import cible l'année du PDF, pas forcément l'année affichée : on charge cette année (et la précédente,
+          // pour retrouver les catégories) depuis le cloud avant de lire verrouillage et catégories.
+          const dataByYear = {
+            ...allData,
+            [targetYear]: await loadTargetYearData(targetYear),
+            [targetYear - 1]: await loadTargetYearData(targetYear - 1),
+          };
+          const reference = buildCategoryReference(dataByYear, targetYear, targetMonth);
           const pdfRows = buildPayrollRowsFromText(text, reference);
           if (pdfRows.length === 0) {
             errors.push(`${file.name} : aucune ligne salarié reconnue`);
             continue;
           }
-          const targetMonth = payrollPeriod.targetMonth;
-          if (globalData[targetMonth]?.salariesConfig?.locked) {
+          if (dataByYear[targetYear][targetMonth]?.salariesConfig?.locked) {
             errors.push(`${file.name} : mois ${payrollPeriod.targetLabel} verrouillé`);
             continue;
           }
@@ -1472,6 +1496,7 @@ export function useDashboardImportHandlers({
             sourceLabel: payrollPeriod.sourceLabel,
             targetLabel: payrollPeriod.targetLabel,
             targetMonth,
+            targetYear,
             rows: buildSalaryPreviewRows(pdfRows),
             totals: extractPayrollPageTotals(text),
           });
@@ -1509,12 +1534,14 @@ export function useDashboardImportHandlers({
     setSalaryImportPreviews(prev => prev.filter(preview => preview.id !== previewId));
   };
 
-  const applySalaryImportPreview = (previewId: string) => {
+  const applySalaryImportPreview = async (previewId: string) => {
     const preview = salaryImportPreviews.find(item => item.id === previewId);
     if (!preview) return;
 
-    const currentConfig = globalData[preview.targetMonth]?.salariesConfig;
-    if (currentConfig?.locked) {
+    // L'import écrit sur l'année du PDF (pas sur l'année affichée) : on la charge d'abord depuis le cloud pour ne
+    // pas écraser des mois déjà en base mais pas encore en mémoire locale.
+    const targetYearData = await loadTargetYearData(preview.targetYear);
+    if (targetYearData[preview.targetMonth]?.salariesConfig?.locked) {
       setSalaryImportStatus(`Erreur : ${preview.fileName} : mois ${preview.targetLabel} verrouillé`);
       return;
     }
@@ -1527,9 +1554,14 @@ export function useDashboardImportHandlers({
 
     // categories (taux horaires par échelon) : lignes retenues uniquement, sortants exclus par défaut ;
     // totals (bas de page du PDF, tout le monde compris) : toujours importés, indépendamment des lignes.
+    // La config existante est relue au moment de l'écriture (autres champs, verrouillage) pour ne rien écraser.
     const categories = buildPayrollCategories(importedRows);
-    updateSalariesConfig(preview.targetMonth, { ...(currentConfig || { locked: false }), categories, totals: preview.totals ?? undefined });
+    updateSalariesConfigForYear(preview.targetYear, preview.targetMonth, current => (
+      current?.locked ? current : { ...(current ?? { locked: false }), categories, totals: preview.totals ?? undefined }
+    ));
 
+    // On se place sur l'année et le mois importés pour que le résultat soit visible.
+    setSelectedYear(preview.targetYear);
     setMonth(preview.targetMonth);
     setSelectedMonth(preview.targetMonth);
     setSalaryImportPreviews(prev => prev.filter(item => item.id !== previewId));
