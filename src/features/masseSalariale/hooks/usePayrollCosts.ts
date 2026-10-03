@@ -13,7 +13,7 @@ import {
 } from '../payrollCalculations';
 import { computeCostEvolution } from '../payrollCostEvolution';
 import { payrollMonthKey } from '../payrollDefaults';
-import { getAutoPayrollFromConfig } from '../payrollSources';
+import { getRealPayrollFromConfig } from '../payrollSources';
 
 // L'analyse porte sur le seul coût salarial : le CA n'est volontairement pas rapproché
 // (provisions de congés payés, aides apprentis et autres frais de personnel absents du coût importé).
@@ -28,18 +28,19 @@ export function usePayrollCosts() {
   const [month, setMonth] = useState(initialPeriod.month);
   const requestedYearsRef = useRef(new Set<number>());
 
-  // Config Salaires (coûts importés) de l'année affichée et de N-1 : chargées depuis Supabase une
-  // fois par année, même si l'année est partiellement en local (seule l'année sélectionnée est
-  // chargée en entier au démarrage).
+  // Config Salaires (coûts importés) de N-1, de l'année affichée et de N+1 (le réel de décembre est
+  // rangé sur janvier N+1, cf. getRealPayrollFromConfig) : chargées depuis Supabase une fois par
+  // année, même si l'année est partiellement en local (seule l'année sélectionnée est chargée en
+  // entier au démarrage).
   useEffect(() => {
-    [year - 1, year].forEach(y => {
+    [year - 1, year, year + 1].forEach(y => {
       if (requestedYearsRef.current.has(y)) return;
       requestedYearsRef.current.add(y);
       void loadYearFromCloud(y);
     });
   }, [year, loadYearFromCloud]);
 
-  const getAuto = useCallback((y: number, m: number) => getAutoPayrollFromConfig(allData[y]?.[m]), [allData]);
+  const getAuto = useCallback((y: number, m: number) => getRealPayrollFromConfig(allData, y, m), [allData]);
 
   const entries = payrollCosts.months;
   const key = payrollMonthKey(year, month);
