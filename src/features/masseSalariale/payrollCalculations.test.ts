@@ -26,12 +26,35 @@ describe('computePayrollMetrics', () => {
     expect(m.grossToRevenuePct).toBeNull();
   });
 
-  it('calcule les ratios sur CA et le coût horaire moyen', () => {
+  it('calcule les ratios sur CA', () => {
     const m = metrics(sept26, 130000, 1000)!;
     expect(m.totalCost).toBeCloseTo(47335.88, 2);
     expect(m.grossToRevenuePct).toBeCloseTo(29.301, 2);
     expect(m.totalCostToRevenuePct).toBeCloseTo(36.412, 2);
-    expect(m.hourlyCost).toBeCloseTo(47.33588, 4);
+  });
+
+  it('ETP et coût par ETP repris de la source auto, indicateur d\'estimation conservé', () => {
+    const exact = computePayrollMetrics(resolvePayroll(undefined, { totalCost: 45521.82, hours: 2294.86, etp: 17.13 }), null)!;
+    expect(exact.etp).toBe(17.13);
+    expect(exact.etpEstimated).toBe(false);
+    expect(exact.costPerEtp).toBeCloseTo(45521.82 / 17.13, 4);
+    const estimated = computePayrollMetrics(resolvePayroll(undefined, { totalCost: 40000, hours: 0, etp: 16, etpEstimated: true }), null)!;
+    expect(estimated.etpEstimated).toBe(true);
+  });
+
+  it('sans ETP : etp et coût par ETP null, comparaison absente', () => {
+    const m = metrics(sept26, null)!;
+    expect(m.etp).toBeNull();
+    expect(m.costPerEtp).toBeNull();
+    expect(compareMetrics(m, m).etp).toBeUndefined();
+  });
+
+  it('compare ETP et coût par ETP entre deux mois', () => {
+    const at = (cost: number, etp: number) => computePayrollMetrics(resolvePayroll(undefined, { totalCost: cost, hours: 0, etp }), null)!;
+    const cmp = compareMetrics(at(48000, 18), at(40000, 16));
+    expect(cmp.etp!.delta).toBe(2);
+    expect(cmp.etp!.pct).toBeCloseTo(12.5, 4);
+    expect(cmp.costPerEtp!.delta).toBeCloseTo(48000 / 18 - 2500, 4);
   });
 
   it('un CA nul ou absent donne des ratios null (pas de division par zéro)', () => {

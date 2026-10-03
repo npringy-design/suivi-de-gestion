@@ -192,6 +192,9 @@ export type PayrollPageTotals = {
   chargesPatronales: number;
   coutGlobal: number;
   heures?: number;
+  // ETP exact du mois : heures de TOUTES les lignes du PDF (forfaits jour à 151,67 h, sortants inclus) ÷ 151,67.
+  etp?: number;
+  forfaitsJour?: number; // nombre de lignes « forfait jour » du PDF
 };
 
 export type MonthDataSalariesConfig = {
@@ -581,8 +584,15 @@ export type PayrollAlertThresholds = {
   totalCostToRevenuePct: number; // seuil coût global / CA
 };
 
+// Nombre de forfaits jour à compter dans l'ETP estimé (mois importés sans ETP exact) à partir du mois `from` (« AAAA-MM »).
+export type PayrollForfaitsJourPeriod = {
+  from: string;
+  count: number;
+};
+
 // Clé des mois : "AAAA-MM" (MM de 01 à 12).
 export type PayrollCostsData = {
   months: Record<string, PayrollMonthEntry>;
   alertThresholds: PayrollAlertThresholds;
+  forfaitsJourPeriods: PayrollForfaitsJourPeriod[];
 };

@@ -1,4 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
 
 import { MONTH_NAMES } from '@/lib/constants';
 
@@ -6,9 +7,12 @@ import PayrollCharts from './components/PayrollCharts';
 import PayrollComparisonCards from './components/PayrollComparisonCards';
 import PayrollCorrectionSection from './components/PayrollCorrectionSection';
 import PayrollEntryForm from './components/PayrollEntryForm';
+import PayrollForfaitsJourSettings from './components/PayrollForfaitsJourSettings';
+import PayrollMeasureToggle from './components/PayrollMeasureToggle';
 import PayrollMonthlyTable from './components/PayrollMonthlyTable';
 import PayrollYearKpis from './components/PayrollYearKpis';
 import { usePayrollCosts } from './hooks/usePayrollCosts';
+import type { PayrollMeasure } from './payrollMeasures';
 
 type MasseSalarialeProps = {
   onBack: () => void;
@@ -18,6 +22,7 @@ const yearButtonClass = 'px-2 py-1 text-base font-extrabold text-slate-500 hover
 
 export default function MasseSalariale({ onBack }: MasseSalarialeProps) {
   const payroll = usePayrollCosts();
+  const [measure, setMeasure] = useState<PayrollMeasure>('cost');
   const { year, month, entry, current } = payroll;
 
   return (
@@ -44,13 +49,14 @@ export default function MasseSalariale({ onBack }: MasseSalarialeProps) {
         </header>
 
         <PayrollYearKpis year={year} evolution={payroll.evolution} />
-        <PayrollCharts year={year} series={payroll.series} lastYearSeries={payroll.lastYearSeries} details={payroll.monthDetails} />
+        <PayrollMeasureToggle measure={measure} onChange={setMeasure} />
+        <PayrollCharts year={year} measure={measure} series={payroll.series} lastYearSeries={payroll.lastYearSeries} details={payroll.monthDetails} />
         <PayrollMonthlyTable
           year={year}
+          measure={measure}
           series={payroll.series}
           lastYearSeries={payroll.lastYearSeries}
           details={payroll.monthDetails}
-          evolution={payroll.evolution}
         />
 
         <PayrollCorrectionSection month={month} onSelectMonth={payroll.setMonth}>
@@ -77,6 +83,7 @@ export default function MasseSalariale({ onBack }: MasseSalarialeProps) {
             onSave={payroll.saveEntry}
             onDelete={payroll.deleteEntry}
           />
+          <PayrollForfaitsJourSettings periods={payroll.forfaitsJourPeriods} onChange={payroll.saveForfaitsJourPeriods} />
         </PayrollCorrectionSection>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
-import type { PayrollMonthEntry } from '@/types/dataTypes';
+import type { PayrollForfaitsJourPeriod, PayrollMonthEntry } from '@/types/dataTypes';
 
 import {
   buildYearSeries,
@@ -40,7 +40,11 @@ export function usePayrollCosts() {
     });
   }, [year, loadYearFromCloud]);
 
-  const getAuto = useCallback((y: number, m: number) => getRealPayrollFromConfig(allData, y, m), [allData]);
+  const forfaitsJourPeriods = payrollCosts.forfaitsJourPeriods;
+  const getAuto = useCallback(
+    (y: number, m: number) => getRealPayrollFromConfig(allData, y, m, forfaitsJourPeriods),
+    [allData, forfaitsJourPeriods],
+  );
 
   const entries = payrollCosts.months;
   const key = payrollMonthKey(year, month);
@@ -88,8 +92,14 @@ export function usePayrollCosts() {
     });
   }, [key, updatePayrollCosts]);
 
+  const saveForfaitsJourPeriods = useCallback((next: PayrollForfaitsJourPeriod[]) => {
+    updatePayrollCosts(prev => ({ ...prev, forfaitsJourPeriods: next }));
+  }, [updatePayrollCosts]);
+
   return {
     year,
+    forfaitsJourPeriods,
+    saveForfaitsJourPeriods,
     month,
     setYear,
     setMonth,

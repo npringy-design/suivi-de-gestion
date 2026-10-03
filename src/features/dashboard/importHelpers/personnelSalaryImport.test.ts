@@ -41,6 +41,20 @@ describe('extractPayrollPageTotals', () => {
     expect(extractPayrollPageTotals('DUPONT Jean 151,67 3 000,00')).toBeNull();
   });
 
+  it('ETP exact : toutes les lignes (sortants inclus), forfaits jour à 151,67 h', () => {
+    // Six valeurs de paie après les heures, coût global en avant-dernière position.
+    const tail = '1 000,00 300,00 24,00 10,00 1 300,00 5,00';
+    const text = [
+      `00001 DUPONT Jean 01/01/2020 Cuisinier 09/2026 151,67 ${tail}`,
+      `00002 MARTIN Paul 01/01/2020 22/09/2026 Serveur 09/2026 100,00 ${tail}`,
+      `00003 DURAND Anne (forfait jour) 01/01/2020 Directrice 09/2026 ${tail}`,
+      'Total général 38 091,35 9 244,53 24,27 1 814,06 45 521,82',
+    ].join('\n');
+    const totals = extractPayrollPageTotals(text)!;
+    expect(totals.forfaitsJour).toBe(1);
+    expect(totals.etp).toBeCloseTo((151.67 + 100 + 151.67) / 151.67, 2);
+  });
+
   it('gère les fins de ligne Windows', () => {
     expect(extractPayrollPageTotals(PDF_TEXT.replace(/\n/g, '\r\n'))!.brut).toBe(38091.35);
   });

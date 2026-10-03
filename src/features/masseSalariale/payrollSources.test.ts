@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { MonthData } from '@/types/dataTypes';
 
-import { getAutoPayrollFromConfig, getRealPayrollFromConfig } from './payrollSources';
+import { getAutoPayrollFromConfig, getForfaitsJourCount, getRealPayrollFromConfig } from './payrollSources';
 
 const monthWithCost = (coutGlobal: string, heures: string): MonthData =>
   ({
@@ -29,6 +29,40 @@ describe('getRealPayrollFromConfig', () => {
 
   it('mois suivant absent : null (pas de repli sur le mois même)', () => {
     expect(getRealPayrollFromConfig({ 2026: { 8: monthWithCost('1 000', '10') } }, 2026, 8)).toBeNull();
+  });
+});
+
+describe('ETP lu dans Masse Salariale', () => {
+  const monthWithTotals = (totals: Record<string, number>): MonthData =>
+    ({ salariesConfig: { locked: false, categories: {}, totals: { brut: 1, chargesPatronales: 1, coutGlobal: 2, ...totals } } }) as unknown as MonthData;
+  // Réel de septembre 2026 (index 8) rangé sur octobre (index 9).
+  const real = (totals: Record<string, number>, year = 2026, month = 8) =>
+    getRealPayrollFromConfig({ [year]: { [month + 1]: monthWithTotals(totals) } }, year, month)!;
+
+  it('ETP exact du PDF : non estimé', () => {
+    const auto = real({ heures: 2294.86, etp: 17.13 });
+    expect(auto.etp).toBe(17.13);
+    expect(auto.etpEstimated).toBeUndefined();
+  });
+
+  it('sans ETP exact : heures ÷ 151,67 + forfaits jour du réglage par défaut, marqué estimé', () => {
+    const auto = real({ heures: 2294.86 });
+    expect(auto.etp).toBeCloseTo(17.13, 2);
+    expect(auto.etpEstimated).toBe(true);
+  });
+
+  it('forfaits jour : la dernière période antérieure ou égale au mois s\'applique', () => {
+    const periods = [{ from: '2000-01', count: 1 }, { from: '2025-09', count: 2 }];
+    expect(getForfaitsJourCount(periods, 2025, 7)).toBe(1);
+    expect(getForfaitsJourCount(periods, 2025, 8)).toBe(2);
+    expect(getForfaitsJourCount(periods, 2026, 0)).toBe(2);
+    expect(getForfaitsJourCount([], 2026, 0)).toBe(0);
+    const august = getRealPayrollFromConfig({ 2025: { 8: monthWithTotals({ heures: 1516.7 }) } }, 2025, 7, periods)!;
+    expect(august.etp).toBeCloseTo(11, 2);
+  });
+
+  it('ni ETP ni heures : pas d\'ETP', () => {
+    expect(real({}).etp).toBeUndefined();
   });
 });
 

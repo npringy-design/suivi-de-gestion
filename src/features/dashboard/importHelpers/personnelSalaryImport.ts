@@ -1,4 +1,5 @@
 import type { SalarieRow } from '@/contexts/DataContext';
+import { FULL_TIME_MONTHLY_HOURS } from '@/lib/constants';
 import type { PayrollCandidateLine, PayrollPageTotals, PayrollPerson, SalaryImportPreviewRow } from '@/types/dataTypes';
 import { parseHourInputToDecimal } from '@/lib/utils';
 
@@ -7,7 +8,6 @@ import type { PayrollCategoryReference } from './payrollCategoryReference';
 
 export const PERSONNEL_CATEGORIES = ['cadre', 'maitrise', 'niv12', 'niv3', 'apprenti'] as const;
 
-const FORFAIT_JOUR_HOURS = 151.67;
 const PAYROLL_MONTHS = [
   'janvier',
   'février',
@@ -142,7 +142,7 @@ const extractPayrollTableValues = (sourceLine: string) => {
 
   const coutGlobal = values[values.length - 2] || 0;
   const heures = isForfaitJourLine(line)
-    ? FORFAIT_JOUR_HOURS
+    ? FULL_TIME_MONTHLY_HOURS
     : values.slice(0, Math.max(0, values.length - 6)).at(-1) || 0;
 
   return heures > 0 && coutGlobal > 0 ? { hours: heures, cost: coutGlobal } : null;
@@ -259,11 +259,21 @@ export const extractPayrollPageTotals = (text: string): PayrollPageTotals | null
 
   if (totalValues.length < 3) return null;
 
+  // ETP : tout le monde est compté (sortants inclus, indépendamment du matching), forfaits jour à 151,67 h.
+  const candidates = extractPayrollCandidateLines(text);
+  const totalHours = candidates.reduce((sum, candidate) => sum + candidate.heures, 0);
+
   return {
     brut: totalValues[0],
     chargesPatronales: totalValues[1],
     coutGlobal: totalValues[totalValues.length - 1],
     ...(hoursValues.length >= 3 ? { heures: hoursValues[2] } : {}),
+    ...(candidates.length > 0
+      ? {
+          etp: Math.round((totalHours / FULL_TIME_MONTHLY_HOURS) * 100) / 100,
+          forfaitsJour: candidates.filter(candidate => isForfaitJourLine(candidate.line)).length,
+        }
+      : {}),
   };
 };
 

@@ -21,6 +21,36 @@ export type PayrollCostEvolution = {
 
 const pctOf = (delta: number, reference: number): number | null => (reference !== 0 ? (delta / Math.abs(reference)) * 100 : null);
 
+export type PayrollComparableTotals = {
+  months: number;
+  current: number | null;
+  lastYear: number | null;
+  delta: number | null;
+  pct: number | null;
+};
+
+// Mois renseignés des deux années uniquement. 'sum' pour un montant (coût), 'mean' pour un effectif (ETP : une somme n'a pas de sens).
+export const computeComparableTotals = (
+  values: Array<number | null>,
+  lastYearValues: Array<number | null>,
+  aggregate: 'sum' | 'mean',
+): PayrollComparableTotals => {
+  let months = 0;
+  let current = 0;
+  let lastYear = 0;
+  values.forEach((value, index) => {
+    const previous = lastYearValues[index] ?? null;
+    if (value === null || previous === null) return;
+    months += 1;
+    current += value;
+    lastYear += previous;
+  });
+  if (months === 0) return { months, current: null, lastYear: null, delta: null, pct: null };
+  const divisor = aggregate === 'mean' ? months : 1;
+  const delta = (current - lastYear) / divisor;
+  return { months, current: current / divisor, lastYear: lastYear / divisor, delta, pct: pctOf(delta, lastYear / divisor) };
+};
+
 // rows / lastYearRows : 12 lignes (janvier → décembre) de l'année affichée et de l'année précédente.
 export const computeCostEvolution = (rows: CostRow[], lastYearRows: CostRow[]): PayrollCostEvolution => {
   const withCost = rows.filter(row => row.totalCost !== null);

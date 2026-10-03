@@ -36,21 +36,28 @@ function Badge({ pct, label }: { pct: number | null | undefined; label: string }
   );
 }
 
+const ESTIMATE_HINT = 'estimation : forfaits jour selon le réglage, réimporter le PDF pour l\'exact';
+
+// Une valeur estimée (ETP des mois importés avant l'ETP exact) s'affiche avec « ~ » et une infobulle.
+const withEstimate = (value: number | null | undefined, estimated: boolean | undefined, format: (v: number) => string) =>
+  value == null ? { text: '—' } : { text: `${estimated ? '~' : ''}${format(value)}`, hint: estimated ? ESTIMATE_HINT : undefined };
+
 function Side({ title, metrics }: { title: string; metrics: PayrollMetrics | null }) {
-  const rows: Array<[string, string]> = [
-    ['Coût salarial global', euro(metrics?.totalCost)],
-    ['Brut', euro(metrics?.gross)],
-    ['Charges patronales', euro(metrics?.employerCharges)],
-    ['% charges patronales', metrics?.chargesRatePct == null ? '—' : formatPercent(metrics.chargesRatePct)],
-    ['Coût horaire moyen', metrics?.hourlyCost == null ? '—' : `${formatDecimal(metrics.hourlyCost, 2)} €/h`],
+  const rows: Array<{ label: string; text: string; hint?: string }> = [
+    { label: 'Coût salarial global', text: euro(metrics?.totalCost) },
+    { label: 'Brut', text: euro(metrics?.gross) },
+    { label: 'Charges patronales', text: euro(metrics?.employerCharges) },
+    { label: '% charges patronales', text: metrics?.chargesRatePct == null ? '—' : formatPercent(metrics.chargesRatePct) },
+    { label: 'ETP', ...withEstimate(metrics?.etp, metrics?.etpEstimated, value => formatDecimal(value, 2)) },
+    { label: 'Coût par ETP', ...withEstimate(metrics?.costPerEtp, metrics?.etpEstimated, formatEuroSymbol) },
   ];
   return (
     <div className="grid gap-2">
       <div className="text-sm font-black uppercase tracking-wide text-slate-500">{title}</div>
-      {rows.map(([label, value]) => (
+      {rows.map(({ label, text, hint }) => (
         <div key={label} className="flex justify-between gap-3 text-[12.5px]">
           <span className="font-bold text-slate-400">{label}</span>
-          <span className="font-extrabold tabular-nums text-slate-900">{value}</span>
+          <span title={hint} className={`font-extrabold tabular-nums text-slate-900 ${hint ? 'cursor-help' : ''}`}>{text}</span>
         </div>
       ))}
     </div>
@@ -75,6 +82,8 @@ export default function PayrollMonthComparison({ year, month, detail }: PayrollM
           <Badge pct={pctOf('totalCost')} label="coût global" />
           <Badge pct={pctOf('gross')} label="brut" />
           <Badge pct={pctOf('employerCharges')} label="charges" />
+          <Badge pct={pctOf('etp')} label="ETP" />
+          <Badge pct={pctOf('costPerEtp')} label="coût/ETP" />
         </div>
       </div>
       <Side title={`${monthName} ${year}`} metrics={current} />

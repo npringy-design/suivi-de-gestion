@@ -100,10 +100,9 @@ export default function PayrollEntryForm({ entry, auto, monthLabel, onSave, onDe
         <Field label="Heures totales (optionnel)" value={hours} onChange={setHours} hint={hours === '' && auto?.hours ? `Config Salaires : ${formatDecimal(auto.hours, 2)} h` : 'Normales + majorées'} />
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <Computed label="% charges patronales" value={pct(preview?.chargesRatePct ?? null)} />
         <Computed label="Coût salarial global" value={preview?.totalCost == null ? '—' : formatEuroSymbol(preview.totalCost)} />
-        <Computed label="Coût horaire moyen" value={preview?.hourlyCost == null ? '—' : `${formatDecimal(preview.hourlyCost, 2)} €/h`} />
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">

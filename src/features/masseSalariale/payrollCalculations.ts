@@ -4,13 +4,16 @@ import { payrollMonthKey } from './payrollDefaults';
 
 // Valeurs reprises automatiquement de Config Salaires (somme des salariés du mois).
 // gross / employerCharges : présents quand l'import PDF a fourni les totaux de bas de page.
-export type AutoPayroll = { totalCost: number; hours: number; gross?: number; employerCharges?: number };
+// etp : exact (import récent) ou estimé (etpEstimated), absent si le PDF n'a fourni ni l'un ni l'autre.
+export type AutoPayroll = { totalCost: number; hours: number; gross?: number; employerCharges?: number; etp?: number; etpEstimated?: boolean };
 
 export type ResolvedPayroll = {
   gross: number | null;
   employerCharges: number | null;
   totalCost: number | null;
   hours: number | null;
+  etp?: number;
+  etpEstimated?: boolean;
 };
 
 export type PayrollMetrics = {
@@ -18,13 +21,15 @@ export type PayrollMetrics = {
   employerCharges: number | null;
   totalCost: number | null; // brut + charges patronales
   chargesRatePct: number | null; // charges / brut
-  hourlyCost: number | null; // coût global / heures
+  etp: number | null;
+  etpEstimated: boolean;
+  costPerEtp: number | null; // coût global / ETP
   revenue: number | null; // CA réel du mois (null si indisponible)
   grossToRevenuePct: number | null;
   totalCostToRevenuePct: number | null;
 };
 
-export type PayrollIndicatorKey = 'gross' | 'employerCharges' | 'totalCost' | 'grossToRevenuePct' | 'totalCostToRevenuePct';
+export type PayrollIndicatorKey = 'gross' | 'employerCharges' | 'totalCost' | 'etp' | 'costPerEtp' | 'grossToRevenuePct' | 'totalCostToRevenuePct';
 
 export type PayrollVariation = {
   delta: number; // € pour les montants, points de % pour les ratios
@@ -58,19 +63,27 @@ export const resolvePayroll = (entry: PayrollMonthEntry | undefined, auto: AutoP
   }
 
   if (gross === null && employerCharges === null && totalCost === null) return null;
-  return { gross, employerCharges, totalCost, hours };
+  return {
+    gross,
+    employerCharges,
+    totalCost,
+    hours,
+    ...(auto?.etp !== undefined ? { etp: auto.etp, etpEstimated: auto.etpEstimated ?? false } : {}),
+  };
 };
 
 export const computePayrollMetrics = (resolved: ResolvedPayroll | null, revenue: number | null): PayrollMetrics | null => {
   if (!resolved) return null;
-  const { gross, employerCharges, totalCost, hours } = resolved;
+  const { gross, employerCharges, totalCost, etp } = resolved;
   const safeRevenue = revenue && revenue > 0 ? revenue : null;
   return {
     gross,
     employerCharges,
     totalCost,
     chargesRatePct: gross !== null && employerCharges !== null ? ratioPct(employerCharges, gross) : null,
-    hourlyCost: totalCost !== null && hours && hours > 0 ? totalCost / hours : null,
+    etp: etp ?? null,
+    etpEstimated: resolved.etpEstimated ?? false,
+    costPerEtp: totalCost !== null && etp && etp > 0 ? totalCost / etp : null,
     revenue: safeRevenue,
     grossToRevenuePct: gross !== null ? ratioPct(gross, safeRevenue) : null,
     totalCostToRevenuePct: totalCost !== null ? ratioPct(totalCost, safeRevenue) : null,
@@ -93,6 +106,8 @@ export const compareMetrics = (current: PayrollMetrics, reference: PayrollMetric
   set('gross', computeVariation(current.gross, reference.gross));
   set('employerCharges', computeVariation(current.employerCharges, reference.employerCharges));
   set('totalCost', computeVariation(current.totalCost, reference.totalCost));
+  set('etp', computeVariation(current.etp, reference.etp));
+  set('costPerEtp', computeVariation(current.costPerEtp, reference.costPerEtp));
   set('grossToRevenuePct', computeVariation(current.grossToRevenuePct, reference.grossToRevenuePct, true));
   set('totalCostToRevenuePct', computeVariation(current.totalCostToRevenuePct, reference.totalCostToRevenuePct, true));
   return result;
@@ -120,6 +135,8 @@ export type PayrollSeriesPoint = {
   gross: number | null;
   employerCharges: number | null;
   totalCost: number | null;
+  etp: number | null;
+  etpEstimated: boolean;
   revenue: number | null;
   grossToRevenuePct: number | null;
   totalCostToRevenuePct: number | null;
@@ -146,6 +163,8 @@ export const buildRollingSeries = (
       gross: metrics?.gross ?? null,
       employerCharges: metrics?.employerCharges ?? null,
       totalCost: metrics?.totalCost ?? null,
+      etp: metrics?.etp ?? null,
+      etpEstimated: metrics?.etpEstimated ?? false,
       revenue: metrics?.revenue ?? null,
       grossToRevenuePct: metrics?.grossToRevenuePct ?? null,
       totalCostToRevenuePct: metrics?.totalCostToRevenuePct ?? null,
