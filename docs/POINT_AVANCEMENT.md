@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 03/10/2026 (import PDF salaires : stockage de toutes les lignes, sortants inclus)
+
+- Import PDF salaires : `MonthDataSalariesConfig.payrollLines?` (`PayrollStoredLine` : clé matricule ou nom normalisé, nom, heures, coût global, `exitDate`, `forfaitJour`) conserve toutes les lignes de la page (`buildPayrollStoredLines`, `SalaryImportPreview.payrollLines`, écrit à la validation sur le mois cible M+1 via `updateSalariesConfigForYear`, donc marqué dirty ; les snapshots mensuels sont poussés en bloc, champ optionnel rétrocompatible). Indépendant des statuts de l'aperçu ; n'entre ni dans `categories` ni dans les taux horaires. `parsePayrollLine` expose le `matricule`. Les mois importés avant ce stockage n'ont pas de `payrollLines` (réimport nécessaire). tsc OK.
+
 ## 03/10/2026 (Masse Salariale : tableau mensuel simplifié, détail séparé coût / ETP)
 
 - Masse Salariale : tableau mensuel réduit à `Mois | {Coût salarial ou ETP} N | N-1 | Écart` (colonne « vs mois précédent » retirée, pied « Mois comparables » aligné, moyenne en ETP, note provisions/aides apprentis seulement en Coût). Détail d'un mois = petit tableau `Ligne | mois N-1 | mois N | Écart` (`PayrollMonthComparison`, lignes définies par grandeur dans `PAYROLL_MEASURES[measure].detailRows`) : Coût → coût global, brut, charges, % charges (écart en points), autres ajustements (coût − brut − charges, masqué si nul/indisponible) ; ETP → ETP (« ~ » si estimé), coût par ETP, heures. `PayrollVariation` partagé (hausse rose, baisse verte) ; `PayrollMetrics` expose `hours`. Formules et calcul des ETP inchangés. 233 tests, tsc OK.

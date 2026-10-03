@@ -76,6 +76,7 @@ describe('personnelSalaryImport', () => {
 describe('parsePayrollLine', () => {
   it('lit nom, entrée, sortie et emploi sans prendre le jour/mois d\'une date pour la période', () => {
     expect(parsePayrollLine(LINE_LEAVER)).toEqual({
+      matricule: '00100',
       identity: 'BOUMEDIENE MEROUANE Adybe',
       entryDate: '07/08/2026',
       exitDate: '22/09/2026',
@@ -85,6 +86,7 @@ describe('parsePayrollLine', () => {
 
   it('une ligne sans sortie n\'a pas de date de sortie ; « (forfait jour) » est retiré du nom', () => {
     expect(parsePayrollLine(LINE_PRINGY)).toEqual({
+      matricule: '000019',
       identity: 'PRINGY NICOLAS',
       entryDate: '01/11/2021',
       exitDate: undefined,

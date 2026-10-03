@@ -14,6 +14,7 @@ import {
   buildPayrollCategories,
   buildPayrollRowsFromText,
   buildSalaryPreviewRows,
+  buildPayrollStoredLines,
   extractPayrollPageTotals,
   getPayrollTargetPeriodFromText,
 } from '@/features/dashboard/importHelpers/personnelSalaryImport';
@@ -1499,6 +1500,7 @@ export function useDashboardImportHandlers({
             targetYear,
             rows: buildSalaryPreviewRows(pdfRows),
             totals: extractPayrollPageTotals(text),
+            payrollLines: buildPayrollStoredLines(text),
           });
         } catch {
           errors.push(`${file.name} : lecture impossible`);
@@ -1558,7 +1560,7 @@ export function useDashboardImportHandlers({
     // supprimés : les nouveaux montants du PDF remplacent les anciens (le taux calculé s'affiche de nouveau).
     const categories = buildPayrollCategories(importedRows);
     updateSalariesConfigForYear(preview.targetYear, preview.targetMonth, current => (
-      current?.locked ? current : { ...(current ?? { locked: false }), categories, totals: preview.totals ?? undefined, tauxCibles: undefined }
+      current?.locked ? current : { ...(current ?? { locked: false }), categories, totals: preview.totals ?? undefined, payrollLines: preview.payrollLines, tauxCibles: undefined }
     ));
 
     // On se place sur l'année et le mois importés pour que le résultat soit visible.

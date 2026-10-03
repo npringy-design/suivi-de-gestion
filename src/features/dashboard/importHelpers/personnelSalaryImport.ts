@@ -1,6 +1,6 @@
 import type { SalarieRow } from '@/contexts/DataContext';
 import { FULL_TIME_MONTHLY_HOURS } from '@/lib/constants';
-import type { PayrollCandidateLine, PayrollPageTotals, PayrollPerson, SalaryImportPreviewRow } from '@/types/dataTypes';
+import type { PayrollCandidateLine, PayrollPageTotals, PayrollPerson, PayrollStoredLine, SalaryImportPreviewRow } from '@/types/dataTypes';
 import { parseHourInputToDecimal } from '@/lib/utils';
 
 import { inferPersonnelFromJob } from './payrollJobCategories';
@@ -171,6 +171,7 @@ export const extractPayrollCandidateLines = (text: string): PayrollCandidateLine
 };
 
 export type ParsedPayrollLine = {
+  matricule?: string;
   identity: string; // nom lu dans le PDF, sans matricule ni « (forfait jour) »
   entryDate?: string; // dd/mm/yyyy
   exitDate?: string; // dd/mm/yyyy : présente seulement pour un sortant
@@ -200,7 +201,42 @@ export const parsePayrollLine = (sourceLine: string): ParsedPayrollLine => {
     ? head.slice(lastDate.index + lastDate[0].length).replace(/\s+/g, ' ').trim()
     : '';
 
-  return { identity, entryDate: dates[0]?.[0], exitDate: dates[1]?.[0], jobTitle };
+  const matricule = head.match(/^\s*(\d{3,})\s+/)?.[1];
+
+  return { matricule, identity, entryDate: dates[0]?.[0], exitDate: dates[1]?.[0], jobTitle };
+};
+
+// Toutes les lignes de la page du PDF, sortants compris, pour l'analyse des écarts de coût. Plusieurs lignes d'une même
+// personne (changement de contrat) sont cumulées. N'alimente ni les taux horaires ni `categories`.
+export const buildPayrollStoredLines = (text: string): PayrollStoredLine[] => {
+  const byKey = new Map<string, PayrollStoredLine>();
+
+  extractPayrollCandidateLines(text).forEach(candidate => {
+    const parsed = parsePayrollLine(candidate.line);
+    const name = normalizePersonnelText(parsed.identity);
+    if (!name) return;
+    const key = parsed.matricule ?? name;
+    const forfaitJour = isForfaitJourLine(candidate.line);
+
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.heures += candidate.heures;
+      existing.coutGlobal += candidate.coutGlobal;
+      existing.exitDate = existing.exitDate ?? parsed.exitDate;
+      existing.forfaitJour = existing.forfaitJour || forfaitJour || undefined;
+      return;
+    }
+    byKey.set(key, {
+      key,
+      nom: parsed.identity,
+      heures: candidate.heures,
+      coutGlobal: candidate.coutGlobal,
+      ...(parsed.exitDate ? { exitDate: parsed.exitDate } : {}),
+      ...(forfaitJour ? { forfaitJour: true } : {}),
+    });
+  });
+
+  return [...byKey.values()];
 };
 
 export const buildPayrollCategories = (rows: PayrollCategoryInput[]): SalariesCategories => {

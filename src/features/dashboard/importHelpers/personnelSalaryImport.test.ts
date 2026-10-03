@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractPayrollPageTotals } from './personnelSalaryImport';
+import { buildPayrollStoredLines, extractPayrollPageTotals } from './personnelSalaryImport';
 
 const PDF_TEXT = [
   'DUPONT Jean 151,67 3 000,00 800,00 26,67 - 3 800,00',
@@ -53,6 +53,20 @@ describe('extractPayrollPageTotals', () => {
     const totals = extractPayrollPageTotals(text)!;
     expect(totals.forfaitsJour).toBe(1);
     expect(totals.etp).toBeCloseTo((151.67 + 100 + 151.67) / 151.67, 2);
+  });
+
+  it('lignes stockées : toutes les lignes, sortants et forfaits jour compris, clé = matricule', () => {
+    const tail = '1 000,00 300,00 24,00 10,00 1 300,00 5,00';
+    const text = [
+      `00001 DUPONT Jean 01/01/2020 Cuisinier 09/2026 151,67 ${tail}`,
+      `00002 MARTIN Paul 01/01/2020 22/09/2026 Serveur 09/2026 100,00 ${tail}`,
+      `DURAND Anne (forfait jour) 01/01/2020 Directrice 09/2026 ${tail}`,
+    ].join('\n');
+    const lines = buildPayrollStoredLines(text);
+    expect(lines.map(line => line.key)).toEqual(['00001', '00002', 'DURAND ANNE']);
+    expect(lines[1]).toMatchObject({ nom: 'MARTIN Paul', exitDate: '22/09/2026', heures: 100 });
+    expect(lines[2]).toMatchObject({ forfaitJour: true, heures: 151.67 });
+    expect(lines[0].exitDate).toBeUndefined();
   });
 
   it('gère les fins de ligne Windows', () => {

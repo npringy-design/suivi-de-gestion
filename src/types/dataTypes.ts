@@ -197,11 +197,23 @@ export type PayrollPageTotals = {
   forfaitsJour?: number; // nombre de lignes « forfait jour » du PDF
 };
 
+// Ligne du PDF coûts salariaux conservée telle quelle (sortants et lignes ignorées compris) pour l'analyse des écarts.
+// Jamais utilisée pour les taux horaires ni pour `categories`.
+export type PayrollStoredLine = {
+  key: string; // matricule du PDF, sinon nom normalisé (majuscules, sans accents, espaces réduits)
+  nom: string;
+  heures: number; // 151,67 pour un forfait jour
+  coutGlobal: number;
+  exitDate?: string; // dd/mm/yyyy : sortant
+  forfaitJour?: boolean;
+};
+
 export type MonthDataSalariesConfig = {
   locked: boolean;
   categories: Record<string, SalarieRow[]>;
   tauxCibles?: Record<string, number>; // taux horaire cible €/h par catégorie (cadre, maitrise, niv12, niv3, apprenti)
   totals?: PayrollPageTotals; // totaux du PDF coûts salariaux (absent sur les imports antérieurs)
+  payrollLines?: PayrollStoredLine[]; // toutes les lignes du PDF (absent sur les imports antérieurs)
 };
 
 export type PersonnelSchema = 'global' | 'cuisine_salle';
@@ -254,6 +266,8 @@ export type SalaryImportPreview = {
   rows: SalaryImportPreviewRow[];
   // Totaux de bas de page du PDF (null si le format n'est pas reconnu)
   totals: PayrollPageTotals | null;
+  // Toutes les lignes de la page (sortants, lignes ignorées ou réintégrées), indépendamment des statuts de l'aperçu
+  payrollLines: PayrollStoredLine[];
 };
 
 // ============================================================================
