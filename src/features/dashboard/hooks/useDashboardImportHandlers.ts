@@ -12,13 +12,12 @@ import type {
 } from '@/contexts/DataContext';
 import {
   buildPayrollCategories,
-  buildPayrollImportFromText,
-  extractPayrollCandidateLines,
-  extractPayrollLineName,
+  buildPayrollRowsFromText,
+  buildSalaryPreviewRows,
   extractPayrollPageTotals,
   getPayrollTargetPeriodFromText,
-  mergePersonnelAlias,
 } from '@/features/dashboard/importHelpers/personnelSalaryImport';
+import { applyImportedPersonnel } from '@/features/dashboard/importHelpers/salaryImportApply';
 import type { SalaryImportPreview, SalaryImportPreviewRow } from '@/types/dataTypes';
 import { parseRecapPeriodeCaisse } from '@/features/caisse/caisseRecapPeriodeParser';
 import type {
@@ -1445,10 +1444,6 @@ export function useDashboardImportHandlers({
 
     try {
       const configuredPersonnel = personnelInfos.filter(item => item.nom.trim());
-      if (configuredPersonnel.length === 0) {
-        setSalaryImportStatus('Erreur : renseigne d abord la page Info personnel pour matcher les noms du PDF.');
-        return;
-      }
 
       const errors: string[] = [];
       const newPreviews: SalaryImportPreview[] = [];
@@ -1462,45 +1457,27 @@ export function useDashboardImportHandlers({
             errors.push(`${file.name} : mois non détecté`);
             continue;
           }
-          const result = buildPayrollImportFromText(text, configuredPersonnel);
-          if (result.matches.length === 0) {
-            errors.push(`${file.name} : aucun salarié matché`);
+          // On part des lignes du PDF : fiches Info personnel rapprochées, nouveaux salariés proposés,
+          // sortants (date de sortie) exclus par défaut des taux horaires.
+          const pdfRows = buildPayrollRowsFromText(text, configuredPersonnel);
+          if (pdfRows.length === 0) {
+            errors.push(`${file.name} : aucune ligne salarié reconnue`);
             continue;
           }
           const targetMonth = payrollPeriod.targetMonth;
-          const currentConfig = globalData[targetMonth]?.salariesConfig || { locked: false, categories: result.categories };
-          if (currentConfig.locked) {
+          if (globalData[targetMonth]?.salariesConfig?.locked) {
             errors.push(`${file.name} : mois ${payrollPeriod.targetLabel} verrouillé`);
             continue;
           }
+          const matchedIds = new Set(pdfRows.filter(row => !row.isNew).map(row => row.personnel.id));
           newPreviews.push({
             id: `${Date.now()}-salaires-${fileIndex}-${file.name}`,
             fileName: file.name,
             sourceLabel: payrollPeriod.sourceLabel,
             targetLabel: payrollPeriod.targetLabel,
             targetMonth,
-            rows: [
-              ...result.matches.map((match): SalaryImportPreviewRow => ({
-                personnel: match.personnel,
-                status: 'matched',
-                origin: 'matched',
-                heures: match.heures,
-                coutGlobal: match.coutGlobal,
-                sourceLine: match.sourceLine,
-                saveAlias: false,
-              })),
-              ...result.unmatched.map((personnel): SalaryImportPreviewRow => ({
-                personnel,
-                status: 'unmatched',
-                origin: 'unmatched',
-                heures: 0,
-                coutGlobal: 0,
-                sourceLine: '',
-                saveAlias: false,
-              })),
-            ],
-            orphanLines: result.orphanLines,
-            candidateLines: extractPayrollCandidateLines(text),
+            rows: buildSalaryPreviewRows(pdfRows),
+            availablePersonnel: configuredPersonnel.filter(personnel => !matchedIds.has(personnel.id)),
             totals: extractPayrollPageTotals(text),
           });
         } catch {
@@ -1512,9 +1489,11 @@ export function useDashboardImportHandlers({
 
       const statusParts: string[] = [];
       if (newPreviews.length > 0) {
-        const matchedCount = newPreviews.reduce((sum, preview) => sum + preview.rows.filter(row => row.status === 'matched').length, 0);
-        const unmatchedCount = newPreviews.reduce((sum, preview) => sum + preview.rows.filter(row => row.status === 'unmatched').length, 0);
-        statusParts.push(`Aperçu prêt : ${matchedCount} trouvés, ${unmatchedCount} non matchés — vérifiez puis validez.`);
+        const previewRows = newPreviews.flatMap(preview => preview.rows);
+        const leaverCount = previewRows.filter(row => row.exitDate).length;
+        const newCount = previewRows.filter(row => row.origin === 'new' && !row.exitDate).length;
+        const foundCount = previewRows.filter(row => row.origin === 'matched' && !row.exitDate).length;
+        statusParts.push(`Aperçu prêt : ${foundCount} rapproché(s), ${newCount} nouveau(x) à confirmer, ${leaverCount} sortant(s) exclu(s) des taux horaires — vérifiez puis validez.`);
       }
       if (errors.length > 0) statusParts.push(`Erreurs : ${errors.join(', ')}`);
       setSalaryImportStatus(statusParts.join(' — ') || 'Aucun fichier traité.');
@@ -1545,45 +1524,35 @@ export function useDashboardImportHandlers({
       return;
     }
 
-    const importedRows = preview.rows.filter(row => (row.status === 'matched' || row.status === 'manual') && row.heures > 0 && row.coutGlobal > 0);
+    const importedRows = preview.rows.filter(row => (row.status === 'matched' || row.status === 'manual' || row.status === 'new') && row.heures > 0 && row.coutGlobal > 0);
     if (importedRows.length === 0) {
       setSalaryImportStatus(`Erreur : ${preview.fileName} : aucun salarié avec heures et coût global à importer`);
       return;
     }
 
+    // categories (taux horaires par échelon) : lignes retenues uniquement, sortants exclus par défaut ;
+    // totals (bas de page du PDF, tout le monde compris) : toujours importés, indépendamment des lignes.
     const categories = buildPayrollCategories(importedRows);
-    // Totaux de bas de page : un nouvel import remplace les anciens (jamais de totaux périmés d'un autre PDF).
     updateSalariesConfig(preview.targetMonth, { ...(currentConfig || { locked: false }), categories, totals: preview.totals ?? undefined });
 
-    const aliasByPersonnelId = new Map<string, string>();
-    preview.rows
-      .filter(row => row.saveAlias && row.sourceLine && row.status !== 'ignored')
-      .forEach(row => {
-        const alias = extractPayrollLineName(row.sourceLine);
-        if (alias) aliasByPersonnelId.set(row.personnel.id, alias);
-      });
-    let savedAliases = 0;
-    if (aliasByPersonnelId.size > 0) {
-      const nextPersonnelInfos = personnelInfos.map(personnel => {
-        const alias = aliasByPersonnelId.get(personnel.id);
-        if (!alias) return personnel;
-        const aliases = mergePersonnelAlias(personnel, alias);
-        if (aliases === personnel.aliases) return personnel;
-        savedAliases += 1;
-        return { ...personnel, aliases };
-      });
-      if (savedAliases > 0) updatePersonnelInfos(nextPersonnelInfos);
-    }
+    // Nouveaux salariés confirmés : fiche créée dans Info personnel pour être reconnue aux imports suivants.
+    const { personnelInfos: nextPersonnelInfos, createdCount, savedAliases } = applyImportedPersonnel(
+      personnelInfos,
+      importedRows,
+      () => `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    if (createdCount > 0 || savedAliases > 0) updatePersonnelInfos(nextPersonnelInfos);
 
     setMonth(preview.targetMonth);
     setSelectedMonth(preview.targetMonth);
     setSalaryImportPreviews(prev => prev.filter(item => item.id !== previewId));
 
-    const stillUnmatched = preview.rows.filter(row => row.status === 'unmatched').length;
+    const excludedLeavers = preview.rows.filter(row => row.status === 'ignored' && row.exitDate).length;
     const incomplete = preview.rows.filter(row => row.status === 'manual' && (row.heures <= 0 || row.coutGlobal <= 0)).length;
     const statusParts = [`Paie ${preview.sourceLabel} importée sur ${preview.targetLabel} : ${importedRows.length} salarié(s)`];
     if (savedAliases > 0) statusParts.push(`${savedAliases} alias mémorisé(s)`);
-    if (stillUnmatched > 0) statusParts.push(`Attention : ${stillUnmatched} non matché(s) traité(s) comme ignoré(s)`);
+    if (createdCount > 0) statusParts.push(`${createdCount} nouvelle(s) fiche(s) créée(s) dans Info personnel`);
+    if (excludedLeavers > 0) statusParts.push(`${excludedLeavers} sortant(s) exclu(s) des taux horaires`);
     if (incomplete > 0) statusParts.push(`Attention : ${incomplete} ligne(s) sans heures ou coût non importée(s)`);
     setSalaryImportStatus(statusParts.join(' — '));
   };

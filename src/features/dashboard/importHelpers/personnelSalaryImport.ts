@@ -1,5 +1,6 @@
 import type { PersonnelInfo, SalarieRow } from '@/contexts/DataContext';
-import type { PayrollCandidateLine, PayrollPageTotals } from '@/types/dataTypes';
+import type { PayrollCandidateLine, PayrollPageTotals, SalaryImportPreviewRow } from '@/types/dataTypes';
+import { inferPersonnelFromJob } from './payrollJobCategories';
 import { parseHourInputToDecimal } from '@/lib/utils';
 
 export const PERSONNEL_CATEGORIES = ['cadre', 'maitrise', 'niv12', 'niv3', 'apprenti'] as const;
@@ -26,14 +27,6 @@ type SalariesCategories = Record<PersonnelCategory, SalarieRow[]>;
 export const getPayrollProvisionMultiplier = (category?: PersonnelCategory | string) =>
   category === 'cadre' ? 1.18 : 1.10;
 
-export type PayrollMatch = {
-  personnel: PersonnelInfo;
-  heures: number;
-  coutGlobal: number;
-  coutHoraire: number;
-  sourceLine: string;
-};
-
 export type PayrollTargetPeriod = {
   sourceMonth: number;
   sourceYear: number;
@@ -41,14 +34,6 @@ export type PayrollTargetPeriod = {
   targetYear: number;
   sourceLabel: string;
   targetLabel: string;
-};
-
-export type PayrollImportResult = {
-  categories: SalariesCategories;
-  matches: PayrollMatch[];
-  unmatched: PersonnelInfo[];
-  // Lignes candidates du PDF qui ne sont la sourceLine d'aucun match
-  orphanLines: PayrollCandidateLine[];
 };
 
 export type PayrollCategoryInput = {
@@ -146,21 +131,6 @@ const numberMatches = (text: string) =>
     }))
     .filter(item => item.value !== 0);
 
-const extractNumberNearLabels = (text: string, labels: string[]) => {
-  const normalizedText = normalizePersonnelText(text);
-  const matches = numberMatches(text);
-
-  for (const label of labels) {
-    const labelIndex = normalizedText.indexOf(normalizePersonnelText(label));
-    if (labelIndex < 0) continue;
-
-    const afterLabel = matches.find(item => item.index >= labelIndex);
-    if (afterLabel) return afterLabel.value;
-  }
-
-  return 0;
-};
-
 const isForfaitJourLine = (line: string) => normalizePersonnelText(line).includes('FORFAIT JOUR');
 
 const extractPayrollTableValues = (sourceLine: string) => {
@@ -179,20 +149,6 @@ const extractPayrollTableValues = (sourceLine: string) => {
     : values.slice(0, Math.max(0, values.length - 6)).at(-1) || 0;
 
   return heures > 0 && coutGlobal > 0 ? { hours: heures, cost: coutGlobal } : null;
-};
-
-export const extractPayrollValues = (sourceLine: string, context: string) => {
-  const tableValues = extractPayrollTableValues(sourceLine);
-  if (tableValues) return tableValues;
-
-  const text = `${sourceLine} ${context}`;
-  const labeledHours = extractNumberNearLabels(text, ['total heures', 'heures payees', 'heures mensuelles', 'heures', 'hrs']);
-  const labeledCost = extractNumberNearLabels(text, ['cout global', 'cout total charge', 'cout total', 'salaire charge', 'total charge']);
-  const numbers = numberMatches(sourceLine);
-  const hours = labeledHours || numbers.find(item => item.value > 0 && item.value <= 260)?.value || 0;
-  const cost = labeledCost || [...numbers].reverse().find(item => item.value >= 100)?.value || 0;
-
-  return { hours, cost };
 };
 
 const splitPayrollLines = (text: string) =>
@@ -217,13 +173,41 @@ export const extractPayrollCandidateLines = (text: string): PayrollCandidateLine
   return candidates;
 };
 
-// Nom porté par une ligne du PDF : texte avant le premier nombre ou la première date
-export const extractPayrollLineName = (line: string) => {
-  const beforeFirstDigit = (line.match(/^[^\d]*/)?.[0] || '')
-    .replace(/[\s\-–:;,.|/]+$/, '')
-    .trim();
-  return /[A-Za-zÀ-ÿ].*[A-Za-zÀ-ÿ]/.test(beforeFirstDigit) ? beforeFirstDigit : '';
+export type ParsedPayrollLine = {
+  identity: string; // nom lu dans le PDF, sans matricule ni « (forfait jour) »
+  entryDate?: string; // dd/mm/yyyy
+  exitDate?: string; // dd/mm/yyyy : présente seulement pour un sortant
+  jobTitle: string;
 };
+
+const PAYROLL_FULL_DATE = /\b\d{2}\/\d{2}\/\d{4}\b/g;
+// Période MM/AAAA, hors jour/mois d'une date complète (le « 08/2026 » de « 07/08/2026 » n'en est pas une).
+const PAYROLL_PERIOD = /(?<![\d/])(?:0[1-9]|1[0-2])\/20\d{2}\b/g;
+
+// Ligne du PDF : matricule, nom, Entrée, [Sortie], emploi, période MM/AAAA, puis les valeurs de paie.
+// Ex. « 00100 BOUMEDIENE MEROUANE 07/08/2026 22/09/2026 Apprenti serveur 09/2026 ... »
+export const parsePayrollLine = (sourceLine: string): ParsedPayrollLine => {
+  const line = sourceLine.replace(/\u00a0/g, ' ');
+  const periodMatch = Array.from(line.matchAll(PAYROLL_PERIOD)).at(-1);
+  const head = periodMatch?.index !== undefined ? line.slice(0, periodMatch.index) : line;
+  const dates = Array.from(head.matchAll(PAYROLL_FULL_DATE));
+  const identityEnd = dates[0]?.index ?? head.length;
+  const identity = head
+    .slice(0, identityEnd)
+    .replace(/^\s*\d{3,}\s+/, '')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const lastDate = dates.at(-1);
+  const jobTitle = lastDate?.index !== undefined
+    ? head.slice(lastDate.index + lastDate[0].length).replace(/\s+/g, ' ').trim()
+    : '';
+
+  return { identity, entryDate: dates[0]?.[0], exitDate: dates[1]?.[0], jobTitle };
+};
+
+// Nom porté par une ligne du PDF (utilisé comme alias mémorisé)
+export const extractPayrollLineName = (line: string) => parsePayrollLine(line).identity;
 
 // Ajoute un alias à la liste existante, sans doublon (comparaison normalisée), séparateur « ; »
 export const mergePersonnelAlias = (personnel: PersonnelInfo, alias: string) => {
@@ -265,28 +249,6 @@ export const buildPayrollCategories = (rows: PayrollCategoryInput[]): SalariesCa
   return categories;
 };
 
-const findPersonnelLine = (text: string, personnel: PersonnelInfo) => {
-  const lines = splitPayrollLines(text);
-
-  const names = [personnel.nom, ...splitAliases(personnel.aliases)];
-  for (const name of names) {
-    const compactName = compactPersonnelText(name);
-    if (!compactName) continue;
-
-    const exactLine = lines.find(line => compactPersonnelText(line).includes(compactName));
-    if (exactLine) return exactLine;
-
-    const tokens = normalizePersonnelText(name).split(/\s+/).filter(token => token.length >= 2);
-    const tokenLine = lines.find(line => {
-      const normalizedLine = normalizePersonnelText(line);
-      return tokens.length > 0 && tokens.every(token => normalizedLine.includes(token));
-    });
-    if (tokenLine) return tokenLine;
-  }
-
-  return '';
-};
-
 // Ligne « Total général » (sans tiret derrière : les « Total général - ... » sont des sous-totaux) :
 // Brut, Charges patronales, % charges, Supp. coût, Coût global. Un « - » isolé n'est pas capturé comme
 // nombre, on lit donc la 1re, la 2e et la dernière valeur. Les heures viennent de la 3e valeur de
@@ -323,35 +285,113 @@ export const extractPayrollPageTotals = (text: string): PayrollPageTotals | null
   };
 };
 
-export const buildPayrollImportFromText = (text: string, personnelInfos: PersonnelInfo[]): PayrollImportResult => {
-  const matches: PayrollMatch[] = [];
-  const unmatched: PersonnelInfo[] = [];
+// Rapproche le nom lu dans une ligne du PDF d'une fiche Info personnel (nom ou alias).
+// Insensible à la casse, aux accents et à l'ordre prénom/nom. À score égal la première fiche l'emporte ;
+// un nom complet retrouvé dans la ligne (score ≥ 1000) prime sur un simple recoupement de mots.
+export const findPersonnelForIdentity = (identity: string, personnelInfos: PersonnelInfo[]): PersonnelInfo | null => {
+  const compactIdentity = compactPersonnelText(identity);
+  if (!compactIdentity) return null;
+  const words = new Set(normalizePersonnelText(identity).split(' ').filter(Boolean));
 
-  personnelInfos.forEach(personnel => {
-    const sourceLine = findPersonnelLine(text, personnel);
-    if (!sourceLine) {
-      unmatched.push(personnel);
+  let best: PersonnelInfo | null = null;
+  let bestScore = 0;
+  for (const personnel of personnelInfos) {
+    for (const name of [personnel.nom, ...splitAliases(personnel.aliases)]) {
+      const compactName = compactPersonnelText(name);
+      if (!compactName) continue;
+
+      let score = 0;
+      if (compactName.length >= 4 && compactIdentity.includes(compactName)) {
+        score = 1000 + compactName.length;
+      } else {
+        const tokens = normalizePersonnelText(name).split(' ').filter(token => token.length >= 2);
+        if (tokens.length > 0 && tokens.every(token => words.has(token))) score = tokens.join('').length;
+      }
+      if (score > bestScore) {
+        best = personnel;
+        bestScore = score;
+      }
+    }
+  }
+
+  return best;
+};
+
+// Ligne du PDF rapprochée d'une fiche (ou d'un nouveau salarié) : base de l'aperçu d'import.
+export type PayrollPdfRow = {
+  personnel: PersonnelInfo; // fiche existante, ou brouillon (id « nouveau-N ») si isNew
+  isNew: boolean;
+  heures: number;
+  coutGlobal: number;
+  sourceLine: string;
+  jobTitle: string;
+  exitDate?: string;
+};
+
+const formatNewPersonnelName = (identity: string) =>
+  identity.toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu, (_match, separator: string, letter: string) => `${separator}${letter.toUpperCase()}`);
+
+// Parcourt les lignes du PDF (et non la liste Info personnel) : un ancien salarié absent des fiches est lu,
+// une fiche absente du PDF est simplement hors période. Plusieurs lignes d'une même personne sont cumulées.
+export const buildPayrollRowsFromText = (text: string, personnelInfos: PersonnelInfo[]): PayrollPdfRow[] => {
+  const rows: PayrollPdfRow[] = [];
+  const rowByKey = new Map<string, PayrollPdfRow>();
+
+  extractPayrollCandidateLines(text).forEach(candidate => {
+    const parsed = parsePayrollLine(candidate.line);
+    if (!parsed.identity) return;
+
+    const known = findPersonnelForIdentity(parsed.identity, personnelInfos);
+    const key = known ? `fiche:${known.id}` : `pdf:${compactPersonnelText(parsed.identity)}`;
+    const existing = rowByKey.get(key);
+    if (existing) {
+      existing.heures += candidate.heures;
+      existing.coutGlobal += candidate.coutGlobal;
+      existing.exitDate = existing.exitDate ?? parsed.exitDate;
       return;
     }
 
-    const lineIndex = text.indexOf(sourceLine);
-    const context = lineIndex >= 0 ? text.slice(Math.max(0, lineIndex - 160), lineIndex + sourceLine.length + 220) : sourceLine;
-    const { hours, cost } = extractPayrollValues(sourceLine, context);
-    if (hours <= 0 || cost <= 0) {
-      unmatched.push(personnel);
-      return;
-    }
-
-    const coutHoraire = (cost * getPayrollProvisionMultiplier(personnel.category)) / hours;
-    matches.push({ personnel, heures: hours, coutGlobal: cost, coutHoraire, sourceLine });
+    const inferred = inferPersonnelFromJob(parsed.jobTitle);
+    const row: PayrollPdfRow = {
+      personnel: known ?? {
+        id: `nouveau-${rows.length + 1}`,
+        nom: formatNewPersonnelName(parsed.identity),
+        category: inferred.category,
+        department: inferred.department,
+        aliases: '',
+      },
+      isNew: !known,
+      heures: candidate.heures,
+      coutGlobal: candidate.coutGlobal,
+      sourceLine: candidate.line,
+      jobTitle: parsed.jobTitle,
+      exitDate: parsed.exitDate,
+    };
+    rows.push(row);
+    rowByKey.set(key, row);
   });
 
-  const categories = buildPayrollCategories(matches);
-  const matchedLines = new Set(matches.map(match => match.sourceLine));
-  const orphanLines = extractPayrollCandidateLines(text).filter(candidate => !matchedLines.has(candidate.line));
-
-  return { categories, matches, unmatched, orphanLines };
+  return rows;
 };
+
+// Lignes de l'aperçu : un sortant (date de sortie présente) passe par défaut en « ignoré » — son coût est gonflé
+// par le solde de tout compte —, réintégrable d'un clic. Il reste compté dans les totaux de bas de page.
+export const buildSalaryPreviewRows = (rows: PayrollPdfRow[]): SalaryImportPreviewRow[] =>
+  rows.map(row => {
+    const origin = row.isNew ? 'new' : 'matched';
+    return {
+      personnel: row.personnel,
+      status: row.exitDate ? 'ignored' : origin,
+      origin,
+      statusBeforeIgnore: row.exitDate ? origin : undefined,
+      heures: row.heures,
+      coutGlobal: row.coutGlobal,
+      sourceLine: row.sourceLine,
+      saveAlias: false,
+      jobTitle: row.jobTitle,
+      exitDate: row.exitDate,
+    };
+  });
 
 export const averagePayrollRate = (rows: SalarieRow[], department?: 'cuisine' | 'salle', category?: PersonnelCategory | string) => {
   const rates = rows
