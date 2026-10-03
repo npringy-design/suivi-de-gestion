@@ -1,5 +1,5 @@
 import type { PersonnelInfo, SalarieRow } from '@/contexts/DataContext';
-import type { PayrollCandidateLine } from '@/types/dataTypes';
+import type { PayrollCandidateLine, PayrollPageTotals } from '@/types/dataTypes';
 import { parseHourInputToDecimal } from '@/lib/utils';
 
 export const PERSONNEL_CATEGORIES = ['cadre', 'maitrise', 'niv12', 'niv3', 'apprenti'] as const;
@@ -285,6 +285,42 @@ const findPersonnelLine = (text: string, personnel: PersonnelInfo) => {
   }
 
   return '';
+};
+
+// Ligne « Total général » (sans tiret derrière : les « Total général - ... » sont des sous-totaux) :
+// Brut, Charges patronales, % charges, Supp. coût, Coût global. Un « - » isolé n'est pas capturé comme
+// nombre, on lit donc la 1re, la 2e et la dernière valeur. Les heures viennent de la 3e valeur de
+// « Total général - périodes avec heures ». On garde la dernière occurrence (bas de la dernière page).
+const PAGE_TOTAL_LINE = /^\s*total\s+g[eé]n[eé]ral(?!\s*[-–—])/i;
+const HOURS_TOTAL_LINE = /^\s*total\s+g[eé]n[eé]ral\s*[-–—]\s*p[eé]riodes\s+avec\s+heures/i;
+
+const valuesAfterLabel = (line: string, label: RegExp): number[] | null => {
+  const match = line.match(label);
+  return match ? numberMatches(line.slice(match[0].length)).map(item => item.value) : null;
+};
+
+export const extractPayrollPageTotals = (text: string): PayrollPageTotals | null => {
+  let totalValues: number[] = [];
+  let hoursValues: number[] = [];
+
+  for (const line of text.split(/\r?\n/)) {
+    const hours = valuesAfterLabel(line, HOURS_TOTAL_LINE);
+    if (hours) {
+      hoursValues = hours;
+      continue;
+    }
+    const total = valuesAfterLabel(line, PAGE_TOTAL_LINE);
+    if (total && total.length >= 3) totalValues = total;
+  }
+
+  if (totalValues.length < 3) return null;
+
+  return {
+    brut: totalValues[0],
+    chargesPatronales: totalValues[1],
+    coutGlobal: totalValues[totalValues.length - 1],
+    ...(hoursValues.length >= 3 ? { heures: hoursValues[2] } : {}),
+  };
 };
 
 export const buildPayrollImportFromText = (text: string, personnelInfos: PersonnelInfo[]): PayrollImportResult => {

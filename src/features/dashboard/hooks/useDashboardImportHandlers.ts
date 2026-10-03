@@ -15,6 +15,7 @@ import {
   buildPayrollImportFromText,
   extractPayrollCandidateLines,
   extractPayrollLineName,
+  extractPayrollPageTotals,
   getPayrollTargetPeriodFromText,
   mergePersonnelAlias,
 } from '@/features/dashboard/importHelpers/personnelSalaryImport';
@@ -1500,6 +1501,7 @@ export function useDashboardImportHandlers({
             ],
             orphanLines: result.orphanLines,
             candidateLines: extractPayrollCandidateLines(text),
+            totals: extractPayrollPageTotals(text),
           });
         } catch {
           errors.push(`${file.name} : lecture impossible`);
@@ -1550,7 +1552,8 @@ export function useDashboardImportHandlers({
     }
 
     const categories = buildPayrollCategories(importedRows);
-    updateSalariesConfig(preview.targetMonth, { ...(currentConfig || { locked: false }), categories });
+    // Totaux de bas de page : un nouvel import remplace les anciens (jamais de totaux périmés d'un autre PDF).
+    updateSalariesConfig(preview.targetMonth, { ...(currentConfig || { locked: false }), categories, totals: preview.totals ?? undefined });
 
     const aliasByPersonnelId = new Map<string, string>();
     preview.rows

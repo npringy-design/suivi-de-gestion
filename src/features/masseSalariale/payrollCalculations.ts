@@ -3,7 +3,8 @@ import type { PayrollMonthEntry } from '@/types/dataTypes';
 import { payrollMonthKey } from './payrollDefaults';
 
 // Valeurs reprises automatiquement de Config Salaires (somme des salariés du mois).
-export type AutoPayroll = { totalCost: number; hours: number };
+// gross / employerCharges : présents quand l'import PDF a fourni les totaux de bas de page.
+export type AutoPayroll = { totalCost: number; hours: number; gross?: number; employerCharges?: number };
 
 export type ResolvedPayroll = {
   gross: number | null;
@@ -50,6 +51,10 @@ export const resolvePayroll = (entry: PayrollMonthEntry | undefined, auto: AutoP
     totalCost = autoTotal;
     if (gross !== null) employerCharges = autoTotal - gross;
     else if (employerCharges !== null) gross = autoTotal - employerCharges;
+    else {
+      gross = auto?.gross ?? null;
+      employerCharges = auto?.employerCharges ?? null;
+    }
   }
 
   if (gross === null && employerCharges === null && totalCost === null) return null;

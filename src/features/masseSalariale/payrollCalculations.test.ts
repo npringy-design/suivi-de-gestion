@@ -154,3 +154,25 @@ describe('buildRollingSeries', () => {
     expect(series.find(p => p.key === '2025-10')!.gross).toBeNull();
   });
 });
+
+describe('resolvePayroll avec totaux du PDF', () => {
+  const auto = { totalCost: 45521.82, hours: 2294.86, gross: 38091.35, employerCharges: 9244.53 };
+
+  it('sans saisie : brut et charges repris du PDF', () => {
+    const resolved = resolvePayroll(undefined, auto)!;
+    expect(resolved.gross).toBe(38091.35);
+    expect(resolved.employerCharges).toBe(9244.53);
+    expect(resolved.totalCost).toBe(45521.82);
+    expect(computePayrollMetrics(resolved, null)!.chargesRatePct).toBeCloseTo(24.27, 2);
+  });
+
+  it('brut saisi à la main : prioritaire, charges déduites du coût global', () => {
+    const resolved = resolvePayroll({ gross: 38000 }, auto)!;
+    expect(resolved.gross).toBe(38000);
+    expect(resolved.employerCharges).toBeCloseTo(7521.82, 2);
+  });
+
+  it('brut et charges saisis : la saisie prime entièrement', () => {
+    expect(resolvePayroll(sept26, auto)!.totalCost).toBeCloseTo(47335.88, 2);
+  });
+});

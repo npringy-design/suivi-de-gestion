@@ -185,10 +185,20 @@ export type SalarieRow = {
   importSourceLine?: string;
 };
 
+// Totaux « Total général » du bas de page du PDF coûts salariaux (source de vérité du brut / des charges,
+// contrairement à la somme des salariés matchés qui rate les non-matchés et les écarts d'arrondi).
+export type PayrollPageTotals = {
+  brut: number;
+  chargesPatronales: number;
+  coutGlobal: number;
+  heures?: number;
+};
+
 export type MonthDataSalariesConfig = {
   locked: boolean;
   categories: Record<string, SalarieRow[]>;
   tauxCibles?: Record<string, number>; // taux horaire cible €/h par catégorie (cadre, maitrise, niv12, niv3, apprenti)
+  totals?: PayrollPageTotals; // totaux du PDF coûts salariaux (absent sur les imports antérieurs)
 };
 
 export type PersonnelSchema = 'global' | 'cuisine_salle';
@@ -237,6 +247,8 @@ export type SalaryImportPreview = {
   orphanLines: PayrollCandidateLine[];
   // Toutes les lignes exploitables du PDF (choix d'association manuelle)
   candidateLines: PayrollCandidateLine[];
+  // Totaux de bas de page du PDF (null si le format n'est pas reconnu)
+  totals: PayrollPageTotals | null;
 };
 
 // ============================================================================

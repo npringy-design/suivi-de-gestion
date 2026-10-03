@@ -7,8 +7,9 @@ import type { AutoPayroll } from './payrollCalculations';
 // Somme des salariés de Config Salaires du mois (coût global = brut + charges patronales,
 // tel qu'issu de l'import PDF des coûts salariaux). Null si rien n'est renseigné.
 export const getAutoPayrollFromConfig = (monthData: MonthData | undefined): AutoPayroll | null => {
-  const categories = monthData?.salariesConfig?.categories;
-  if (!categories) return null;
+  const config = monthData?.salariesConfig;
+  const categories = config?.categories;
+  if (!config || !categories) return null;
 
   let totalCost = 0;
   let hours = 0;
@@ -18,6 +19,18 @@ export const getAutoPayrollFromConfig = (monthData: MonthData | undefined): Auto
       hours += parseHourInputToDecimal(row.heures);
     });
   });
+
+  // Totaux de bas de page du PDF en priorité (brut et charges séparés, salariés non matchés inclus) ;
+  // sinon repli sur la somme des salariés pour les imports antérieurs à l'extraction des totaux.
+  const totals = config.totals;
+  if (totals && totals.coutGlobal > 0) {
+    return {
+      totalCost: totals.coutGlobal,
+      hours: totals.heures ?? hours,
+      gross: totals.brut,
+      employerCharges: totals.chargesPatronales,
+    };
+  }
 
   return totalCost > 0 ? { totalCost, hours } : null;
 };

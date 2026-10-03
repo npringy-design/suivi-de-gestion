@@ -31,3 +31,35 @@ describe('getRealPayrollFromConfig', () => {
     expect(getRealPayrollFromConfig({ 2026: { 8: monthWithCost('1 000', '10') } }, 2026, 8)).toBeNull();
   });
 });
+
+describe('totaux du PDF (salariesConfig.totals)', () => {
+  const withTotals = (): MonthData =>
+    ({
+      salariesConfig: {
+        locked: false,
+        categories: { cadre: [{ nom: 'A', heures: '100', coutGlobal: '1 000', provision: '', coutHoraire: '' }] },
+        totals: { brut: 38091.35, chargesPatronales: 9244.53, coutGlobal: 45521.82, heures: 2294.86 },
+      },
+    }) as unknown as MonthData;
+
+  it('les totaux priment sur la somme des salariés', () => {
+    const auto = getAutoPayrollFromConfig(withTotals())!;
+    expect(auto).toEqual({ totalCost: 45521.82, hours: 2294.86, gross: 38091.35, employerCharges: 9244.53 });
+  });
+
+  it('heures de repli : somme des catégories si le PDF n\'en donne pas', () => {
+    const monthData = withTotals();
+    delete monthData.salariesConfig!.totals!.heures;
+    expect(getAutoPayrollFromConfig(monthData)!.hours).toBe(100);
+  });
+
+  it('sans totaux (import ancien) : repli sur la somme des salariés, brut/charges absents', () => {
+    expect(getAutoPayrollFromConfig(monthWithCost('1 000', '10'))).toEqual({ totalCost: 1000, hours: 10 });
+  });
+
+  it('le réel de septembre expose brut et charges lus sur octobre', () => {
+    const real = getRealPayrollFromConfig({ 2026: { 9: withTotals() } }, 2026, 8)!;
+    expect(real.gross).toBe(38091.35);
+    expect(real.employerCharges).toBe(9244.53);
+  });
+});
