@@ -4,12 +4,15 @@ import { computeVariation } from '../payrollCalculations';
 import type { PayrollComparison, PayrollMetrics } from '../payrollCalculations';
 import { ESTIMATE_HINT, PAYROLL_MEASURES } from '../payrollMeasures';
 import type { PayrollDetailRow, PayrollMeasure } from '../payrollMeasures';
+import type { PayrollVarianceView } from '../payrollVarianceSources';
+import PayrollVarianceCauses from './PayrollVarianceCauses';
 import PayrollVariation from './PayrollVariation';
 
 export type PayrollMonthDetail = {
   current: PayrollMetrics | null;
   lastYear: PayrollMetrics | null;
   vsLastYear: PayrollComparison;
+  variance: PayrollVarianceView | null; // causes de l'écart de coût vs N-1 (onglet Coût)
 };
 
 type PayrollMonthComparisonProps = {
@@ -46,35 +49,39 @@ export default function PayrollMonthComparison({ year, month, measure, detail }:
     row => !row.hideWhenEmpty || !(isEmpty(valueOf(row, current)) && isEmpty(valueOf(row, lastYear))),
   );
   const shortMonth = MONTH_NAMES_SHORT[month];
+  const variance = measure === 'cost' ? detail.variance : null;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-[12px]">
-        <thead>
-          <tr className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-slate-400">
-            <th className="px-2 pb-1.5 text-left">{MONTH_NAMES[month]}</th>
-            <th className="px-2 pb-1.5 text-right">{shortMonth} {year - 1}</th>
-            <th className="px-2 pb-1.5 text-right">{shortMonth} {year}</th>
-            <th className="px-2 pb-1.5 text-right">Écart</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(row => {
-            const variation = computeVariation(valueOf(row, current), valueOf(row, lastYear), row.kind === 'ratio');
-            return (
-              <tr key={row.key} className="border-t border-slate-900/10 font-bold text-slate-900">
-                <td className="px-2 py-1.5 text-left font-bold text-slate-500">{row.label}</td>
-                {/* computeVariation(courant, référence) : l'écart est courant − N-1 */}
-                <DetailCell row={row} metrics={lastYear} className={`${cell} text-slate-500`} />
-                <DetailCell row={row} metrics={current} className={`${cell} font-extrabold`} />
-                <td className={cell}>
-                  <PayrollVariation delta={variation?.delta ?? null} pct={variation?.pct ?? null} formatDelta={row.formatDelta} />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className={variance ? 'grid gap-4 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : undefined}>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-[12px]">
+          <thead>
+            <tr className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-slate-400">
+              <th className="px-2 pb-1.5 text-left">{MONTH_NAMES[month]}</th>
+              <th className="px-2 pb-1.5 text-right">{shortMonth} {year - 1}</th>
+              <th className="px-2 pb-1.5 text-right">{shortMonth} {year}</th>
+              <th className="px-2 pb-1.5 text-right">Écart</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(row => {
+              const variation = computeVariation(valueOf(row, current), valueOf(row, lastYear), row.kind === 'ratio');
+              return (
+                <tr key={row.key} className="border-t border-slate-900/10 font-bold text-slate-900">
+                  <td className="px-2 py-1.5 text-left font-bold text-slate-500">{row.label}</td>
+                  {/* computeVariation(courant, référence) : l'écart est courant − N-1 */}
+                  <DetailCell row={row} metrics={lastYear} className={`${cell} text-slate-500`} />
+                  <DetailCell row={row} metrics={current} className={`${cell} font-extrabold`} />
+                  <td className={cell}>
+                    <PayrollVariation delta={variation?.delta ?? null} pct={variation?.pct ?? null} formatDelta={row.formatDelta} />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {variance && <PayrollVarianceCauses variance={variance} />}
     </div>
   );
 }

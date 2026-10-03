@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 03/10/2026 (Masse Salariale : analyse des causes d'écart vs N-1)
+
+- Masse Salariale, détail d'un mois (onglet Coût) : bloc « D'où vient l'écart de ±X € ? » (`PayrollVarianceCauses`, à droite du tableau aligné, dessous sur mobile) qui décompose l'écart de coût global vs N-1 (`analyzePayrollVariance`, fonction pure) : sortants/STC (N en plus, N-1 en moins), arrivées, départs, puis pour les personnes présentes aux deux dates effet heures/contrat `(hN − hN-1) × tauxN-1` et effet coût horaire `(tauxN − tauxN-1) × hN` (heures nulles d'un côté : tout dans heures/contrat). Une personne n'entre que dans une cause ; appariement par clé (matricule ou nom), repli sur le nom sans ordre prénom/nom. Non détaillé = écart des totaux − somme des causes (affiché si ≥ 1 €), calcul au centime : somme exacte. Lignes lues sur le mois M+1 comme les totaux (`payrollVarianceSources.ts`) : `payrollLines` sinon repli sur `categories` (sortants absents, note « réimporte le PDF de … »). Cause cliquable (`aria-expanded`) → détail par personne. Aucun bloc en onglet ETP ni si un des deux mois n'a aucune ligne. 239 tests, tsc OK.
+
 ## 03/10/2026 (import PDF salaires : stockage de toutes les lignes, sortants inclus)
 
 - Import PDF salaires : `MonthDataSalariesConfig.payrollLines?` (`PayrollStoredLine` : clé matricule ou nom normalisé, nom, heures, coût global, `exitDate`, `forfaitJour`) conserve toutes les lignes de la page (`buildPayrollStoredLines`, `SalaryImportPreview.payrollLines`, écrit à la validation sur le mois cible M+1 via `updateSalariesConfigForYear`, donc marqué dirty ; les snapshots mensuels sont poussés en bloc, champ optionnel rétrocompatible). Indépendant des statuts de l'aperçu ; n'entre ni dans `categories` ni dans les taux horaires. `parsePayrollLine` expose le `matricule`. Les mois importés avant ce stockage n'ont pas de `payrollLines` (réimport nécessaire). tsc OK.

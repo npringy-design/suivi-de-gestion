@@ -14,6 +14,7 @@ import {
 import { computeCostEvolution } from '../payrollCostEvolution';
 import { payrollMonthKey } from '../payrollDefaults';
 import { getRealPayrollFromConfig } from '../payrollSources';
+import { buildPayrollVarianceView } from '../payrollVarianceSources';
 
 // L'analyse porte sur le seul coût salarial : le CA n'est volontairement pas rapproché
 // (provisions de congés payés, aides apprentis et autres frais de personnel absents du coût importé).
@@ -71,14 +72,19 @@ export function usePayrollCosts() {
       monthDetails: series.map(point => {
         const monthCurrent = metricsAt(year, point.month);
         const monthLastYear = metricsAt(year - 1, point.month);
+        const currentTotal = monthCurrent?.totalCost ?? null;
+        const lastYearTotal = monthLastYear?.totalCost ?? null;
         return {
           current: monthCurrent,
           lastYear: monthLastYear,
           vsLastYear: monthCurrent ? compareMetrics(monthCurrent, monthLastYear) : {},
+          variance: currentTotal !== null && lastYearTotal !== null
+            ? buildPayrollVarianceView(allData, year, point.month, currentTotal, lastYearTotal)
+            : null,
         };
       }),
     };
-  }, [entries, entry, getAuto, year, month]);
+  }, [allData, entries, entry, getAuto, year, month]);
 
   const saveEntry = useCallback((next: PayrollMonthEntry) => {
     updatePayrollCosts(prev => ({ ...prev, months: { ...prev.months, [key]: next } }));
