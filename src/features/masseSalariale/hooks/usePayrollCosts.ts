@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
-import { computeMonthDashboard, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
-import type { PayrollAlertThresholds, PayrollMonthEntry } from '@/types/dataTypes';
+import type { PayrollMonthEntry } from '@/types/dataTypes';
 
 import {
   buildYearSeries,
@@ -12,9 +11,13 @@ import {
   previousMonth,
   resolvePayroll,
 } from '../payrollCalculations';
+import { computeCostEvolution } from '../payrollCostEvolution';
 import { payrollMonthKey } from '../payrollDefaults';
 import { getAutoPayrollFromConfig } from '../payrollSources';
-import { computeYearSummary } from '../payrollYearSummary';
+
+// L'analyse porte sur le seul coût salarial : le CA n'est volontairement pas rapproché
+// (provisions de congés payés, aides apprentis et autres frais de personnel absents du coût importé).
+const noRevenue = (): number | null => null;
 
 export function usePayrollCosts() {
   const { allData, loadYearFromCloud, payrollCosts, updatePayrollCosts } = useData();
@@ -25,9 +28,9 @@ export function usePayrollCosts() {
   const [month, setMonth] = useState(initialPeriod.month);
   const requestedYearsRef = useRef(new Set<number>());
 
-  // Le CA réel vient du Suivi Quotidien : on charge depuis Supabase les années nécessaires
-  // aux 12 mois glissants et au N-1. Demandé une fois par année même si l'année est partiellement
-  // en local (seule l'année sélectionnée est chargée en entier au démarrage).
+  // Config Salaires (coûts importés) de l'année affichée et de N-1 : chargées depuis Supabase une
+  // fois par année, même si l'année est partiellement en local (seule l'année sélectionnée est
+  // chargée en entier au démarrage).
   useEffect(() => {
     [year - 1, year].forEach(y => {
       if (requestedYearsRef.current.has(y)) return;
@@ -36,40 +39,29 @@ export function usePayrollCosts() {
     });
   }, [year, loadYearFromCloud]);
 
-  const getRevenue = useCallback((y: number, m: number): number | null => {
-    const monthData = allData[y]?.[m];
-    if (!monthData?.dashboard) return null;
-    const revenue = getCaRealiseMonth(computeMonthDashboard(monthData, m, y), m, y);
-    return revenue > 0 ? revenue : null;
-  }, [allData]);
-
   const getAuto = useCallback((y: number, m: number) => getAutoPayrollFromConfig(allData[y]?.[m]), [allData]);
 
   const entries = payrollCosts.months;
-  const thresholds = payrollCosts.alertThresholds;
   const key = payrollMonthKey(year, month);
   const entry = entries[key];
 
   const view = useMemo(() => {
     const resolvedAt = (y: number, m: number) => resolvePayroll(entries[payrollMonthKey(y, m)], getAuto(y, m));
-    const metricsAt = (y: number, m: number) => computePayrollMetrics(resolvedAt(y, m), getRevenue(y, m));
+    const metricsAt = (y: number, m: number) => computePayrollMetrics(resolvedAt(y, m), null);
     const current = metricsAt(year, month);
     const prev = previousMonth(year, month);
-    const vsPrevious = current ? compareMetrics(current, metricsAt(prev.year, prev.month)) : {};
-    const vsLastYear = current ? compareMetrics(current, metricsAt(year - 1, month)) : {};
-    const vsBudget = current ? compareToBudget(current, entry) : {};
-    const series = buildYearSeries(year, resolvedAt, getRevenue);
-    const lastYearSeries = buildYearSeries(year - 1, resolvedAt, getRevenue);
+    const series = buildYearSeries(year, resolvedAt, noRevenue);
+    const lastYearSeries = buildYearSeries(year - 1, resolvedAt, noRevenue);
     return {
       current,
-      revenue: getRevenue(year, month),
-      vsPrevious,
-      vsLastYear,
-      vsBudget,
+      vsPrevious: current ? compareMetrics(current, metricsAt(prev.year, prev.month)) : {},
+      vsLastYear: current ? compareMetrics(current, metricsAt(year - 1, month)) : {},
+      vsBudget: current ? compareToBudget(current, entry) : {},
       hasPrevious: resolvedAt(prev.year, prev.month) !== null,
       hasLastYear: resolvedAt(year - 1, month) !== null,
       series,
-      summary: computeYearSummary(series, lastYearSeries, thresholds.totalCostToRevenuePct),
+      lastYearSeries,
+      evolution: computeCostEvolution(series, lastYearSeries),
       // Comparaison au même mois de l'année précédente, calculable pour chaque mois de la série.
       monthDetails: series.map(point => {
         const monthCurrent = metricsAt(year, point.month);
@@ -81,7 +73,7 @@ export function usePayrollCosts() {
         };
       }),
     };
-  }, [entries, entry, getAuto, getRevenue, year, month, thresholds.totalCostToRevenuePct]);
+  }, [entries, entry, getAuto, year, month]);
 
   const saveEntry = useCallback((next: PayrollMonthEntry) => {
     updatePayrollCosts(prev => ({ ...prev, months: { ...prev.months, [key]: next } }));
@@ -95,10 +87,6 @@ export function usePayrollCosts() {
     });
   }, [key, updatePayrollCosts]);
 
-  const setThresholds = useCallback((alertThresholds: PayrollAlertThresholds) => {
-    updatePayrollCosts(prev => ({ ...prev, alertThresholds }));
-  }, [updatePayrollCosts]);
-
   return {
     year,
     month,
@@ -106,8 +94,6 @@ export function usePayrollCosts() {
     setMonth,
     entry,
     auto: getAuto(year, month),
-    thresholds,
-    setThresholds,
     saveEntry,
     deleteEntry,
     ...view,

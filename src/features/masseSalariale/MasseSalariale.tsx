@@ -7,7 +7,6 @@ import PayrollComparisonCards from './components/PayrollComparisonCards';
 import PayrollCorrectionSection from './components/PayrollCorrectionSection';
 import PayrollEntryForm from './components/PayrollEntryForm';
 import PayrollMonthlyTable from './components/PayrollMonthlyTable';
-import PayrollThresholdsPanel from './components/PayrollThresholdsPanel';
 import PayrollYearKpis from './components/PayrollYearKpis';
 import { usePayrollCosts } from './hooks/usePayrollCosts';
 
@@ -19,7 +18,7 @@ const yearButtonClass = 'px-2 py-1 text-base font-extrabold text-slate-500 hover
 
 export default function MasseSalariale({ onBack }: MasseSalarialeProps) {
   const payroll = usePayrollCosts();
-  const { year, month, entry, thresholds, current } = payroll;
+  const { year, month, entry, current } = payroll;
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#07111f_0%,#0a2430_48%,#073d43_100%)] px-4 pb-10 pt-4 text-white sm:px-6">
@@ -35,7 +34,7 @@ export default function MasseSalariale({ onBack }: MasseSalarialeProps) {
               Retour Accueil
             </button>
             <h1 className="text-2xl font-black uppercase tracking-[0.06em] text-amber-50 sm:text-3xl">Masse salariale — Analyse</h1>
-            <div className="text-[13px] font-bold text-cyan-50/70">Coût salarial importé (Config Salaires) vs CA réalisé · 12 mois</div>
+            <div className="text-[13px] font-bold text-cyan-50/70">Coût salarial importé (Config Salaires) · évolution mensuelle et vs N-1</div>
           </div>
           <div className="flex items-center gap-1 rounded-xl border border-slate-900/10 bg-white px-2 py-1.5 shadow-lg shadow-black/20">
             <button type="button" aria-label="Année précédente" onClick={() => payroll.setYear(year - 1)} className={yearButtonClass}>‹</button>
@@ -44,14 +43,14 @@ export default function MasseSalariale({ onBack }: MasseSalarialeProps) {
           </div>
         </header>
 
-        <PayrollYearKpis year={year} summary={payroll.summary} thresholdPct={thresholds.totalCostToRevenuePct} />
-        <PayrollCharts year={year} series={payroll.series} thresholds={thresholds} />
+        <PayrollYearKpis year={year} evolution={payroll.evolution} />
+        <PayrollCharts year={year} series={payroll.series} lastYearSeries={payroll.lastYearSeries} details={payroll.monthDetails} />
         <PayrollMonthlyTable
           year={year}
           series={payroll.series}
+          lastYearSeries={payroll.lastYearSeries}
           details={payroll.monthDetails}
-          summary={payroll.summary}
-          thresholdPct={thresholds.totalCostToRevenuePct}
+          evolution={payroll.evolution}
         />
 
         <PayrollCorrectionSection month={month} onSelectMonth={payroll.setMonth}>
@@ -68,21 +67,17 @@ export default function MasseSalariale({ onBack }: MasseSalarialeProps) {
               vsBudget={payroll.vsBudget}
               hasPrevious={payroll.hasPrevious}
               hasLastYear={payroll.hasLastYear}
-              thresholds={thresholds}
             />
           )}
           <PayrollEntryForm
             key={`${year}-${month}-${entry ? 'saisi' : 'vide'}`}
             entry={entry}
             auto={payroll.auto}
-            revenue={payroll.revenue}
             monthLabel={`${MONTH_NAMES[month]} ${year}`}
             onSave={payroll.saveEntry}
             onDelete={payroll.deleteEntry}
           />
         </PayrollCorrectionSection>
-
-        <PayrollThresholdsPanel thresholds={thresholds} onChange={payroll.setThresholds} />
       </div>
     </div>
   );

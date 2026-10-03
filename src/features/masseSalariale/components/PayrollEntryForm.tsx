@@ -10,7 +10,6 @@ import type { AutoPayroll } from '../payrollCalculations';
 type PayrollEntryFormProps = {
   entry: PayrollMonthEntry | undefined;
   auto: AutoPayroll | null;
-  revenue: number | null;
   monthLabel: string;
   onSave: (entry: PayrollMonthEntry) => void;
   onDelete: () => void;
@@ -49,7 +48,7 @@ function Computed({ label, value }: { label: string; value: string }) {
 
 const pct = (value: number | null) => (value === null ? '—' : formatPercent(value));
 
-export default function PayrollEntryForm({ entry, auto, revenue, monthLabel, onSave, onDelete }: PayrollEntryFormProps) {
+export default function PayrollEntryForm({ entry, auto, monthLabel, onSave, onDelete }: PayrollEntryFormProps) {
   const [gross, setGross] = useState(toInput(entry?.gross));
   const [charges, setCharges] = useState(toInput(entry?.employerCharges));
   const [hours, setHours] = useState(toInput(entry?.hours));
@@ -64,7 +63,7 @@ export default function PayrollEntryForm({ entry, auto, revenue, monthLabel, onS
     hours: toOptional(hours),
   };
   // Aperçu en direct (avant enregistrement), avec reprise de Config Salaires pour ce qui manque.
-  const preview = computePayrollMetrics(resolvePayroll(draft, auto), revenue);
+  const preview = computePayrollMetrics(resolvePayroll(draft, auto), null);
   const canSave = [gross, charges, hours, budgetGross, budgetCharges, note].some(value => value.trim() !== '');
 
   const handleSave = () => {
@@ -87,9 +86,6 @@ export default function PayrollEntryForm({ entry, auto, revenue, monthLabel, onS
     <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-black uppercase tracking-[0.12em] text-slate-900">Saisie · {monthLabel}</h2>
-        <div className="text-xs font-semibold text-slate-600">
-          CA réel du mois (Suivi Quotidien) : <span className="font-black text-slate-900">{revenue === null ? 'non disponible' : formatEuroSymbol(revenue)}</span>
-        </div>
       </div>
 
       <p className="mb-3 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-600">
@@ -104,11 +100,9 @@ export default function PayrollEntryForm({ entry, auto, revenue, monthLabel, onS
         <Field label="Heures totales (optionnel)" value={hours} onChange={setHours} hint={hours === '' && auto?.hours ? `Config Salaires : ${formatDecimal(auto.hours, 2)} h` : 'Normales + majorées'} />
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Computed label="% charges patronales" value={pct(preview?.chargesRatePct ?? null)} />
         <Computed label="Coût salarial global" value={preview?.totalCost == null ? '—' : formatEuroSymbol(preview.totalCost)} />
-        <Computed label="Brut / CA" value={pct(preview?.grossToRevenuePct ?? null)} />
-        <Computed label="Coût global / CA" value={pct(preview?.totalCostToRevenuePct ?? null)} />
         <Computed label="Coût horaire moyen" value={preview?.hourlyCost == null ? '—' : `${formatDecimal(preview.hourlyCost, 2)} €/h`} />
       </div>
 
