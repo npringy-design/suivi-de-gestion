@@ -58,6 +58,18 @@ describe('updateSalariesConfigForYear (import PDF sur l\'année du PDF)', () => 
     expect(result.current.allData[2025][9].salariesConfig?.categories.cadre[0].coutGlobal).toBe('2000');
   });
 
+  it('un import qui renvoie tauxCibles: undefined supprime les taux manuels du mois (les nouveaux montants remplacent les anciens)', () => {
+    const { result } = renderHook(() => useData(), { wrapper });
+    act(() => result.current.updateSalariesConfigForYear(2025, 9, { ...config('1000'), tauxCibles: { cadre: 30 } }));
+
+    act(() => result.current.updateSalariesConfigForYear(2025, 9, current => (
+      current?.locked ? current : { ...(current ?? { locked: false }), categories: config('2000').categories, tauxCibles: undefined }
+    )));
+
+    expect(result.current.allData[2025][9].salariesConfig?.tauxCibles).toBeUndefined();
+    expect(result.current.allData[2025][9].salariesConfig?.categories.cadre[0].coutGlobal).toBe('2000');
+  });
+
   it('updateSalariesConfig existant écrit toujours sur l\'année affichée', () => {
     const { result } = renderHook(() => useData(), { wrapper });
     act(() => result.current.setSelectedYear(2026));

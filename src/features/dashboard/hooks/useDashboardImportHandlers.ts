@@ -1554,10 +1554,11 @@ export function useDashboardImportHandlers({
 
     // categories (taux horaires par échelon) : lignes retenues uniquement, sortants exclus par défaut ;
     // totals (bas de page du PDF, tout le monde compris) : toujours importés, indépendamment des lignes.
-    // La config existante est relue au moment de l'écriture (autres champs, verrouillage) pour ne rien écraser.
+    // La config existante est relue au moment de l'écriture (verrouillage). Les taux horaires manuels du mois sont
+    // supprimés : les nouveaux montants du PDF remplacent les anciens (le taux calculé s'affiche de nouveau).
     const categories = buildPayrollCategories(importedRows);
     updateSalariesConfigForYear(preview.targetYear, preview.targetMonth, current => (
-      current?.locked ? current : { ...(current ?? { locked: false }), categories, totals: preview.totals ?? undefined }
+      current?.locked ? current : { ...(current ?? { locked: false }), categories, totals: preview.totals ?? undefined, tauxCibles: undefined }
     ));
 
     // On se place sur l'année et le mois importés pour que le résultat soit visible.

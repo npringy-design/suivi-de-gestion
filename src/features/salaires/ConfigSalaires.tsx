@@ -183,28 +183,6 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
     updateSalariesConfig(mi, { ...currentConfig, tauxCibles });
   };
 
-  const propagateTauxCibles = () => {
-    const ref = getCurrentConfig(selectedMonthIndex).tauxCibles ?? {};
-    for (let mi = 0; mi <= 11; mi++) {
-      if (mi === selectedMonthIndex) continue;
-      const cfg = getCurrentConfig(mi);
-      updateSalariesConfig(mi, { ...cfg, tauxCibles: { ...ref } });
-    }
-  };
-
-  // Supprime les taux manuels d'un mois : le taux calculé depuis les salariés importés s'applique de nouveau.
-  const resetTauxMonth = (mi: number) => {
-    if (isMonthLocked(mi)) return;
-    updateSalariesConfig(mi, { ...getCurrentConfig(mi), tauxCibles: undefined });
-  };
-
-  const resetAllTaux = () => {
-    for (let mi = 0; mi <= 11; mi++) {
-      if (isMonthLocked(mi) || !data[mi]?.salariesConfig?.tauxCibles) continue;
-      resetTauxMonth(mi);
-    }
-  };
-
   // Valeur à afficher dans le tableau : manuelle si saisie, sinon calculée depuis bulletins
   const getDisplayTaux = (mi: number, cat: SalaryCategory): number => {
     const manual = data[mi]?.salariesConfig?.tauxCibles?.[cat];
@@ -225,7 +203,6 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
         />
 
         <TauxHorairesTable
-          year={YEAR}
           months={MONTHS}
           categories={CATEGORIES_LIST}
           isMonthLocked={isMonthLocked}
@@ -234,9 +211,6 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
           getDisplayRate={getDisplayTaux}
           onSetRate={setTauxCible}
           onToggleLock={toggleLock}
-          onPropagate={propagateTauxCibles}
-          onResetMonth={resetTauxMonth}
-          onResetAll={resetAllTaux}
         />
       </>
     );
