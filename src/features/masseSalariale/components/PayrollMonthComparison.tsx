@@ -68,7 +68,9 @@ export default function PayrollMonthComparison({ year, month, measure, detail }:
               const variation = computeVariation(valueOf(row, current), valueOf(row, lastYear), row.kind === 'ratio');
               return (
                 <tr key={row.key} className="border-t border-slate-900/10 font-bold text-slate-900">
-                  <td className="px-2 py-1.5 text-left font-bold text-slate-500">{row.label}</td>
+                  <td className={`px-2 py-1.5 text-left font-bold text-slate-500 ${row.hint ? 'cursor-help' : ''}`} title={row.hint}>
+                    {row.label}{row.hint ? ' ⓘ' : ''}
+                  </td>
                   {/* computeVariation(courant, référence) : l'écart est courant − N-1 */}
                   <DetailCell row={row} metrics={lastYear} className={`${cell} text-slate-500`} />
                   <DetailCell row={row} metrics={current} className={`${cell} font-extrabold`} />
@@ -81,7 +83,9 @@ export default function PayrollMonthComparison({ year, month, measure, detail }:
           </tbody>
         </table>
       </div>
-      {variance && <PayrollVarianceCauses variance={variance} />}
+      {variance && lastYear?.totalCost != null && current.totalCost !== null && (
+        <PayrollVarianceCauses variance={variance} year={year} month={month} previousCost={lastYear.totalCost} currentCost={current.totalCost} />
+      )}
     </div>
   );
 }

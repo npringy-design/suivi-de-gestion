@@ -17,6 +17,7 @@ export type PayrollDetailRow = {
   formatDelta: (value: number) => string;
   isEstimated?: (metrics: PayrollMetrics) => boolean;
   hideWhenEmpty?: boolean; // masquée si aucune des deux années n'a de valeur non nulle
+  hint?: string; // infobulle du libellé
 };
 
 type PayrollMeasureConfig = {
@@ -32,11 +33,13 @@ type PayrollMeasureConfig = {
   detailRows: PayrollDetailRow[];
 };
 
+const OTHER_ADJUSTMENTS_HINT = 'Colonne « Supp. coût » du PDF, déjà comprise dans le coût global de chaque salarié.';
+
 // Autres ajustements = coût global − brut − charges patronales (colonne « Supp. coût » du PDF).
 const otherAdjustments = (m: PayrollMetrics): number | null =>
   m.totalCost !== null && m.gross !== null && m.employerCharges !== null ? m.totalCost - m.gross - m.employerCharges : null;
 
-const euroRow = (key: string, label: string, value: PayrollDetailRow['value'], hideWhenEmpty = false): PayrollDetailRow => ({
+const euroRow = (key: string, label: string, value: PayrollDetailRow['value'], hideWhenEmpty = false, hint?: string): PayrollDetailRow => ({
   key,
   label,
   kind: 'amount',
@@ -44,6 +47,7 @@ const euroRow = (key: string, label: string, value: PayrollDetailRow['value'], h
   formatValue: formatEuroSymbol,
   formatDelta: formatEuroSigned,
   hideWhenEmpty,
+  hint,
 });
 
 export const PAYROLL_MEASURES: Record<PayrollMeasure, PayrollMeasureConfig> = {
@@ -69,7 +73,7 @@ export const PAYROLL_MEASURES: Record<PayrollMeasure, PayrollMeasureConfig> = {
         formatValue: value => `${formatDecimal(value, 1)} %`,
         formatDelta: value => `${formatDecimalSigned(value, 1)} pt`,
       },
-      euroRow('otherAdjustments', 'Autres ajustements', otherAdjustments, true),
+      euroRow('otherAdjustments', 'Autres ajustements (Supp. coût)', otherAdjustments, true, OTHER_ADJUSTMENTS_HINT),
     ],
   },
   etp: {

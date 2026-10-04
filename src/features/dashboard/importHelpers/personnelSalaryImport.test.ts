@@ -69,6 +69,15 @@ describe('extractPayrollPageTotals', () => {
     expect(lines[0].exitDate).toBeUndefined();
   });
 
+  it('lignes stockées : un forfait jour (sans heures dans le PDF) est inclus, la somme des coûts recoupe le total', () => {
+    const forfait = '000019 PRINGY NICOLAS (forfait jour) 01/11/2021 DIRECTEUR 09/2026 4043.35 2063.74 51.04 -49.32 6057.77 333.46';
+    const normal = '000014 MARTIAL KIESHA 01/11/2021 ASSISTANT MANAGER 09/2026 148.92 17.33 166.25 2672.11 740.57 27.71 -124.94 3287.74 19.78';
+    const lines = buildPayrollStoredLines([forfait, normal].join('\n'));
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatchObject({ key: '000019', forfaitJour: true, heures: 151.67, coutGlobal: 6057.77 });
+    expect(lines.reduce((sum, line) => sum + line.coutGlobal, 0)).toBeCloseTo(6057.77 + 3287.74, 2);
+  });
+
   it('gère les fins de ligne Windows', () => {
     expect(extractPayrollPageTotals(PDF_TEXT.replace(/\n/g, '\r\n'))!.brut).toBe(38091.35);
   });
