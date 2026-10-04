@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 04/10/2026 (Suivi Quotidien V2, onglet CA : centimes et alternance par semaine)
+
+- Onglet CA du Suivi Quotidien V2 : `formatEuroDecimal(v, digits = 2)` ajouté à `@/lib/formatters` (`formatEuro` inchangé) et utilisé pour tous les montants CA et moyennes TM (jours, totaux semaine, total mois) ; couverts (`fmtNum`) inchangés. Lignes jour : fond `bg-teal-50/40` une semaine sur deux (`weekIndex % 2 === 1`, ambre des jours non saisis prioritaire), bordure haute `border-t-2 border-t-teal-300` sur la cellule « Jour » de la première ligne de chaque nouvelle semaine. tsc OK, build OK (rendu non vérifié visuellement : connexion Supabase requise).
+
 ## 04/10/2026 (Masse Salariale : bloc causes d'écart sans barres)
 
 - `PayrollVarianceCauses` : barres de la cascade supprimées (départ, arrivée, causes, lignes non détaillées), ainsi que l'échelle (`payrollVarianceCascade.ts` et son test) et la note « Les barres démarrent à … € ». Reste : titre, synthèse, ligne `{mois} {année-1}`, une ligne par cause (▲/▼, libellé, sous-titre, montant coloré, chevron, rétractable), alerte des lignes non détaillées, ligne `{mois} {année}`, séparées par un trait fin. Les mentions « cascade / barres flottantes » de l'entrée du 04/10 ci-dessous sont caduques. `payrollVarianceAnalysis.ts` inchangé. tsc OK.

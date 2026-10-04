@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 
-import { formatEuro } from '@/lib/formatters';
+import { formatEuroDecimal } from '@/lib/formatters';
 import { parseMoneyValue } from '@/lib/money';
 import { getDashboardRowIndices } from '@/lib/utils';
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
@@ -176,26 +176,26 @@ export default function TabCA({
                   <td className={TD_DAY_WEEK}>{row.label}</td>
                   {prefs.ca ? (
                     <>
-                      <td className={TD_WEEK}>{w.caMidi > 0 ? formatEuro(w.caMidi) : '—'}</td>
-                      <td className={TD_WEEK}>{w.caSoir > 0 ? formatEuro(w.caSoir) : '—'}</td>
-                      <td className={TD_WEEK}>{w.caLimo > 0 ? formatEuro(w.caLimo) : '—'}</td>
-                      <td className={TD_WEEK}>{w.vae > 0 ? formatEuro(w.vae) : '—'}</td>
-                      <td className={TD_WEEK}>{w.caTotal > 0 ? formatEuro(w.caTotal) : '—'}</td>
+                      <td className={TD_WEEK}>{w.caMidi > 0 ? formatEuroDecimal(w.caMidi) : '—'}</td>
+                      <td className={TD_WEEK}>{w.caSoir > 0 ? formatEuroDecimal(w.caSoir) : '—'}</td>
+                      <td className={TD_WEEK}>{w.caLimo > 0 ? formatEuroDecimal(w.caLimo) : '—'}</td>
+                      <td className={TD_WEEK}>{w.vae > 0 ? formatEuroDecimal(w.vae) : '—'}</td>
+                      <td className={TD_WEEK}>{w.caTotal > 0 ? formatEuroDecimal(w.caTotal) : '—'}</td>
                       <td className={TD_WEEK}>—</td>
-                      <td className={TD_WEEK}>{w.ecart !== 0 ? formatEuro(w.ecart) : '—'}</td>
+                      <td className={TD_WEEK}>{w.ecart !== 0 ? formatEuroDecimal(w.ecart) : '—'}</td>
                     </>
                   ) : (
                     <>
-                      <td className={TD_WEEK}>{w.caMidi > 0 ? formatEuro(w.caMidi) : '—'}</td>
-                      <td className={TD_WEEK}>{w.caSoir > 0 ? formatEuro(w.caSoir) : '—'}</td>
+                      <td className={TD_WEEK}>{w.caMidi > 0 ? formatEuroDecimal(w.caMidi) : '—'}</td>
+                      <td className={TD_WEEK}>{w.caSoir > 0 ? formatEuroDecimal(w.caSoir) : '—'}</td>
                     </>
                   )}
                   {prefs.couverts ? (
                     <>
                       <td className={TD_WEEK}>{w.cvtsMidi > 0 ? fmtNum(w.cvtsMidi) : '—'}</td>
-                      <td className={TD_WEEK}>{wMidiMoy > 0 ? formatEuro(wMidiMoy) : '—'}</td>
+                      <td className={TD_WEEK}>{wMidiMoy > 0 ? formatEuroDecimal(wMidiMoy) : '—'}</td>
                       <td className={TD_WEEK}>{w.cvtsSoir > 0 ? fmtNum(w.cvtsSoir) : '—'}</td>
-                      <td className={TD_WEEK}>{wSoirMoy > 0 ? formatEuro(wSoirMoy) : '—'}</td>
+                      <td className={TD_WEEK}>{wSoirMoy > 0 ? formatEuroDecimal(wSoirMoy) : '—'}</td>
                       <td className={TD_WEEK}>{w.cvts > 0 ? fmtNum(w.cvts) : '—'}</td>
                       <td className={TD_WEEK}>—</td>
                       <td className={TD_WEEK}>—</td>
@@ -203,7 +203,7 @@ export default function TabCA({
                   ) : (
                     <>
                       <td className={TD_WEEK}>{w.cvts > 0 ? fmtNum(w.cvts) : '—'}</td>
-                      <td className={TD_WEEK}>{wMoyHT > 0 ? formatEuro(wMoyHT) : '—'}</td>
+                      <td className={TD_WEEK}>{wMoyHT > 0 ? formatEuroDecimal(wMoyHT) : '—'}</td>
                     </>
                   )}
                 </tr>
@@ -231,7 +231,8 @@ export default function TabCA({
             const soirMoy = cvtsSoir > 0 ? caSoir / cvtsSoir : 0;
 
             const isSaisi = caTotal > 0;
-            const rowBg = !isSaisi ? 'bg-amber-50/30' : '';
+            const rowBg = !isSaisi ? 'bg-amber-50/30' : (row.weekIndex ?? 0) % 2 === 1 ? 'bg-teal-50/40' : '';
+            const isNewWeek = ri > 0 && rows[ri - 1].type === 'total';
 
             const rawVae  = rawDashboard[`${rIdx}-17`] ?? '';
             const rawMidi = rawDashboard[`${rIdx}-18`] ?? '';
@@ -245,7 +246,7 @@ export default function TabCA({
 
             return (
               <tr key={ri} className={rowBg}>
-                <td className={TD_DAY + (row.isWeekend ? ' text-teal-600/70' : '')}>
+                <td className={TD_DAY + (row.isWeekend ? ' text-teal-600/70' : '') + (isNewWeek ? ' border-t-2 border-t-teal-300' : '')}>
                   {row.isWeekend ? <span className="mr-1 text-teal-400/50">◆</span> : null}
                   {row.label?.split(' ').slice(0, 2).join(' ')}
                 </td>
@@ -257,9 +258,9 @@ export default function TabCA({
                     <td className={TD_CLS}><EditCell value={rawSoir} cellKey={`${rIdx}-19`} month={month} onUpdate={updateDashboard} /></td>
                     <td className={TD_CLS}><EditCell value={rawLimo} cellKey={`${rIdx}-20`} month={month} onUpdate={updateDashboard} /></td>
                     <td className={TD_CLS}><EditCell value={rawVae} cellKey={`${rIdx}-17`} month={month} onUpdate={updateDashboard} /></td>
-                    <td className={TD_CLS + ' font-black text-slate-900'}>{caTotal > 0 ? formatEuro(caTotal) : <span className="text-slate-300">—</span>}</td>
-                    <td className={TD_CLS}>{cumul > 0 ? formatEuro(cumul) : '—'}</td>
-                    <td className={TD_CLS}>{ecart !== 0 ? formatEuro(ecart) : '—'}</td>
+                    <td className={TD_CLS + ' font-black text-slate-900'}>{caTotal > 0 ? formatEuroDecimal(caTotal) : <span className="text-slate-300">—</span>}</td>
+                    <td className={TD_CLS}>{cumul > 0 ? formatEuroDecimal(cumul) : '—'}</td>
+                    <td className={TD_CLS}>{ecart !== 0 ? formatEuroDecimal(ecart) : '—'}</td>
                   </>
                 ) : (
                   <>
@@ -274,13 +275,13 @@ export default function TabCA({
                     <td className={TD_CLS}>
                       {cvtsSaisis > 0 ? fmtNum(cvtsMidi) : <EditCell value={rawCvtsMidi} cellKey={`${rIdx}-25`} month={month} onUpdate={updateDashboard} />}
                     </td>
-                    <td className={TD_CLS}>{midiMoy > 0 ? formatEuro(midiMoy) : '—'}</td>
+                    <td className={TD_CLS}>{midiMoy > 0 ? formatEuroDecimal(midiMoy) : '—'}</td>
                     <td className={TD_CLS}>
                       {cvtsSaisis > 0 ? fmtNum(cvtsSoir) : <EditCell value={rawCvtsSoir} cellKey={`${rIdx}-27`} month={month} onUpdate={updateDashboard} />}
                     </td>
-                    <td className={TD_CLS}>{soirMoy > 0 ? formatEuro(soirMoy) : '—'}</td>
+                    <td className={TD_CLS}>{soirMoy > 0 ? formatEuroDecimal(soirMoy) : '—'}</td>
                     <td className={TD_CLS}>{cvts > 0 ? fmtNum(cvts) : '—'}</td>
-                    <td className={TD_CLS}>{moyJour > 0 ? formatEuro(moyJour) : '—'}</td>
+                    <td className={TD_CLS}>{moyJour > 0 ? formatEuroDecimal(moyJour) : '—'}</td>
                     <td className={TD_CLS}>{cvtsCumul > 0 ? fmtNum(cvtsCumul) : '—'}</td>
                   </>
                 ) : (
@@ -294,7 +295,7 @@ export default function TabCA({
                         </div>
                       )}
                     </td>
-                    <td className={TD_CLS}>{moyHT > 0 ? formatEuro(moyHT) : '—'}</td>
+                    <td className={TD_CLS}>{moyHT > 0 ? formatEuroDecimal(moyHT) : '—'}</td>
                   </>
                 )}
               </tr>
@@ -306,34 +307,34 @@ export default function TabCA({
             <td className={TD_DAY_WEEK + ' text-teal-800 font-black'}>TOTAL MOIS</td>
             {prefs.ca ? (
               <>
-                <td className={TD_WEEK}>{monthTotal.caMidi > 0 ? formatEuro(monthTotal.caMidi) : '—'}</td>
-                <td className={TD_WEEK}>{monthTotal.caSoir > 0 ? formatEuro(monthTotal.caSoir) : '—'}</td>
-                <td className={TD_WEEK}>{monthTotal.caLimo > 0 ? formatEuro(monthTotal.caLimo) : '—'}</td>
-                <td className={TD_WEEK}>{monthTotal.vae > 0 ? formatEuro(monthTotal.vae) : '—'}</td>
-                <td className={TD_WEEK + ' font-black text-slate-900'}>{monthTotal.caTotal > 0 ? formatEuro(monthTotal.caTotal) : '—'}</td>
-                <td className={TD_WEEK}>{monthTotal.cumul > 0 ? formatEuro(monthTotal.cumul) : '—'}</td>
-                <td className={TD_WEEK}>{monthTotal.ecart !== 0 ? formatEuro(monthTotal.ecart) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.caMidi > 0 ? formatEuroDecimal(monthTotal.caMidi) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.caSoir > 0 ? formatEuroDecimal(monthTotal.caSoir) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.caLimo > 0 ? formatEuroDecimal(monthTotal.caLimo) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.vae > 0 ? formatEuroDecimal(monthTotal.vae) : '—'}</td>
+                <td className={TD_WEEK + ' font-black text-slate-900'}>{monthTotal.caTotal > 0 ? formatEuroDecimal(monthTotal.caTotal) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.cumul > 0 ? formatEuroDecimal(monthTotal.cumul) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.ecart !== 0 ? formatEuroDecimal(monthTotal.ecart) : '—'}</td>
               </>
             ) : (
               <>
-                <td className={TD_WEEK}>{monthTotal.caMidi > 0 ? formatEuro(monthTotal.caMidi) : '—'}</td>
-                <td className={TD_WEEK}>{monthTotal.caSoir > 0 ? formatEuro(monthTotal.caSoir) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.caMidi > 0 ? formatEuroDecimal(monthTotal.caMidi) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.caSoir > 0 ? formatEuroDecimal(monthTotal.caSoir) : '—'}</td>
               </>
             )}
             {prefs.couverts ? (
               <>
                 <td className={TD_WEEK}>{monthTotal.cvtsMidi > 0 ? fmtNum(monthTotal.cvtsMidi) : '—'}</td>
-                <td className={TD_WEEK}>{monthTotal.cvtsMidi > 0 && monthTotal.caMidi > 0 ? formatEuro(monthTotal.caMidi / monthTotal.cvtsMidi) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.cvtsMidi > 0 && monthTotal.caMidi > 0 ? formatEuroDecimal(monthTotal.caMidi / monthTotal.cvtsMidi) : '—'}</td>
                 <td className={TD_WEEK}>{monthTotal.cvtsSoir > 0 ? fmtNum(monthTotal.cvtsSoir) : '—'}</td>
-                <td className={TD_WEEK}>{monthTotal.cvtsSoir > 0 && monthTotal.caSoir > 0 ? formatEuro(monthTotal.caSoir / monthTotal.cvtsSoir) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.cvtsSoir > 0 && monthTotal.caSoir > 0 ? formatEuroDecimal(monthTotal.caSoir / monthTotal.cvtsSoir) : '—'}</td>
                 <td className={TD_WEEK}>{monthTotal.cvts > 0 ? fmtNum(monthTotal.cvts) : '—'}</td>
-                <td className={TD_WEEK}>{monthTotal.cvts > 0 && monthTotal.caTotal > 0 ? formatEuro(monthTotal.caTotal / monthTotal.cvts) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.cvts > 0 && monthTotal.caTotal > 0 ? formatEuroDecimal(monthTotal.caTotal / monthTotal.cvts) : '—'}</td>
                 <td className={TD_WEEK}>{monthTotal.cvtsCumul > 0 ? fmtNum(monthTotal.cvtsCumul) : '—'}</td>
               </>
             ) : (
               <>
                 <td className={TD_WEEK}>{monthTotal.cvts > 0 ? fmtNum(monthTotal.cvts) : '—'}</td>
-                <td className={TD_WEEK}>{monthTotal.cvts > 0 && monthTotal.caTotal > 0 ? formatEuro(monthTotal.caTotal / monthTotal.cvts) : '—'}</td>
+                <td className={TD_WEEK}>{monthTotal.cvts > 0 && monthTotal.caTotal > 0 ? formatEuroDecimal(monthTotal.caTotal / monthTotal.cvts) : '—'}</td>
               </>
             )}
           </tr>
