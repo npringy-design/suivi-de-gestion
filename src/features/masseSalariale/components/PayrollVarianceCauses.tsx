@@ -3,8 +3,6 @@ import { useState } from 'react';
 import { MONTH_NAMES } from '@/lib/constants';
 import { formatEuroSigned, formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 
-import { buildPayrollCascade } from '../payrollVarianceCascade';
-import type { CascadeBar } from '../payrollVarianceCascade';
 import type { PayrollCause, PayrollCauseKind, PayrollPersonTag } from '../payrollVarianceAnalysis';
 import type { PayrollVarianceView } from '../payrollVarianceSources';
 import PayrollCausePeople, { toneText } from './PayrollCausePeople';
@@ -17,24 +15,11 @@ type PayrollVarianceCausesProps = {
   currentCost: number;
 };
 
-const toneBar = (amount: number) => (amount > 0 ? 'bg-pink-700' : 'bg-emerald-700');
-
-function Track({ bar, className }: { bar: CascadeBar; className: string }) {
+function EndRow({ label, cost }: { label: string; cost: number }) {
   return (
-    <span className="relative block h-2 w-full rounded-full bg-slate-200/70">
-      <span className={`absolute top-0 h-full rounded-full ${className}`} style={{ left: `${bar.left}%`, width: `${bar.width}%` }} />
-    </span>
-  );
-}
-
-function EndRow({ label, cost, bar }: { label: string; cost: number; bar: CascadeBar }) {
-  return (
-    <div className="grid gap-1">
-      <div className="flex items-baseline justify-between gap-3 font-black text-slate-900">
-        <span>{label}</span>
-        <span className="tabular-nums">{formatEuroSymbol(cost)}</span>
-      </div>
-      <Track bar={bar} className="bg-slate-400" />
+    <div className="flex items-baseline justify-between gap-3 border-t border-slate-900/10 px-1 pt-2 font-black text-slate-900">
+      <span>{label}</span>
+      <span className="tabular-nums">{formatEuroSymbol(cost)}</span>
     </div>
   );
 }
@@ -73,8 +58,6 @@ export default function PayrollVarianceCauses({ variance, year, month, previousC
     });
   const toggleAll = () => setOpenKinds(allOpen ? new Set() : new Set(causes.map(cause => cause.kind)));
   const showResidual = Math.abs(residual) >= 1;
-  const stepAmounts = [...causes.map(cause => cause.amount), ...(showResidual ? [residual] : [])];
-  const cascade = buildPayrollCascade(previousCost, stepAmounts);
   const monthName = MONTH_NAMES[month];
   const mainCauses = [...causes].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
 
@@ -102,17 +85,17 @@ export default function PayrollVarianceCauses({ variance, year, month, previousC
         )}
       </p>
 
-      <EndRow label={`${monthName} ${year - 1}`} cost={previousCost} bar={cascade.start} />
+      <EndRow label={`${monthName} ${year - 1}`} cost={previousCost} />
 
-      {causes.map((cause, index) => {
+      {causes.map(cause => {
         const isOpen = openKinds.has(cause.kind);
         return (
-          <div key={cause.kind} className="grid gap-1">
+          <div key={cause.kind} className="grid gap-1 border-t border-slate-900/10 pt-1">
             <button
               type="button"
               onClick={event => { event.stopPropagation(); toggleKind(cause.kind); }}
               aria-expanded={isOpen}
-              className="grid gap-1.5 rounded-lg px-1 py-1 text-left hover:bg-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500"
+              className="rounded-lg px-1 py-1 text-left hover:bg-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500"
             >
               <span className="flex items-baseline justify-between gap-3">
                 <span className="min-w-0 font-bold text-slate-700">
@@ -123,7 +106,6 @@ export default function PayrollVarianceCauses({ variance, year, month, previousC
                 </span>
                 <span className={`shrink-0 font-extrabold tabular-nums ${toneText(cause.amount)}`}>{formatEuroSigned(cause.amount)}</span>
               </span>
-              <Track bar={cascade.steps[index]} className={toneBar(cause.amount)} />
             </button>
             {isOpen && <PayrollCausePeople cause={cause} />}
           </div>
@@ -131,21 +113,16 @@ export default function PayrollVarianceCauses({ variance, year, month, previousC
       })}
 
       {showResidual && (
-        <div className="grid gap-1 rounded-lg bg-amber-50 px-2 py-1.5">
+        <div className="grid gap-1 rounded-lg border-t border-slate-900/10 bg-amber-50 px-2 py-1.5">
           <div className="flex items-baseline justify-between gap-3 font-bold text-amber-800">
             <span>Lignes du PDF non détaillées</span>
             <span className="shrink-0 font-extrabold tabular-nums">{formatEuroSigned(residual)}</span>
           </div>
-          <Track bar={cascade.steps[causes.length]} className="bg-amber-500" />
           <span className="text-[11px] font-semibold text-amber-800/80">Alerte : lignes manquantes dans le PDF, pas une cause de coût.</span>
         </div>
       )}
 
-      <EndRow label={`${monthName} ${year}`} cost={currentCost} bar={cascade.end} />
-
-      <p className="m-0 text-[11px] font-semibold text-slate-400">
-        Les barres démarrent à {formatEuroSymbol(cascade.min)} pour que les écarts soient visibles.
-      </p>
+      <EndRow label={`${monthName} ${year}`} cost={currentCost} />
 
       {fallbackLabels.length > 0 && (
         <p className="m-0 text-[11px] font-semibold text-slate-400">
