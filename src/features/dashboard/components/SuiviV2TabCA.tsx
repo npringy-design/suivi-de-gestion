@@ -254,18 +254,18 @@ export default function TabCA({
                 {/* CA group */}
                 {prefs.ca ? (
                   <>
-                    <td className={TD_CLS}><EditCell value={rawMidi} cellKey={`${rIdx}-18`} month={month} onUpdate={updateDashboard} /></td>
-                    <td className={TD_CLS}><EditCell value={rawSoir} cellKey={`${rIdx}-19`} month={month} onUpdate={updateDashboard} /></td>
-                    <td className={TD_CLS}><EditCell value={rawLimo} cellKey={`${rIdx}-20`} month={month} onUpdate={updateDashboard} /></td>
-                    <td className={TD_CLS}><EditCell value={rawVae} cellKey={`${rIdx}-17`} month={month} onUpdate={updateDashboard} /></td>
+                    <td className={TD_CLS}><EditCell value={rawMidi} cellKey={`${rIdx}-18`} month={month} decimals onUpdate={updateDashboard} /></td>
+                    <td className={TD_CLS}><EditCell value={rawSoir} cellKey={`${rIdx}-19`} month={month} decimals onUpdate={updateDashboard} /></td>
+                    <td className={TD_CLS}><EditCell value={rawLimo} cellKey={`${rIdx}-20`} month={month} decimals onUpdate={updateDashboard} /></td>
+                    <td className={TD_CLS}><EditCell value={rawVae} cellKey={`${rIdx}-17`} month={month} decimals onUpdate={updateDashboard} /></td>
                     <td className={TD_CLS + ' font-black text-slate-900'}>{caTotal > 0 ? formatEuroDecimal(caTotal) : <span className="text-slate-300">—</span>}</td>
                     <td className={TD_CLS}>{cumul > 0 ? formatEuroDecimal(cumul) : '—'}</td>
                     <td className={TD_CLS}>{ecart !== 0 ? formatEuroDecimal(ecart) : '—'}</td>
                   </>
                 ) : (
                   <>
-                    <td className={TD_CLS}><EditCell value={rawMidi} cellKey={`${rIdx}-18`} month={month} onUpdate={updateDashboard} /></td>
-                    <td className={TD_CLS}><EditCell value={rawSoir} cellKey={`${rIdx}-19`} month={month} onUpdate={updateDashboard} /></td>
+                    <td className={TD_CLS}><EditCell value={rawMidi} cellKey={`${rIdx}-18`} month={month} decimals onUpdate={updateDashboard} /></td>
+                    <td className={TD_CLS}><EditCell value={rawSoir} cellKey={`${rIdx}-19`} month={month} decimals onUpdate={updateDashboard} /></td>
                   </>
                 )}
 

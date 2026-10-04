@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 04/10/2026 (Suivi Quotidien V2, onglet CA : décimales au repos sur les cellules saisies)
+
+- `EditCell` (`SuiviV2Shared.tsx`) : prop optionnelle `decimals` (défaut `false`) qui affiche la valeur hors édition avec `formatEuroDecimal` au lieu de `fmtNum` ; saisie brute inchangée. Activée sur les cellules CA Midi/Soir/Limo/VAE de `SuiviV2TabCA.tsx` (pas sur les couverts). tsc OK, build OK (rendu non vérifié visuellement : connexion Supabase requise).
+
 ## 04/10/2026 (Suivi Quotidien V2, onglet CA : centimes et alternance par semaine)
 
 - Onglet CA du Suivi Quotidien V2 : `formatEuroDecimal(v, digits = 2)` ajouté à `@/lib/formatters` (`formatEuro` inchangé) et utilisé pour tous les montants CA et moyennes TM (jours, totaux semaine, total mois) ; couverts (`fmtNum`) inchangés. Lignes jour : fond `bg-teal-50/40` une semaine sur deux (`weekIndex % 2 === 1`, ambre des jours non saisis prioritaire), bordure haute `border-t-2 border-t-teal-300` sur la cellule « Jour » de la première ligne de chaque nouvelle semaine. tsc OK, build OK (rendu non vérifié visuellement : connexion Supabase requise).

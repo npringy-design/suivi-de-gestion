@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { parseMoneyValue } from '@/lib/money';
+import { formatEuroDecimal } from '@/lib/formatters';
 
 // ─── Styles partagés ──────────────────────────────────────────────────────────
 
@@ -27,17 +28,20 @@ export function EditCell({
   month,
   onUpdate,
   align = 'right',
+  decimals = false,
 }: {
   value: string;
   cellKey: string;
   month: number;
   onUpdate: (month: number, cellKey: string, value: string) => void;
   align?: 'right' | 'left';
+  decimals?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const displayed = draft !== null ? draft : (parseMoneyValue(value) > 0 ? fmtNum(parseMoneyValue(value)) : '');
+  const formatIdle = decimals ? formatEuroDecimal : fmtNum;
+  const displayed = draft !== null ? draft : (parseMoneyValue(value) > 0 ? formatIdle(parseMoneyValue(value)) : '');
 
   return (
     <input
