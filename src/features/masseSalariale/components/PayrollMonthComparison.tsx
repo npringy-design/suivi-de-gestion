@@ -84,7 +84,7 @@ export default function PayrollMonthComparison({ year, month, measure, detail }:
         </table>
       </div>
       {variance && lastYear?.totalCost != null && current.totalCost !== null && (
-        <PayrollVarianceCauses variance={variance} year={year} month={month} previousCost={lastYear.totalCost} currentCost={current.totalCost} />
+        <PayrollVarianceCauses key={`${year}-${month}`} variance={variance} year={year} month={month} previousCost={lastYear.totalCost} currentCost={current.totalCost} />
       )}
     </div>
   );

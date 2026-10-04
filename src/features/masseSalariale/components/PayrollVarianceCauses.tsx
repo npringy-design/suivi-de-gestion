@@ -1,9 +1,11 @@
+import { useState } from 'react';
+
 import { MONTH_NAMES } from '@/lib/constants';
 import { formatEuroSigned, formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 
 import { buildPayrollCascade } from '../payrollVarianceCascade';
 import type { CascadeBar } from '../payrollVarianceCascade';
-import type { PayrollCause, PayrollPersonTag } from '../payrollVarianceAnalysis';
+import type { PayrollCause, PayrollCauseKind, PayrollPersonTag } from '../payrollVarianceAnalysis';
 import type { PayrollVarianceView } from '../payrollVarianceSources';
 import PayrollCausePeople, { toneText } from './PayrollCausePeople';
 
@@ -59,7 +61,17 @@ function summarySentence(variance: PayrollVarianceView, year: number, month: num
 }
 
 export default function PayrollVarianceCauses({ variance, year, month, previousCost, currentCost }: PayrollVarianceCausesProps) {
+  // Tout replié par défaut ; état local, réinitialisé quand le bloc est remonté (autre mois ouvert, autre onglet).
+  const [openKinds, setOpenKinds] = useState<ReadonlySet<PayrollCauseKind>>(new Set());
   const { causes, residual, fallbackLabels } = variance;
+  const allOpen = causes.length > 0 && causes.every(cause => openKinds.has(cause.kind));
+  const toggleKind = (kind: PayrollCauseKind) =>
+    setOpenKinds(prev => {
+      const next = new Set(prev);
+      if (!next.delete(kind)) next.add(kind);
+      return next;
+    });
+  const toggleAll = () => setOpenKinds(allOpen ? new Set() : new Set(causes.map(cause => cause.kind)));
   const showResidual = Math.abs(residual) >= 1;
   const stepAmounts = [...causes.map(cause => cause.amount), ...(showResidual ? [residual] : [])];
   const cascade = buildPayrollCascade(previousCost, stepAmounts);
@@ -67,9 +79,20 @@ export default function PayrollVarianceCauses({ variance, year, month, previousC
   const mainCauses = [...causes].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
 
   return (
-    <div className="grid min-w-0 content-start gap-3 text-[12px]">
-      <div className="text-sm font-black text-slate-700">
-        Comment on passe de {formatEuroSymbol(previousCost)} à {formatEuroSymbol(currentCost)}
+    <div className="grid min-w-0 content-start gap-3 text-[12px]" onClick={event => event.stopPropagation()}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <div className="text-sm font-black text-slate-700">
+          Comment on passe de {formatEuroSymbol(previousCost)} à {formatEuroSymbol(currentCost)}
+        </div>
+        {causes.length > 0 && (
+          <button
+            type="button"
+            onClick={toggleAll}
+            className="rounded-md px-2 py-1 text-[11px] font-extrabold uppercase tracking-wider text-amber-700 hover:bg-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500"
+          >
+            {allOpen ? 'Tout replier' : 'Tout déplier'}
+          </button>
+        )}
       </div>
 
       <p className="m-0 text-[12.5px] font-semibold leading-relaxed text-slate-600">
@@ -81,20 +104,31 @@ export default function PayrollVarianceCauses({ variance, year, month, previousC
 
       <EndRow label={`${monthName} ${year - 1}`} cost={previousCost} bar={cascade.start} />
 
-      {causes.map((cause, index) => (
-        <div key={cause.kind} className="grid gap-1.5">
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="min-w-0 font-bold text-slate-700">
-              <span className={`mr-1 ${toneText(cause.amount)}`} aria-hidden="true">{cause.amount > 0 ? '▲' : '▼'}</span>
-              {cause.label}
-              {cause.kind === 'entriesExits' && <span className="block pl-4 text-[11px] font-semibold text-slate-400">{entriesExitsSubtitle(cause)}</span>}
-            </span>
-            <span className={`shrink-0 font-extrabold tabular-nums ${toneText(cause.amount)}`}>{formatEuroSigned(cause.amount)}</span>
+      {causes.map((cause, index) => {
+        const isOpen = openKinds.has(cause.kind);
+        return (
+          <div key={cause.kind} className="grid gap-1">
+            <button
+              type="button"
+              onClick={event => { event.stopPropagation(); toggleKind(cause.kind); }}
+              aria-expanded={isOpen}
+              className="grid gap-1.5 rounded-lg px-1 py-1 text-left hover:bg-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500"
+            >
+              <span className="flex items-baseline justify-between gap-3">
+                <span className="min-w-0 font-bold text-slate-700">
+                  <span className={`mr-1.5 inline-block text-[10px] text-slate-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} aria-hidden="true">▸</span>
+                  <span className={`mr-1 ${toneText(cause.amount)}`} aria-hidden="true">{cause.amount > 0 ? '▲' : '▼'}</span>
+                  {cause.label}
+                  {cause.kind === 'entriesExits' && <span className="block pl-8 text-[11px] font-semibold text-slate-400">{entriesExitsSubtitle(cause)}</span>}
+                </span>
+                <span className={`shrink-0 font-extrabold tabular-nums ${toneText(cause.amount)}`}>{formatEuroSigned(cause.amount)}</span>
+              </span>
+              <Track bar={cascade.steps[index]} className={toneBar(cause.amount)} />
+            </button>
+            {isOpen && <PayrollCausePeople cause={cause} />}
           </div>
-          <Track bar={cascade.steps[index]} className={toneBar(cause.amount)} />
-          <PayrollCausePeople cause={cause} />
-        </div>
-      ))}
+        );
+      })}
 
       {showResidual && (
         <div className="grid gap-1 rounded-lg bg-amber-50 px-2 py-1.5">

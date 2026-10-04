@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 04/10/2026 (Masse Salariale : causes d'écart rétractables)
+
+- `PayrollVarianceCauses` : chaque cause avec personnes est un `<button aria-expanded>` (chevron pivotant, focus visible, `stopPropagation`) qui déplie la liste des personnes ; tout est replié par défaut, bouton « Tout déplier / Tout replier » à droite du titre ; état local (`useState`), remis à zéro au changement de mois (`key`) ou d'onglet. Résiduel « Lignes du PDF non détaillées » : ni chevron ni liste. Synthèse, départ, arrivée et note d'échelle toujours visibles. tsc OK.
+
 ## 04/10/2026 (Masse Salariale : analyse des écarts refondue, cascade lisible)
 
 - Masse Salariale, détail d'un mois (onglet Coût) : `analyzePayrollVariance` passe à 3 causes + résiduel, chaque personne dans une seule : (1) Entrées / sorties, montant net avec tag par personne (Arrivée, Départ, STC {année} ; sortants de N en plus, de N-1 en moins) ; (2) Heures travaillées `(hN − hN-1) × tauxN-1` (heures nulles d'un seul côté : tout l'écart ici) ; (3) Taux horaire / rémunération `(tauxN − tauxN-1) × hN`, forfaits jour (flag `forfaitJour` ou pas d'heures) : tout l'écart de coût. Le résiduel (écart des totaux PDF − causes, affiché si ≥ 1 €) est une alerte « lignes du PDF non détaillées », pas une cause ; somme exacte au centime. Bloc `PayrollVarianceCauses` : titre « Comment on passe de X à Y », phrase de synthèse + principales causes, cascade (départ N-1, barres flottantes `buildPayrollCascade` à échelle démarrant au cumul minimum − 5 % arrondi à 500 €, arrivée N), personnes toujours visibles (`PayrollCausePeople`, une phrase par personne). Tableau de gauche : « Autres ajustements (Supp. coût) » avec infobulle, jamais une cause. Sources des lignes, décalage M/M+1 et repli inchangés. Les lignes forfait jour sont bien stockées dans `payrollLines` (test sur le format réel d'une ligne) ; l'égalité avec le Total général de septembre 2026 (45 521,82 €) n'a pas pu être vérifiée faute du PDF dans le dépôt : le résiduel la signalera. 243 tests, tsc OK.
