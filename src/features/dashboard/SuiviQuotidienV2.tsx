@@ -3,6 +3,7 @@ import { ArrowLeft, Users, ShoppingCart, DollarSign, TrendingUp } from 'lucide-r
 
 import { useData } from '@/contexts/DataContext';
 import { MONTH_NAMES } from '@/lib/constants';
+import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
 import { formatEuro } from '@/lib/formatters';
 import { parseMoneyValue } from '@/lib/money';
 import { getDashboardRowIndices } from '@/lib/utils';
@@ -10,6 +11,53 @@ import { computeMonthDashboard, getCaRealiseMonth, getCaBudgetMonth } from '@/fe
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import TabCA from '@/features/dashboard/components/SuiviV2TabCA';
 import { EditCell, VarBadge, BG_PAGE, CARD_CLS, LABEL_CLS, TH_CLS, TD_CLS, TD_DAY, TD_WEEK, TD_DAY_WEEK, readComputed, fmtNum } from '@/features/dashboard/components/SuiviV2Shared';
+
+// ─── Jours fériés (mêmes règles que Dashboard.tsx) ───────────────────────────
+
+function getEaster(y: number): Date {
+  const a = y % 19;
+  const b = Math.floor(y / 100);
+  const c = y % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mo = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(y, mo - 1, day);
+}
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+function formatDateStr(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function getPublicHolidays(year: number): string[] {
+  const easter = getEaster(year);
+  return [
+    `${year}-01-01`,
+    formatDateStr(addDays(easter, 1)),
+    `${year}-05-01`,
+    `${year}-05-08`,
+    formatDateStr(addDays(easter, 39)),
+    formatDateStr(addDays(easter, 50)),
+    `${year}-07-14`,
+    `${year}-08-15`,
+    `${year}-11-01`,
+    `${year}-11-11`,
+    `${year}-12-25`,
+  ];
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -182,6 +230,11 @@ export default function SuiviQuotidienV2({ month, year: _year, onBack }: Props) 
   const [activeMonth, setActiveMonth] = useState(month);
   const [activeTab, setActiveTab] = useState<ActiveTab>('ca');
   const YEAR = selectedYear;
+  const publicHolidays = useMemo(() => getPublicHolidays(YEAR), [YEAR]);
+  const schoolHolidays = useMemo(
+    () => getSchoolHolidayCalendar(companySettings.schoolZone).periods,
+    [companySettings.schoolZone],
+  );
 
   const monthData = data[activeMonth];
   const rawDashboard = monthData?.dashboard ?? {};
@@ -301,7 +354,7 @@ export default function SuiviQuotidienV2({ month, year: _year, onBack }: Props) 
           </div>
 
           {activeTab === 'ca' && (
-            <TabCA month={activeMonth} year={YEAR} computed={computed} rawDashboard={rawDashboard} computedN1={computedN1} updateDashboard={updateDashboard} />
+            <TabCA month={activeMonth} year={YEAR} computed={computed} rawDashboard={rawDashboard} computedN1={computedN1} updateDashboard={updateDashboard} schoolHolidays={schoolHolidays} publicHolidays={publicHolidays} />
           )}
           {activeTab === 'achats' && (
             <TabAchats month={activeMonth} year={YEAR} rawDashboard={rawDashboard} updateDashboard={updateDashboard} />

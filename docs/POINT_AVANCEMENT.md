@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 04/10/2026 (Suivi Quotidien V2, onglet CA : séparations de semaine, fériés et vacances)
+
+- Onglet CA : première ligne jour de chaque semaine avec `border-t-4 border-t-teal-500` sur toutes les cellules ; lignes « Total Semaine » en `bg-teal-50` + `border-b-2 border-b-teal-400` (constantes locales à `SuiviV2TabCA.tsx`, `TD_WEEK` partagé inchangé) ; séparation `border-l-2 border-l-slate-300` avant le groupe Couverts (en-têtes, jours, totaux semaine et mois) et en tête du groupe CA. Cellule « Jour » colorée comme `DashboardTableBody` : férié `bg-red-100 text-red-800`, vacances scolaires `bg-blue-200 text-blue-900` (le fond ambre des jours non saisis reste sur les cellules de données, la cellule « Jour » garde le code férié/vacances). `SuiviQuotidienV2.tsx` calcule `publicHolidays` (Pâques, mêmes règles que `Dashboard.tsx`) et `schoolHolidays` (`getSchoolHolidayCalendar(companySettings.schoolZone)`) et les transmet à `TabCA` → `buildMonthRows`. tsc OK, build OK (rendu non vérifié visuellement : connexion Supabase requise).
+
 ## 04/10/2026 (Suivi Quotidien V2, onglet CA : décimales au repos sur les cellules saisies)
 
 - `EditCell` (`SuiviV2Shared.tsx`) : prop optionnelle `decimals` (défaut `false`) qui affiche la valeur hors édition avec `formatEuroDecimal` au lieu de `fmtNum` ; saisie brute inchangée. Activée sur les cellules CA Midi/Soir/Limo/VAE de `SuiviV2TabCA.tsx` (pas sur les couverts). tsc OK, build OK (rendu non vérifié visuellement : connexion Supabase requise).
