@@ -1,4 +1,4 @@
-import { formatDecimal, formatEuroSigned } from '@/lib/formatters';
+import { formatDecimal, formatEuroSigned, formatEuroSymbol } from '@/lib/formatters';
 
 import type { PayrollCause, PayrollCausePerson } from '../payrollVarianceAnalysis';
 
@@ -12,6 +12,12 @@ const toneChip = (amount: number) => (amount > 0 ? 'bg-pink-700/10 text-pink-700
 
 const formatHours = (value: number) => `${formatDecimal(value, 2).replace(/,00$/, '')} h`;
 
+// « SOW MOHAMED AL MUSTAFA » → « SOW M. »
+const shortName = (nom: string) => {
+  const [lastName, firstName] = nom.trim().split(/\s+/);
+  return firstName ? `${lastName} ${firstName.charAt(0).toUpperCase()}.` : lastName ?? nom;
+};
+
 // Une phrase par personne, adaptée à la cause : tag (entrées/sorties), heures, taux horaire ou rémunération.
 function PersonSentence({ person }: { person: PayrollCausePerson }) {
   if (person.tag) {
@@ -24,6 +30,11 @@ function PersonSentence({ person }: { person: PayrollCausePerson }) {
   }
   if (person.hours) {
     return <><b className="text-slate-800">{person.nom}</b> passe de {formatHours(person.hours.from)} à {formatHours(person.hours.to)}</>;
+  }
+  if (person.costs) {
+    return (
+      <><b className="text-slate-800">{shortName(person.nom)}</b> : aucune heure, charges seules, {formatEuroSymbol(person.costs.from)} → {formatEuroSymbol(person.costs.to)}</>
+    );
   }
   if (person.rate) {
     return (

@@ -148,6 +148,21 @@ const extractPayrollTableValues = (sourceLine: string) => {
   return heures > 0 && coutGlobal > 0 ? { hours: heures, cost: coutGlobal } : null;
 };
 
+// Coût d'une ligne sans heures ni brut (salarié absent tout le mois) : les charges patronales valent le coût global,
+// la valeur présente deux fois ; à défaut, même convention que les autres lignes (avant-dernière valeur).
+const extractCostOnlyValue = (sourceLine: string): number | null => {
+  const line = sourceLine.replace(/ /g, ' ');
+  const payrollMonth = Array.from(line.matchAll(/\b(?:0[1-9]|1[0-2])\/20\d{2}\b/g)).at(-1);
+  if (!payrollMonth || payrollMonth.index === undefined || isForfaitJourLine(line)) return null;
+
+  const values = numberMatches(line.slice(payrollMonth.index + payrollMonth[0].length)).map(item => item.value);
+  if (values.length < 2 || values.length > 6) return null;
+
+  const repeated = values.find((value, index) => value > 0 && values.indexOf(value) !== index);
+  const cost = repeated ?? values[values.length - 2];
+  return cost > 0 ? cost : null;
+};
+
 const splitPayrollLines = (text: string) =>
   text
     .replace(/ /g, ' ')
@@ -206,12 +221,34 @@ export const parsePayrollLine = (sourceLine: string): ParsedPayrollLine => {
   return { matricule, identity, entryDate: dates[0]?.[0], exitDate: dates[1]?.[0], jobTitle };
 };
 
+// Lignes d'un salarié identifié (matricule + nom) sans heures ni forfait jour, dont le coût global est non nul.
+// Hors candidats : jamais dans les ETP, les taux horaires ni `categories`.
+const extractCostOnlyCandidateLines = (text: string): PayrollCandidateLine[] => {
+  const seen = new Set<string>();
+  const candidates: PayrollCandidateLine[] = [];
+
+  splitPayrollLines(text).forEach(line => {
+    if (seen.has(line) || extractPayrollTableValues(line)) return;
+    const coutGlobal = extractCostOnlyValue(line);
+    if (coutGlobal === null) return;
+    const parsed = parsePayrollLine(line);
+    if (!parsed.matricule || !normalizePersonnelText(parsed.identity)) return;
+    seen.add(line);
+    candidates.push({ line, heures: 0, coutGlobal });
+  });
+
+  return candidates;
+};
+
 // Toutes les lignes de la page du PDF, sortants compris, pour l'analyse des écarts de coût. Plusieurs lignes d'une même
 // personne (changement de contrat) sont cumulées. N'alimente ni les taux horaires ni `categories`.
+// Les lignes à coût seul (absences) sont stockées avec `costOnly` et 0 heure.
 export const buildPayrollStoredLines = (text: string): PayrollStoredLine[] => {
   const byKey = new Map<string, PayrollStoredLine>();
+  const costOnlyLines = new Set(extractCostOnlyCandidateLines(text));
 
-  extractPayrollCandidateLines(text).forEach(candidate => {
+  [...extractPayrollCandidateLines(text), ...costOnlyLines].forEach(candidate => {
+    const costOnly = costOnlyLines.has(candidate);
     const parsed = parsePayrollLine(candidate.line);
     const name = normalizePersonnelText(parsed.identity);
     if (!name) return;
@@ -233,6 +270,7 @@ export const buildPayrollStoredLines = (text: string): PayrollStoredLine[] => {
       coutGlobal: candidate.coutGlobal,
       ...(parsed.exitDate ? { exitDate: parsed.exitDate } : {}),
       ...(forfaitJour ? { forfaitJour: true } : {}),
+      ...(costOnly ? { costOnly: true } : {}),
     });
   });
 

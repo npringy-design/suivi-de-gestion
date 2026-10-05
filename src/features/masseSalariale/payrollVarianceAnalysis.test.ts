@@ -29,7 +29,7 @@ const cause = (analysis: ReturnType<typeof analyzePayrollVariance>, kind: string
 describe('analyzePayrollVariance', () => {
   const analysis = analyzePayrollVariance({ current, previous, currentTotal: 10100, previousTotal: 8800 });
 
-  it('3 causes au plus, chaque personne dans une seule cause', () => {
+  it('causes sans absences ici, chaque personne dans une seule cause', () => {
     expect(analysis.causes.map(c => c.kind)).toEqual(['entriesExits', 'hours', 'rate']);
     expect(cause(analysis, 'entriesExits')!.amount).toBe(900); // +800 arrivée − 500 départ + 900 STC N − 300 STC N-1
     expect(cause(analysis, 'hours')!.amount).toBe(100); // (110 − 100) × 10
@@ -80,6 +80,22 @@ describe('analyzePayrollVariance', () => {
     });
     expect(cause(result, 'hours')!.amount).toBe(-600);
     expect(cause(result, 'rate')).toBeUndefined();
+  });
+
+  it('absences : heures nulles des deux côtés (hors forfait jour) → cause dédiée, somme des causes + résiduel = écart', () => {
+    const result = analyzePayrollVariance({
+      current: [line('1', 'DUPONT Jean', 110, 1210), { ...line('9', 'SOW MOHAMED AL MUSTAFA', 0, 43.25), costOnly: true }],
+      previous: [line('1', 'DUPONT Jean', 100, 1000), { ...line('9', 'SOW MOHAMED AL MUSTAFA', 0, 39), costOnly: true }],
+      currentTotal: 1253.25,
+      previousTotal: 1039,
+    });
+    expect(result.causes.map(c => c.kind)).toEqual(['hours', 'rate', 'absences']);
+    expect(cause(result, 'absences')!.amount).toBe(4.25);
+    expect(cause(result, 'absences')!.people).toMatchObject([{ nom: 'SOW MOHAMED AL MUSTAFA', amount: 4.25, costs: { from: 39, to: 43.25 } }]);
+    expect(cause(result, 'rate')!.people.map(p => p.nom)).toEqual(['DUPONT Jean']);
+    expect(result.residual).toBe(0);
+    const cents = result.causes.reduce((sum, c) => sum + Math.round(c.amount * 100), 0) + Math.round(result.residual * 100);
+    expect(cents).toBe(Math.round(result.totalDiff * 100));
   });
 
   it('appariement : repli sur le nom quand les clés diffèrent (matricule d\'un côté seulement)', () => {

@@ -202,10 +202,11 @@ export type PayrollPageTotals = {
 export type PayrollStoredLine = {
   key: string; // matricule du PDF, sinon nom normalisé (majuscules, sans accents, espaces réduits)
   nom: string;
-  heures: number; // 151,67 pour un forfait jour
+  heures: number; // 151,67 pour un forfait jour, 0 pour une ligne à coût seul
   coutGlobal: number;
   exitDate?: string; // dd/mm/yyyy : sortant
   forfaitJour?: boolean;
+  costOnly?: boolean; // ligne sans heures ni brut (absence : charges seules) : jamais dans les ETP ni les taux horaires
 };
 
 export type MonthDataSalariesConfig = {

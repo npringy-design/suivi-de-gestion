@@ -33,9 +33,9 @@ type PayrollMeasureConfig = {
   detailRows: PayrollDetailRow[];
 };
 
-const OTHER_ADJUSTMENTS_HINT = 'Colonne « Supp. coût » du PDF : réductions et déductions de charges patronales (réduction Fillon et autres). Déjà comprises dans le coût global de chaque salarié. N\'inclut pas les aides aux apprentis.';
+const OTHER_ADJUSTMENTS_HINT = 'Colonne « Supp. coût » du PDF : réductions de charges patronales, déjà comprises dans le coût global de chaque salarié. N\'inclut pas les aides aux apprentis.';
 
-// Réductions de charges (Fillon…) =coût global − brut − charges patronales (colonne « Supp. coût » du PDF).
+// Réductions de charges = coût global − brut − charges patronales (colonne « Supp. coût » du PDF).
 const otherAdjustments = (m: PayrollMetrics): number | null =>
   m.totalCost !== null && m.gross !== null && m.employerCharges !== null ? m.totalCost - m.gross - m.employerCharges : null;
 
@@ -73,7 +73,7 @@ export const PAYROLL_MEASURES: Record<PayrollMeasure, PayrollMeasureConfig> = {
         formatValue: value => `${formatDecimal(value, 1)} %`,
         formatDelta: value => `${formatDecimalSigned(value, 1)} pt`,
       },
-      euroRow('otherAdjustments', 'Réductions de charges (Fillon…)', otherAdjustments, true, OTHER_ADJUSTMENTS_HINT),
+      euroRow('otherAdjustments', 'Réductions de charges', otherAdjustments, true, OTHER_ADJUSTMENTS_HINT),
     ],
   },
   etp: {

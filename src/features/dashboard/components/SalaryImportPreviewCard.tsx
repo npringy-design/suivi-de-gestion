@@ -90,6 +90,7 @@ export default function SalaryImportPreviewCard({
   const recognizedCount = preview.rows.filter(row => row.origin === 'recognized' && row.status !== 'ignored').length;
   const newCount = preview.rows.filter(row => row.origin === 'new' && row.status !== 'ignored').length;
   const leaverCount = preview.rows.filter(row => row.exitDate && row.status === 'ignored').length;
+  const costOnlyLines = preview.payrollLines.filter(line => line.costOnly);
   // Nouveaux salariés (à confirmer) en premier, puis le reste dans l'ordre du PDF
   const sortedRows = [...preview.rows].sort((a, b) => Number(b.origin === 'new') - Number(a.origin === 'new'));
 
@@ -126,6 +127,12 @@ export default function SalaryImportPreviewCard({
           ? <>Totaux du PDF (page Masse salariale, tout le monde compris) : brut {formatEuroSymbol(preview.totals.brut)} · charges {formatEuroSymbol(preview.totals.chargesPatronales)} · coût global {formatEuroSymbol(preview.totals.coutGlobal)}</>
           : 'Totaux de bas de page non reconnus (format différent) : la page Masse salariale utilisera la somme des salariés retenus.'}
       </div>
+
+      {costOnlyLines.length > 0 && (
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>
+          {costOnlyLines.length} ligne(s) sans heures (charges seules) lue(s) : {costOnlyLines.map(line => line.nom).join(', ')}
+        </div>
+      )}
 
       <div style={{ overflowX: 'auto', background: '#fff', border: '1px solid #e9d5ff', borderRadius: 8 }}>
         <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse', fontSize: 12 }}>

@@ -1,15 +1,16 @@
 import { payrollNameKey } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import type { PayrollStoredLine } from '@/types/dataTypes';
 
-// Décomposition de l'écart de coût salarial global entre un mois N et le même mois N-1, en 3 causes + un résiduel.
+// Décomposition de l'écart de coût salarial global entre un mois N et le même mois N-1, en 4 causes + un résiduel.
 // Chaque personne n'entre que dans UNE cause :
 //  1. Entrées / sorties : arrivées (+), départs (−), sortants avec STC (+ en N, − en N-1), montant net ;
 //  2. Heures travaillées : (hN − hN-1) × tauxN-1 pour les personnes présentes aux deux dates ;
 //  3. Taux horaire / rémunération : (tauxN − tauxN-1) × hN ; forfaits jour (pas d'heures à comparer) : tout l'écart de coût.
+//  4. Absences (charges sans heures) : personnes non forfait jour sans heures aux deux dates : coûtN − coûtN-1.
 // Pour une personne aux heures comparables, 2 + 3 = coûtN − coûtN-1 exactement. Heures nulles d'un seul côté : tout dans 2.
 // Le résiduel (écart des totaux du PDF − somme des causes) n'est pas une cause de coût : il signale des lignes manquantes.
 
-export type PayrollCauseKind = 'entriesExits' | 'hours' | 'rate';
+export type PayrollCauseKind = 'entriesExits' | 'hours' | 'rate' | 'absences';
 
 export type PayrollPersonTag = {
   kind: 'arrival' | 'departure' | 'stc';
@@ -24,6 +25,7 @@ export type PayrollCausePerson = {
   hours?: { from: number; to: number }; // cause 2
   rate?: { from: number; to: number }; // cause 3, €/h
   forfait?: boolean; // cause 3 : rémunération d'un forfait jour
+  costs?: { from: number; to: number }; // cause 4 : coût global (charges seules), sans heures
 };
 
 export type PayrollCause = {
@@ -50,6 +52,7 @@ const CAUSE_LABELS: Record<PayrollCauseKind, string> = {
   entriesExits: 'Entrées / sorties',
   hours: 'Heures travaillées vs N-1',
   rate: 'Taux horaire / rémunération',
+  absences: 'Absences (charges sans heures)',
 };
 
 const toCents = (value: number) => Math.round(value * 100);
@@ -78,6 +81,7 @@ export const analyzePayrollVariance = ({ current, previous, currentTotal, previo
   const entriesExits: PayrollCausePerson[] = [];
   const hoursEffect: PayrollCausePerson[] = [];
   const rateEffect: PayrollCausePerson[] = [];
+  const absencesEffect: PayrollCausePerson[] = [];
 
   // Sortants avec STC : coût des sortants de N en plus, coût des sortants de N-1 en moins.
   const staying = (lines: PayrollStoredLine[], sign: 1 | -1) => lines.filter(line => {
@@ -108,8 +112,10 @@ export const analyzePayrollVariance = ({ current, previous, currentTotal, previo
     const diff = line.coutGlobal - other.coutGlobal;
     const base = { key: line.key, nom: line.nom };
 
-    if (line.forfaitJour || other.forfaitJour || (line.heures <= 0 && other.heures <= 0)) {
+    if (line.forfaitJour || other.forfaitJour) {
       rateEffect.push({ ...base, amount: diff, forfait: true });
+    } else if (line.heures <= 0 && other.heures <= 0) {
+      absencesEffect.push({ ...base, amount: diff, costs: { from: other.coutGlobal, to: line.coutGlobal } });
     } else if (line.heures > 0 && other.heures > 0) {
       const previousRate = other.coutGlobal / other.heures;
       const currentRate = line.coutGlobal / line.heures;
@@ -127,6 +133,7 @@ export const analyzePayrollVariance = ({ current, previous, currentTotal, previo
     buildCause('entriesExits', entriesExits),
     buildCause('hours', hoursEffect),
     buildCause('rate', rateEffect),
+    buildCause('absences', absencesEffect),
   ].filter((cause): cause is PayrollCause => cause !== null);
 
   // Le résiduel absorbe les arrondis : somme des causes + résiduel = écart total, exactement (en centimes).

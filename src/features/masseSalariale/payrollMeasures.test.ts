@@ -12,7 +12,7 @@ describe('lignes de détail par grandeur', () => {
     expect(PAYROLL_MEASURES.etp.detailRows.map(r => r.key)).toEqual(['etp', 'costPerEtp', 'hours']);
   });
 
-  it('réductions de charges (Fillon…) = coût global − brut − charges (Supp. coût du PDF)', () => {
+  it('réductions de charges = coût global − brut − charges (Supp. coût du PDF)', () => {
     const m = metricsOf({ totalCost: 45521.82, hours: 0, gross: 38091.35, employerCharges: 9244.53 });
     expect(row('cost', 'otherAdjustments').value(m)).toBeCloseTo(-1814.06, 2);
   });

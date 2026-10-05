@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildPayrollStoredLines, extractPayrollPageTotals } from './personnelSalaryImport';
+import { buildPayrollRowsFromText, buildPayrollStoredLines, extractPayrollCandidateLines, extractPayrollPageTotals } from './personnelSalaryImport';
 
 const PDF_TEXT = [
   'DUPONT Jean 151,67 3 000,00 800,00 26,67 - 3 800,00',
@@ -76,6 +76,22 @@ describe('extractPayrollPageTotals', () => {
     expect(lines).toHaveLength(2);
     expect(lines[0]).toMatchObject({ key: '000019', forfaitJour: true, heures: 151.67, coutGlobal: 6057.77 });
     expect(lines.reduce((sum, line) => sum + line.coutGlobal, 0)).toBeCloseTo(6057.77 + 3287.74, 2);
+  });
+
+  it('lignes à coût seul (absence) : stockées sans heures, hors ETP, hors lignes d\'aperçu, somme = total', () => {
+    const absent = '00123 SOW MOHAMED AL MUSTAFA 01/03/2024 Employé polyvalent 01/2026 43.25 43.25';
+    const normal = '000014 MARTIAL KIESHA 01/11/2021 ASSISTANT MANAGER 01/2026 148.92 17.33 166.25 2672.11 740.57 27.71 -124.94 3287.74 19.78';
+    const text = [normal, absent, 'Total général 2672,11 783,82 29,33 -124,94 3330,99'].join('\n');
+
+    const lines = buildPayrollStoredLines(text);
+    expect(lines).toHaveLength(2);
+    expect(lines[1]).toMatchObject({ key: '00123', heures: 0, coutGlobal: 43.25, costOnly: true });
+    expect(lines[0].costOnly).toBeUndefined();
+    expect(lines.reduce((sum, line) => sum + line.coutGlobal, 0)).toBeCloseTo(3287.74 + 43.25, 2);
+
+    expect(extractPayrollCandidateLines(text).map(candidate => candidate.line)).toEqual([normal]);
+    expect(buildPayrollRowsFromText(text, new Map())).toHaveLength(1);
+    expect(extractPayrollPageTotals(text)!.etp).toBeCloseTo(166.25 / 151.67, 2);
   });
 
   it('gère les fins de ligne Windows', () => {

@@ -103,6 +103,7 @@ export default function PayrollVarianceCauses({ variance, year, month, previousC
                   <span className={`mr-1 ${toneText(cause.amount)}`} aria-hidden="true">{cause.amount > 0 ? '▲' : '▼'}</span>
                   {cause.label}
                   {cause.kind === 'entriesExits' && <span className="block pl-8 text-[11px] font-semibold text-slate-400">{entriesExitsSubtitle(cause)}</span>}
+                  {cause.kind === 'absences' && <span className="block pl-8 text-[11px] font-semibold text-slate-400">{cause.people.length} personne(s) sans heures travaillées</span>}
                 </span>
                 <span className={`shrink-0 font-extrabold tabular-nums ${toneText(cause.amount)}`}>{formatEuroSigned(cause.amount)}</span>
               </span>
