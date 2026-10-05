@@ -5,9 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
-## 05/10/2026 (Masse Salariale : ligne « Réductions de charges (Fillon…) »)
+## 05/10/2026 (Masse Salariale : lignes sans heures, cause « Absences », libellé « Réductions de charges »)
 
-- Détail Masse Salariale (onglet Coût) : la ligne « Autres ajustements (Supp. coût) » devient « Réductions de charges (Fillon…) » avec infobulle précisée (réductions/déductions de charges patronales, déjà comprises dans le coût global, hors aides aux apprentis). Formule inchangée (coût global − brut − charges), clé `otherAdjustments` conservée, toujours hors bloc des causes. tsc OK.
+- Import PDF salaires : les lignes d'un salarié identifié (matricule + nom) sans heures ni forfait jour, au coût global non nul (absent tout le mois, charges seules), sont stockées dans `payrollLines` avec `heures: 0` et `costOnly: true` (`extractCostOnlyCandidateLines` ; coût = valeur présente deux fois, sinon avant-dernière valeur : format réel non vérifié faute de PDF dans le dépôt). Jamais dans `categories`, les taux horaires, les lignes d'aperçu ni les ETP ; l'aperçu affiche seulement « n ligne(s) sans heures (charges seules) lue(s) : noms ». Les mois déjà importés sont à réimporter pour en bénéficier.
+- Analyse des écarts : 4e cause « Absences (charges sans heures) » (non forfait jour, heures nulles des deux côtés, coûtN − coûtN-1), qui sort ces personnes de « Taux horaire / rémunération » ; résiduel inchangé.
+- Détail Coût : ligne « Réductions de charges » (infobulle sans mention de la loi Fillon), formule inchangée (coût global − brut − charges), clé `otherAdjustments`, hors bloc des causes. 245 tests, tsc OK.
 
 ## 04/10/2026 (Suivi Quotidien V2, onglet CA : séparations de semaine, fériés et vacances)
 
