@@ -1,9 +1,9 @@
 import { MONTH_NAMES_SHORT } from '@/lib/constants';
-import { formatEuroSymbol } from '@/lib/formatters';
 import type { PlanSettings } from '@/types/dataTypes';
 
 import { analyseGlass, analyseLabel } from '../../analyse/components/analyseStyles';
 
+import PlanAnnualCaField from './PlanAnnualCaField';
 import PlanNumberInput from './PlanNumberInput';
 
 type PlanSettingsPanelProps = {
@@ -35,27 +35,12 @@ export default function PlanSettingsPanel({
           </select>
         </label>
 
-        <div className="grid gap-1">
-          <span className={analyseLabel}>CA annuel {settings.targetYear}</span>
-          <PlanNumberInput
-            ariaLabel={`CA annuel ${settings.targetYear}`}
-            value={settings.targetAnnualCA}
-            placeholder={String(annualProposal)}
-            step={1000}
-            allowEmpty
-            highlight={settings.targetAnnualCA !== null}
-            onCommit={value => onChange({ targetAnnualCA: value })}
-          />
-          <span className="text-[11px] font-semibold text-cyan-50/60">
-            Proposition : {formatEuroSymbol(annualProposal)} (moyenne {olderYear}-{recentYear}){' '}
-            <button type="button" onClick={() => onChange({ targetAnnualCA: annualProposal })} className="font-black text-amber-200 underline hover:text-amber-100">
-              Appliquer la proposition
-            </button>
-            {settings.targetAnnualCA !== null && (
-              <> · <button type="button" onClick={() => onChange({ targetAnnualCA: null, targetMonthlyCA: {} })} className="font-black text-amber-200 underline hover:text-amber-100">Retirer l&apos;objectif</button></>
-            )}
-          </span>
-        </div>
+        <PlanAnnualCaField
+          year={settings.targetYear}
+          value={settings.targetAnnualCA}
+          proposal={annualProposal}
+          onApply={value => onChange(value === null ? { targetAnnualCA: null, targetMonthlyCA: {} } : { targetAnnualCA: value })}
+        />
 
         <div className="grid gap-1">
           <span className={analyseLabel}>Croissance couverts (%)</span>
