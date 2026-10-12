@@ -100,27 +100,44 @@ const tmOfDays = (days: PlanDay[]): number => {
 
 export type TmFloors = { byMonth: Record<number, number>; year: number | null };
 
-// TM réalisé (CA midi + soir / couverts) de l'année N-1, au total et par mois complet.
+type TmTotals = { ca: number; cv: number };
+
+const tmOfTotals = ({ ca, cv }: TmTotals): number | null => (cv > 0 ? ca / cv : null);
+
+// Plancher de TM de l'année N-1 : le plus haut du TM réalisé et du TM budgété (CA midi + soir /
+// couverts, jours réalisés), au total et par mois complet. On ne propose jamais un TM inférieur à
+// ce que le restaurant a réalisé ni à ce qu'il avait budgété.
 export function tmFloors(samples: AnalyseDaySample[], previousYear: number): TmFloors {
   const partialKey = partialMonthKey(samples);
-  const totals = new Map<number, { ca: number; cv: number }>();
-  let yearCa = 0;
-  let yearCv = 0;
-  samples.filter(s => Number(s.date.slice(0, 4)) === previousYear).forEach(sample => {
-    const ca = sample.reel.caMidi + sample.reel.caSoir;
-    const cv = sample.reel.cvMidi + sample.reel.cvSoir;
-    yearCa += ca;
-    yearCv += cv;
+  const empty = (): { real: TmTotals; budget: TmTotals } => ({ real: { ca: 0, cv: 0 }, budget: { ca: 0, cv: 0 } });
+  const year = empty();
+  const months = new Map<number, ReturnType<typeof empty>>();
+  const add = (target: ReturnType<typeof empty>, sample: AnalyseDaySample) => {
+    target.real.ca += sample.reel.caMidi + sample.reel.caSoir;
+    target.real.cv += sample.reel.cvMidi + sample.reel.cvSoir;
+    target.budget.ca += sample.budget.caMidi + sample.budget.caSoir;
+    target.budget.cv += sample.budget.cvMidi + sample.budget.cvSoir;
+  };
+  const highest = (entry: ReturnType<typeof empty>): number | null => {
+    const values = [tmOfTotals(entry.real), tmOfTotals(entry.budget)].filter((v): v is number => v !== null);
+    return values.length > 0 ? Math.max(...values) : null;
+  };
+
+  samples.filter(sample => Number(sample.date.slice(0, 4)) === previousYear).forEach(sample => {
+    add(year, sample);
     if (sample.date.slice(0, 7) === partialKey) return;
     const month = Number(sample.date.slice(5, 7)) - 1;
-    const entry = totals.get(month) ?? { ca: 0, cv: 0 };
-    entry.ca += ca;
-    entry.cv += cv;
-    totals.set(month, entry);
+    const entry = months.get(month) ?? empty();
+    add(entry, sample);
+    months.set(month, entry);
   });
+
   const byMonth: Record<number, number> = {};
-  totals.forEach(({ ca, cv }, month) => { if (cv > 0) byMonth[month] = ca / cv; });
-  return { byMonth, year: yearCv > 0 ? yearCa / yearCv : null };
+  months.forEach((entry, month) => {
+    const floor = highest(entry);
+    if (floor !== null) byMonth[month] = floor;
+  });
+  return { byMonth, year: highest(year) };
 }
 
 // Relève les TM de `factor` en gardant le CA : ce sont les couverts qui baissent. L'arrondi des

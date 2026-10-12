@@ -7,7 +7,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ## 12/10/2026 (Planification : plancher de TM)
 
-- Planification : plancher aussi sur les agrégats (`enforceTmFloors`) : TM mensuel ≥ TM réalisé du même mois de N-1 (mois complets), puis TM annuel ≥ TM réalisé de N-1, en baissant les couverts à CA constant. Plancher par groupe : le TM proposé ne descend jamais sous le TM de N-1 du groupe (jour × statut × service, × ratio férié ; `latestYearTm`), quels que soient l'objectif de CA ou la croissance TM ; un objectif plus bas fait baisser les couverts. Saisir le CA d'un jour redéduit les couverts (TM conservé) ; la saisie directe du TM reste libre. 263 tests, tsc OK.
+- Planification : plancher aussi sur les agrégats (`enforceTmFloors`) : TM mensuel puis annuel ≥ le plus haut du TM réalisé et du TM budgété de N-1 (jours réalisés, mois complets ; CA midi + soir, VAE et limonade exclus), en baissant les couverts à CA constant. Plancher par groupe : le TM proposé ne descend jamais sous le TM de N-1 du groupe (jour × statut × service, × ratio férié ; `latestYearTm`), quels que soient l'objectif de CA ou la croissance TM ; un objectif plus bas fait baisser les couverts. Saisir le CA d'un jour redéduit les couverts (TM conservé) ; la saisie directe du TM reste libre. 264 tests, tsc OK.
 
 ## 12/10/2026 (Planification : fériés, moyenne simple, pilotage par CA)
 

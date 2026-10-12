@@ -268,6 +268,12 @@ describe('plancher de TM mensuel et annuel (N-1)', () => {
     expect(floors.byMonth[0]).toBeCloseTo(24);
   });
 
+  it('prend le plus haut du TM réalisé et du TM budgété de N-1', () => {
+    const withBudget = { ...sample('2026-01-30', 30, 24), budget: { ...emptyValues, caMidi: 30 * 26, cvMidi: 30 } };
+    expect(tmFloors([withBudget], 2026).year).toBeCloseTo(26); // budget 26 > réalisé 24
+    expect(tmFloors([sample('2026-01-30', 30, 24)], 2026).year).toBeCloseTo(24); // pas de budget : réalisé
+  });
+
   it('relève le TM annuel au plancher en baissant les couverts, CA conservé', () => {
     const before = totals(plan);
     const after = totals(enforceTmFloors(plan, { byMonth: {}, year: before.tm * 1.1 }));
