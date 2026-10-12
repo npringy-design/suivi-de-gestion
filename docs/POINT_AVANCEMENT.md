@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 12/10/2026 (Planification : plancher de TM)
+
+- Planification : le TM proposé ne descend jamais sous le TM de N-1 du groupe (jour × statut × service, × ratio férié ; `latestYearTm`), quels que soient l'objectif de CA ou la croissance TM ; un objectif plus bas fait baisser les couverts. Saisir le CA d'un jour redéduit les couverts (TM conservé) ; la saisie directe du TM reste libre. 260 tests, tsc OK.
+
 ## 12/10/2026 (Planification : fériés, moyenne simple, pilotage par CA)
 
 - Planification : `@/lib/publicHolidays` (fériés français, Pâques) ; statut `'ferie'` prioritaire sur les vacances, jour férié = proposition du jour normal × `holidayRatio` (source `'ferie'`, fériés exclus du groupe « tous statuts ») ; slider « Poids » et `recentWeightPct` supprimés (années à parts égales, médiane si < 5 échantillons ou outlier) ; `targetAnnualCA` / `targetMonthlyCA` : CA annuel (proposition `proposeAnnualCA` modifiable) → mois (`monthlyWeights`) → jours (`dailyWeights`), TM historique inchangé, seuls les couverts bougent (calculs purs dans `planningTargets.ts`) ; CA mensuel éditable dans `PlanMonthTable`, badge/nom du férié dans `PlanDayTable`. Un CA mensuel saisi pilote son mois même sans CA annuel. Mois partiel en cours exclu des poids. 258 tests, tsc OK, build OK (rendu vérifié sur composants réels via page de test temporaire : la page `/planification` exige une connexion Supabase).

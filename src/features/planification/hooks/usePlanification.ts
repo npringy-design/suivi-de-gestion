@@ -93,7 +93,7 @@ export function usePlanification() {
     });
   }, []);
 
-  // Édition manuelle : couverts et TM sont les valeurs stockées ; le CA saisi redéduit le TM.
+  // Édition manuelle : couverts et TM sont les valeurs stockées ; le CA saisi redéduit les couverts (le TM ne baisse pas).
   const editService = useCallback((date: string, service: PlanService, field: 'cv' | 'tm' | 'ca', value: number) => {
     const day = plan.find(d => d.date === date);
     if (!day || !Number.isFinite(value) || value < 0) return;
@@ -102,7 +102,7 @@ export function usePlanification() {
     let tm = current.tm;
     if (field === 'cv') cv = Math.round(value);
     else if (field === 'tm') tm = value;
-    else if (cv > 0) tm = Math.round((value / cv) * 100) / 100;
+    else if (tm > 0) cv = Math.round(value / tm);
     else return;
     setOverrides(prev => ({ ...prev, [date]: { ...prev[date], [service]: { cv, tm } } }));
   }, [plan]);

@@ -210,30 +210,39 @@ type SchoolStatus = Exclude<PlanVacationStatus, 'ferie'>;
 // Contexte d'un jour férié : statut scolaire du jour (groupe « jour normal » à utiliser) et ratio.
 export type HolidayContext = { baseStatus: SchoolStatus; ratio: HolidayRatio };
 
+// TM plancher : TM de la dernière année d'historique du groupe (N-1). Le TM proposé ne descend jamais
+// en dessous, quels que soient l'objectif de CA ou les croissances : on baisse les couverts plutôt.
+const latestYearTm = (entries: ServiceEntry[]): number => {
+  const latest = Math.max(...entries.map(e => e.year));
+  const recent = entries.filter(e => e.year === latest);
+  const cv = recent.reduce((acc, e) => acc + e.cv, 0);
+  return cv > 0 ? recent.reduce((acc, e) => acc + e.ca, 0) / cv : 0;
+};
+
 // Estimation du groupe avant ratio et croissance (cv/tm bruts, ca non calculé).
 function rawProposal(
   groups: Map<string, GroupData>,
   weekday: number,
   status: SchoolStatus,
   service: PlanService,
-): PlanServiceProposal {
+): PlanServiceProposal & { tmFloor: number } {
   const exact = groups.get(groupKey(weekday, status, service));
   let source: PlanSource = 'groupe';
   let group = exact;
 
-  if (exact && exact.days > 0 && exact.entries.length < exact.days * CLOSED_OPEN_RATIO) return closedProposal(exact.days);
+  if (exact && exact.days > 0 && exact.entries.length < exact.days * CLOSED_OPEN_RATIO) return { ...closedProposal(exact.days), tmFloor: 0 };
 
   if (!group || group.entries.length === 0) {
     source = 'repli';
     group = groups.get(groupKey(weekday, 'any', service));
   }
   if (!group || group.entries.length === 0) {
-    return { cv: 0, tm: 0, ca: 0, n: 0, confidence: 'critique', source: 'aucune', estimator: 'mediane', manual: false };
+    return { cv: 0, tm: 0, ca: 0, n: 0, confidence: 'critique', source: 'aucune', estimator: 'mediane', manual: false, tmFloor: 0 };
   }
 
   const estimate = estimateEntries(group.entries);
   const n = group.entries.length;
-  return { cv: estimate.cv, tm: estimate.tm, ca: 0, n, confidence: confidenceOf(n, source), source, estimator: estimate.estimator, manual: false };
+  return { cv: estimate.cv, tm: estimate.tm, ca: 0, n, confidence: confidenceOf(n, source), source, estimator: estimate.estimator, manual: false, tmFloor: latestYearTm(group.entries) };
 }
 
 // Jour férié : proposition du jour normal (groupe selon les vacances) × ratio historique férié.
@@ -249,7 +258,7 @@ export function buildProposal(
   const context: HolidayContext | null = status === 'ferie'
     ? (holiday ?? { baseStatus: 'hors_vacances', ratio: NO_RATIO })
     : null;
-  const raw = rawProposal(groups, weekday, context ? context.baseStatus : (status as SchoolStatus), service);
+  const { tmFloor, ...raw } = rawProposal(groups, weekday, context ? context.baseStatus : (status as SchoolStatus), service);
   if (raw.source === 'ferme' || raw.source === 'aucune') return raw;
 
   const ratio = context?.ratio ?? NO_RATIO;
@@ -257,7 +266,7 @@ export function buildProposal(
   const cvGrowth = settings.cvGrowthByMonth[month] ?? settings.cvGrowthPct;
   const tmGrowth = settings.tmGrowthByMonth[month] ?? settings.tmGrowthPct;
   const cv = Math.round(raw.cv * ratio.cv * (1 + cvGrowth / 100));
-  const tm = round2(raw.tm * ratio.tm * (1 + tmGrowth / 100));
+  const tm = Math.max(round2(raw.tm * ratio.tm * (1 + tmGrowth / 100)), round2(tmFloor * ratio.tm));
   return { ...raw, cv, tm, ca: round2(cv * tm), source, confidence: confidenceOf(raw.n, source) };
 }
 

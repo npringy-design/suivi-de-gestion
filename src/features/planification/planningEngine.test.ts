@@ -99,8 +99,8 @@ describe('generatePlan', () => {
     const jan4 = plan.find(d => d.date === '2027-01-04')!;
     expect(jan4.weekday).toBe(1);
     expect(jan4.midi.cv).toBe(25); // moyenne à parts égales : (20 + 30) / 2
-    expect(jan4.midi.tm).toBeCloseTo(23, 2);
-    expect(jan4.midi.ca).toBeCloseTo(25 * 23, 0);
+    expect(jan4.midi.tm).toBeCloseTo(25, 2); // moyenne 23, relevée au TM de N-1 (25)
+    expect(jan4.midi.ca).toBeCloseTo(25 * 25, 0);
     expect(jan4.midi.n).toBe(8);
     expect(jan4.midi.confidence).toBe('fiable');
   });
@@ -111,7 +111,7 @@ describe('generatePlan', () => {
     }));
     const jan = plan.find(d => d.date === '2027-01-04')!;
     expect(jan.midi.cv).toBe(25); // surcharge janvier : 0 %
-    expect(jan.midi.tm).toBeCloseTo(23.92, 1); // 23 × 1,04
+    expect(jan.midi.tm).toBeCloseTo(25, 1); // 23 × 1,04 = 23,92 < plancher N-1 (25)
     const feb = plan.find(d => d.date === '2027-02-01')!;
     expect(feb.midi.source).toBe('groupe');
   });
@@ -225,6 +225,27 @@ describe('pilotage par CA', () => {
     const months = summarizeByMonth(plan);
     expect(Math.abs(months[0].caMidi - 2000)).toBeLessThan(20);
     expect(months[1]).toEqual(summarizeByMonth(generatePlan(history, noHolidays, settings()))[1]);
+  });
+});
+
+describe('plancher de TM (N-1)', () => {
+  // 2025 : TM 20 ; 2026 : TM 24 → moyenne 22, plancher 24.
+  const history = [
+    ...mondays2025.map(d => sample(d, 30, 20)),
+    ...mondays2026.map(d => sample(d, 30, 24)),
+  ];
+
+  it('ne descend jamais sous le TM de N-1, même avec une croissance TM négative', () => {
+    const plan = generatePlan(history, noHolidays, settings({ tmGrowthPct: -10 }));
+    expect(plan.find(d => d.date === '2027-01-04')!.midi.tm).toBe(24);
+  });
+
+  it('un objectif de CA plus bas fait baisser les couverts, pas le TM', () => {
+    const base = generatePlan(history, noHolidays, settings());
+    const plan = generatePlan(history, noHolidays, settings({ targetMonthlyCA: { 0: 1000 } }));
+    const monday = plan.find(d => d.date === '2027-01-04')!;
+    expect(monday.midi.tm).toBe(24);
+    expect(monday.midi.cv).toBeLessThan(base.find(d => d.date === '2027-01-04')!.midi.cv);
   });
 });
 
