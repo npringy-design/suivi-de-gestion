@@ -543,7 +543,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(totalCvtsSoir)),
           fe(totalCvtsSoir > 0 ? totalCaSoir / totalCvtsSoir : 0),
           String(Math.round(totalCvtsJour)),
-          fe(totalCvtsJour > 0 ? totalCaJour / totalCvtsJour : 0),
+          fe(totalCvtsJour > 0 ? (totalCaMidi + totalCaSoir) / totalCvtsJour : 0), // TM restaurant : sans VAE ni limonade
           String(totalCumulCvts),
           fp(((totalCvtsJour - 54338) / 54338) * 100),
         ];
@@ -600,7 +600,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(totalCvtsSoir)),
           String(Math.round(ecartCvtsSoirYtd)),
           String(Math.round(totalCvtsJour)),
-          fe(totalCvtsJour > 0 ? totalCaJour / totalCvtsJour : 0),
+          fe(totalCvtsJour > 0 ? (totalCaMidi + totalCaSoir) / totalCvtsJour : 0), // TM restaurant : sans VAE ni limonade
           String(Math.round(ecartCvtsJourYtd)),
           fp(ecartCvtsJourPct),
           String(Math.round(totalCvtsJour)),

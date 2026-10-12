@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 12/10/2026 (Récap annuel : TM de la ligne TOTAL sans VAE ni limonade)
+
+- `RecapAnnuel.tsx`, tableaux Budget et Réalisé : le TM du jour de la ligne TOTAL = (CA midi + CA soir) / couverts restaurant (il divisait le CA total, VAE et limonade compris, par les seuls couverts restaurant). Les CA totaux restent inchangés. Mêmes divisions `CA total / couverts` encore présentes dans les lignes mensuelles de synthèse et dans les totaux « résultats » / « synthèse » (non modifiées). tsc OK.
+
 ## 12/10/2026 (Planification : plancher de TM)
 
 - Planification : plancher aussi sur les agrégats (`enforceTmFloors`) : TM mensuel puis annuel ≥ le plus haut du TM réalisé et du TM budgété de N-1 (jours réalisés, mois complets ; CA midi + soir, VAE et limonade exclus), en baissant les couverts à CA constant. Plancher par groupe : le TM proposé ne descend jamais sous le TM de N-1 du groupe (jour × statut × service, × ratio férié ; `latestYearTm`), quels que soient l'objectif de CA ou la croissance TM ; un objectif plus bas fait baisser les couverts. Saisir le CA d'un jour redéduit les couverts (TM conservé) ; la saisie directe du TM reste libre. 264 tests, tsc OK.
