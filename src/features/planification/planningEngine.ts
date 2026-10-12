@@ -18,7 +18,7 @@ import type {
 
 import { toIsoDate } from '../analyse/ecartsAnalysis';
 
-import { applyMonthTarget, monthlyWeights, normalizedDayWeights, proposeAnnualCA } from './planningTargets';
+import { applyMonthTarget, enforceTmFloors, monthlyWeights, normalizedDayWeights, proposeAnnualCA, tmFloors } from './planningTargets';
 
 export const PLAN_SERVICES: readonly PlanService[] = ['midi', 'soir'];
 
@@ -324,7 +324,8 @@ const hasMonthlyTargets = (settings: PlanSettings): boolean =>
 
 // Sans objectif (CA annuel null et aucun CA mensuel saisi) : proposition purement historique.
 // CA cible d'un mois = CA mensuel saisi, sinon CA annuel × poids historique du mois ; un mois sans
-// cible garde sa proposition historique.
+// cible garde sa proposition historique. Dans tous les cas le TM mensuel et annuel reste au moins égal
+// à celui de N-1 (couverts réduits à CA constant, voir enforceTmFloors).
 export function generatePlan(
   samples: AnalyseDaySample[],
   calendar: SchoolHolidayCalendar,
@@ -332,10 +333,11 @@ export function generatePlan(
 ): PlanDay[] {
   const allMonths = Array.from({ length: 12 }, (_, month) => month);
   const plan = buildMonthDays(samples, calendar, settings, allMonths);
-  if (settings.targetAnnualCA === null && !hasMonthlyTargets(settings)) return plan;
+  const floors = tmFloors(samples, settings.targetYear - 1);
+  if (settings.targetAnnualCA === null && !hasMonthlyTargets(settings)) return enforceTmFloors(plan, floors);
 
   const weights = settings.targetAnnualCA === null ? null : monthlyWeights(samples);
-  return allMonths.flatMap(month => {
+  const targeted = allMonths.flatMap(month => {
     const days = plan.filter(day => day.month === month);
     const monthly = settings.targetMonthlyCA[month];
     const target = typeof monthly === 'number'
@@ -343,6 +345,7 @@ export function generatePlan(
       : weights && settings.targetAnnualCA !== null ? settings.targetAnnualCA * weights[month] : null;
     return target === null ? days : applyMonthTarget(days, target);
   });
+  return enforceTmFloors(targeted, floors);
 }
 
 // Applique les ajustements manuels : la valeur saisie remplace la proposition, la confiance est

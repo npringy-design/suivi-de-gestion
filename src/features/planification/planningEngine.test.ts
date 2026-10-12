@@ -4,6 +4,7 @@ import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
 import { getDashboardRowIndices } from '@/lib/utils';
 import type { AnalyseDaySample, PlanSettings, SchoolHolidayCalendar } from '@/types/dataTypes';
 
+import { enforceTmFloors, tmFloors } from './planningTargets';
 import {
   applyOverrides,
   buildBudgetWrites,
@@ -246,6 +247,37 @@ describe('plancher de TM (N-1)', () => {
     const monday = plan.find(d => d.date === '2027-01-04')!;
     expect(monday.midi.tm).toBe(24);
     expect(monday.midi.cv).toBeLessThan(base.find(d => d.date === '2027-01-04')!.midi.cv);
+  });
+});
+
+describe('plancher de TM mensuel et annuel (N-1)', () => {
+  const history = [
+    ...mondays2025.map(d => sample(d, 30, 20)),
+    ...mondays2026.map(d => sample(d, 30, 24)),
+  ];
+  const plan = generatePlan(history, noHolidays, settings());
+  const totals = (days: typeof plan) => {
+    const cv = days.reduce((acc, d) => acc + d.midi.cv + d.soir.cv, 0);
+    const ca = days.reduce((acc, d) => acc + d.midi.ca + d.soir.ca, 0);
+    return { cv, ca, tm: ca / cv };
+  };
+
+  it('calcule le TM réalisé de N-1, au total et par mois', () => {
+    const floors = tmFloors([...history, sample('2026-01-30', 30, 24)], 2026); // le mois n'est plus partiel
+    expect(floors.year).toBeCloseTo(24);
+    expect(floors.byMonth[0]).toBeCloseTo(24);
+  });
+
+  it('relève le TM annuel au plancher en baissant les couverts, CA conservé', () => {
+    const before = totals(plan);
+    const after = totals(enforceTmFloors(plan, { byMonth: {}, year: before.tm * 1.1 }));
+    expect(after.tm).toBeGreaterThanOrEqual(before.tm * 1.1 - 0.01);
+    expect(after.cv).toBeLessThan(before.cv);
+    expect(Math.abs(after.ca - before.ca)).toBeLessThan(60);
+  });
+
+  it('ne touche à rien quand le TM dépasse déjà le plancher', () => {
+    expect(enforceTmFloors(plan, { byMonth: { 0: 1 }, year: 1 })).toEqual(plan);
   });
 });
 
