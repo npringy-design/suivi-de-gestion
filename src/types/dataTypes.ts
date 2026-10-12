@@ -527,24 +527,26 @@ export type AnalyseWeekdayRow = {
 
 export type PlanService = 'midi' | 'soir';
 
-export type PlanVacationStatus = 'vacances' | 'hors_vacances' | 'ete';
+export type PlanVacationStatus = 'vacances' | 'hors_vacances' | 'ete' | 'ferie';
 
 // fiable : n >= 8 ; faible : 3 <= n < 8 (orange) ; critique : n < 3, repli ou aucune donnée (rouge).
 export type PlanConfidence = 'fiable' | 'faible' | 'critique';
 
 // groupe : moyenne du groupe exact ; repli : jour de semaine seul (statut vacances ignoré) ;
-// aucune : aucun historique ; ferme : service fermé la plupart du temps dans le groupe.
-export type PlanSource = 'groupe' | 'repli' | 'aucune' | 'ferme';
+// aucune : aucun historique ; ferme : service fermé la plupart du temps dans le groupe ;
+// ferie : proposition d'un jour normal corrigée par le ratio historique des jours fériés.
+export type PlanSource = 'groupe' | 'repli' | 'aucune' | 'ferme' | 'ferie';
 
 export type PlanEstimator = 'moyenne' | 'mediane';
 
 export type PlanSettings = {
   targetYear: number;
-  recentWeightPct: number; // poids de l'année N-1 en % (l'année N-2 pèse le complément)
   cvGrowthPct: number;
   tmGrowthPct: number;
   cvGrowthByMonth: Record<number, number>; // surcharge par mois (0-11)
   tmGrowthByMonth: Record<number, number>;
+  targetAnnualCA: number | null; // objectif de CA de l'année cible ; null = proposition purement historique
+  targetMonthlyCA: Record<number, number | null>; // surcharge optionnelle du CA cible par mois (0-11)
 };
 
 export type PlanServiceProposal = {
@@ -564,6 +566,7 @@ export type PlanDay = {
   day: number;
   weekday: number;
   status: PlanVacationStatus;
+  holiday: string | null; // nom du jour férié, sinon null
   midi: PlanServiceProposal;
   soir: PlanServiceProposal;
 };

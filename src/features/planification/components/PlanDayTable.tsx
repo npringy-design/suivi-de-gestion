@@ -5,6 +5,7 @@ import type { PlanDay, PlanManualOverride, PlanService } from '@/types/dataTypes
 
 import { analyseGlass, analyseLabel } from '../../analyse/components/analyseStyles';
 import { dayConfidence } from '../planningEngine';
+
 import PlanConfidenceBadge from './PlanConfidenceBadge';
 import PlanNumberInput from './PlanNumberInput';
 
@@ -24,8 +25,9 @@ const STATUS_STYLE = {
   vacances: 'bg-violet-400/20 text-violet-200',
   ete: 'bg-orange-400/20 text-orange-200',
   hors_vacances: 'bg-white/10 text-cyan-100/70',
+  ferie: 'bg-rose-400/25 text-rose-100',
 } as const;
-const STATUS_LABEL = { vacances: 'Vacances', ete: 'Été', hors_vacances: 'Hors vac.' } as const;
+const STATUS_LABEL = { vacances: 'Vacances', ete: 'Été', hors_vacances: 'Hors vac.', ferie: 'Férié' } as const;
 
 const ROW_TINT = { fiable: '', faible: 'bg-amber-400/[0.06]', critique: 'bg-rose-500/[0.10]' } as const;
 
@@ -92,9 +94,10 @@ export default function PlanDayTable({
               <tr key={day.date} className={`border-b border-white/5 ${ROW_TINT[dayConfidence(day)]}`}>
                 <td className="whitespace-nowrap px-2 py-1 text-xs font-black text-amber-50">
                   {WEEKDAYS[day.weekday]} {String(day.day).padStart(2, '0')}
+                  {day.holiday && <span className="ml-2 text-[10px] font-bold text-rose-200">{day.holiday}</span>}
                 </td>
                 <td className="px-1.5 py-1 text-right">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${STATUS_STYLE[day.status]}`}>{STATUS_LABEL[day.status]}</span>
+                  <span title={day.holiday ?? undefined} className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${STATUS_STYLE[day.status]}`}>{STATUS_LABEL[day.status]}</span>
                 </td>
                 {renderService(day, 'midi')}
                 {renderService(day, 'soir')}

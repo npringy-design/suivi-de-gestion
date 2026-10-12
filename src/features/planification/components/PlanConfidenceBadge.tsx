@@ -13,10 +13,11 @@ const SOURCE_TEXT: Record<PlanServiceProposal['source'], string> = {
   repli: 'repli : pas d\'historique pour ce statut vacances, jour de semaine seul',
   aucune: 'aucun historique pour ce jour de semaine',
   ferme: 'service fermé la plupart du temps dans ce groupe',
+  ferie: 'jour férié : proposition d\'un jour normal × ratio historique des fériés',
 };
 
 export const proposalTitle = (p: PlanServiceProposal): string =>
-  `${CONFIDENCE_LABEL[p.confidence]} · n=${p.n} · ${SOURCE_TEXT[p.source]}${p.source === 'groupe' || p.source === 'repli' ? ` · ${p.estimator}` : ''}${p.manual ? ' · saisie manuelle' : ''}`;
+  `${CONFIDENCE_LABEL[p.confidence]} · n=${p.n} · ${SOURCE_TEXT[p.source]}${p.source === 'groupe' || p.source === 'repli' || p.source === 'ferie' ? ` · ${p.estimator}` : ''}${p.manual ? ' · saisie manuelle' : ''}`;
 
 export default function PlanConfidenceBadge({ proposal }: { proposal: PlanServiceProposal }) {
   const label = proposal.manual

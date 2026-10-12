@@ -66,6 +66,7 @@ export default function Planification({ onBack }: PlanificationProps) {
           baseYears={planning.baseYears}
           holidayZone={planning.holidayZone}
           sampleCount={planning.sampleCount}
+          annualProposal={planning.annualProposal}
           onChange={planning.updateSettings}
           onMonthGrowth={planning.setMonthGrowth}
         />
@@ -89,7 +90,7 @@ export default function Planification({ onBack }: PlanificationProps) {
         </div>
 
         {view === 'mois' ? (
-          <PlanMonthTable summaries={planning.monthSummaries} existingByMonth={planning.existingByMonth} onOpenMonth={openMonth} />
+          <PlanMonthTable summaries={planning.monthSummaries} existingByMonth={planning.existingByMonth} monthTargets={settings.targetMonthlyCA} onMonthTarget={planning.setMonthTarget} onOpenMonth={openMonth} />
         ) : (
           <PlanDayTable
             plan={plan}

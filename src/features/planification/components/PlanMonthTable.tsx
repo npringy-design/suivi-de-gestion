@@ -4,16 +4,20 @@ import { formatEuroSymbol } from '@/lib/formatters';
 import type { MonthPlanSummary } from '../planningEngine';
 import { analyseGlass, analyseLabel } from '../../analyse/components/analyseStyles';
 
+import PlanNumberInput from './PlanNumberInput';
+
 type PlanMonthTableProps = {
   summaries: MonthPlanSummary[];
   existingByMonth: Record<number, number>;
+  monthTargets: Record<number, number | null>;
+  onMonthTarget: (month: number, value: number | null) => void;
   onOpenMonth: (month: number) => void;
 };
 
 const th = `px-2 py-2 text-right ${analyseLabel}`;
 const td = 'px-2 py-1.5 text-right text-xs font-semibold tabular-nums text-cyan-50';
 
-export default function PlanMonthTable({ summaries, existingByMonth, onOpenMonth }: PlanMonthTableProps) {
+export default function PlanMonthTable({ summaries, existingByMonth, monthTargets, onMonthTarget, onOpenMonth }: PlanMonthTableProps) {
   const total = summaries.reduce((acc, s) => ({
     cv: acc.cv + s.cvMidi + s.cvSoir, ca: acc.ca + s.caMidi + s.caSoir,
   }), { cv: 0, ca: 0 });
@@ -28,7 +32,7 @@ export default function PlanMonthTable({ summaries, existingByMonth, onOpenMonth
             <th className={th}>Couverts soir</th>
             <th className={th}>CA midi</th>
             <th className={th}>CA soir</th>
-            <th className={th}>CA total</th>
+            <th className={th}>CA total (modifiable)</th>
             <th className={th}>TM</th>
             <th className={th}>Jours à vérifier</th>
             <th className={th}>Prévisions existantes</th>
@@ -42,7 +46,16 @@ export default function PlanMonthTable({ summaries, existingByMonth, onOpenMonth
               <td className={td}>{s.cvSoir}</td>
               <td className={td}>{formatEuroSymbol(s.caMidi)}</td>
               <td className={td}>{formatEuroSymbol(s.caSoir)}</td>
-              <td className={`${td} font-black text-white`}>{formatEuroSymbol(s.caMidi + s.caSoir)}</td>
+              <td className={`${td} font-black text-white`} onClick={event => event.stopPropagation()}>
+                <PlanNumberInput
+                  ariaLabel={`CA cible ${MONTH_NAMES[s.month]}`}
+                  value={monthTargets[s.month] ?? Math.round(s.caMidi + s.caSoir)}
+                  step={100}
+                  allowEmpty
+                  highlight={typeof monthTargets[s.month] === 'number'}
+                  onCommit={value => onMonthTarget(s.month, value === null || value < 0 ? null : value)}
+                />
+              </td>
               <td className={td}>{s.tm === null ? '—' : formatEuroSymbol(s.tm)}</td>
               <td className={td}>
                 {s.daysCritique > 0 && <span className="mr-1 rounded-full bg-rose-500/25 px-2 py-0.5 text-[10px] font-black text-rose-200">{s.daysCritique} critique(s)</span>}

@@ -12,6 +12,7 @@ import {
   detectExistingBudget,
   generatePlan,
   planToCsv,
+  proposeAnnualCA,
   summarizeByMonth,
 } from '../planningEngine';
 
@@ -59,6 +60,7 @@ export function usePlanification() {
 
   const basePlan = useMemo(() => generatePlan(samples, holidayCalendar, settings), [samples, holidayCalendar, settings]);
   const plan = useMemo(() => applyOverrides(basePlan, overrides), [basePlan, overrides]);
+  const annualProposal = useMemo(() => proposeAnnualCA(samples), [samples]);
   const monthSummaries = useMemo(() => summarizeByMonth(plan), [plan]);
 
   const existingByMonth = useMemo(() => detectExistingBudget(
@@ -68,7 +70,19 @@ export function usePlanification() {
 
   const updateSettings = useCallback((patch: Partial<PlanSettings>) => {
     setSettings(current => ({ ...current, ...patch }));
-    if (patch.targetYear !== undefined) setOverrides({});
+    if (patch.targetYear !== undefined) {
+      setOverrides({});
+      setSettings(current => ({ ...current, targetAnnualCA: null, targetMonthlyCA: {} }));
+    }
+  }, []);
+
+  // CA cible d'un mois : remplace la répartition automatique de ce mois seulement (null = retour à l'auto).
+  const setMonthTarget = useCallback((month: number, value: number | null) => {
+    setSettings(current => {
+      const next = { ...current.targetMonthlyCA };
+      if (value === null) delete next[month]; else next[month] = value;
+      return { ...current, targetMonthlyCA: next };
+    });
   }, []);
 
   const setMonthGrowth = useCallback((key: 'cvGrowthByMonth' | 'tmGrowthByMonth', month: number, value: number | null) => {
@@ -115,7 +129,7 @@ export function usePlanification() {
   }, [allData, plan, targetYear, importBudgetPlan, saveNow]);
 
   return {
-    settings, updateSettings, setMonthGrowth,
+    settings, updateSettings, setMonthGrowth, setMonthTarget, annualProposal,
     plan, monthSummaries, overrides, editService, clearOverride,
     existingByMonth, isLoading, status,
     exportCsv, confirmWrite,

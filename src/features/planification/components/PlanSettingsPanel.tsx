@@ -1,7 +1,9 @@
 import { MONTH_NAMES_SHORT } from '@/lib/constants';
+import { formatEuroSymbol } from '@/lib/formatters';
 import type { PlanSettings } from '@/types/dataTypes';
 
 import { analyseGlass, analyseLabel } from '../../analyse/components/analyseStyles';
+
 import PlanNumberInput from './PlanNumberInput';
 
 type PlanSettingsPanelProps = {
@@ -10,12 +12,13 @@ type PlanSettingsPanelProps = {
   baseYears: number[];
   holidayZone: string;
   sampleCount: number;
+  annualProposal: number;
   onChange: (patch: Partial<PlanSettings>) => void;
   onMonthGrowth: (key: 'cvGrowthByMonth' | 'tmGrowthByMonth', month: number, value: number | null) => void;
 };
 
 export default function PlanSettingsPanel({
-  settings, targetYearOptions, baseYears, holidayZone, sampleCount, onChange, onMonthGrowth,
+  settings, targetYearOptions, baseYears, holidayZone, sampleCount, annualProposal, onChange, onMonthGrowth,
 }: PlanSettingsPanelProps) {
   const [olderYear, recentYear] = baseYears;
   return (
@@ -32,15 +35,27 @@ export default function PlanSettingsPanel({
           </select>
         </label>
 
-        <label className="grid gap-1">
-          <span className={analyseLabel}>Poids {olderYear} / {recentYear}</span>
-          <input
-            type="range" min={0} max={100} step={5}
-            value={settings.recentWeightPct}
-            onChange={event => onChange({ recentWeightPct: Number(event.target.value) })}
+        <div className="grid gap-1">
+          <span className={analyseLabel}>CA annuel {settings.targetYear}</span>
+          <PlanNumberInput
+            ariaLabel={`CA annuel ${settings.targetYear}`}
+            value={settings.targetAnnualCA}
+            placeholder={String(annualProposal)}
+            step={1000}
+            allowEmpty
+            highlight={settings.targetAnnualCA !== null}
+            onCommit={value => onChange({ targetAnnualCA: value })}
           />
-          <span className="text-xs font-bold text-cyan-50/80">{100 - settings.recentWeightPct} % / {settings.recentWeightPct} %</span>
-        </label>
+          <span className="text-[11px] font-semibold text-cyan-50/60">
+            Proposition : {formatEuroSymbol(annualProposal)} (moyenne {olderYear}-{recentYear}){' '}
+            <button type="button" onClick={() => onChange({ targetAnnualCA: annualProposal })} className="font-black text-amber-200 underline hover:text-amber-100">
+              Utiliser
+            </button>
+            {settings.targetAnnualCA !== null && (
+              <> · <button type="button" onClick={() => onChange({ targetAnnualCA: null, targetMonthlyCA: {} })} className="font-black text-amber-200 underline hover:text-amber-100">Retirer l&apos;objectif</button></>
+            )}
+          </span>
+        </div>
 
         <div className="grid gap-1">
           <span className={analyseLabel}>Croissance couverts (%)</span>

@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 12/10/2026 (Planification : fériés, moyenne simple, pilotage par CA)
+
+- Planification : `@/lib/publicHolidays` (fériés français, Pâques) ; statut `'ferie'` prioritaire sur les vacances, jour férié = proposition du jour normal × `holidayRatio` (source `'ferie'`, fériés exclus du groupe « tous statuts ») ; slider « Poids » et `recentWeightPct` supprimés (années à parts égales, médiane si < 5 échantillons ou outlier) ; `targetAnnualCA` / `targetMonthlyCA` : CA annuel (proposition `proposeAnnualCA` modifiable) → mois (`monthlyWeights`) → jours (`dailyWeights`), TM historique inchangé, seuls les couverts bougent (calculs purs dans `planningTargets.ts`) ; CA mensuel éditable dans `PlanMonthTable`, badge/nom du férié dans `PlanDayTable`. Un CA mensuel saisi pilote son mois même sans CA annuel. Mois partiel en cours exclu des poids. 258 tests, tsc OK, build OK (rendu vérifié sur composants réels via page de test temporaire : la page `/planification` exige une connexion Supabase).
+
 ## 05/10/2026 (Masse Salariale : lignes sans heures, cause « Absences », libellé « Réductions de charges »)
 
 - Import PDF salaires : les lignes d'un salarié identifié (matricule + nom) sans heures ni forfait jour, au coût global non nul (absent tout le mois, charges seules), sont stockées dans `payrollLines` avec `heures: 0` et `costOnly: true` (`extractCostOnlyCandidateLines` ; coût = valeur présente deux fois, sinon avant-dernière valeur : format réel non vérifié faute de PDF dans le dépôt). Jamais dans `categories`, les taux horaires, les lignes d'aperçu ni les ETP ; l'aperçu affiche seulement « n ligne(s) sans heures (charges seules) lue(s) : noms ». Les mois déjà importés sont à réimporter pour en bénéficier.
