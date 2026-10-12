@@ -49,7 +49,7 @@ export default function PlanSettingsPanel({
           <span className="text-[11px] font-semibold text-cyan-50/60">
             Proposition : {formatEuroSymbol(annualProposal)} (moyenne {olderYear}-{recentYear}){' '}
             <button type="button" onClick={() => onChange({ targetAnnualCA: annualProposal })} className="font-black text-amber-200 underline hover:text-amber-100">
-              Utiliser
+              Appliquer la proposition
             </button>
             {settings.targetAnnualCA !== null && (
               <> · <button type="button" onClick={() => onChange({ targetAnnualCA: null, targetMonthlyCA: {} })} className="font-black text-amber-200 underline hover:text-amber-100">Retirer l&apos;objectif</button></>
