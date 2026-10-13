@@ -339,9 +339,31 @@ export function dailyWeights(
 const hasMonthlyTargets = (settings: PlanSettings): boolean =>
   Object.values(settings.targetMonthlyCA).some(value => typeof value === 'number');
 
-// Sans objectif (CA annuel null et aucun CA mensuel saisi) : proposition purement historique.
-// CA cible d'un mois = CA mensuel saisi, sinon CA annuel × poids historique du mois ; un mois sans
-// cible garde sa proposition historique. Dans tous les cas le TM mensuel et annuel reste au moins égal
+// Réglages sans croissance couverts ni hausse de TM : base d'un CA cible, sur laquelle la croissance s'ajoute.
+export const withoutGrowth = (settings: PlanSettings): PlanSettings => ({
+  ...settings, cvGrowthPct: 0, cvGrowthByMonth: {}, tmIncreaseEur: 0, tmIncreaseEurByMonth: {},
+});
+
+// Croissance couverts (%) et hausse de TM (€) appliquées sur des jours déjà calés sur un CA cible :
+// le CA du mois devient cible × (1 + croissance) × effet TM, la croissance s'ajoute à l'objectif.
+function applyGrowth(days: PlanDay[], settings: PlanSettings): PlanDay[] {
+  return days.map(day => {
+    const cvGrowth = settings.cvGrowthByMonth[day.month] ?? settings.cvGrowthPct;
+    const increase = tmIncreaseOf(settings, day.month);
+    const grow = (proposal: PlanServiceProposal): PlanServiceProposal => {
+      if (proposal.cv <= 0 || proposal.tm <= 0) return proposal;
+      const cv = Math.round(proposal.cv * (1 + cvGrowth / 100));
+      const tm = round2(proposal.tm + increase);
+      return { ...proposal, cv, tm, ca: round2(cv * tm) };
+    };
+    return { ...day, midi: grow(day.midi), soir: grow(day.soir) };
+  });
+}
+
+// Sans objectif (CA annuel null et aucun CA mensuel saisi) : proposition purement historique avec
+// croissances. Avec objectif : CA cible d'un mois = CA mensuel saisi, sinon CA annuel × poids
+// historique du mois (un mois sans cible garde sa proposition historique), puis les croissances
+// couverts / TM s'ajoutent par-dessus. Dans tous les cas le TM mensuel et annuel reste au moins égal
 // à celui de N-1 (couverts réduits à CA constant, voir enforceTmFloors).
 export function generatePlan(
   samples: AnalyseDaySample[],
@@ -349,10 +371,14 @@ export function generatePlan(
   settings: PlanSettings,
 ): PlanDay[] {
   const allMonths = Array.from({ length: 12 }, (_, month) => month);
-  const plan = buildMonthDays(samples, calendar, settings, allMonths);
-  const floors = floorsWithIncrease(tmFloors(samples, settings.targetYear - 1), plan, settings);
-  if (settings.targetAnnualCA === null && !hasMonthlyTargets(settings)) return enforceTmFloors(plan, floors);
+  const floorsOf = (days: PlanDay[]) => floorsWithIncrease(tmFloors(samples, settings.targetYear - 1), days, settings);
 
+  if (settings.targetAnnualCA === null && !hasMonthlyTargets(settings)) {
+    const plan = buildMonthDays(samples, calendar, settings, allMonths);
+    return enforceTmFloors(plan, floorsOf(plan));
+  }
+
+  const plan = buildMonthDays(samples, calendar, withoutGrowth(settings), allMonths);
   const weights = settings.targetAnnualCA === null ? null : monthlyWeights(samples);
   const targeted = allMonths.flatMap(month => {
     const days = plan.filter(day => day.month === month);
@@ -362,7 +388,8 @@ export function generatePlan(
       : weights && settings.targetAnnualCA !== null ? settings.targetAnnualCA * weights[month] : null;
     return target === null ? days : applyMonthTarget(days, target);
   });
-  return enforceTmFloors(targeted, floors);
+  const grown = applyGrowth(targeted, settings);
+  return enforceTmFloors(grown, floorsOf(grown));
 }
 
 // Applique les ajustements manuels : la valeur saisie remplace la proposition, la confiance est

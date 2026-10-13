@@ -215,6 +215,17 @@ describe('pilotage par CA', () => {
     expect(monday.midi.cv).toBeGreaterThan(25);
   });
 
+  it('la croissance couverts et la hausse de TM s\'ajoutent au CA cible', () => {
+    const target = { targetAnnualCA: 12000 };
+    const base = summarizeByMonth(generatePlan(history, noHolidays, settings(target)));
+    const grown = summarizeByMonth(generatePlan(history, noHolidays, settings({ ...target, cvGrowthPct: 5 })));
+    expect(grown[0].caMidi / base[0].caMidi).toBeCloseTo(1.05, 1); // arrondi des couverts par jour
+    expect(grown[1].caMidi / base[1].caMidi).toBeCloseTo(1.05, 1); // arrondi des couverts par jour
+    const withTm = summarizeByMonth(generatePlan(history, noHolidays, settings({ ...target, tmIncreaseEur: 1 })));
+    expect(withTm[0].caMidi / base[0].caMidi).toBeCloseTo(21 / 20, 2); // TM 20 → 21 à couverts constants
+    expect(withTm[0].cvMidi).toBe(base[0].cvMidi);
+  });
+
   it('un CA mensuel saisi écrase ce mois sans toucher aux autres', () => {
     const base = generatePlan(history, noHolidays, settings({ targetAnnualCA: 12000 }));
     const plan = generatePlan(history, noHolidays, settings({ targetAnnualCA: 12000, targetMonthlyCA: { 0: 2000 } }));

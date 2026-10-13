@@ -10,6 +10,7 @@ type PlanMonthTableProps = {
   summaries: MonthPlanSummary[];
   existingByMonth: Record<number, number>;
   monthTargets: Record<number, number | null>;
+  baseCaByMonth: Record<number, number>;
   onMonthTarget: (month: number, value: number | null) => void;
   vaeByMonth: Record<number, number>;
   vaeTargets: Record<number, number | null>;
@@ -26,7 +27,7 @@ const footLabel = `${td} text-left font-black text-amber-50`;
 const tmWithVae = (ca: number, vae: number, cv: number): string => (cv > 0 ? formatEuroSymbol((ca + vae) / cv) : '—');
 
 export default function PlanMonthTable({
-  summaries, existingByMonth, monthTargets, onMonthTarget, vaeByMonth, vaeTargets, onMonthVae, onOpenMonth,
+  summaries, existingByMonth, monthTargets, baseCaByMonth, onMonthTarget, vaeByMonth, vaeTargets, onMonthVae, onOpenMonth,
 }: PlanMonthTableProps) {
   const total = summaries.reduce((acc, s) => ({
     cv: acc.cv + s.cvMidi + s.cvSoir,
@@ -36,7 +37,7 @@ export default function PlanMonthTable({
 
   return (
     <div className={`${analyseGlass} overflow-x-auto`}>
-      <table className="w-full min-w-[980px] border-collapse">
+      <table className="w-full min-w-[1080px] border-collapse">
         <thead>
           <tr className="border-b border-white/10">
             <th className={`${th} text-left`}>Mois</th>
@@ -44,7 +45,8 @@ export default function PlanMonthTable({
             <th className={th}>Couverts soir</th>
             <th className={th}>CA midi</th>
             <th className={th}>CA soir</th>
-            <th className={th}>CA restaurant (modifiable)</th>
+            <th className={th}>CA cible avant croissance (modifiable)</th>
+            <th className={th}>CA restaurant prévu</th>
             <th className={th}>TM restaurant</th>
             <th className={th}>VAE (modifiable)</th>
             <th className={th}>TM avec VAE</th>
@@ -65,13 +67,14 @@ export default function PlanMonthTable({
                 <td className={`${td} font-black text-white`} onClick={event => event.stopPropagation()}>
                   <PlanNumberInput
                     ariaLabel={`CA cible ${MONTH_NAMES[s.month]}`}
-                    value={monthTargets[s.month] ?? Math.round(s.caMidi + s.caSoir)}
+                    value={monthTargets[s.month] ?? Math.round(baseCaByMonth[s.month] ?? s.caMidi + s.caSoir)}
                     step={100}
                     allowEmpty
                     highlight={typeof monthTargets[s.month] === 'number'}
                     onCommit={value => onMonthTarget(s.month, value === null || value < 0 ? null : value)}
                   />
                 </td>
+                <td className={`${td} font-black text-white`}>{formatEuroSymbol(s.caMidi + s.caSoir)}</td>
                 <td className={td}>{s.tm === null ? '—' : formatEuroSymbol(s.tm)}</td>
                 <td className={td} onClick={event => event.stopPropagation()}>
                   <PlanNumberInput
@@ -100,20 +103,20 @@ export default function PlanMonthTable({
           <tr className="border-t border-white/10">
             <td className={footLabel}>Restaurant</td>
             <td className={td} colSpan={2}>{total.cv} couverts</td>
-            <td className={`${td} font-black text-white`} colSpan={3}>{formatEuroSymbol(total.ca)}</td>
+            <td className={`${td} font-black text-white`} colSpan={4}>{formatEuroSymbol(total.ca)}</td>
             <td className={`${td} font-black text-white`}>{total.cv > 0 ? formatEuroSymbol(total.ca / total.cv) : '—'}</td>
             <td className={td} colSpan={4} />
           </tr>
           <tr>
             <td className={footLabel}>VAE</td>
-            <td className={td} colSpan={6} />
+            <td className={td} colSpan={7} />
             <td className={`${td} font-black text-white`}>{formatEuroSymbol(total.vae)}</td>
             <td className={td} colSpan={3} />
           </tr>
           <tr className="border-t border-white/10">
             <td className={footLabel}>Total avec VAE</td>
             <td className={td} colSpan={2} />
-            <td className={`${td} font-black text-white`} colSpan={3}>{formatEuroSymbol(total.ca + total.vae)}</td>
+            <td className={`${td} font-black text-white`} colSpan={4}>{formatEuroSymbol(total.ca + total.vae)}</td>
             <td className={td} colSpan={2} />
             <td className={`${td} font-black text-white`}>{tmWithVae(total.ca, total.vae, total.cv)}</td>
             <td className={td} colSpan={2} />

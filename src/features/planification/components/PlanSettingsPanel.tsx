@@ -56,13 +56,13 @@ export default function PlanSettingsPanel({
         <div className="grid gap-1">
           <span className={analyseLabel}>Croissance couverts (%)</span>
           <PlanNumberInput ariaLabel="Croissance couverts" value={settings.cvGrowthPct} step={0.5} onCommit={v => v !== null && onChange({ cvGrowthPct: v })} />
-          {hasCaTarget && <span className="text-[11px] font-semibold text-amber-200/80">Sans effet sur les mois pilotés par un CA cible : le CA fixe les couverts.</span>}
+          {hasCaTarget && <span className="text-[11px] font-semibold text-amber-200/80">S'ajoute au CA cible : CA du mois = cible × (1 + croissance).</span>}
         </div>
 
         <div className="grid gap-1">
           <span className={analyseLabel}>Hausse TM (€) — ex. 0,10 / 0,20 / 0,25</span>
           <PlanNumberInput ariaLabel="Hausse TM en euros" value={settings.tmIncreaseEur} step={0.05} onCommit={v => v !== null && onChange({ tmIncreaseEur: Math.max(0, v) })} />
-          <span className="text-[11px] font-semibold text-cyan-50/60">Ajoutée au TM de référence (au moins celui de N-1).</span>
+          <span className="text-[11px] font-semibold text-cyan-50/60">Ajoutée au TM de référence (au moins N-1), le CA monte d'autant.</span>
         </div>
       </div>
 

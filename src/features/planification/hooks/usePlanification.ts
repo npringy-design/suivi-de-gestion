@@ -16,6 +16,7 @@ import {
   proposeAnnualCA,
   proposeAnnualVAE,
   summarizeByMonth,
+  withoutGrowth,
 } from '../planningEngine';
 
 const ALL_MONTHS = Array.from({ length: 12 }, (_, month) => month);
@@ -69,6 +70,10 @@ export function usePlanification() {
     [samples, settings.targetAnnualVAE, settings.targetMonthlyVAE],
   );
   const monthSummaries = useMemo(() => summarizeByMonth(plan), [plan]);
+  // CA restaurant de chaque mois avant croissance : base du CA cible saisi dans le tableau mensuel.
+  const baseCaByMonth = useMemo(() => Object.fromEntries(
+    summarizeByMonth(generatePlan(samples, holidayCalendar, withoutGrowth(settings))).map(s => [s.month, s.caMidi + s.caSoir]),
+  ), [samples, holidayCalendar, settings]);
 
   const existingByMonth = useMemo(() => detectExistingBudget(
     targetYear,
@@ -144,7 +149,7 @@ export function usePlanification() {
   }, [allData, plan, targetYear, importBudgetPlan, saveNow]);
 
   return {
-    settings, updateSettings, setMonthGrowth, setMonthTarget, annualProposal, vaeProposal, vaeByMonth, setMonthVae,
+    settings, updateSettings, setMonthGrowth, setMonthTarget, annualProposal, baseCaByMonth, vaeProposal, vaeByMonth, setMonthVae,
     plan, monthSummaries, overrides, editService, clearOverride,
     existingByMonth, isLoading, status,
     exportCsv, confirmWrite,

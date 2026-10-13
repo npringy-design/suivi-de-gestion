@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 13/10/2026 (Planification : croissances par-dessus le CA cible)
+
+- Planification : avec un CA annuel/mensuel cible, le plan est d'abord calé sur la cible sans croissance (`withoutGrowth`), puis la croissance couverts (%) et la hausse de TM (€) s'ajoutent (`applyGrowth`) : CA du mois = cible × (1 + croissance), TM + hausse à couverts constants ; les totaux du bas suivent. Tableau mensuel : « CA cible avant croissance (modifiable) » + « CA restaurant prévu » (le message « sans effet sur les mois pilotés » est caduc). Planchers de TM inchangés. 269 tests, tsc OK.
+
 ## 13/10/2026 (Planification : hausse de TM en euros)
 
 - Planification : « Croissance TM (%) » remplacée par « Hausse TM (€) » (`tmIncreaseEur`, `tmIncreaseEurByMonth`, jamais négative) : TM proposé = max(TM historique, TM N-1 du groupe) + hausse ; les planchers mensuel et annuel reçoivent la même hausse pour ne pas l'absorber. Message sous la croissance couverts quand un CA cible est actif (le CA fixe alors les couverts, la croissance couverts n'a plus d'effet sur ces mois). 268 tests, tsc OK.
