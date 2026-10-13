@@ -13,17 +13,18 @@ type PlanSettingsPanelProps = {
   holidayZone: string;
   sampleCount: number;
   annualProposal: number;
+  vaeProposal: number;
   onChange: (patch: Partial<PlanSettings>) => void;
   onMonthGrowth: (key: 'cvGrowthByMonth' | 'tmGrowthByMonth', month: number, value: number | null) => void;
 };
 
 export default function PlanSettingsPanel({
-  settings, targetYearOptions, baseYears, holidayZone, sampleCount, annualProposal, onChange, onMonthGrowth,
+  settings, targetYearOptions, baseYears, holidayZone, sampleCount, annualProposal, vaeProposal, onChange, onMonthGrowth,
 }: PlanSettingsPanelProps) {
   const [olderYear, recentYear] = baseYears;
   return (
     <section className={`${analyseGlass} grid gap-4 p-4`}>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <label className="grid gap-1">
           <span className={analyseLabel}>Année cible</span>
           <select
@@ -36,10 +37,19 @@ export default function PlanSettingsPanel({
         </label>
 
         <PlanAnnualCaField
+          label="CA annuel"
           year={settings.targetYear}
           value={settings.targetAnnualCA}
           proposal={annualProposal}
           onApply={value => onChange(value === null ? { targetAnnualCA: null, targetMonthlyCA: {} } : { targetAnnualCA: value })}
+        />
+
+        <PlanAnnualCaField
+          label="VAE annuel"
+          year={settings.targetYear}
+          value={settings.targetAnnualVAE}
+          proposal={vaeProposal}
+          onApply={value => onChange(value === null ? { targetAnnualVAE: null, targetMonthlyVAE: {} } : { targetAnnualVAE: value })}
         />
 
         <div className="grid gap-1">

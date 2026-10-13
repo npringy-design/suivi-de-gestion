@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 13/10/2026 (Planification : VAE annuel à part du TM)
+
+- Planification : champ « VAE annuel » (`targetAnnualVAE`, `targetMonthlyVAE`) construit comme le CA annuel (proposition = moyenne des VAE réalisés, `proposeAnnualVAE`) ; VAE mensuel = saisie, sinon VAE annuel × poids historique du mois, sinon VAE historique moyen (`planMonthlyVae`). Tableau mensuel : colonnes « TM restaurant » (jamais de VAE) et « VAE (modifiable) » / « TM avec VAE », pied en trois lignes (Restaurant, VAE, Total avec VAE). Le VAE n'influence ni le plan restaurant ni le plancher de TM, et n'est pas écrit dans les Prévisions (pas de colonne budget VAE). 267 tests, tsc OK.
+
 ## 12/10/2026 (Récap annuel : TM de la ligne TOTAL sans VAE ni limonade)
 
 - `RecapAnnuel.tsx`, tableaux Budget et Réalisé : le TM du jour de la ligne TOTAL = (CA midi + CA soir) / couverts restaurant (il divisait le CA total, VAE et limonade compris, par les seuls couverts restaurant). Les CA totaux restent inchangés. Mêmes divisions `CA total / couverts` encore présentes dans les lignes mensuelles de synthèse et dans les totaux « résultats » / « synthèse » (non modifiées). tsc OK.

@@ -15,8 +15,10 @@ import {
   generatePlan,
   holidayRatio,
   monthlyWeights,
+  planMonthlyVae,
   planToCsv,
   proposeAnnualCA,
+  proposeAnnualVAE,
   summarizeByMonth,
   vacationStatusOf,
 } from './planningEngine';
@@ -226,6 +228,37 @@ describe('pilotage par CA', () => {
     const months = summarizeByMonth(plan);
     expect(Math.abs(months[0].caMidi - 2000)).toBeLessThan(20);
     expect(months[1]).toEqual(summarizeByMonth(generatePlan(history, noHolidays, settings()))[1]);
+  });
+});
+
+describe('VAE à part du TM restaurant', () => {
+  const withVae = (date: string, vae: number): AnalyseDaySample => {
+    const base = sample(date, 25, 20);
+    return { ...base, reel: { ...base.reel, vae } };
+  };
+  const january = ['2025-01-06', '2025-01-13', '2025-01-20', '2025-01-27', '2026-01-05', '2026-01-12', '2026-01-19', '2026-01-26'];
+  const february = ['2025-02-03', '2025-02-10', '2025-02-17', '2025-02-24', '2026-02-02', '2026-02-09', '2026-02-16', '2026-02-23'];
+  const history = [...january.map(d => withVae(d, 100)), ...february.map(d => withVae(d, 300))];
+
+  it('propose le VAE annuel moyen et le répartit par mois selon l\'historique', () => {
+    expect(proposeAnnualVAE(history)).toBe(1600); // (400 + 1 200) par an
+    const monthly = planMonthlyVae(history, null, {});
+    expect(monthly[0]).toBe(400);
+    expect(monthly[1]).toBe(1200);
+    const target = planMonthlyVae(history, 3200, {});
+    expect(target[0]).toBeCloseTo(800);
+    expect(target[1]).toBeCloseTo(2400);
+  });
+
+  it('un VAE mensuel saisi remplace le mois sans toucher aux autres', () => {
+    const monthly = planMonthlyVae(history, 3200, { 0: 50 });
+    expect(monthly[0]).toBe(50);
+    expect(monthly[1]).toBeCloseTo(2400);
+  });
+
+  it('le VAE n\'influence ni le CA ni le TM restaurant du plan', () => {
+    const noVae = history.map(h => ({ ...h, reel: { ...h.reel, vae: 0 } }));
+    expect(generatePlan(history, noHolidays, settings())).toEqual(generatePlan(noVae, noHolidays, settings()));
   });
 });
 

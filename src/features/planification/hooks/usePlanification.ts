@@ -11,8 +11,10 @@ import {
   DEFAULT_PLAN_SETTINGS,
   detectExistingBudget,
   generatePlan,
+  planMonthlyVae,
   planToCsv,
   proposeAnnualCA,
+  proposeAnnualVAE,
   summarizeByMonth,
 } from '../planningEngine';
 
@@ -61,6 +63,11 @@ export function usePlanification() {
   const basePlan = useMemo(() => generatePlan(samples, holidayCalendar, settings), [samples, holidayCalendar, settings]);
   const plan = useMemo(() => applyOverrides(basePlan, overrides), [basePlan, overrides]);
   const annualProposal = useMemo(() => proposeAnnualCA(samples), [samples]);
+  const vaeProposal = useMemo(() => proposeAnnualVAE(samples), [samples]);
+  const vaeByMonth = useMemo(
+    () => planMonthlyVae(samples, settings.targetAnnualVAE, settings.targetMonthlyVAE),
+    [samples, settings.targetAnnualVAE, settings.targetMonthlyVAE],
+  );
   const monthSummaries = useMemo(() => summarizeByMonth(plan), [plan]);
 
   const existingByMonth = useMemo(() => detectExistingBudget(
@@ -72,7 +79,7 @@ export function usePlanification() {
     setSettings(current => ({ ...current, ...patch }));
     if (patch.targetYear !== undefined) {
       setOverrides({});
-      setSettings(current => ({ ...current, targetAnnualCA: null, targetMonthlyCA: {} }));
+      setSettings(current => ({ ...current, targetAnnualCA: null, targetMonthlyCA: {}, targetAnnualVAE: null, targetMonthlyVAE: {} }));
     }
   }, []);
 
@@ -82,6 +89,14 @@ export function usePlanification() {
       const next = { ...current.targetMonthlyCA };
       if (value === null) delete next[month]; else next[month] = value;
       return { ...current, targetMonthlyCA: next };
+    });
+  }, []);
+
+  const setMonthVae = useCallback((month: number, value: number | null) => {
+    setSettings(current => {
+      const next = { ...current.targetMonthlyVAE };
+      if (value === null) delete next[month]; else next[month] = value;
+      return { ...current, targetMonthlyVAE: next };
     });
   }, []);
 
@@ -129,7 +144,7 @@ export function usePlanification() {
   }, [allData, plan, targetYear, importBudgetPlan, saveNow]);
 
   return {
-    settings, updateSettings, setMonthGrowth, setMonthTarget, annualProposal,
+    settings, updateSettings, setMonthGrowth, setMonthTarget, annualProposal, vaeProposal, vaeByMonth, setMonthVae,
     plan, monthSummaries, overrides, editService, clearOverride,
     existingByMonth, isLoading, status,
     exportCsv, confirmWrite,

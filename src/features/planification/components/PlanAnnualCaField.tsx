@@ -6,6 +6,7 @@ import { parseMoneyValue } from '@/lib/money';
 import { analyseLabel } from '../../analyse/components/analyseStyles';
 
 type PlanAnnualCaFieldProps = {
+  label: string; // « CA annuel » ou « VAE annuel »
   year: number;
   value: number | null;
   proposal: number;
@@ -18,7 +19,7 @@ const link = 'font-black text-amber-200 underline hover:text-amber-100';
 
 // Saisie explicite : rien n'est appliqué tant que « Appliquer » (ou Entrée) n'est pas validé, et le
 // champ n'est jamais rempli à la place de l'utilisateur. Champ vide + Appliquer = retrait de l'objectif.
-export default function PlanAnnualCaField({ year, value, proposal, onApply }: PlanAnnualCaFieldProps) {
+export default function PlanAnnualCaField({ label, year, value, proposal, onApply }: PlanAnnualCaFieldProps) {
   const [draft, setDraft] = useState(toText(value));
   useEffect(() => setDraft(toText(value)), [value]);
 
@@ -28,12 +29,12 @@ export default function PlanAnnualCaField({ year, value, proposal, onApply }: Pl
 
   return (
     <div className="grid gap-1">
-      <span className={analyseLabel}>CA annuel {year}</span>
+      <span className={analyseLabel}>{label} {year}</span>
       <div className="flex gap-1.5">
         <input
           type="text"
           inputMode="numeric"
-          aria-label={`CA annuel ${year}`}
+          aria-label={`${label} ${year}`}
           value={draft}
           placeholder="Aucun objectif"
           onChange={event => setDraft(event.target.value)}

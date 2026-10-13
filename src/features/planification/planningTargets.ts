@@ -16,14 +16,19 @@ function partialMonthKey(samples: AnalyseDaySample[]): string | null {
   return isPartial ? lastDate.slice(0, 7) : null;
 }
 
-// CA restaurant (midi + soir) par mois de l'historique, hors mois partiel. Sans aucun mois complet,
+type CaPicker = (sample: AnalyseDaySample) => number;
+
+const restaurantCa: CaPicker = sample => sample.reel.caMidi + sample.reel.caSoir;
+const vaeCa: CaPicker = sample => sample.reel.vae;
+
+// CA (restaurant ou VAE) par mois de l'historique, hors mois partiel. Sans aucun mois complet,
 // tous les mois sont conservés.
-function completeMonthTotals(samples: AnalyseDaySample[]): Map<number, number[]> {
+function completeMonthTotals(samples: AnalyseDaySample[], pick: CaPicker): Map<number, number[]> {
   const totals = new Map<string, { month: number; ca: number }>();
   samples.forEach(sample => {
     const key = sample.date.slice(0, 7);
     const entry = totals.get(key) ?? { month: Number(sample.date.slice(5, 7)) - 1, ca: 0 };
-    entry.ca += sample.reel.caMidi + sample.reel.caSoir;
+    entry.ca += pick(sample);
     totals.set(key, entry);
   });
 
@@ -40,8 +45,8 @@ function completeMonthTotals(samples: AnalyseDaySample[]): Map<number, number[]>
 }
 
 // CA moyen de chaque mois (0-11) sur les années d'historique où il est complet.
-function averageMonthlyCa(samples: AnalyseDaySample[]): number[] {
-  const byMonth = completeMonthTotals(samples);
+function averageMonthlyCa(samples: AnalyseDaySample[], pick: CaPicker = restaurantCa): number[] {
+  const byMonth = completeMonthTotals(samples, pick);
   return Array.from({ length: 12 }, (_, month) => {
     const values = byMonth.get(month);
     return values && values.length > 0 ? mean(values) : 0;
@@ -60,6 +65,30 @@ export function monthlyWeights(samples: AnalyseDaySample[]): Record<number, numb
   const averages = averageMonthlyCa(samples);
   const total = averages.reduce((acc, ca) => acc + ca, 0);
   return Object.fromEntries(averages.map((ca, month) => [month, total > 0 ? ca / total : 0]));
+}
+
+// --- VAE : même logique que le CA annuel, mais à part (aucun couvert, aucun TM) ---
+
+// Proposition de VAE annuel : moyenne des VAE annuels réalisés, mois manquants repris de l'autre année.
+export function proposeAnnualVAE(samples: AnalyseDaySample[]): number {
+  return Math.round(averageMonthlyCa(samples, vaeCa).reduce((acc, v) => acc + v, 0));
+}
+
+// VAE de chaque mois (0-11) : VAE mensuel saisi, sinon VAE annuel × poids historique du mois, sinon
+// (sans objectif annuel) VAE historique moyen du mois. Sans historique, répartition égale.
+export function planMonthlyVae(
+  samples: AnalyseDaySample[],
+  annual: number | null,
+  monthly: Record<number, number | null>,
+): Record<number, number> {
+  const averages = averageMonthlyCa(samples, vaeCa);
+  const total = averages.reduce((acc, v) => acc + v, 0);
+  return Object.fromEntries(averages.map((average, month) => {
+    const override = monthly[month];
+    if (typeof override === 'number') return [month, override];
+    if (annual === null) return [month, round2(average)];
+    return [month, round2(annual * (total > 0 ? average / total : 1 / 12))];
+  }));
 }
 
 // Poids de chaque jour du mois dans le CA du mois (somme = 1) : CA historique moyen de son groupe

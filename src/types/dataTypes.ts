@@ -547,6 +547,9 @@ export type PlanSettings = {
   tmGrowthByMonth: Record<number, number>;
   targetAnnualCA: number | null; // objectif de CA de l'année cible ; null = proposition purement historique
   targetMonthlyCA: Record<number, number | null>; // surcharge optionnelle du CA cible par mois (0-11)
+  // VAE : CA à part, jamais divisé par les couverts (n'entre pas dans le TM restaurant).
+  targetAnnualVAE: number | null; // null = VAE mensuel historique moyen
+  targetMonthlyVAE: Record<number, number | null>;
 };
 
 export type PlanServiceProposal = {

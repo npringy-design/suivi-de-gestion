@@ -18,7 +18,9 @@ import type {
 
 import { toIsoDate } from '../analyse/ecartsAnalysis';
 
-import { applyMonthTarget, enforceTmFloors, monthlyWeights, normalizedDayWeights, proposeAnnualCA, tmFloors } from './planningTargets';
+import {
+  applyMonthTarget, enforceTmFloors, monthlyWeights, normalizedDayWeights, planMonthlyVae, proposeAnnualCA, proposeAnnualVAE, tmFloors,
+} from './planningTargets';
 
 export const PLAN_SERVICES: readonly PlanService[] = ['midi', 'soir'];
 
@@ -47,6 +49,8 @@ export const DEFAULT_PLAN_SETTINGS = (targetYear: number): PlanSettings => ({
   tmGrowthByMonth: {},
   targetAnnualCA: null,
   targetMonthlyCA: {},
+  targetAnnualVAE: null,
+  targetMonthlyVAE: {},
 });
 
 // Statut scolaire seul (sans tenir compte des jours fériés).
@@ -308,7 +312,7 @@ function buildMonthDays(
 
 // --- Pilotage par CA annuel / mensuel (calculs purs dans planningTargets.ts) ---
 
-export { monthlyWeights, proposeAnnualCA };
+export { monthlyWeights, planMonthlyVae, proposeAnnualCA, proposeAnnualVAE };
 
 export function dailyWeights(
   samples: AnalyseDaySample[],
