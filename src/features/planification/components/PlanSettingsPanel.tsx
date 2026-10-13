@@ -15,13 +15,14 @@ type PlanSettingsPanelProps = {
   annualProposal: number;
   vaeProposal: number;
   onChange: (patch: Partial<PlanSettings>) => void;
-  onMonthGrowth: (key: 'cvGrowthByMonth' | 'tmGrowthByMonth', month: number, value: number | null) => void;
+  onMonthGrowth: (key: 'cvGrowthByMonth' | 'tmIncreaseEurByMonth', month: number, value: number | null) => void;
 };
 
 export default function PlanSettingsPanel({
   settings, targetYearOptions, baseYears, holidayZone, sampleCount, annualProposal, vaeProposal, onChange, onMonthGrowth,
 }: PlanSettingsPanelProps) {
   const [olderYear, recentYear] = baseYears;
+  const hasCaTarget = settings.targetAnnualCA !== null || Object.values(settings.targetMonthlyCA).some(v => typeof v === 'number');
   return (
     <section className={`${analyseGlass} grid gap-4 p-4`}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -55,11 +56,13 @@ export default function PlanSettingsPanel({
         <div className="grid gap-1">
           <span className={analyseLabel}>Croissance couverts (%)</span>
           <PlanNumberInput ariaLabel="Croissance couverts" value={settings.cvGrowthPct} step={0.5} onCommit={v => v !== null && onChange({ cvGrowthPct: v })} />
+          {hasCaTarget && <span className="text-[11px] font-semibold text-amber-200/80">Sans effet sur les mois pilotés par un CA cible : le CA fixe les couverts.</span>}
         </div>
 
         <div className="grid gap-1">
-          <span className={analyseLabel}>Croissance TM (%) — revalorisation carte</span>
-          <PlanNumberInput ariaLabel="Croissance TM" value={settings.tmGrowthPct} step={0.5} onCommit={v => v !== null && onChange({ tmGrowthPct: v })} />
+          <span className={analyseLabel}>Hausse TM (€) — ex. 0,10 / 0,20 / 0,25</span>
+          <PlanNumberInput ariaLabel="Hausse TM en euros" value={settings.tmIncreaseEur} step={0.05} onCommit={v => v !== null && onChange({ tmIncreaseEur: Math.max(0, v) })} />
+          <span className="text-[11px] font-semibold text-cyan-50/60">Ajoutée au TM de référence (au moins celui de N-1).</span>
         </div>
       </div>
 
@@ -76,7 +79,7 @@ export default function PlanSettingsPanel({
               </tr>
             </thead>
             <tbody>
-              {([['cvGrowthByMonth', 'Couverts %'], ['tmGrowthByMonth', 'TM %']] as const).map(([key, label]) => (
+              {([['cvGrowthByMonth', 'Couverts %'], ['tmIncreaseEurByMonth', 'TM €']] as const).map(([key, label]) => (
                 <tr key={key}>
                   <td className="whitespace-nowrap pr-2 text-[11px] font-bold text-cyan-50/80">{label}</td>
                   {MONTH_NAMES_SHORT.map((name, month) => (
@@ -84,8 +87,8 @@ export default function PlanSettingsPanel({
                       <PlanNumberInput
                         ariaLabel={`${label} ${name}`}
                         value={settings[key][month] ?? null}
-                        placeholder={String(key === 'cvGrowthByMonth' ? settings.cvGrowthPct : settings.tmGrowthPct)}
-                        step={0.5}
+                        placeholder={String(key === 'cvGrowthByMonth' ? settings.cvGrowthPct : settings.tmIncreaseEur)}
+                        step={key === 'cvGrowthByMonth' ? 0.5 : 0.05}
                         allowEmpty
                         highlight={settings[key][month] !== undefined}
                         onCommit={value => onMonthGrowth(key, month, value)}

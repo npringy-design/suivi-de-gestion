@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 13/10/2026 (Planification : hausse de TM en euros)
+
+- Planification : « Croissance TM (%) » remplacée par « Hausse TM (€) » (`tmIncreaseEur`, `tmIncreaseEurByMonth`, jamais négative) : TM proposé = max(TM historique, TM N-1 du groupe) + hausse ; les planchers mensuel et annuel reçoivent la même hausse pour ne pas l'absorber. Message sous la croissance couverts quand un CA cible est actif (le CA fixe alors les couverts, la croissance couverts n'a plus d'effet sur ces mois). 268 tests, tsc OK.
+
 ## 13/10/2026 (Planification : VAE annuel à part du TM)
 
 - Planification : champ « VAE annuel » (`targetAnnualVAE`, `targetMonthlyVAE`) construit comme le CA annuel (proposition = moyenne des VAE réalisés, `proposeAnnualVAE`) ; VAE mensuel = saisie, sinon VAE annuel × poids historique du mois, sinon VAE historique moyen (`planMonthlyVae`). Tableau mensuel : colonnes « TM restaurant » (jamais de VAE) et « VAE (modifiable) » / « TM avec VAE », pied en trois lignes (Restaurant, VAE, Total avec VAE). Le VAE n'influence ni le plan restaurant ni le plancher de TM, et n'est pas écrit dans les Prévisions (pas de colonne budget VAE). 267 tests, tsc OK.

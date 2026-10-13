@@ -542,9 +542,9 @@ export type PlanEstimator = 'moyenne' | 'mediane';
 export type PlanSettings = {
   targetYear: number;
   cvGrowthPct: number;
-  tmGrowthPct: number;
+  tmIncreaseEur: number; // hausse du TM en € (carte), ajoutée au TM de référence ; jamais négative
   cvGrowthByMonth: Record<number, number>; // surcharge par mois (0-11)
-  tmGrowthByMonth: Record<number, number>;
+  tmIncreaseEurByMonth: Record<number, number>;
   targetAnnualCA: number | null; // objectif de CA de l'année cible ; null = proposition purement historique
   targetMonthlyCA: Record<number, number | null>; // surcharge optionnelle du CA cible par mois (0-11)
   // VAE : CA à part, jamais divisé par les couverts (n'entre pas dans le TM restaurant).

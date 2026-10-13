@@ -100,7 +100,7 @@ export function usePlanification() {
     });
   }, []);
 
-  const setMonthGrowth = useCallback((key: 'cvGrowthByMonth' | 'tmGrowthByMonth', month: number, value: number | null) => {
+  const setMonthGrowth = useCallback((key: 'cvGrowthByMonth' | 'tmIncreaseEurByMonth', month: number, value: number | null) => {
     setSettings(current => {
       const next = { ...current[key] };
       if (value === null) delete next[month]; else next[month] = value;

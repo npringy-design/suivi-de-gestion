@@ -110,11 +110,11 @@ describe('generatePlan', () => {
 
   it('applique des croissances distinctes couverts / TM avec surcharge mensuelle', () => {
     const plan = generatePlan(samples, noHolidays, settings({
-      cvGrowthPct: 10, tmGrowthPct: 4, cvGrowthByMonth: { 0: 0 },
+      cvGrowthPct: 10, tmIncreaseEur: 0.2, cvGrowthByMonth: { 0: 0 },
     }));
     const jan = plan.find(d => d.date === '2027-01-04')!;
     expect(jan.midi.cv).toBe(25); // surcharge janvier : 0 %
-    expect(jan.midi.tm).toBeCloseTo(25, 1); // 23 × 1,04 = 23,92 < plancher N-1 (25)
+    expect(jan.midi.tm).toBeCloseTo(25.2, 2); // plancher N-1 (25) + 0,20 €
     const feb = plan.find(d => d.date === '2027-02-01')!;
     expect(feb.midi.source).toBe('groupe');
   });
@@ -270,8 +270,16 @@ describe('plancher de TM (N-1)', () => {
   ];
 
   it('ne descend jamais sous le TM de N-1, même avec une croissance TM négative', () => {
-    const plan = generatePlan(history, noHolidays, settings({ tmGrowthPct: -10 }));
+    const plan = generatePlan(history, noHolidays, settings({ tmIncreaseEur: -2 }));
     expect(plan.find(d => d.date === '2027-01-04')!.midi.tm).toBe(24);
+  });
+
+  it('ajoute la hausse en euros au TM de N-1, au global et par mois', () => {
+    const plan = generatePlan(history, noHolidays, settings({ tmIncreaseEur: 0.25, tmIncreaseEurByMonth: { 1: 0.1 } }));
+    expect(plan.find(d => d.date === '2027-01-04')!.midi.tm).toBe(24.25);
+    expect(plan.find(d => d.date === '2027-02-01')!.midi.tm).toBe(24.1);
+    const total = plan.reduce((acc, d) => ({ cv: acc.cv + d.midi.cv, ca: acc.ca + d.midi.ca }), { cv: 0, ca: 0 });
+    expect(total.ca / total.cv).toBeGreaterThan(24.1); // le plancher ne l'absorbe pas
   });
 
   it('un objectif de CA plus bas fait baisser les couverts, pas le TM', () => {

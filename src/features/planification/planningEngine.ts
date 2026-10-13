@@ -20,6 +20,7 @@ import { toIsoDate } from '../analyse/ecartsAnalysis';
 
 import {
   applyMonthTarget, enforceTmFloors, monthlyWeights, normalizedDayWeights, planMonthlyVae, proposeAnnualCA, proposeAnnualVAE, tmFloors,
+  type TmFloors,
 } from './planningTargets';
 
 export const PLAN_SERVICES: readonly PlanService[] = ['midi', 'soir'];
@@ -44,9 +45,9 @@ const CLOSED_OPEN_RATIO = 0.5;
 export const DEFAULT_PLAN_SETTINGS = (targetYear: number): PlanSettings => ({
   targetYear,
   cvGrowthPct: 0,
-  tmGrowthPct: 0,
+  tmIncreaseEur: 0,
   cvGrowthByMonth: {},
-  tmGrowthByMonth: {},
+  tmIncreaseEurByMonth: {},
   targetAnnualCA: null,
   targetMonthlyCA: {},
   targetAnnualVAE: null,
@@ -249,6 +250,19 @@ function rawProposal(
   return { cv: estimate.cv, tm: estimate.tm, ca: 0, n, confidence: confidenceOf(n, source), source, estimator: estimate.estimator, manual: false, tmFloor: latestYearTm(group.entries) };
 }
 
+// Hausse de TM en € (mois ou globale) : jamais négative, le TM ne passe pas sous la référence N-1.
+const tmIncreaseOf = (settings: PlanSettings, month: number): number =>
+  Math.max(0, settings.tmIncreaseEurByMonth[month] ?? settings.tmIncreaseEur);
+
+// Les planchers mensuels et annuel de N-1 reçoivent la même hausse (annuelle : moyenne pondérée par les
+// couverts), sinon le plancher absorberait la hausse saisie.
+function floorsWithIncrease(floors: TmFloors, plan: PlanDay[], settings: PlanSettings): TmFloors {
+  const byMonth = Object.fromEntries(Object.entries(floors.byMonth).map(([month, floor]) => [month, floor + tmIncreaseOf(settings, Number(month))]));
+  const cv = plan.reduce((acc, day) => acc + day.midi.cv + day.soir.cv, 0);
+  const weighted = plan.reduce((acc, day) => acc + (day.midi.cv + day.soir.cv) * tmIncreaseOf(settings, day.month), 0);
+  return { byMonth, year: floors.year === null ? null : floors.year + (cv > 0 ? weighted / cv : 0) };
+}
+
 // Jour férié : proposition du jour normal (groupe selon les vacances) × ratio historique férié.
 export function buildProposal(
   groups: Map<string, GroupData>,
@@ -268,9 +282,8 @@ export function buildProposal(
   const ratio = context?.ratio ?? NO_RATIO;
   const source: PlanSource = context && raw.source === 'groupe' ? 'ferie' : raw.source;
   const cvGrowth = settings.cvGrowthByMonth[month] ?? settings.cvGrowthPct;
-  const tmGrowth = settings.tmGrowthByMonth[month] ?? settings.tmGrowthPct;
   const cv = Math.round(raw.cv * ratio.cv * (1 + cvGrowth / 100));
-  const tm = Math.max(round2(raw.tm * ratio.tm * (1 + tmGrowth / 100)), round2(tmFloor * ratio.tm));
+  const tm = round2(Math.max(raw.tm * ratio.tm, tmFloor * ratio.tm) + tmIncreaseOf(settings, month));
   return { ...raw, cv, tm, ca: round2(cv * tm), source, confidence: confidenceOf(raw.n, source) };
 }
 
@@ -337,7 +350,7 @@ export function generatePlan(
 ): PlanDay[] {
   const allMonths = Array.from({ length: 12 }, (_, month) => month);
   const plan = buildMonthDays(samples, calendar, settings, allMonths);
-  const floors = tmFloors(samples, settings.targetYear - 1);
+  const floors = floorsWithIncrease(tmFloors(samples, settings.targetYear - 1), plan, settings);
   if (settings.targetAnnualCA === null && !hasMonthlyTargets(settings)) return enforceTmFloors(plan, floors);
 
   const weights = settings.targetAnnualCA === null ? null : monthlyWeights(samples);
