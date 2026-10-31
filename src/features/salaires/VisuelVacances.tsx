@@ -8,7 +8,7 @@ interface VisuelVacancesProps {
 }
 
 export default function VisuelVacances({ onBack }: VisuelVacancesProps) {
-  const { customEvents, addCustomEvent, removeCustomEvent, selectedYear } = useData();
+  const { customEvents, addCustomEvent, removeCustomEvent, selectedYear, companySettings } = useData();
   const [newEventDate, setNewEventDate] = useState('');
   const [newEventLabel, setNewEventLabel] = useState('');
 
@@ -131,7 +131,7 @@ export default function VisuelVacances({ onBack }: VisuelVacancesProps) {
                 Visuel Vacances, Jours Fériés & Événements
               </h1>
               <h2 className="text-sm font-semibold text-slate-500 mt-0.5">
-                Buro Monte
+                {companySettings.companyName}
               </h2>
             </div>
           </div>

@@ -5,6 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 31/10/2026 (Multi-site : nettoyage du nom "Buro Monte" codé en dur)
+
+- Les 6 derniers endroits où le nom du restaurant était codé en dur ("Buro Monte") lisent désormais `companySettings.companyName` (par site) : `DashboardTableHeader.tsx` (nouvelle prop `companyLabel`, fournie par `Dashboard.tsx`), `EdgAnnuelTabs.tsx`, `RecapAnnuel.tsx` (×2), `ConfigSalaires.tsx`, `VisuelVacances.tsx`. Plus aucun composant n'affiche un nom de site fixe. 269 tests, tsc OK.
+- Reste à faire : test d'isolation réel avec Hippo Cormontreuil (créer le compte, vérifier qu'aucune donnée de Thillois n'apparaît).
+
 ## 31/10/2026 (Multi-site : attribution de site aux utilisateurs)
 
 - `api/suiviAccount.ts` : les comptes de rôle `user` sont désormais rattachés à un ou plusieurs sites (table `suivi_gestion_user_site_access`, remplacement complet à chaque écriture via `replaceSiteIds` — delete puis insert, pas de demi-mesure). `GET` renvoie `site_ids` par utilisateur ; `POST` exige `siteIds` (au moins un) pour un compte `user`, ignoré pour `super_admin`/`global_admin` (déjà tous sites par rôle) ; nouvelle action `PATCH { action: 'set-sites', siteIds }`. Liste des sites dupliquée dans ce fichier serverless (commentaire renvoyant à `@/lib/sites` et au CHECK SQL, pas de build partagé avec `src/`).

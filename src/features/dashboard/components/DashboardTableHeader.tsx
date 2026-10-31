@@ -21,6 +21,9 @@ type DashboardTableHeaderProps = {
   realiseColspan: number;
   otherGroups: GroupItem[];
   updatePurchaseSupplierName: (col: number, value: string) => void;
+  // Nom affiché en en-tête de colonne Date (companySettings.companyName, par site) — plus de
+  // nom codé en dur, le même tableau doit afficher le bon nom sur chaque site.
+  companyLabel: string;
 };
 
 export default function DashboardTableHeader({
@@ -38,6 +41,7 @@ export default function DashboardTableHeader({
   realiseColspan,
   otherGroups,
   updatePurchaseSupplierName,
+  companyLabel,
 }: DashboardTableHeaderProps) {
   const chrome = sectionChrome(accent);
   const previsionsChrome = sectionChrome('#d97706');
@@ -51,7 +55,7 @@ export default function DashboardTableHeader({
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, height: '100%' }}>
             <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '0.15em', color: chrome.subHeaderColor }}>DATE</span>
             <div style={{ background: tint(accent, 0.12), border: `1px solid ${tint(accent, 0.3)}`, borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '100%', boxSizing: 'border-box' }}>
-              <span style={{ fontSize: 10, color: '#78716c', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Buro Monte</span>
+              <span style={{ fontSize: 10, color: '#78716c', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{companyLabel}</span>
               <span style={{ fontSize: 12, color: accent, fontWeight: 800, whiteSpace: 'nowrap' }}>CA N-1 : 159 802 €</span>
             </div>
           </div>

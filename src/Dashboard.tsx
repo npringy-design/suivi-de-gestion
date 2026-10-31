@@ -1080,6 +1080,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   realiseColspan={realiseColspan}
                   otherGroups={otherGroups}
                   updatePurchaseSupplierName={updatePurchaseSupplierName}
+                  companyLabel={companySettings.companyName}
                 />
                 <DashboardTableBody
                   rows={rows}

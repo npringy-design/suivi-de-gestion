@@ -246,7 +246,7 @@ const COLS_SYNTHESE: ColDef[] = [
 interface RecapAnnuelProps { onBack: () => void; }
 
 export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
-  const { data, allData, selectedYear, setSelectedYear, loadYearFromCloud } = useData();
+  const { data, allData, selectedYear, setSelectedYear, loadYearFromCloud, companySettings } = useData();
   const YEAR = selectedYear;
   const MONTHS_SHORT = MONTHS_SHORT_LABELS.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [activeTab, setActiveTab] = useState<string>('budget');
@@ -791,9 +791,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           </div>
         </div>
 
-        {/* Droite : Buro Monte + CA N-1 */}
+        {/* Droite : nom de l'entreprise (par site) + CA N-1 */}
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 10, color: '#A8A29E', letterSpacing: '.1em', textTransform: 'uppercase' }}>Buro Monte</div>
+          <div style={{ fontSize: 10, color: '#A8A29E', letterSpacing: '.1em', textTransform: 'uppercase' }}>{companySettings.companyName}</div>
           <div style={{ fontSize: 11, color: '#F59E0B', fontWeight: 600 }}>{'CA N-1 : ' + fe(CA_N1)}</div>
         </div>
       </header>
@@ -1003,7 +1003,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
       </div>
 
       <footer style={{ padding: '10px 24px', borderTop: '1px solid #E7E5E4', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <span style={{ color: '#A8A29E', fontSize: 10, letterSpacing: '.06em', textTransform: 'uppercase' }}>IDM Restauration Groupe — Buro Monte</span>
+        <span style={{ color: '#A8A29E', fontSize: 10, letterSpacing: '.06em', textTransform: 'uppercase' }}>IDM Restauration Groupe — {companySettings.companyName}</span>
         <span style={{ color: '#A8A29E', fontSize: 10, letterSpacing: '.06em' }}>Récapitulatif Annuel · {YEAR} · {activeSection.label}</span>
       </footer>
     </div>

@@ -15,7 +15,7 @@ interface EdgAnnuelTabsProps {
 }
 
 export default function EdgAnnuelTabs({ onBack, initialTab = 'budget' }: EdgAnnuelTabsProps) {
-  const { selectedYear, selectedMonth, setSelectedMonth } = useData();
+  const { selectedYear, selectedMonth, setSelectedMonth, companySettings } = useData();
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const tabs = [
@@ -46,7 +46,7 @@ export default function EdgAnnuelTabs({ onBack, initialTab = 'budget' }: EdgAnnu
               </button>
               <div>
                 <h1 className="text-xl font-bold text-slate-900 leading-tight">EDG Annuel</h1>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Buro Monte - {selectedYear}</p>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{companySettings.companyName} - {selectedYear}</p>
               </div>
             </div>
 

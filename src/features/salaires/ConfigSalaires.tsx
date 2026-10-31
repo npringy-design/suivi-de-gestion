@@ -32,7 +32,7 @@ interface ConfigSalairesProps {
 }
 
 export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
-  const { selectedYear: YEAR, setSelectedYear, data, updateSalariesConfig } = useData();
+  const { selectedYear: YEAR, setSelectedYear, data, updateSalariesConfig, companySettings } = useData();
   const MONTHS = MONTH_NAMES.map(m => `${m} ${YEAR}`);
   
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0);
@@ -238,7 +238,7 @@ export default function ConfigSalaires({ onBack }: ConfigSalairesProps) {
             padding: '6px 12px', color: '#475569', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
             boxShadow: '0 1px 2px rgba(0,0,0,.05)'
           }}>
-            Buro Monte
+            {companySettings.companyName}
           </div>
         </header>
 
