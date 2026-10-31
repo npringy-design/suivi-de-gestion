@@ -3,6 +3,8 @@ import {
   removeBrowserStorageItem,
   setBrowserStorageItem,
 } from '@/lib/browserStorage';
+import type { SiteId } from '@/lib/sites';
+import { siteIdsForProfile, type SuiviProfileLike } from '@/lib/suiviPermissions';
 
 export type SupabaseAuthUser = {
   id: string;
@@ -42,6 +44,7 @@ const rawSupabaseUrl = normalizeSupabaseUrl(String(import.meta.env.VITE_SUPABASE
 const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 const authStorageKey = 'suivi-gestion:auth-session-v1';
 const userAccessTable = 'suivi_gestion_user_access';
+const userSiteAccessTable = 'suivi_gestion_user_site_access';
 
 export const isSupabaseAuthConfigured = Boolean(rawSupabaseUrl && supabaseAnonKey);
 
@@ -237,6 +240,58 @@ export const validateAuthSession = async (): Promise<SupabaseAuthSession | null>
   await ensureSuiviGestionAccess(validatedSession);
   storeAuthSession(validatedSession);
   return validatedSession;
+};
+
+export type SuiviAccessProfile = {
+  role: string;
+  accessScope: string;
+  siteIds: SiteId[];
+};
+
+// Appelé juste après l'obtention d'une session valide (AuthGate) : récupère le rôle Suivi
+// et les sites autorisés (tous pour super_admin/global_admin, liste explicite sinon).
+export const fetchSuiviAccessProfile = async (session: SupabaseAuthSession): Promise<SuiviAccessProfile> => {
+  if (!session.user?.id) {
+    throw new Error('Compte Supabase invalide : utilisateur introuvable.');
+  }
+
+  const [accessResponse, siteAccessResponse] = await Promise.all([
+    fetch(
+      `${restUrl()}/${userAccessTable}?user_id=eq.${encodeURIComponent(session.user.id)}&is_active=eq.true&select=role,access_scope&limit=1`,
+      { headers: buildAuthHeaders(session.access_token) },
+    ),
+    fetch(
+      `${restUrl()}/${userSiteAccessTable}?user_id=eq.${encodeURIComponent(session.user.id)}&is_active=eq.true&select=site_id`,
+      { headers: buildAuthHeaders(session.access_token) },
+    ),
+  ]);
+
+  if (!accessResponse.ok) {
+    throw new Error(`Lecture du profil Suivi impossible (${accessResponse.status}) : ${await readAuthError(accessResponse)}`);
+  }
+
+  const accessRows = await accessResponse.json() as Array<{ role: string; access_scope: string | null }>;
+  const access = accessRows[0];
+
+  if (!access) {
+    throw new Error('Acces refuse : ce compte Supabase n\'est pas autorise sur Suivi de gestion.');
+  }
+
+  const siteRows = siteAccessResponse.ok
+    ? await siteAccessResponse.json() as Array<{ site_id: string }>
+    : [];
+
+  const profile: SuiviProfileLike = {
+    role: access.role,
+    access_scope: access.access_scope,
+    site_ids: siteRows.map(row => row.site_id),
+  };
+
+  return {
+    role: access.role,
+    accessScope: access.access_scope || 'current_site',
+    siteIds: siteIdsForProfile(profile),
+  };
 };
 
 export const signOut = async () => {

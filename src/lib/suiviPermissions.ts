@@ -1,10 +1,16 @@
+import { normalizeSiteIds, SITE_IDS, type SiteId } from '@/lib/sites';
+
 export type SuiviRole = 'super_admin' | 'global_admin' | 'user' | 'admin';
+
+export type SuiviAccessScope = 'all' | 'current_site';
 
 export type SuiviProfileLike = {
   user_id?: string | null;
   id?: string | null;
   role?: string | null;
   is_active?: boolean | null;
+  access_scope?: string | null;
+  site_ids?: readonly string[] | null;
 };
 
 export const normalizeSuiviRole = (role?: string | null): SuiviRole => {
@@ -51,3 +57,18 @@ export const getCreatableSuiviRoles = (profile: SuiviProfileLike | null | undefi
   if (role === 'global_admin') return ['user'];
   return [];
 };
+
+// super_admin et global_admin voient tous les sites sans configuration ; un "user" est
+// cantonné aux sites qui lui sont explicitement attribués (table suivi_gestion_user_site_access).
+export const hasAllSiteAccess = (profile: SuiviProfileLike | null | undefined): boolean => {
+  const role = normalizeSuiviRole(profile?.role);
+  return role === 'super_admin' || role === 'global_admin' || profile?.access_scope === 'all';
+};
+
+export const siteIdsForProfile = (profile: SuiviProfileLike | null | undefined): SiteId[] => {
+  if (hasAllSiteAccess(profile)) return [...SITE_IDS];
+  return normalizeSiteIds(profile?.site_ids);
+};
+
+export const canAccessSite = (profile: SuiviProfileLike | null | undefined, siteId: SiteId): boolean =>
+  hasAllSiteAccess(profile) || siteIdsForProfile(profile).includes(siteId);

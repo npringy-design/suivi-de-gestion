@@ -2,10 +2,23 @@ import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { AuthSessionContext } from '../AuthGate';
 import { DataProvider, useData } from '../contexts/DataContext';
 import type { MonthDataSalariesConfig } from '../types/dataTypes';
 
-const wrapper = ({ children }: { children: ReactNode }) => <DataProvider>{children}</DataProvider>;
+const fakeAuthSession = {
+  session: { access_token: 'x', refresh_token: 'x', expires_at: 0, token_type: 'bearer', user: { id: 'test-user' } },
+  signOut: () => {},
+  accessProfile: { role: 'super_admin', accessScope: 'all', siteIds: ['hippo_thillois' as const] },
+  activeSiteId: 'hippo_thillois' as const,
+  setActiveSiteId: () => {},
+};
+
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <AuthSessionContext.Provider value={fakeAuthSession}>
+    <DataProvider>{children}</DataProvider>
+  </AuthSessionContext.Provider>
+);
 
 const config = (cost: string): MonthDataSalariesConfig => ({
   locked: false,

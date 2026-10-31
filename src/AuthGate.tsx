@@ -1,9 +1,13 @@
-import { createContext, FormEvent, ReactNode, useContext, useEffect, useState } from 'react';
+import { createContext, FormEvent, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
+import { getBrowserStorageItem, setBrowserStorageItem } from '@/lib/browserStorage';
+import { DEFAULT_SITE_ID, type SiteId } from '@/lib/sites';
 import {
+  fetchSuiviAccessProfile,
   isSupabaseAuthConfigured,
   signInWithPassword,
   signOut,
+  SuiviAccessProfile,
   SupabaseAuthSession,
   validateAuthSession,
 } from '@/services/supabaseAuth';
@@ -12,12 +16,25 @@ type AuthGateProps = {
   children: ReactNode;
 };
 
+const activeSiteStorageKey = (userId: string) => `suivi-gestion:active-site:user:${userId}`;
+
+const resolveActiveSiteId = (userId: string, siteIds: SiteId[]): SiteId => {
+  const stored = getBrowserStorageItem(activeSiteStorageKey(userId));
+  if (stored && (siteIds as string[]).includes(stored)) return stored as SiteId;
+  return siteIds.includes(DEFAULT_SITE_ID) ? DEFAULT_SITE_ID : siteIds[0];
+};
+
 // Session active + déconnexion, exposées aux pages qui veulent afficher un contrôle de
 // déconnexion à un endroit précis de leur mise en page (voir Home.tsx) — plus de bouton
 // flottant global affiché sur toutes les pages.
+// accessProfile/activeSiteId : branche multi-site — siteIds vient de suivi_gestion_user_site_access
+// (ou tous les sites pour super_admin/global_admin), activeSiteId est mémorisé par utilisateur.
 type AuthSessionContextValue = {
   session: SupabaseAuthSession;
   signOut: () => void;
+  accessProfile: SuiviAccessProfile;
+  activeSiteId: SiteId;
+  setActiveSiteId: (siteId: SiteId) => void;
 };
 
 // Exporté pour les tests (rendu de pages consommatrices sans passer par tout AuthGate).
@@ -50,7 +67,9 @@ function AuthLoading() {
   );
 }
 
-function AuthLogin({ onAuthenticated }: { onAuthenticated: (session: SupabaseAuthSession) => void }) {
+function AuthLogin({
+  onAuthenticated, error: externalError,
+}: { onAuthenticated: (session: SupabaseAuthSession) => Promise<void>; error: string | null }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -63,13 +82,15 @@ function AuthLogin({ onAuthenticated }: { onAuthenticated: (session: SupabaseAut
 
     try {
       const session = await signInWithPassword(email.trim(), password);
-      onAuthenticated(session);
+      await onAuthenticated(session);
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : 'Connexion impossible.');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const displayedError = error || externalError;
 
   return (
     <AuthShell>
@@ -123,9 +144,9 @@ function AuthLogin({ onAuthenticated }: { onAuthenticated: (session: SupabaseAut
             value={password}
           />
 
-          {error && (
+          {displayedError && (
             <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              {error}
+              {displayedError}
             </div>
           )}
 
@@ -142,9 +163,19 @@ function AuthLogin({ onAuthenticated }: { onAuthenticated: (session: SupabaseAut
   );
 }
 
-function AuthenticatedApp({ children, session, onSignOut }: AuthGateProps & { session: SupabaseAuthSession; onSignOut: () => void }) {
+function AuthenticatedApp({
+  children, session, accessProfile, activeSiteId, onSignOut, onChangeSite,
+}: AuthGateProps & {
+  session: SupabaseAuthSession;
+  accessProfile: SuiviAccessProfile;
+  activeSiteId: SiteId;
+  onSignOut: () => void;
+  onChangeSite: (siteId: SiteId) => void;
+}) {
   return (
-    <AuthSessionContext.Provider value={{ session, signOut: onSignOut }}>
+    <AuthSessionContext.Provider value={{
+      session, signOut: onSignOut, accessProfile, activeSiteId, setActiveSiteId: onChangeSite,
+    }}>
       {children}
     </AuthSessionContext.Provider>
   );
@@ -152,16 +183,37 @@ function AuthenticatedApp({ children, session, onSignOut }: AuthGateProps & { se
 
 export default function AuthGate({ children }: AuthGateProps) {
   const [session, setSession] = useState<SupabaseAuthSession | null>(null);
+  const [accessProfile, setAccessProfile] = useState<SuiviAccessProfile | null>(null);
+  const [activeSiteId, setActiveSiteId] = useState<SiteId | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  // Charge le rôle et les sites autorisés, puis active la session seulement si cette
+  // étape réussit : un compte sans accès à aucun site ne doit jamais entrer dans l'appli.
+  const activateSession = useCallback(async (nextSession: SupabaseAuthSession) => {
+    const profile = await fetchSuiviAccessProfile(nextSession);
+    if (profile.siteIds.length === 0) {
+      throw new Error('Ce compte n\'a accès à aucun site. Contacte un administrateur Suivi de gestion.');
+    }
+    const userId = nextSession.user?.id || '';
+    const resolvedSiteId = resolveActiveSiteId(userId, profile.siteIds);
+    setSession(nextSession);
+    setAccessProfile(profile);
+    setActiveSiteId(resolvedSiteId);
+    setLoginError(null);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
 
     validateAuthSession()
-      .then((activeSession) => {
-        if (isMounted) {
-          setSession(activeSession);
+      .then(async (activeSession) => {
+        if (!isMounted) return;
+        if (!activeSession) {
+          setSession(null);
+          return;
         }
+        await activateSession(activeSession);
       })
       .catch(() => {
         if (isMounted) {
@@ -177,23 +229,47 @@ export default function AuthGate({ children }: AuthGateProps) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activateSession]);
+
+  const handleAuthenticated = async (nextSession: SupabaseAuthSession) => {
+    try {
+      await activateSession(nextSession);
+    } catch (error) {
+      await signOut();
+      setLoginError(error instanceof Error ? error.message : 'Accès refusé.');
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
     setSession(null);
+    setAccessProfile(null);
+    setActiveSiteId(null);
+  };
+
+  const handleChangeSite = (siteId: SiteId) => {
+    if (session?.user?.id) {
+      setBrowserStorageItem(activeSiteStorageKey(session.user.id), siteId);
+    }
+    setActiveSiteId(siteId);
   };
 
   if (isCheckingSession) {
     return <AuthLoading />;
   }
 
-  if (!session) {
-    return <AuthLogin onAuthenticated={setSession} />;
+  if (!session || !accessProfile || !activeSiteId) {
+    return <AuthLogin onAuthenticated={handleAuthenticated} error={loginError} />;
   }
 
   return (
-    <AuthenticatedApp session={session} onSignOut={handleSignOut}>
+    <AuthenticatedApp
+      session={session}
+      accessProfile={accessProfile}
+      activeSiteId={activeSiteId}
+      onSignOut={handleSignOut}
+      onChangeSite={handleChangeSite}
+    >
       {children}
     </AuthenticatedApp>
   );

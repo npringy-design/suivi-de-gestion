@@ -9,6 +9,9 @@ import Home from '@/pages/Home';
 const fakeAuthSession = {
   session: { access_token: 'x', refresh_token: 'x', expires_at: 0, token_type: 'bearer', user: { id: 'test-user' } },
   signOut: () => {},
+  accessProfile: { role: 'super_admin', accessScope: 'all', siteIds: ['hippo_thillois' as const] },
+  activeSiteId: 'hippo_thillois' as const,
+  setActiveSiteId: () => {},
 };
 
 function LocationDisplay() {

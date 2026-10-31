@@ -5,6 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 31/10/2026 (Multi-site : fondations)
+
+- Multi-site (modèle repris de Gestion Commandes Doquet) : table `suivi_gestion_app_state` dotée d'un `site_id` (clé composite `site_id,key`, RLS restreinte aux utilisateurs authentifiés et scopée par site — l'accès `anon` ouvert précédent est supprimé), nouvelle table `suivi_gestion_user_site_access` (sites autorisés par utilisateur), rôles existants conservés (`super_admin`/`global_admin` = accès à tous les sites, `user` = sites explicitement attribués). Sites déclarés dans `@/lib/sites` (`hippo_thillois`, `hippo_cormontreuil`). `supabaseAppState.ts` : toutes les fonctions cloud prennent désormais `siteId` en premier paramètre (plus de site fixé par variable d'env au build). `AuthGate` expose `accessProfile`/`activeSiteId`/`setActiveSiteId` (site actif mémorisé par utilisateur en local, changement de site = à faire recharger la page par l'appelant). `DataContext` branché sur `activeSiteId` : tous les appels cloud et les clés de cache local (localStorage) sont désormais suffixés par site, pour qu'un même navigateur ne mélange jamais les données de deux sites (y compris `companySettings`, donc le nom d'entreprise/ville/etc. est bien par site). Migration appliquée en prod : les données existantes sont rattachées à `hippo_thillois`. 269 tests, tsc OK.
+- Reste à faire : sélecteur de site (UI), attribution de site dans la gestion des utilisateurs, nettoyage des libellés codés en dur ("Buro Monte"/Thillois), test d'isolation réel avec Hippo Cormontreuil.
+
 ## 13/10/2026 (Planification : croissances par-dessus le CA cible)
 
 - Planification : avec un CA annuel/mensuel cible, le plan est d'abord calé sur la cible sans croissance (`withoutGrowth`), puis la croissance couverts (%) et la hausse de TM (€) s'ajoutent (`applyGrowth`) : CA du mois = cible × (1 + croissance), TM + hausse à couverts constants ; les totaux du bas suivent. Tableau mensuel : « CA cible avant croissance (modifiable) » + « CA restaurant prévu » (le message « sans effet sur les mois pilotés » est caduc). Planchers de TM inchangés. 269 tests, tsc OK.

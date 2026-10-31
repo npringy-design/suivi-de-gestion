@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 
+import { useAuthSession } from '@/AuthGate';
+import { DEFAULT_SITE_ID, type SiteId } from '@/lib/sites';
 import { fetchCloudAppBootstrap, fetchCloudMonth, fetchCloudYearMonths, isCloudSyncConfigured, saveCloudAppState, type CloudAppState } from '@/services/supabaseAppState';
 import { mergeDashboardCellsData, mergeEdgMensuelBudgetData, mergeEdgMensuelRealiseData, normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
 import { parseMoneyValue } from '@/lib/money';
@@ -137,12 +139,15 @@ type DataContextType = {
   resetLocalData: () => void;
 };
 
-const STORAGE_KEY_V2 = 'gestion_data_v2';
-const CONFIG_2025_STORAGE_KEY = 'config2025_data_v1';
-const CUSTOM_EVENTS_STORAGE_KEY = 'custom_events_v1';
-const EDG_CHARGES_CONFIG_STORAGE_KEY = 'edg_charges_config_v1';
-const COMPANY_SETTINGS_STORAGE_KEY = 'company_settings_v1';
-const PAYROLL_COSTS_STORAGE_KEY = 'payroll_costs_v1';
+// Clés de cache local (offline) suffixées par site : deux sites dans le même navigateur
+// ne doivent jamais se mélanger (voir @/lib/sites). "gestion_data_v1" (legacy, non suffixé)
+// n'est repris que pour hippo_thillois, seul site existant avant le multi-site.
+const STORAGE_KEY_V2 = (siteId: SiteId) => `gestion_data_v2:${siteId}`;
+const CONFIG_2025_STORAGE_KEY = (siteId: SiteId) => `config2025_data_v1:${siteId}`;
+const CUSTOM_EVENTS_STORAGE_KEY = (siteId: SiteId) => `custom_events_v1:${siteId}`;
+const EDG_CHARGES_CONFIG_STORAGE_KEY = (siteId: SiteId) => `edg_charges_config_v1:${siteId}`;
+const COMPANY_SETTINGS_STORAGE_KEY = (siteId: SiteId) => `company_settings_v1:${siteId}`;
+const PAYROLL_COSTS_STORAGE_KEY = (siteId: SiteId) => `payroll_costs_v1:${siteId}`;
 
 const DEFAULT_THEORIQUE_DAY: DayDataTheorique = {
   total_ca: 0, cb: 0, amex: 0, tr_papier: 0, tr_carte: 0, ancv: 0,
@@ -174,15 +179,18 @@ const saveJson = (key: string, value: unknown) => {
   }
 };
 
-const loadFromStorage = (): Record<number, Record<number, MonthData>> => {
-  const savedV2 = loadJson<Record<number, Record<number, MonthData>> | null>(STORAGE_KEY_V2, null);
+const loadFromStorage = (siteId: SiteId): Record<number, Record<number, MonthData>> => {
+  const savedV2 = loadJson<Record<number, Record<number, MonthData>> | null>(STORAGE_KEY_V2(siteId), null);
   if (savedV2) return savedV2;
 
-  const savedV1 = loadJson<Record<number, MonthData> | null>('gestion_data_v1', null);
-  return savedV1 ? { 2026: savedV1 } : {};
+  if (siteId === DEFAULT_SITE_ID) {
+    const savedV1 = loadJson<Record<number, MonthData> | null>('gestion_data_v1', null);
+    return savedV1 ? { 2026: savedV1 } : {};
+  }
+  return {};
 };
 
-const saveToStorage = (data: Record<number, Record<number, MonthData>>) => saveJson(STORAGE_KEY_V2, data);
+const saveToStorage = (siteId: SiteId, data: Record<number, Record<number, MonthData>>) => saveJson(STORAGE_KEY_V2(siteId), data);
 
 const EMPTY_YEAR_DATA: Record<number, MonthData> = {};
 
@@ -198,21 +206,24 @@ type CloudSnapshot = {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
-  const [allData, setAllData] = useState<Record<number, Record<number, MonthData>>>(loadFromStorage);
+  // Site actif : résolu une fois par AuthGate (switch de site = rechargement complet de page,
+  // donc cette valeur est stable pendant toute la vie du DataProvider).
+  const { activeSiteId } = useAuthSession();
+  const [allData, setAllData] = useState<Record<number, Record<number, MonthData>>>(() => loadFromStorage(activeSiteId));
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [config2025, setConfig2025] = useState<Config2025Data>(() => loadJson(CONFIG_2025_STORAGE_KEY, { mensuel: {}, hebdo: {} }));
-  const [customEvents, setCustomEvents] = useState<CustomEvent[]>(() => loadJson(CUSTOM_EVENTS_STORAGE_KEY, []));
-  const [edgChargesConfig, setEdgChargesConfig] = useState<EdgChargesConfig>(() => loadJson(EDG_CHARGES_CONFIG_STORAGE_KEY, createDefaultEdgChargesConfig()));
+  const [config2025, setConfig2025] = useState<Config2025Data>(() => loadJson(CONFIG_2025_STORAGE_KEY(activeSiteId), { mensuel: {}, hebdo: {} }));
+  const [customEvents, setCustomEvents] = useState<CustomEvent[]>(() => loadJson(CUSTOM_EVENTS_STORAGE_KEY(activeSiteId), []));
+  const [edgChargesConfig, setEdgChargesConfig] = useState<EdgChargesConfig>(() => loadJson(EDG_CHARGES_CONFIG_STORAGE_KEY(activeSiteId), createDefaultEdgChargesConfig()));
   const [companySettings, setCompanySettings] = useState<CompanySettings>(() => {
-    const loaded = loadJson<CompanySettings>(COMPANY_SETTINGS_STORAGE_KEY, DEFAULT_COMPANY_SETTINGS);
+    const loaded = loadJson<CompanySettings>(COMPANY_SETTINGS_STORAGE_KEY(activeSiteId), DEFAULT_COMPANY_SETTINGS);
     if (!loaded.caisseSystemes?.length) {
       return { ...loaded, caisseSystemes: DEFAULT_CAISSE_SYSTEMS };
     }
     return loaded;
   });
 
-  const [payrollCosts, setPayrollCosts] = useState<PayrollCostsData>(() => normalizePayrollCosts(loadJson<Partial<PayrollCostsData>>(PAYROLL_COSTS_STORAGE_KEY, {})));
+  const [payrollCosts, setPayrollCosts] = useState<PayrollCostsData>(() => normalizePayrollCosts(loadJson<Partial<PayrollCostsData>>(PAYROLL_COSTS_STORAGE_KEY(activeSiteId), {})));
 
   const data = allData[selectedYear] || EMPTY_YEAR_DATA;
 
@@ -347,28 +358,28 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [cloudMonthKey]);
 
   useEffect(() => {
-    saveToStorage(allData);
-  }, [allData]);
+    saveToStorage(activeSiteId, allData);
+  }, [activeSiteId, allData]);
 
   useEffect(() => {
-    saveJson(CONFIG_2025_STORAGE_KEY, config2025);
-  }, [config2025]);
+    saveJson(CONFIG_2025_STORAGE_KEY(activeSiteId), config2025);
+  }, [activeSiteId, config2025]);
 
   useEffect(() => {
-    saveJson(CUSTOM_EVENTS_STORAGE_KEY, customEvents);
-  }, [customEvents]);
+    saveJson(CUSTOM_EVENTS_STORAGE_KEY(activeSiteId), customEvents);
+  }, [activeSiteId, customEvents]);
 
   useEffect(() => {
-    saveJson(EDG_CHARGES_CONFIG_STORAGE_KEY, edgChargesConfig);
-  }, [edgChargesConfig]);
+    saveJson(EDG_CHARGES_CONFIG_STORAGE_KEY(activeSiteId), edgChargesConfig);
+  }, [activeSiteId, edgChargesConfig]);
 
   useEffect(() => {
-    saveJson(COMPANY_SETTINGS_STORAGE_KEY, companySettings);
-  }, [companySettings]);
+    saveJson(COMPANY_SETTINGS_STORAGE_KEY(activeSiteId), companySettings);
+  }, [activeSiteId, companySettings]);
 
   useEffect(() => {
-    saveJson(PAYROLL_COSTS_STORAGE_KEY, payrollCosts);
-  }, [payrollCosts]);
+    saveJson(PAYROLL_COSTS_STORAGE_KEY(activeSiteId), payrollCosts);
+  }, [activeSiteId, payrollCosts]);
 
   useEffect(() => {
     if (!isCloudSyncConfigured) {
@@ -384,7 +395,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const loadCloudState = async () => {
       try {
-        const remote = await fetchCloudAppBootstrap(bootYear, bootMonth);
+        const remote = await fetchCloudAppBootstrap(activeSiteId, bootYear, bootMonth);
         if (cancelled) return;
 
         if (remote?.value) {
@@ -393,7 +404,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         } else {
           loadedCloudMonthKeysRef.current.add(cloudMonthKey(bootYear, bootMonth));
           cloudBootstrapDoneRef.current = true;
-          await saveCloudAppState({ allData, config2025, customEvents, edgChargesConfig, companySettings, payrollCosts });
+          await saveCloudAppState(activeSiteId, { allData, config2025, customEvents, edgChargesConfig, companySettings, payrollCosts });
         }
         hideCloudWarning();
         if (!cloudBootstrapDoneRef.current) {
@@ -415,7 +426,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       cancelled = true;
     };
-  }, [applyCloudState, cloudErrorMessage, cloudMonthKey, hideCloudWarning, showCloudWarning]);
+  }, [activeSiteId, applyCloudState, cloudErrorMessage, cloudMonthKey, hideCloudWarning, showCloudWarning]);
 
   useEffect(() => {
     if (!isCloudSyncConfigured || !cloudLoadedRef.current) return;
@@ -427,7 +438,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const loadSelectedMonth = async () => {
       try {
-        const row = await fetchCloudMonth(selectedYear, selectedMonth);
+        const row = await fetchCloudMonth(activeSiteId, selectedYear, selectedMonth);
         if (cancelled) return;
 
         loadedCloudMonthKeysRef.current.add(key);
@@ -446,7 +457,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       cancelled = true;
     };
-  }, [applyCloudMonth, cloudErrorMessage, cloudMonthKey, hideCloudWarning, selectedMonth, selectedYear, showCloudWarning]);
+  }, [activeSiteId, applyCloudMonth, cloudErrorMessage, cloudMonthKey, hideCloudWarning, selectedMonth, selectedYear, showCloudWarning]);
 
   // Ne pousse vers Supabase que les snapshots (mois/segments) réellement modifiés
   // dans cette session, puis les retire de la liste des éléments à sauvegarder.
@@ -456,13 +467,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const hasDirtySegment = dirtySegments.config2025 || dirtySegments.customEvents || dirtySegments.edgChargesConfig || dirtySegments.companySettings || dirtySegments.payrollCosts;
     if (dirtyMonths.size === 0 && !hasDirtySegment) return;
 
-    await saveCloudAppState(latestSnapshotRef.current, { dirtyMonths, dirtySegments });
+    await saveCloudAppState(activeSiteId, latestSnapshotRef.current, { dirtyMonths, dirtySegments });
 
     dirtyMonths.forEach(key => dirtyMonthKeysRef.current.delete(key));
     (['config2025', 'customEvents', 'edgChargesConfig', 'companySettings', 'payrollCosts'] as const).forEach(segment => {
       if (dirtySegments[segment]) dirtySegmentsRef.current[segment] = false;
     });
-  }, []);
+  }, [activeSiteId]);
 
   useEffect(() => {
     latestSnapshotRef.current = { allData, config2025, customEvents, edgChargesConfig, companySettings, payrollCosts };
@@ -743,7 +754,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       .some(m => !loadedCloudMonthKeysRef.current.has(cloudMonthKey(year, m)));
     if (!anyMissing) return loaded;
     try {
-      const months = await fetchCloudYearMonths(year);
+      const months = await fetchCloudYearMonths(activeSiteId, year);
       months
         // Un mois modifié localement et pas encore poussé ne doit pas être écrasé par la version cloud.
         .filter(({ month }) => !dirtyMonthKeysRef.current.has(cloudMonthKey(year, month)))
@@ -760,7 +771,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       console.warn('Chargement année N-1 Supabase indisponible :', error);
     }
     return loaded;
-  }, [applyCloudMonth, cloudMonthKey, hideCloudWarning]);
+  }, [activeSiteId, applyCloudMonth, cloudMonthKey, hideCloudWarning]);
 
   // Le bootstrap ne récupère que le mois sélectionné : on complète avec les 12 mois de l'année
   // affichée, pour que les vues annuelles ne dépendent jamais du cache local du poste.
@@ -965,13 +976,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const resetLocalData = useCallback(() => {
     try {
-      localStorage.removeItem(STORAGE_KEY_V2);
-      localStorage.removeItem('gestion_data_v1');
-      localStorage.removeItem(CONFIG_2025_STORAGE_KEY);
-      localStorage.removeItem(CUSTOM_EVENTS_STORAGE_KEY);
-      localStorage.removeItem(EDG_CHARGES_CONFIG_STORAGE_KEY);
-      localStorage.removeItem(COMPANY_SETTINGS_STORAGE_KEY);
-      localStorage.removeItem(PAYROLL_COSTS_STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY_V2(activeSiteId));
+      if (activeSiteId === DEFAULT_SITE_ID) localStorage.removeItem('gestion_data_v1');
+      localStorage.removeItem(CONFIG_2025_STORAGE_KEY(activeSiteId));
+      localStorage.removeItem(CUSTOM_EVENTS_STORAGE_KEY(activeSiteId));
+      localStorage.removeItem(EDG_CHARGES_CONFIG_STORAGE_KEY(activeSiteId));
+      localStorage.removeItem(COMPANY_SETTINGS_STORAGE_KEY(activeSiteId));
+      localStorage.removeItem(PAYROLL_COSTS_STORAGE_KEY(activeSiteId));
     } catch {
       // La remise a zero reste possible en memoire meme si le stockage navigateur est indisponible.
     }
@@ -986,7 +997,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setEdgChargesConfig(createDefaultEdgChargesConfig());
     setCompanySettings(DEFAULT_COMPANY_SETTINGS);
     setPayrollCosts(normalizePayrollCosts({}));
-  }, []);
+  }, [activeSiteId]);
 
   const value = useMemo<DataContextType>(() => ({
     selectedYear,
