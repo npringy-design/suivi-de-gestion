@@ -66,6 +66,10 @@ export type SiteBrandTheme = {
   panelGradientHover: string;
   sidebarActiveAccent: string;
   sidebarActiveAccentShadow: string;
+
+  // Grand bandeau du nom du restaurant en haut de l'Accueil.
+  heroGradient: string;
+  heroBottomOverlay: string;
 };
 
 const AU_BUREAU_THEME: SiteBrandTheme = {
@@ -120,6 +124,9 @@ const AU_BUREAU_THEME: SiteBrandTheme = {
   panelGradientHover: 'linear-gradient(135deg,#07323d 0%,#0b5b67 52%,#0f787b 100%)',
   sidebarActiveAccent: '#3b82f6',
   sidebarActiveAccentShadow: 'rgba(59, 130, 246, 0.3)',
+
+  heroGradient: 'linear-gradient(to right,#050914,#101b3f,#123847)',
+  heroBottomOverlay: 'rgba(23,37,84,0.2)',
 };
 
 // Palette rouge, cohérente avec l'écran de connexion existant (#4b1f14 / #7a2f18 / #b6461d / #f2a51a).
@@ -175,6 +182,9 @@ const HIPPO_THEME: SiteBrandTheme = {
   panelGradientHover: 'linear-gradient(135deg,#3a0f0a 0%,#6b2412 52%,#8a3a1f 100%)',
   sidebarActiveAccent: '#b6461d',
   sidebarActiveAccentShadow: 'rgba(182, 70, 29, 0.35)',
+
+  heroGradient: 'linear-gradient(to right,#140402,#2a0a06,#4b1f14)',
+  heroBottomOverlay: 'rgba(42,10,6,0.25)',
 };
 
 export const SITE_BRAND_THEMES: Record<SiteBrand, SiteBrandTheme> = {

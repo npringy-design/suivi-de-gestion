@@ -1011,7 +1011,7 @@ export default function Home() {
             </div>
           </div>
 
-          <nav className="relative flex-1 overflow-y-auto px-2 py-3 pb-20">
+          <nav className="relative flex-1 overflow-y-auto px-2 py-3">
             <NavGroup title="Analyse" icon={BarChart3}>
               <NavItem label="Suivi Quotidien" onClick={navigationHandlers.goToDashboard} />
               <NavItem label="Suivi Quotidien V2" onClick={navigationHandlers.goToSuiviV2} />
@@ -1037,35 +1037,35 @@ export default function Home() {
               <NavItem label="Paramètres Entreprise" onClick={navigationHandlers.goToParametresEntreprise} />
             </NavGroup>
           </nav>
+
+          {canManageUsers && (
+            <div className="relative hidden shrink-0 px-2 pb-3 pt-1 lg:block">
+              <button
+                type="button"
+                onClick={() => navigate('/utilisateurs')}
+                className="group relative w-full overflow-hidden rounded-xl border px-3 py-2.5 text-left text-[12.5px] font-black uppercase tracking-[0.12em] shadow-inner shadow-black/10 transition-all duration-300 hover:text-white hover:bg-[var(--user-btn-hover-bg)]"
+                style={{
+                  borderColor: sidebarTheme.sidebarBorderSoft,
+                  backgroundColor: sidebarTheme.navGroupBg,
+                  color: sidebarTheme.sidebarHeaderTitle,
+                  '--user-btn-hover-bg': sidebarTheme.navItemHoverBg,
+                } as React.CSSProperties}
+                title="Gestion des utilisateurs"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: sidebarTheme.navGroupIconBg, color: sidebarTheme.navGroupIconText, boxShadow: `0 0 0 1px ${sidebarTheme.navGroupIconRing}` }}
+                  >
+                    <Users className="h-3.5 w-3.5" />
+                  </span>
+                  <span>Utilisateurs</span>
+                </div>
+              </button>
+            </div>
+          )}
         </div>
       </aside>
-
-      {canManageUsers && (
-        <div className="fixed bottom-5 left-2 z-50 hidden w-[calc(clamp(238px,17vw,280px)-1rem)] px-2 lg:block">
-          <button
-            type="button"
-            onClick={() => navigate('/utilisateurs')}
-            className="group relative w-full overflow-hidden rounded-xl border px-3 py-2.5 text-left text-[12.5px] font-black uppercase tracking-[0.12em] shadow-inner shadow-black/10 transition-all duration-300 hover:text-white hover:bg-[var(--user-btn-hover-bg)]"
-            style={{
-              borderColor: sidebarTheme.sidebarBorderSoft,
-              backgroundColor: sidebarTheme.navGroupBg,
-              color: sidebarTheme.sidebarHeaderTitle,
-              '--user-btn-hover-bg': sidebarTheme.navItemHoverBg,
-            } as React.CSSProperties}
-            title="Gestion des utilisateurs"
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
-                style={{ backgroundColor: sidebarTheme.navGroupIconBg, color: sidebarTheme.navGroupIconText, boxShadow: `0 0 0 1px ${sidebarTheme.navGroupIconRing}` }}
-              >
-                <Users className="h-3.5 w-3.5" />
-              </span>
-              <span>Utilisateurs</span>
-            </div>
-          </button>
-        </div>
-      )}
 
       <main className="min-w-0 flex-1 overflow-y-auto lg:overflow-hidden">
         <div className="min-h-full lg:h-full lg:min-h-0">
@@ -1089,9 +1089,9 @@ export default function Home() {
 
           <div className="home-content flex min-h-full flex-col gap-3 p-3 sm:p-4 lg:h-full lg:min-h-0 lg:p-[clamp(0.75rem,1.1vw,1.5rem)] xl:gap-4 2xl:gap-5">
             <section className="shrink-0 animate-slideRight">
-              <div className="home-banner relative overflow-hidden rounded-2xl border border-slate-800/60 bg-gradient-to-r from-[#050914] via-[#101b3f] to-[#123847] px-[clamp(1rem,1.7vw,1.6rem)] py-[clamp(0.55rem,1vh,0.95rem)] shadow-xl">
+              <div className="home-banner relative overflow-hidden rounded-2xl border px-[clamp(1rem,1.7vw,1.6rem)] py-[clamp(0.55rem,1vh,0.95rem)] shadow-xl" style={{ borderColor: sidebarTheme.sidebarBorder, backgroundImage: sidebarTheme.heroGradient }}>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.18),transparent_1.5px),radial-gradient(circle_at_62%_35%,rgba(255,255,255,0.14),transparent_1.2px),radial-gradient(circle_at_82%_72%,rgba(255,255,255,0.12),transparent_1.4px)] bg-[length:150px_110px,210px_150px,170px_130px] opacity-60" />
-                <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/35 via-blue-950/20 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 h-14" style={{ backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.35), ${sidebarTheme.heroBottomOverlay}, transparent)` }} />
                 <div className="absolute -right-12 -bottom-16 h-32 w-32 rounded-full bg-amber-200/20 blur-3xl" />
 
                 <div className="relative grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto] lg:items-center">

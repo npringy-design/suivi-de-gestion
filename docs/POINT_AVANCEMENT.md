@@ -5,6 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 31/10/2026 (Multi-site : bandeau restaurant de l'Accueil + fix chevauchement bouton Utilisateurs)
+
+- `@/lib/siteBrandTheme` : champs `heroGradient`/`heroBottomOverlay` ajoutés (grand bandeau du nom du restaurant en haut de l'Accueil, `au_bureau` = dégradé marine historique inchangé, `hippo` = dégradé rouge sombre). `Home.tsx` : le bandeau (`home-banner`) et son overlay bas ne sont plus en dégradé bleu nuit codé en dur, ils suivent désormais l'enseigne.
+- Fix chevauchement visuel : le bouton flottant « Utilisateurs » de la sidebar était en `position: fixed` calé sur le viewport (`bottom-5 left-2`), indépendant du flux de la barre latérale — sur certaines hauteurs d'écran il se superposait aux derniers éléments du groupe « Outils » (Ecritures comptables, Paramètre EDG). Déplacé dans le flux flex de la `<aside>`, juste après la `<nav>` scrollable (`shrink-0`, plus de `fixed`/`z-50`) : il reste toujours visible sous la liste sans jamais la recouvrir, quelle que soit la hauteur d'écran. `pb-20` (retenue d'espace devenue inutile) retiré de la `<nav>`. tsc OK, 269 tests.
+
 ## 31/10/2026 (Multi-site : nuance de couleur par enseigne — extension à la page Tableau de bord)
 
 - `@/lib/siteBrandTheme` (`SiteBrandTheme`) : 4 champs ajoutés pour la page Dashboard — `sidebarGradientWide`/`panelGradientHover` (variante 135° de `sidebarGradient`/`panelGradient`, valeurs `au_bureau` reprises à l'identique des dégradés historiques de `Dashboard.tsx`), `sidebarActiveAccent`/`sidebarActiveAccentShadow` (pastille du mois sélectionné dans la sidebar du Dashboard, `au_bureau` = bleu `#3b82f6` historique inchangé, `hippo` = rouge cohérent avec le reste de la nuance).
