@@ -12,9 +12,12 @@ import {
   canManageUserTarget,
   getCreatableSuiviRoles,
   getSuiviRoleLabel,
+  hasAllSiteAccess,
   normalizeSuiviRole,
   type SuiviRole,
 } from '@/lib/suiviPermissions';
+import type { SiteId } from '@/lib/sites';
+import SiteAccessCheckboxList from '@/components/SiteAccessCheckboxList';
 
 type Role = SuiviRole;
 
@@ -26,6 +29,8 @@ type UserRow = {
   is_active: boolean;
   created_at: string;
   updated_at?: string | null;
+  // Absent/vide pour un compte super_admin/global_admin (accès à tous les sites par rôle).
+  site_ids?: SiteId[];
 };
 
 type ApiResponse = {
@@ -77,9 +82,15 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
   const [formFullName, setFormFullName] = useState('');
   const [formTempPassword, setFormTempPassword] = useState('');
   const [formRole, setFormRole] = useState<Role>('user');
+  const [formSiteIds, setFormSiteIds] = useState<SiteId[]>([]);
   const [createMessage, setCreateMessage] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [siteActionId, setSiteActionId] = useState<string | null>(null);
+
+  const toggleFormSiteId = (siteId: SiteId) => {
+    setFormSiteIds((prev) => (prev.includes(siteId) ? prev.filter((id) => id !== siteId) : [...prev, siteId]));
+  };
 
   const bearer = session?.access_token || '';
 
@@ -189,6 +200,10 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
       setCreateError('Mot de passe temporaire minimum 8 caractères.');
       return;
     }
+    if (formRole === 'user' && formSiteIds.length === 0) {
+      setCreateError('Sélectionne au moins un site pour ce compte.');
+      return;
+    }
 
     setIsCreating(true);
     try {
@@ -200,6 +215,7 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
           tempPassword: formTempPassword,
           role: toApiRole(formRole),
           sendInvite: false,
+          siteIds: formSiteIds,
         }),
       });
 
@@ -208,6 +224,7 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
       setFormFullName('');
       setFormTempPassword('');
       setFormRole(creatableRoles[0] || 'user');
+      setFormSiteIds([]);
       await loadUsers();
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : 'Création impossible.');
@@ -233,6 +250,30 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
       setLoadError(error instanceof Error ? error.message : 'Modification impossible.');
     } finally {
       setActionId(null);
+    }
+  };
+
+  const updateSiteIds = async (user: UserRow, siteIds: SiteId[]) => {
+    if (!canManageUserTarget(currentUserRow, user)) {
+      setLoadError('Action refusée : droits insuffisants pour modifier cet utilisateur.');
+      return;
+    }
+    if (siteIds.length === 0) {
+      setLoadError('Au moins un site requis pour un compte utilisateur.');
+      return;
+    }
+
+    setSiteActionId(user.user_id);
+    try {
+      await request({
+        method: 'PATCH',
+        body: JSON.stringify({ userId: user.user_id, action: 'set-sites', siteIds }),
+      });
+      setUsers((prev) => prev.map((row) => (row.user_id === user.user_id ? { ...row, site_ids: siteIds } : row)));
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Modification des sites impossible.');
+    } finally {
+      setSiteActionId(null);
     }
   };
 
@@ -345,6 +386,15 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
               <p className="mt-2 text-xs font-bold text-red-600">Ton rôle ne permet pas de créer de nouvel accès.</p>
             )}
 
+            {formRole === 'user' && (
+              <>
+                <label className="mt-4 block text-xs font-black uppercase text-slate-500">Sites autorisés</label>
+                <div className="mt-2">
+                  <SiteAccessCheckboxList selected={formSiteIds} onToggle={toggleFormSiteId} />
+                </div>
+              </>
+            )}
+
             <label className="mt-4 block text-xs font-black uppercase text-slate-500">Mot de passe temporaire</label>
             <input className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-semibold" value={formTempPassword} onChange={(event) => setFormTempPassword(event.target.value)} placeholder="Minimum 8 caractères" required />
             <p className="mt-2 text-xs font-semibold text-slate-500">
@@ -368,6 +418,7 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
                     <th className="p-3 text-left text-xs font-black uppercase">Email</th>
                     <th className="p-3 text-left text-xs font-black uppercase">Nom</th>
                     <th className="p-3 text-left text-xs font-black uppercase">Rôle</th>
+                    <th className="p-3 text-left text-xs font-black uppercase">Sites</th>
                     <th className="p-3 text-left text-xs font-black uppercase">Statut</th>
                     <th className="p-3 text-left text-xs font-black uppercase">Créé le</th>
                     <th className="p-3 text-left text-xs font-black uppercase">Actions</th>
@@ -375,10 +426,10 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
                 </thead>
                 <tbody>
                   {isLoadingUsers && (
-                    <tr><td colSpan={6} className="p-8 text-center font-bold text-slate-500">Chargement...</td></tr>
+                    <tr><td colSpan={7} className="p-8 text-center font-bold text-slate-500">Chargement...</td></tr>
                   )}
                   {!isLoadingUsers && users.length === 0 && (
-                    <tr><td colSpan={6} className="p-8 text-center font-bold text-slate-400">Aucun utilisateur.</td></tr>
+                    <tr><td colSpan={7} className="p-8 text-center font-bold text-slate-400">Aucun utilisateur.</td></tr>
                   )}
                   {!isLoadingUsers && users.map((user) => {
                     const busy = actionId === user.user_id;
@@ -400,6 +451,22 @@ export default function UserManagementPage({ onBack }: UserManagementPageProps) 
                               ))}
                               {!creatableRoles.includes(role) && <option value={role}>{getSuiviRoleLabel(role)}</option>}
                             </select>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {hasAllSiteAccess(user) ? (
+                            <span className="text-xs font-bold uppercase text-slate-400">Tous les sites</span>
+                          ) : (
+                            <SiteAccessCheckboxList
+                              selected={user.site_ids || []}
+                              disabled={siteActionId === user.user_id || !canManage}
+                              labelClassName="text-xs font-semibold text-slate-700"
+                              onToggle={(siteId) => {
+                                const current = user.site_ids || [];
+                                const next = current.includes(siteId) ? current.filter((id) => id !== siteId) : [...current, siteId];
+                                void updateSiteIds(user, next);
+                              }}
+                            />
                           )}
                         </td>
                         <td className="p-3">

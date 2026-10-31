@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 31/10/2026 (Multi-site : attribution de site aux utilisateurs)
+
+- `api/suiviAccount.ts` : les comptes de rôle `user` sont désormais rattachés à un ou plusieurs sites (table `suivi_gestion_user_site_access`, remplacement complet à chaque écriture via `replaceSiteIds` — delete puis insert, pas de demi-mesure). `GET` renvoie `site_ids` par utilisateur ; `POST` exige `siteIds` (au moins un) pour un compte `user`, ignoré pour `super_admin`/`global_admin` (déjà tous sites par rôle) ; nouvelle action `PATCH { action: 'set-sites', siteIds }`. Liste des sites dupliquée dans ce fichier serverless (commentaire renvoyant à `@/lib/sites` et au CHECK SQL, pas de build partagé avec `src/`).
+- `UserManagementPage.tsx` : formulaire de création avec cases à cocher des sites (si rôle `user`), colonne « Sites » dans le tableau (cases à cocher par utilisateur, « Tous les sites » affiché pour les comptes admin via `hasAllSiteAccess`). Composant partagé `SiteAccessCheckboxList` extrait pour éviter la duplication entre le formulaire et le tableau (fichier repassé sous le seuil de 500 lignes après extraction). 269 tests, tsc OK.
+- Reste à faire : nettoyage des libellés codés en dur ("Buro Monte"/Thillois), test d'isolation réel avec Hippo Cormontreuil.
+
 ## 31/10/2026 (Multi-site : sélecteur de site)
 
 - `SiteSwitcher` (`src/components/SiteSwitcher.tsx`) : masqué si le compte n'a accès qu'à un seul site, sinon liste déroulante des sites autorisés (`accessProfile.siteIds`), affiché dans la barre latérale de `Home.tsx` près du bouton de déconnexion. Changer de site persiste le choix puis **recharge la page** (`AuthGate.handleChangeSite`) plutôt que de basculer l'état React à chaud : le cache local et les abonnements cloud de `DataContext` supposent un site stable pendant toute la vie du composant. 269 tests, tsc OK.

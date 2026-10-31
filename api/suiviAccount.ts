@@ -2,9 +2,23 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL ||
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const appUrl = process.env.APP_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '') || 'https://suivi-de-gestion-8irh.vercel.app';
 const table = 'suivi_gestion_user_access';
+const siteAccessTable = 'suivi_gestion_user_site_access';
 
 type SuiviRole = 'super_admin' | 'global_admin' | 'user';
 type ApiResponse = Record<string, unknown>;
+
+// Doit rester synchronisé avec @/lib/sites (frontend) et le CHECK constraint SQL de
+// suivi_gestion_app_state / suivi_gestion_user_site_access. Les fonctions serverless (api/)
+// ne partagent pas de build avec src/, donc la liste est dupliquée ici volontairement.
+const SITE_IDS = ['hippo_thillois', 'hippo_cormontreuil'] as const;
+type SuiviSiteId = (typeof SITE_IDS)[number];
+const isSuiviSiteId = (value: unknown): value is SuiviSiteId =>
+  typeof value === 'string' && (SITE_IDS as readonly string[]).includes(value);
+const sanitizeSiteIds = (value: unknown): SuiviSiteId[] => {
+  const raw = Array.isArray(value) ? value : [];
+  const valid = new Set(raw.filter(isSuiviSiteId));
+  return SITE_IDS.filter((siteId) => valid.has(siteId));
+};
 
 const json = (res: any, status: number, payload: ApiResponse) => res.status(status).json(payload);
 const bad = (res: any, message: string) => json(res, 400, { ok: false, error: message });
@@ -102,6 +116,47 @@ const requireAdmin = async (req: any) => {
   return { ok: true as const, user, access };
 };
 
+// Récupère tous les site_id actifs, groupés par user_id (une seule requête pour toute la liste).
+const fetchSiteIdsByUser = async (): Promise<Record<string, SuiviSiteId[]>> => {
+  const response = await fetch(
+    `${restUrl()}/${siteAccessTable}?is_active=eq.true&select=user_id,site_id`,
+    { headers: headers() },
+  );
+  if (!response.ok) throw new Error(await readError(response));
+
+  const rows = await response.json();
+  const byUser: Record<string, SuiviSiteId[]> = {};
+  rows.forEach((row: any) => {
+    if (!isSuiviSiteId(row.site_id)) return;
+    const existing = byUser[row.user_id] || [];
+    existing.push(row.site_id);
+    byUser[row.user_id] = existing;
+  });
+  return byUser;
+};
+
+// Remplace entièrement les sites attribués à un utilisateur (delete puis insert) : pas de demi-mesure,
+// la liste envoyée par l'UI est la vérité pour cet utilisateur.
+const replaceSiteIds = async (userId: string, siteIds: SuiviSiteId[]): Promise<void> => {
+  const deleteResponse = await fetch(
+    `${restUrl()}/${siteAccessTable}?user_id=eq.${encodeURIComponent(userId)}`,
+    { method: 'DELETE', headers: headers() },
+  );
+  if (!deleteResponse.ok) throw new Error(await readError(deleteResponse));
+
+  if (siteIds.length === 0) return;
+
+  const insertResponse = await fetch(
+    `${restUrl()}/${siteAccessTable}`,
+    {
+      method: 'POST',
+      headers: { ...headers(), Prefer: 'resolution=merge-duplicates' },
+      body: JSON.stringify(siteIds.map((siteId) => ({ user_id: userId, site_id: siteId, is_active: true }))),
+    },
+  );
+  if (!insertResponse.ok) throw new Error(await readError(insertResponse));
+};
+
 const listRows = async (res: any) => {
   const response = await fetch(
     `${restUrl()}/${table}?select=user_id,email,full_name,role,is_active,created_at,updated_at&order=created_at.desc`,
@@ -111,7 +166,11 @@ const listRows = async (res: any) => {
   if (!response.ok) return fail(res, await readError(response));
 
   const users = await response.json();
-  const normalizedUsers = users.map(normalizeUserRow);
+  const siteIdsByUser = await fetchSiteIdsByUser();
+  const normalizedUsers = users.map((user: any) => ({
+    ...normalizeUserRow(user),
+    site_ids: siteIdsByUser[user.user_id] || [],
+  }));
 
   return json(res, 200, { ok: true, users: normalizedUsers, total: normalizedUsers.length });
 };
@@ -182,10 +241,13 @@ const createRow = async (req: any, res: any, actorRole: SuiviRole) => {
   const tempPassword = String(req.body?.tempPassword || '');
   const role = normalizeRole(String(req.body?.role || 'user'));
   const sendInvite = Boolean(req.body?.sendInvite);
+  // Sites ignorés pour les rôles admin : super_admin/global_admin ont déjà accès à tous les sites.
+  const siteIds = sanitizeSiteIds(req.body?.siteIds);
 
   if (!email) return bad(res, 'Email requis.');
   if (!canCreateRole(actorRole, role)) return forbid(res, 'Droits insuffisants pour creer ce role.');
   if (!sendInvite && tempPassword.length < 8) return bad(res, 'Mot de passe temporaire minimum 8 caracteres.');
+  if (!isAdminRole(role) && siteIds.length === 0) return bad(res, 'Au moins un site requis pour un compte utilisateur.');
 
   let authUser = await findAuthUserByEmail(email);
   let emailSent = false;
@@ -218,9 +280,12 @@ const createRow = async (req: any, res: any, actorRole: SuiviRole) => {
   if (!accessResponse.ok) return fail(res, await readError(accessResponse));
 
   const rows = await accessResponse.json();
+  const effectiveSiteIds = isAdminRole(role) ? [] : siteIds;
+  await replaceSiteIds(authUser.id, effectiveSiteIds);
+
   return json(res, 201, {
     ok: true,
-    user: normalizeUserRow(rows[0]),
+    user: { ...normalizeUserRow(rows[0]), site_ids: effectiveSiteIds },
     email_sent: emailSent,
     email_warning: warning,
   });
@@ -261,6 +326,17 @@ const patchRow = async (req: any, res: any, actorRole: SuiviRole) => {
 
     const rows = await response.json();
     return json(res, 200, { ok: true, user: normalizeUserRow(rows[0]) });
+  }
+
+  if (req.body?.action === 'set-sites') {
+    if (isAdminRole(targetRole)) {
+      return bad(res, 'Les comptes super admin / global admin ont déjà accès à tous les sites.');
+    }
+    const siteIds = sanitizeSiteIds(req.body?.siteIds);
+    if (siteIds.length === 0) return bad(res, 'Au moins un site requis pour un compte utilisateur.');
+
+    await replaceSiteIds(userId, siteIds);
+    return json(res, 200, { ok: true, siteIds });
   }
 
   const role = normalizeRole(String(req.body?.role || 'user'));
