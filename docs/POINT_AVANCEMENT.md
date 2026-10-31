@@ -5,6 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 31/10/2026 (Multi-site : nuance de couleur par enseigne — extension aux cartes de l'accueil)
+
+- `@/lib/siteBrandTheme` (`SiteBrandTheme`) étendu avec les champs manquants pour le reste du tableau de bord : `cardGradient`/`cardBorder`/`cardBorderHover`/`cardShadowHover`/`cardGlow`/`cardLabelText` (cartes KPI + carte S/C), `panelGradient`/`panelBorder`/`panelBorderSoft`/`panelBorderFaint`/`panelTitleText`/`panelSubtleText` (tuiles météo/date + modales « Sélection de période » et « Prévision semaine »), `dateTileGradient`/`dateTileOverlay`/`dateTileAccent`/`dateTilePin` (tuile date), `pillBgDark` (pastilles sombres), `chartCardBorder`/`chartIconColor` (cartes graphiques), `kpiGradient1..4Negative` (dégradés des icônes des 4 cartes KPI). Valeurs `au_bureau` = couleurs cyan/teal historiques exactes (zéro changement visuel), `hippo` = palette rouge/marron cohérente avec le reste de la nuance.
+- `Home.tsx` : `SummaryCard` (prop `accentClass` → `accentGradient: [string,string]`), ses 4 appels (CA, CA veille, TM, Budget), le bouton flottant « Utilisateurs », la tuile météo, la tuile date, la carte S/C (coût salarial), les deux `home-chart-card`, la modale « Sélection de période » et la modale « Prévision semaine » passent tous par ces nouveaux champs (styles inline, les classes Tailwind `cyan-`/`teal-` interpolées dynamiquement ne sont pas compilées par le JIT). Volontairement non touchés : éléments ambrés (pas une « tendance bleue ») et couleurs internes des séries Recharts (`stroke`/`stopColor`). Plus aucune occurrence de `cyan-`/`teal-` dans `Home.tsx`. tsc OK (erreurs restantes = `exceljs` préexistantes, non liées), 269 tests.
+
 ## 31/10/2026 (Multi-site : nuance de couleur par enseigne)
 
 - `@/lib/sites` : nouveau `SiteBrand` ('hippo' | 'au_bureau') et `SITE_BRANDS` (les deux sites actuels sont 'hippo'). `@/lib/siteBrandTheme` (nouveau) : une palette de couleurs par enseigne, pas par site individuel — `au_bureau` reprend exactement les valeurs cyan/teal historiques (zéro changement visuel tant qu'aucun site de cette enseigne n'existe), `hippo` reprend la palette rouge déjà utilisée sur l'écran de connexion (`#4b1f14`/`#7a2f18`/`#b6461d`/`#f2a51a`). `useSiteBrandTheme()` lit le site actif via `useAuthSession()`.

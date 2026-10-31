@@ -30,6 +30,36 @@ export type SiteBrandTheme = {
   navItemHoverBg: string;
   // Pastille pleine couleur : badge du sélecteur de site, cases à cocher de la gestion des utilisateurs.
   brandDot: string;
+
+  // Cartes KPI de l'accueil (SummaryCard : CA, TM, Budget...) et carte S/C.
+  cardGradient: string;
+  cardBorder: string;
+  cardBorderHover: string;
+  cardShadowHover: string;
+  cardGlow: string;
+  cardLabelText: string;
+  // Bulles météo/date + modales "Sélection de période" et "Prévision semaine" (même fond).
+  panelGradient: string;
+  panelBorder: string;
+  panelBorderSoft: string;
+  panelBorderFaint: string;
+  panelTitleText: string;
+  panelSubtleText: string;
+  // Tuile "date" de l'accueil (un peu plus claire que les autres cartes).
+  dateTileGradient: string;
+  dateTileOverlay: string;
+  dateTileAccent: string;
+  dateTilePin: string;
+  // Fond sombre des petites pastilles/lignes (S/C, badge période active).
+  pillBgDark: string;
+  // Cartes graphiques (fond blanc, accent discret).
+  chartCardBorder: string;
+  chartIconColor: string;
+  // Dégradés des icônes des 4 cartes KPI de l'accueil.
+  kpiGradient1: [string, string];
+  kpiGradient2: [string, string];
+  kpiGradient3: [string, string];
+  kpiGradient4Negative: [string, string];
 };
 
 const AU_BUREAU_THEME: SiteBrandTheme = {
@@ -55,6 +85,30 @@ const AU_BUREAU_THEME: SiteBrandTheme = {
   navItemInactiveText: 'rgba(207,250,254,0.7)',
   navItemHoverBg: 'rgba(103,232,249,0.10)',
   brandDot: '#0e7490',
+
+  cardGradient: 'linear-gradient(to bottom right,#061f28,#073846,#0b5a62)',
+  cardBorder: 'rgba(165,243,252,0.25)',
+  cardBorderHover: 'rgba(165,243,252,0.5)',
+  cardShadowHover: 'rgba(8,51,68,0.2)',
+  cardGlow: 'rgba(165,243,252,0.10)',
+  cardLabelText: 'rgba(207,250,254,0.75)',
+  panelGradient: 'linear-gradient(to bottom right,#052a34,#0a4d58,#0d6b6f)',
+  panelBorder: 'rgba(207,250,254,0.25)',
+  panelBorderSoft: 'rgba(207,250,254,0.20)',
+  panelBorderFaint: 'rgba(207,250,254,0.15)',
+  panelTitleText: '#ecfeff',
+  panelSubtleText: 'rgba(236,254,255,0.75)',
+  dateTileGradient: 'linear-gradient(to bottom right,#06313b,#0b5f65,#16847d)',
+  dateTileOverlay: 'rgba(8,51,68,0.2)',
+  dateTileAccent: '#115e59',
+  dateTilePin: '#cffafe',
+  pillBgDark: 'rgba(8,51,68,0.25)',
+  chartCardBorder: 'rgba(22,78,99,0.10)',
+  chartIconColor: '#0e7490',
+  kpiGradient1: ['#0891b2', '#115e59'],
+  kpiGradient2: ['#14b8a6', '#155e75'],
+  kpiGradient3: ['#f59e0b', '#0f766e'],
+  kpiGradient4Negative: ['#0e7490', '#1e293b'],
 };
 
 // Palette rouge, cohérente avec l'écran de connexion existant (#4b1f14 / #7a2f18 / #b6461d / #f2a51a).
@@ -81,6 +135,30 @@ const HIPPO_THEME: SiteBrandTheme = {
   navItemInactiveText: 'rgba(254,226,226,0.7)',
   navItemHoverBg: 'rgba(252,165,165,0.10)',
   brandDot: '#b6461d',
+
+  cardGradient: 'linear-gradient(to bottom right,#2a0a06,#4a130b,#7a2f18)',
+  cardBorder: 'rgba(254,202,202,0.25)',
+  cardBorderHover: 'rgba(254,202,202,0.5)',
+  cardShadowHover: 'rgba(42,10,6,0.2)',
+  cardGlow: 'rgba(254,202,202,0.10)',
+  cardLabelText: 'rgba(254,226,226,0.75)',
+  panelGradient: 'linear-gradient(to bottom right,#2a0a06,#5c1710,#7a2f18)',
+  panelBorder: 'rgba(254,226,226,0.25)',
+  panelBorderSoft: 'rgba(254,226,226,0.20)',
+  panelBorderFaint: 'rgba(254,226,226,0.15)',
+  panelTitleText: '#fef2f2',
+  panelSubtleText: 'rgba(254,242,242,0.75)',
+  dateTileGradient: 'linear-gradient(to bottom right,#3a0f0a,#7a2f18,#b6461d)',
+  dateTileOverlay: 'rgba(42,10,6,0.2)',
+  dateTileAccent: '#5c1710',
+  dateTilePin: '#fee2e2',
+  pillBgDark: 'rgba(42,10,6,0.25)',
+  chartCardBorder: 'rgba(122,47,24,0.10)',
+  chartIconColor: '#991b1b',
+  kpiGradient1: ['#b6461d', '#4b1f14'],
+  kpiGradient2: ['#c2410c', '#7a2f18'],
+  kpiGradient3: ['#f59e0b', '#5c1710'],
+  kpiGradient4Negative: ['#9a3412', '#1e293b'],
 };
 
 export const SITE_BRAND_THEMES: Record<SiteBrand, SiteBrandTheme> = {

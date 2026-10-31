@@ -112,16 +112,24 @@ type SummaryCardProps = {
   value: string;
   description: string;
   icon: IconComponent;
-  accentClass: string;
+  // Dégradé de l'icône, par enseigne (voir SiteBrandTheme.kpiGradient1/2/3/kpiGradient4Negative) :
+  // from/to en hex, jamais une classe Tailwind cyan/teal codée en dur.
+  accentGradient: [string, string];
   trend?: { value: number; label: string };
 };
 
-export function SummaryCard({ label, value, description, icon: Icon, accentClass, trend }: SummaryCardProps) {
+export function SummaryCard({ label, value, description, icon: Icon, accentGradient, trend }: SummaryCardProps) {
+  const theme = useSiteBrandTheme();
   return (
-    <div className="home-summary-card group relative flex h-full min-h-[112px] flex-col overflow-hidden rounded-2xl border border-cyan-200/25 bg-gradient-to-br from-[#061f28] via-[#073846] to-[#0b5a62] p-[clamp(0.8rem,1vw,1.25rem)] shadow-sm shadow-slate-950/10 backdrop-blur-sm transition-all duration-500 hover:border-cyan-200/50 hover:shadow-xl hover:shadow-cyan-950/20">
+    <div
+      className="home-summary-card group relative flex h-full min-h-[112px] flex-col overflow-hidden rounded-2xl border p-[clamp(0.8rem,1vw,1.25rem)] shadow-sm shadow-slate-950/10 backdrop-blur-sm transition-all duration-500"
+      style={{ borderColor: theme.cardBorder, backgroundImage: theme.cardGradient }}
+      onMouseEnter={(event) => { event.currentTarget.style.borderColor = theme.cardBorderHover; event.currentTarget.style.boxShadow = `0 20px 25px -5px ${theme.cardShadowHover}`; }}
+      onMouseLeave={(event) => { event.currentTarget.style.borderColor = theme.cardBorder; event.currentTarget.style.boxShadow = ''; }}
+    >
       <div className="mb-[clamp(0.55rem,1vh,1rem)] flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="home-summary-label mb-[clamp(0.45rem,0.8vh,0.75rem)] flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-100/75">
+          <div className="home-summary-label mb-[clamp(0.45rem,0.8vh,0.75rem)] flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: theme.cardLabelText }}>
             {label}
             {trend && (
               <span className={`rounded-full px-2 py-0.5 text-[9px] ${trend.value >= 0 ? 'bg-emerald-300/20 text-emerald-100' : 'bg-red-300/20 text-red-100'}`}>
@@ -135,12 +143,8 @@ export function SummaryCard({ label, value, description, icon: Icon, accentClass
           </div>
         </div>
         <div
-          className={`
-            home-summary-icon flex h-[clamp(2.35rem,3vw,3rem)] w-[clamp(2.35rem,3vw,3rem)]
-            items-center justify-center rounded-xl ${accentClass}
-            text-white shadow-lg ring-1 ring-white/20 transition-all duration-500
-            group-hover:rotate-6 group-hover:scale-110
-          `}
+          className="home-summary-icon flex h-[clamp(2.35rem,3vw,3rem)] w-[clamp(2.35rem,3vw,3rem)] items-center justify-center rounded-xl text-white shadow-lg ring-1 ring-white/20 transition-all duration-500 group-hover:rotate-6 group-hover:scale-110"
+          style={{ backgroundImage: `linear-gradient(to bottom right, ${accentGradient[0]}, ${accentGradient[1]})` }}
         >
           <Icon className="h-[clamp(1.15rem,1.55vw,1.5rem)] w-[clamp(1.15rem,1.55vw,1.5rem)]" />
         </div>
@@ -1041,16 +1045,24 @@ export default function Home() {
           <button
             type="button"
             onClick={() => navigate('/utilisateurs')}
-            className="group relative w-full overflow-hidden rounded-xl border border-cyan-200/15 bg-cyan-100/10 px-3 py-2.5 text-left text-[12.5px] font-black uppercase tracking-[0.12em] text-cyan-50 shadow-inner shadow-black/10 transition-all duration-300 hover:bg-cyan-300/15 hover:text-white"
+            className="group relative w-full overflow-hidden rounded-xl border px-3 py-2.5 text-left text-[12.5px] font-black uppercase tracking-[0.12em] shadow-inner shadow-black/10 transition-all duration-300 hover:text-white hover:bg-[var(--user-btn-hover-bg)]"
+            style={{
+              borderColor: sidebarTheme.sidebarBorderSoft,
+              backgroundColor: sidebarTheme.navGroupBg,
+              color: sidebarTheme.sidebarHeaderTitle,
+              '--user-btn-hover-bg': sidebarTheme.navItemHoverBg,
+            } as React.CSSProperties}
             title="Gestion des utilisateurs"
           >
             <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-cyan-300/10 text-cyan-100 ring-1 ring-cyan-100/20">
+              <span
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
+                style={{ backgroundColor: sidebarTheme.navGroupIconBg, color: sidebarTheme.navGroupIconText, boxShadow: `0 0 0 1px ${sidebarTheme.navGroupIconRing}` }}
+              >
                 <Users className="h-3.5 w-3.5" />
               </span>
               <span>Utilisateurs</span>
             </div>
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-300/0 to-teal-300/0 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
           </button>
         </div>
       )}
@@ -1100,21 +1112,22 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setIsWeatherModalOpen(true)}
-                        className="home-weather-tile min-h-[72px] rounded-[16px] border border-cyan-100/25 bg-gradient-to-br from-[#052a34] via-[#0a4d58] to-[#0d6b6f] px-3 py-1.5 text-left shadow-lg shadow-black/20 ring-1 ring-white/20 sm:min-w-[clamp(180px,15vw,220px)]"
+                        className="home-weather-tile min-h-[72px] rounded-[16px] border px-3 py-1.5 text-left shadow-lg shadow-black/20 ring-1 ring-white/20 sm:min-w-[clamp(180px,15vw,220px)]"
+                        style={{ borderColor: sidebarTheme.panelBorder, backgroundImage: sidebarTheme.panelGradient }}
                         aria-label="Ouvrir les prévisions météo de la semaine"
                       >
-                        <div className="border-b border-cyan-100/20 pb-0.5 text-center text-[11px] font-black text-cyan-50">
+                        <div className="border-b pb-0.5 text-center text-[11px] font-black" style={{ borderColor: sidebarTheme.panelBorderSoft, color: sidebarTheme.panelTitleText }}>
                           Météo {companySettings.locationName}
                         </div>
                         <div className="mt-1.5 flex items-center justify-center gap-2">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 shadow-inner ring-1 ring-cyan-100/20">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 shadow-inner ring-1" style={{ boxShadow: `0 0 0 1px ${sidebarTheme.panelBorderSoft}` }}>
                             {weather ? getWeatherIcon(weather.code, 'h-7 w-7') : <Sun className="h-7 w-7 text-amber-400" />}
                           </div>
                           <div className="text-[clamp(1.55rem,2.2vw,1.9rem)] font-extrabold leading-none text-amber-50">
                             {weather ? `${Math.round(weather.temp)}°C` : '--°C'}
                           </div>
                         </div>
-                        <div className="home-weather-label mt-0.5 text-center text-[10.5px] font-semibold text-cyan-50/80">
+                        <div className="home-weather-label mt-0.5 text-center text-[10.5px] font-semibold" style={{ color: sidebarTheme.panelSubtleText }}>
                           {weather ? getWeatherLabel(weather.code) : 'Chargement...'}
                         </div>
                       </button>
@@ -1122,15 +1135,16 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={openPeriodModal}
-                        className="home-date-tile relative min-h-[72px] overflow-hidden rounded-[16px] border border-cyan-100/25 bg-gradient-to-br from-[#06313b] via-[#0b5f65] to-[#16847d] px-3 py-1.5 text-left shadow-lg shadow-black/20 ring-1 ring-white/20 transition-all hover:border-amber-100/45 hover:shadow-amber-950/20 sm:min-w-[clamp(245px,20vw,305px)]"
+                        className="home-date-tile relative min-h-[72px] overflow-hidden rounded-[16px] border px-3 py-1.5 text-left shadow-lg shadow-black/20 ring-1 ring-white/20 transition-all hover:border-amber-100/45 hover:shadow-amber-950/20 sm:min-w-[clamp(245px,20vw,305px)]"
+                        style={{ borderColor: sidebarTheme.panelBorder, backgroundImage: sidebarTheme.dateTileGradient }}
                         aria-label="Ouvrir le calendrier de sélection"
                       >
-                        <div className="absolute inset-x-0 bottom-0 h-7 bg-cyan-950/20" />
+                        <div className="absolute inset-x-0 bottom-0 h-7" style={{ backgroundColor: sidebarTheme.dateTileOverlay }} />
                         <div className="relative flex h-full items-center gap-3">
-                          <div className="home-date-calendar relative flex h-[52px] w-[42px] shrink-0 flex-col overflow-hidden rounded-lg bg-amber-50/95 shadow-md ring-1 ring-cyan-100/30">
-                            <div className="h-3.5 bg-teal-800" />
-                            <div className="absolute left-2 top-[-3px] h-4 w-1 rounded-full bg-cyan-100 shadow" />
-                            <div className="absolute right-2 top-[-3px] h-4 w-1 rounded-full bg-cyan-100 shadow" />
+                          <div className="home-date-calendar relative flex h-[52px] w-[42px] shrink-0 flex-col overflow-hidden rounded-lg bg-amber-50/95 shadow-md ring-1" style={{ boxShadow: `0 0 0 1px ${sidebarTheme.panelBorder}` }}>
+                            <div className="h-3.5" style={{ backgroundColor: sidebarTheme.dateTileAccent }} />
+                            <div className="absolute left-2 top-[-3px] h-4 w-1 rounded-full shadow" style={{ backgroundColor: sidebarTheme.dateTilePin }} />
+                            <div className="absolute right-2 top-[-3px] h-4 w-1 rounded-full shadow" style={{ backgroundColor: sidebarTheme.dateTilePin }} />
                             <div className="flex flex-1 items-center justify-center text-[22px] font-black text-slate-950">
                               {today.getDate()}
                             </div>
@@ -1141,12 +1155,12 @@ export default function Home() {
                               <Calendar className="h-4 w-4 shrink-0 text-amber-200" />
                               <span className="truncate">{formatDateFr(today)}</span>
                             </div>
-                            <div className="my-1 h-px bg-cyan-100/25" />
-                            <div className="truncate text-[12px] font-extrabold text-cyan-50/80 sm:text-[13px]">
+                            <div className="my-1 h-px" style={{ backgroundColor: sidebarTheme.panelBorder }} />
+                            <div className="truncate text-[12px] font-extrabold sm:text-[13px]" style={{ color: sidebarTheme.panelSubtleText }}>
                               {dayEvent}
                             </div>
                             {!(homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today)) && (
-                              <div className="mt-1 truncate rounded-lg bg-cyan-950/25 px-2 py-0.5 text-[10.5px] font-black uppercase tracking-[0.08em] text-amber-100/90 ring-1 ring-cyan-100/10">
+                              <div className="mt-1 truncate rounded-lg px-2 py-0.5 text-[10.5px] font-black uppercase tracking-[0.08em] text-amber-100/90 ring-1" style={{ backgroundColor: sidebarTheme.pillBgDark, boxShadow: `0 0 0 1px ${sidebarTheme.panelBorderFaint}` }}>
                                 {homePeriod.mode === 'day' ? 'Jour sélectionné · ' + selectedPeriodLabel : selectedPeriodDescription + ' · ' + selectedPeriodLabel}
                               </div>
                             )}
@@ -1166,67 +1180,71 @@ export default function Home() {
                   value={fe(kpis.caMois)}
                   description="Performance du mois en cours versus budget"
                   icon={TrendingUp}
-                  accentClass="bg-gradient-to-br from-cyan-600 to-teal-800"
+                  accentGradient={sidebarTheme.kpiGradient1}
                 />
                 <SummaryCard
                   label={homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today) ? 'CA veille' : homePeriod.mode === 'year' ? 'CA moy. / mois' : homePeriod.mode === 'day' ? 'CA resto hors VAE' : 'CA moy. / jour'}
                   value={fe(kpis.caJour)}
                   description="Résultat de la veille"
                   icon={DollarSign}
-                  accentClass="bg-gradient-to-br from-teal-500 to-cyan-800"
+                  accentGradient={sidebarTheme.kpiGradient2}
                 />
                 <SummaryCard
                   label={homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today) ? 'TM veille' : homePeriod.mode === 'month' ? 'TM mois' : homePeriod.mode === 'year' ? 'TM année' : homePeriod.mode === 'day' ? 'TM resto jour' : 'TM période'}
                   value={fe(kpis.tmJour)}
                   description="Valeur moyenne par couvert de la veille"
                   icon={Activity}
-                  accentClass="bg-gradient-to-br from-amber-500 to-teal-700"
+                  accentGradient={sidebarTheme.kpiGradient3}
                 />
                 <SummaryCard
                   label={homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today) ? 'Réalisation Budget' : homePeriod.mode === 'month' ? 'Budget mois' : homePeriod.mode === 'year' ? 'Budget année' : homePeriod.mode === 'day' ? 'Budget jour' : 'Budget période'}
                   value={`${Math.min(kpis.budgetCouvert, 999).toFixed(1)} %`}
                   description="Taux d'atteinte du budget mensuel"
                   icon={FileSpreadsheet}
-                  accentClass={
-                    kpis.budgetCouvert >= 100
-                      ? 'bg-gradient-to-br from-teal-500 to-cyan-800'
-                      : 'bg-gradient-to-br from-cyan-700 to-slate-800'
-                  }
+                  accentGradient={kpis.budgetCouvert >= 100 ? sidebarTheme.kpiGradient2 : sidebarTheme.kpiGradient4Negative}
                 />
               </div>
             </section>
 
             <section className="shrink-0">
-              <div className="home-summary-card group relative min-h-[112px] overflow-hidden rounded-2xl border border-cyan-200/25 bg-gradient-to-br from-[#061f28] via-[#073846] to-[#0b5a62] p-[clamp(0.8rem,1vw,1.15rem)] shadow-sm shadow-slate-950/10 backdrop-blur-sm transition-all duration-500 hover:border-cyan-200/50 hover:shadow-xl hover:shadow-cyan-950/20">
-                <div className="pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full bg-cyan-200/10 blur-2xl" />
+              <div
+                className="home-summary-card group relative min-h-[112px] overflow-hidden rounded-2xl border p-[clamp(0.8rem,1vw,1.15rem)] shadow-sm shadow-slate-950/10 backdrop-blur-sm transition-all duration-500"
+                style={{ borderColor: sidebarTheme.cardBorder, backgroundImage: sidebarTheme.cardGradient }}
+                onMouseEnter={(event) => { event.currentTarget.style.borderColor = sidebarTheme.cardBorderHover; event.currentTarget.style.boxShadow = `0 20px 25px -5px ${sidebarTheme.cardShadowHover}`; }}
+                onMouseLeave={(event) => { event.currentTarget.style.borderColor = sidebarTheme.cardBorder; event.currentTarget.style.boxShadow = ''; }}
+              >
+                <div className="pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full blur-2xl" style={{ backgroundColor: sidebarTheme.cardGlow }} />
                 <div className="relative grid gap-3 lg:grid-cols-[minmax(250px,0.9fr)_minmax(300px,1.1fr)] lg:items-stretch">
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                    <div className="rounded-xl border border-cyan-100/20 bg-cyan-950/25 px-3 py-2 ring-1 ring-white/5">
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70">S/C Veille</div>
+                    <div className="rounded-xl border px-3 py-2 ring-1 ring-white/5" style={{ borderColor: sidebarTheme.panelBorderSoft, backgroundColor: sidebarTheme.pillBgDark }}>
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: sidebarTheme.cardLabelText }}>S/C Veille</div>
                       <div className="mt-1 text-[clamp(1.7rem,2.1vw,2.25rem)] font-black leading-none text-amber-50 drop-shadow-sm">
                         {payrollCostBubble.yesterday}
                       </div>
                     </div>
-                    <div className="rounded-xl border border-cyan-100/20 bg-cyan-950/25 px-3 py-2 ring-1 ring-white/5">
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/70">S/C Mois</div>
+                    <div className="rounded-xl border px-3 py-2 ring-1 ring-white/5" style={{ borderColor: sidebarTheme.panelBorderSoft, backgroundColor: sidebarTheme.pillBgDark }}>
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: sidebarTheme.cardLabelText }}>S/C Mois</div>
                       <div className="mt-1 text-[clamp(1.7rem,2.1vw,2.25rem)] font-black leading-none text-amber-50 drop-shadow-sm">
                         {payrollCostBubble.month}
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-cyan-100/20 bg-white/8 px-3 py-2 ring-1 ring-white/10">
-                    <div className="mb-2 flex items-center justify-between gap-3 border-b border-cyan-100/20 pb-2">
-                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/75">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-cyan-300/10 text-[10px] text-cyan-50 ring-1 ring-cyan-100/20">S/C</span>
+                  <div className="rounded-xl border bg-white/8 px-3 py-2 ring-1 ring-white/10" style={{ borderColor: sidebarTheme.panelBorderSoft }}>
+                    <div className="mb-2 flex items-center justify-between gap-3 border-b pb-2" style={{ borderColor: sidebarTheme.panelBorderSoft }}>
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: sidebarTheme.cardLabelText }}>
+                        <span
+                          className="flex h-6 w-6 items-center justify-center rounded-lg text-[10px] ring-1"
+                          style={{ backgroundColor: sidebarTheme.navGroupIconBg, color: sidebarTheme.panelTitleText, boxShadow: `0 0 0 1px ${sidebarTheme.navGroupIconRing}` }}
+                        >S/C</span>
                         Semaine
                       </div>
                       <div className="text-sm font-black text-amber-50">{payrollCostBubble.headline}</div>
                     </div>
                     <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
                       {payrollCostBubble.weekRows.map(item => (
-                        <div key={item.label} className="flex items-center justify-between gap-2 rounded-lg bg-cyan-950/25 px-2.5 py-1.5 ring-1 ring-cyan-100/10">
-                          <span className="truncate text-[11px] font-bold text-cyan-50/75">{item.label}</span>
+                        <div key={item.label} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 ring-1" style={{ backgroundColor: sidebarTheme.pillBgDark, boxShadow: `0 0 0 1px ${sidebarTheme.panelBorderFaint}` }}>
+                          <span className="truncate text-[11px] font-bold" style={{ color: sidebarTheme.cardLabelText }}>{item.label}</span>
                           <span className="shrink-0 text-[12px] font-black text-amber-50">{item.value}</span>
                         </div>
                       ))}
@@ -1237,11 +1255,11 @@ export default function Home() {
             </section>
 
             <section className="home-chart-section grid flex-1 gap-3 overflow-hidden lg:min-h-0 lg:grid-cols-2 xl:gap-4">
-              <div className="home-chart-card flex min-h-[260px] flex-col rounded-2xl border border-cyan-900/10 bg-white/90 p-[clamp(0.9rem,1.2vw,1.35rem)] shadow-sm transition-shadow duration-300 hover:shadow-lg lg:min-h-0">
+              <div className="home-chart-card flex min-h-[260px] flex-col rounded-2xl border bg-white/90 p-[clamp(0.9rem,1.2vw,1.35rem)] shadow-sm transition-shadow duration-300 hover:shadow-lg lg:min-h-0" style={{ borderColor: sidebarTheme.chartCardBorder }}>
                 <div className="home-chart-header mb-3 flex items-center justify-between">
                   <div>
                     <div className="home-chart-title mb-1 flex items-center gap-2 text-lg font-bold text-slate-900">
-                      <TrendingUp className="h-5 w-5 text-cyan-700" />
+                      <TrendingUp className="h-5 w-5" style={{ color: sidebarTheme.chartIconColor }} />
                       Évolution du CA
                     </div>
                     <p className="home-chart-subtitle text-xs text-slate-500">{homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today) ? 'Réalisé vs Budget mensuel' : homePeriod.mode === 'month' ? 'Réalisé vs Budget du mois sélectionné' : homePeriod.mode === 'year' ? 'Réalisé vs Budget annuel' : homePeriod.mode === 'day' ? 'Réalisé vs Budget du jour sélectionné' : 'Réalisé vs Budget de la période sélectionnée'}</p>
@@ -1303,8 +1321,8 @@ export default function Home() {
               </div>
 
               <div
-                className="home-chart-card flex min-h-[260px] flex-col rounded-2xl border border-cyan-900/10 bg-white/90 p-[clamp(0.9rem,1.2vw,1.35rem)] shadow-sm transition-shadow duration-300 hover:shadow-lg lg:min-h-0"
-                style={{ animationDelay: '100ms' }}
+                className="home-chart-card flex min-h-[260px] flex-col rounded-2xl border bg-white/90 p-[clamp(0.9rem,1.2vw,1.35rem)] shadow-sm transition-shadow duration-300 hover:shadow-lg lg:min-h-0"
+                style={{ animationDelay: '100ms', borderColor: sidebarTheme.chartCardBorder }}
               >
                 <div className="home-chart-header mb-3 flex items-center justify-between">
                   <div>
@@ -1360,18 +1378,20 @@ export default function Home() {
       {isPeriodModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" onClick={() => setIsPeriodModalOpen(false)}>
           <div
-            className="w-full max-w-2xl overflow-hidden rounded-2xl border border-cyan-100/25 bg-gradient-to-br from-[#052a34] via-[#0a4d58] to-[#0d6b6f] shadow-2xl ring-1 ring-white/20"
+            className="w-full max-w-2xl overflow-hidden rounded-2xl border shadow-2xl ring-1 ring-white/20"
+            style={{ borderColor: sidebarTheme.panelBorder, backgroundImage: sidebarTheme.panelGradient }}
             onClick={event => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-cyan-100/20 px-4 py-3">
+            <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: sidebarTheme.panelBorderSoft }}>
               <div>
-                <div className="text-sm font-black text-cyan-50">Sélection de période</div>
-                <div className="text-xs font-semibold text-cyan-50/70">{selectedPeriodDescription} · {selectedPeriodLabel}</div>
+                <div className="text-sm font-black" style={{ color: sidebarTheme.panelTitleText }}>Sélection de période</div>
+                <div className="text-xs font-semibold" style={{ color: sidebarTheme.panelSubtleText }}>{selectedPeriodDescription} · {selectedPeriodLabel}</div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsPeriodModalOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-cyan-50 transition-colors hover:bg-white/20"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 transition-colors hover:bg-white/20"
+                style={{ color: sidebarTheme.panelTitleText }}
                 aria-label="Fermer le calendrier"
               >
                 <X className="h-4 w-4" />
@@ -1388,15 +1408,16 @@ export default function Home() {
                     className={
                       periodMode === mode
                         ? 'rounded-xl bg-amber-100 px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-slate-950 shadow ring-1 ring-amber-200'
-                        : 'rounded-xl bg-white/10 px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-cyan-50 ring-1 ring-cyan-100/15 transition-colors hover:bg-white/15'
+                        : 'rounded-xl bg-white/10 px-3 py-2 text-xs font-black uppercase tracking-[0.08em] transition-colors hover:bg-white/15'
                     }
+                    style={periodMode === mode ? undefined : { color: sidebarTheme.panelTitleText, boxShadow: `0 0 0 1px ${sidebarTheme.panelBorderFaint}` }}
                   >
                     {periodModeLabels[mode]}
                   </button>
                 ))}
               </div>
 
-              <div className="rounded-2xl border border-cyan-100/15 bg-white/10 p-4 ring-1 ring-white/10">
+              <div className="rounded-2xl border bg-white/10 p-4 ring-1 ring-white/10" style={{ borderColor: sidebarTheme.panelBorderFaint }}>
                 {periodMode === 'day' && (
                   <HomePeriodCalendar
                     selectedDate={periodDay}
@@ -1408,7 +1429,7 @@ export default function Home() {
                 {periodMode === 'range' && (
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="grid gap-2">
-                      <div className="text-xs font-black uppercase tracking-[0.08em] text-cyan-50/70">Début</div>
+                      <div className="text-xs font-black uppercase tracking-[0.08em]" style={{ color: sidebarTheme.panelSubtleText }}>Début</div>
                       <HomePeriodCalendar
                         selectedDate={periodStart}
                         onDateSelect={setPeriodStart}
@@ -1418,7 +1439,7 @@ export default function Home() {
                       />
                     </div>
                     <div className="grid gap-2">
-                      <div className="text-xs font-black uppercase tracking-[0.08em] text-cyan-50/70">Fin</div>
+                      <div className="text-xs font-black uppercase tracking-[0.08em]" style={{ color: sidebarTheme.panelSubtleText }}>Fin</div>
                       <HomePeriodCalendar
                         selectedDate={periodEnd}
                         onDateSelect={setPeriodEnd}
@@ -1443,7 +1464,8 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setIsPeriodModalOpen(false)}
-                  className="rounded-xl bg-white/10 px-4 py-2 text-sm font-black text-cyan-50 ring-1 ring-cyan-100/15 transition-colors hover:bg-white/15"
+                  className="rounded-xl bg-white/10 px-4 py-2 text-sm font-black transition-colors hover:bg-white/15"
+                  style={{ color: sidebarTheme.panelTitleText, boxShadow: `0 0 0 1px ${sidebarTheme.panelBorderFaint}` }}
                 >
                   Annuler
                 </button>
@@ -1463,18 +1485,20 @@ export default function Home() {
       {isWeatherModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" onClick={() => setIsWeatherModalOpen(false)}>
           <div
-            className="w-full max-w-lg overflow-hidden rounded-2xl border border-cyan-100/25 bg-gradient-to-br from-[#052a34] via-[#0a4d58] to-[#0d6b6f] shadow-2xl ring-1 ring-white/20"
+            className="w-full max-w-lg overflow-hidden rounded-2xl border shadow-2xl ring-1 ring-white/20"
+            style={{ borderColor: sidebarTheme.panelBorder, backgroundImage: sidebarTheme.panelGradient }}
             onClick={event => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-cyan-100/20 px-4 py-3">
+            <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: sidebarTheme.panelBorderSoft }}>
               <div>
-                <div className="text-sm font-black text-cyan-50">Prévision semaine</div>
-                <div className="text-xs font-semibold text-cyan-50/70">{companySettings.locationName}</div>
+                <div className="text-sm font-black" style={{ color: sidebarTheme.panelTitleText }}>Prévision semaine</div>
+                <div className="text-xs font-semibold" style={{ color: sidebarTheme.panelSubtleText }}>{companySettings.locationName}</div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsWeatherModalOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-cyan-50 transition-colors hover:bg-white/20"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 transition-colors hover:bg-white/20"
+                style={{ color: sidebarTheme.panelTitleText }}
                 aria-label="Fermer les prévisions météo"
               >
                 <X className="h-4 w-4" />
@@ -1484,24 +1508,24 @@ export default function Home() {
             <div className="grid gap-2 p-4">
               {weeklyForecast.length > 0 ? (
                 weeklyForecast.map(day => (
-                  <div key={day.date} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl border border-cyan-100/15 bg-white/10 px-3 py-2">
+                  <div key={day.date} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl border bg-white/10 px-3 py-2" style={{ borderColor: sidebarTheme.panelBorderFaint }}>
                     <div className="min-w-0">
                       <div className="truncate text-sm font-extrabold text-amber-50">{formatForecastDay(day.date)}</div>
-                      <div className="text-xs font-semibold text-cyan-50/75">{getWeatherLabel(day.code)}</div>
+                      <div className="text-xs font-semibold" style={{ color: sidebarTheme.panelSubtleText }}>{getWeatherLabel(day.code)}</div>
                     </div>
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 shadow-inner ring-1 ring-cyan-100/20">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 shadow-inner ring-1" style={{ boxShadow: `0 0 0 1px ${sidebarTheme.panelBorderSoft}` }}>
                       {getWeatherIcon(day.code, 'h-6 w-6')}
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-black text-amber-50">
                         {Math.round(day.tempMax)}° / {Math.round(day.tempMin)}°
                       </div>
-                      <div className="text-[11px] font-semibold text-cyan-50/70">{day.rain.toFixed(1)} mm</div>
+                      <div className="text-[11px] font-semibold" style={{ color: sidebarTheme.panelSubtleText }}>{day.rain.toFixed(1)} mm</div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="rounded-xl border border-cyan-100/15 bg-white/10 px-3 py-4 text-center text-sm font-semibold text-cyan-50/80">
+                <div className="rounded-xl border bg-white/10 px-3 py-4 text-center text-sm font-semibold" style={{ borderColor: sidebarTheme.panelBorderFaint, color: sidebarTheme.panelSubtleText }}>
                   Prévisions en cours de chargement...
                 </div>
               )}
