@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 31/10/2026 (Multi-site : nuance de couleur par enseigne)
+
+- `@/lib/sites` : nouveau `SiteBrand` ('hippo' | 'au_bureau') et `SITE_BRANDS` (les deux sites actuels sont 'hippo'). `@/lib/siteBrandTheme` (nouveau) : une palette de couleurs par enseigne, pas par site individuel — `au_bureau` reprend exactement les valeurs cyan/teal historiques (zéro changement visuel tant qu'aucun site de cette enseigne n'existe), `hippo` reprend la palette rouge déjà utilisée sur l'écran de connexion (`#4b1f14`/`#7a2f18`/`#b6461d`/`#f2a51a`). `useSiteBrandTheme()` lit le site actif via `useAuthSession()`.
+- Appliqué à la sidebar (`Home.tsx` : `NavGroup`, `NavItem`, en-tête, boutons déconnexion/fermeture), au sélecteur de site (`SiteSwitcher.tsx`, pastille de couleur + fond teinté) et aux cases à cocher de sites dans la gestion des utilisateurs (`SiteAccessCheckboxList.tsx`, pastille par enseigne). Le reste du tableau de bord (cartes de synthèse, météo, graphiques) garde son thème cyan/teal actuel — hors périmètre de cette demande.
+- **Écran de connexion non touché** : il est déjà dans les tons chauds (donc déjà "Hippo"), mais avant authentification on ne sait pas quel utilisateur va se connecter, donc pas d'enseigne fiable à afficher. À revoir quand une deuxième enseigne existera réellement (il faudra une autre source que le site actif pour choisir la couleur avant connexion — ex. sous-domaine, ou dernier site vu sur cet appareil). tsc OK, 269 tests.
+
 ## 31/10/2026 (Multi-site : vérification d'isolation Hippo Cormontreuil)
 
 - Vérification côté base (SQL direct, sans passer par l'UI — hors de ma portée ici, voir note ci-dessous) : écriture d'une clé test sous `site_id='hippo_cormontreuil'` dans `suivi_gestion_app_state`, confirmée invisible en filtrant sur `hippo_thillois` (0 ligne), puis nettoyée (retour à 42 lignes, toutes `hippo_thillois`). Policies RLS relues : SELECT/INSERT/UPDATE sur `suivi_gestion_app_state` exigent `access_scope='all'` ou une ligne `(user_id, site_id)` correspondante dans `suivi_gestion_user_site_access` ; cette dernière n'autorise la lecture que de ses propres lignes. CHECK constraints des deux tables incluent bien `hippo_thillois` et `hippo_cormontreuil`.

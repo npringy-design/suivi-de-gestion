@@ -40,6 +40,7 @@ import HomePeriodMonthPicker from '@/components/HomePeriodMonthPicker';
 import HomePeriodYearPicker from '@/components/HomePeriodYearPicker';
 import SiteSwitcher from '@/components/SiteSwitcher';
 import { useData } from '@/contexts/DataContext';
+import { useSiteBrandTheme } from '@/lib/siteBrandTheme';
 import { parseMoneyValue } from '@/lib/money';
 import { getValidAccessToken } from '@/services/supabaseAuth';
 import { useAuthSession } from '@/AuthGate';
@@ -57,15 +58,22 @@ type NavGroupProps = {
 };
 
 export function NavGroup({ title, icon: Icon, children }: NavGroupProps) {
+  const theme = useSiteBrandTheme();
   return (
     <div className="mb-3">
-      <div className="mx-2 mb-2 rounded-xl border border-cyan-200/15 bg-cyan-100/10 px-3 py-2 shadow-inner shadow-black/10">
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-50">
-          <span className="flex h-5 w-5 items-center justify-center rounded-lg bg-cyan-300/10 text-cyan-100 ring-1 ring-cyan-100/20">
+      <div
+        className="mx-2 mb-2 rounded-xl border px-3 py-2 shadow-inner shadow-black/10"
+        style={{ borderColor: theme.sidebarBorderSoft, backgroundColor: theme.navGroupBg }}
+      >
+        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: theme.sidebarHeaderTitle }}>
+          <span
+            className="flex h-5 w-5 items-center justify-center rounded-lg"
+            style={{ backgroundColor: theme.navGroupIconBg, color: theme.navGroupIconText, boxShadow: `0 0 0 1px ${theme.navGroupIconRing}` }}
+          >
             <Icon className="h-3.5 w-3.5" />
           </span>
           <span>{title}</span>
-          <span className="h-px flex-1 bg-gradient-to-r from-cyan-200/35 to-transparent" />
+          <span className="h-px flex-1" style={{ backgroundImage: `linear-gradient(to right, ${theme.navGroupDividerFrom}, transparent)` }} />
         </div>
       </div>
       <div className="flex flex-col gap-0.5 px-3">{children}</div>
@@ -80,22 +88,21 @@ type NavItemProps = {
 };
 
 export function NavItem({ label, onClick, active = false }: NavItemProps) {
+  const theme = useSiteBrandTheme();
   return (
     <button
       onClick={onClick}
-      className={`
-        group relative rounded-lg px-3 py-2 text-left text-[12.5px] font-semibold transition-all duration-300 ease-out
-        ${
-          active
-            ? 'bg-gradient-to-r from-[#078892] to-[#0f5d66] text-white shadow-lg shadow-cyan-950/40 ring-1 ring-cyan-200/20'
-            : 'text-cyan-100/70 hover:bg-cyan-300/10 hover:text-white'
+      className={active
+        ? 'group relative rounded-lg px-3 py-2 text-left text-[12.5px] font-semibold text-white transition-all duration-300 ease-out'
+        : 'group relative rounded-lg px-3 py-2 text-left text-[12.5px] font-semibold transition-all duration-300 ease-out hover:text-white hover:bg-[var(--nav-item-hover-bg)]'}
+      style={active
+        ? {
+          backgroundImage: `linear-gradient(to right, ${theme.navItemActiveFrom}, ${theme.navItemActiveTo})`,
+          boxShadow: `0 10px 15px -3px ${theme.navItemActiveShadow}, 0 0 0 1px ${theme.navItemActiveRing}`,
         }
-      `}
+        : ({ color: theme.navItemInactiveText, '--nav-item-hover-bg': theme.navItemHoverBg } as React.CSSProperties)}
     >
       <span className="relative z-10">{label}</span>
-      {!active && (
-        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-cyan-300/0 to-teal-300/0 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
-      )}
     </button>
   );
 }
@@ -203,6 +210,7 @@ export default function Home() {
   const { data, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, companySettings } = useData();
   const navigate = useNavigate();
   const { session, signOut } = useAuthSession();
+  const sidebarTheme = useSiteBrandTheme();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null);
@@ -956,33 +964,42 @@ export default function Home() {
 
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-[clamp(238px,17vw,280px)] shrink-0
-          border-r border-cyan-200/10 bg-[linear-gradient(180deg,#07111f_0%,#0a2430_48%,#073d43_100%)]
+          fixed inset-y-0 left-0 z-50 w-[clamp(238px,17vw,280px)] shrink-0 border-r
           shadow-2xl transition-transform duration-500 ease-out lg:static lg:translate-x-0 lg:shadow-none
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
+        style={{ borderColor: sidebarTheme.sidebarBorder, backgroundImage: sidebarTheme.sidebarGradient }}
       >
         <div className="relative flex h-full flex-col overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(45,212,191,0.16),transparent_30%),radial-gradient(circle_at_95%_78%,rgba(14,116,144,0.22),transparent_36%)]" />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ backgroundImage: `radial-gradient(circle at 18% 0%, ${sidebarTheme.sidebarGlowA}, transparent 30%), radial-gradient(circle at 95% 78%, ${sidebarTheme.sidebarGlowB}, transparent 36%)` }}
+          />
 
-          <div className="relative border-b border-cyan-200/10 p-4">
+          <div className="relative border-b p-4" style={{ borderColor: sidebarTheme.sidebarBorder }}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-100/55">Espace</div>
-                <div className="mt-1 text-lg font-black text-cyan-50">Accueil</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.22em]" style={{ color: sidebarTheme.sidebarHeaderLabel }}>Espace</div>
+                <div className="mt-1 text-lg font-black" style={{ color: sidebarTheme.sidebarHeaderTitle }}>Accueil</div>
               </div>
               <div className="flex items-center gap-2">
                 <SiteSwitcher />
                 <button
                   onClick={signOut}
                   title={session.user?.email ? `Déconnexion (${session.user.email})` : 'Déconnexion'}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-950/60 text-cyan-100/70 transition-colors hover:bg-cyan-900/70 hover:text-white"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:text-white"
+                  style={{ backgroundColor: sidebarTheme.iconBtnBg, color: sidebarTheme.iconBtnText }}
+                  onMouseEnter={(event) => { event.currentTarget.style.backgroundColor = sidebarTheme.iconBtnBgHover; }}
+                  onMouseLeave={(event) => { event.currentTarget.style.backgroundColor = sidebarTheme.iconBtnBg; }}
                 >
                   <LogOut className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setIsSidebarOpen(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-950/60 text-cyan-100/70 transition-colors hover:bg-cyan-900/70 hover:text-white lg:hidden"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:text-white lg:hidden"
+                  style={{ backgroundColor: sidebarTheme.iconBtnBg, color: sidebarTheme.iconBtnText }}
+                  onMouseEnter={(event) => { event.currentTarget.style.backgroundColor = sidebarTheme.iconBtnBgHover; }}
+                  onMouseLeave={(event) => { event.currentTarget.style.backgroundColor = sidebarTheme.iconBtnBg; }}
                 >
                   <X className="h-5 w-5" />
                 </button>

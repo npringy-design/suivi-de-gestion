@@ -11,6 +11,17 @@ export const SITE_LABELS: Record<SiteId, string> = {
   hippo_cormontreuil: 'Hippo Cormontreuil',
 };
 
+// Enseigne de chaque site : sert uniquement à choisir la nuance de couleur (voir
+// @/lib/siteBrandTheme) — pas de logique d'accès basée sur l'enseigne pour l'instant.
+export type SiteBrand = 'hippo' | 'au_bureau';
+
+export const SITE_BRANDS: Record<SiteId, SiteBrand> = {
+  hippo_thillois: 'hippo',
+  hippo_cormontreuil: 'hippo',
+};
+
+export const getSiteBrand = (siteId: SiteId): SiteBrand => SITE_BRANDS[siteId] || 'hippo';
+
 const SITE_ID_SET = new Set<string>(SITE_IDS);
 
 export const isSiteId = (value: unknown): value is SiteId =>
