@@ -5,6 +5,8 @@ export type DashboardSidebarProps = {
   isMobile: boolean;
   isSidebarOpen: boolean;
   sidebarTheme: string;
+  activeAccent: string;
+  activeAccentShadow: string;
   year: number;
   month: number;
   monthNames: string[];
@@ -16,6 +18,8 @@ export default function DashboardSidebar({
   isMobile,
   isSidebarOpen,
   sidebarTheme,
+  activeAccent,
+  activeAccentShadow,
   year,
   month,
   monthNames,
@@ -55,13 +59,13 @@ export default function DashboardSidebar({
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 16px',
-              background: month === i ? '#3b82f6' : 'transparent',
+              background: month === i ? activeAccent : 'transparent',
               color: month === i ? '#fff' : '#cbd5e1',
               border: 'none', borderRadius: 8, cursor: 'pointer',
               fontSize: 14, fontWeight: month === i ? 700 : 500,
               textTransform: 'capitalize', transition: 'all 0.2s',
               textAlign: 'left',
-              boxShadow: month === i ? '0 4px 6px -1px rgba(59, 130, 246, 0.3)' : 'none'
+              boxShadow: month === i ? `0 4px 6px -1px ${activeAccentShadow}` : 'none'
             }}
             onMouseEnter={e => { if (month !== i) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#fff'; } }}
             onMouseLeave={e => { if (month !== i) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; } }}

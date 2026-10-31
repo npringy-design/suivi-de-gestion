@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import DashboardAnalysisView from '@/pages/DashboardAnalysisView';
 
 import { useData, type SalarieRow } from '@/contexts/DataContext';
+import { useSiteBrandTheme } from '@/lib/siteBrandTheme';
 import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import { parseMoneyValue } from '@/lib/money';
 import { tint } from '@/lib/tableChrome';
@@ -73,6 +74,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ initialMonth, year, onBack }: DashboardProps) {
+  const siteBrandTheme = useSiteBrandTheme();
   const {
     data: globalData,
     allData,
@@ -719,10 +721,10 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     renderDashboardPersonnelTable(rows, isMobile)
   );
 
-  const sidebarTheme = 'linear-gradient(180deg,#07111f 0%,#0a2430 48%,#073d43 100%)';
-  const sidebarThemeWide = 'linear-gradient(135deg,#07111f 0%,#0a2430 46%,#073d43 100%)';
-  const weatherTheme = 'linear-gradient(135deg,#052a34 0%,#0a4d58 52%,#0d6b6f 100%)';
-  const weatherThemeHover = 'linear-gradient(135deg,#07323d 0%,#0b5b67 52%,#0f787b 100%)';
+  const sidebarTheme = siteBrandTheme.sidebarGradient;
+  const sidebarThemeWide = siteBrandTheme.sidebarGradientWide;
+  const weatherTheme = siteBrandTheme.panelGradient;
+  const weatherThemeHover = siteBrandTheme.panelGradientHover;
 
   const actionTileStyle: React.CSSProperties = {
     display: 'flex',
@@ -730,7 +732,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     gap: 8,
     padding: isMobile ? '7px 12px' : '9px 16px',
     background: weatherTheme,
-    border: '1px solid rgba(207, 250, 254, .26)',
+    border: `1px solid ${siteBrandTheme.panelBorder}`,
     borderRadius: 12,
     color: '#ecfeff',
     fontSize: isMobile ? 12 : 14,
@@ -1017,6 +1019,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         isMobile={isMobile}
         isSidebarOpen={isSidebarOpen}
         sidebarTheme={sidebarTheme}
+        activeAccent={siteBrandTheme.sidebarActiveAccent}
+        activeAccentShadow={siteBrandTheme.sidebarActiveAccentShadow}
         year={year}
         month={month}
         monthNames={monthNames}
@@ -1034,6 +1038,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
           sidebarThemeWide={sidebarThemeWide}
           weatherTheme={weatherTheme}
           weatherThemeHover={weatherThemeHover}
+          headerBorderColor={siteBrandTheme.sidebarBorderSoft}
+          buttonBorderColor={siteBrandTheme.panelBorderFaint}
           actionTileStyle={actionTileStyle}
           tableViewMode={tableViewMode}
           setTableViewMode={setTableViewMode}

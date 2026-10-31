@@ -60,6 +60,12 @@ export type SiteBrandTheme = {
   kpiGradient2: [string, string];
   kpiGradient3: [string, string];
   kpiGradient4Negative: [string, string];
+
+  // Page Tableau de bord (Dashboard.tsx) : en-tête + sidebar mois + tuiles d'action.
+  sidebarGradientWide: string;
+  panelGradientHover: string;
+  sidebarActiveAccent: string;
+  sidebarActiveAccentShadow: string;
 };
 
 const AU_BUREAU_THEME: SiteBrandTheme = {
@@ -109,6 +115,11 @@ const AU_BUREAU_THEME: SiteBrandTheme = {
   kpiGradient2: ['#14b8a6', '#155e75'],
   kpiGradient3: ['#f59e0b', '#0f766e'],
   kpiGradient4Negative: ['#0e7490', '#1e293b'],
+
+  sidebarGradientWide: 'linear-gradient(135deg,#07111f 0%,#0a2430 46%,#073d43 100%)',
+  panelGradientHover: 'linear-gradient(135deg,#07323d 0%,#0b5b67 52%,#0f787b 100%)',
+  sidebarActiveAccent: '#3b82f6',
+  sidebarActiveAccentShadow: 'rgba(59, 130, 246, 0.3)',
 };
 
 // Palette rouge, cohérente avec l'écran de connexion existant (#4b1f14 / #7a2f18 / #b6461d / #f2a51a).
@@ -159,6 +170,11 @@ const HIPPO_THEME: SiteBrandTheme = {
   kpiGradient2: ['#c2410c', '#7a2f18'],
   kpiGradient3: ['#f59e0b', '#5c1710'],
   kpiGradient4Negative: ['#9a3412', '#1e293b'],
+
+  sidebarGradientWide: 'linear-gradient(135deg,#1f0906 0%,#3a0f0a 46%,#5c1710 100%)',
+  panelGradientHover: 'linear-gradient(135deg,#3a0f0a 0%,#6b2412 52%,#8a3a1f 100%)',
+  sidebarActiveAccent: '#b6461d',
+  sidebarActiveAccentShadow: 'rgba(182, 70, 29, 0.35)',
 };
 
 export const SITE_BRAND_THEMES: Record<SiteBrand, SiteBrandTheme> = {
