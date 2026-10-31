@@ -60,7 +60,13 @@ const appStateTable = String(import.meta.env.VITE_APP_STATE_TABLE || 'suivi_gest
 // Clé historique (avant le passage au site_id en colonne dédiée) : conservée uniquement
 // pour relire d'éventuelles très anciennes sauvegardes non segmentées.
 const legacyAppStateKey = 'global_state_v1';
-const segmentedPrefix = 'global_state_v1:segments_v2';
+// IMPORTANT : ce préfixe doit rester 'segments_v2' tel quel (sans espace de nom supplémentaire).
+// C'est le préfixe réellement utilisé par les données historiques en production (vérifié en base :
+// toutes les clés existantes de hippo_thillois sont "segments_v2:...", jamais préfixées par un
+// identifiant d'app/site — l'isolement entre sites est désormais assuré par la colonne site_id de
+// la clé primaire (site_id, key), pas par le contenu de la clé). Un préfixe différent ("global_state_v1:
+// segments_v2" notamment) rend l'historique invisible à l'appli, qui le recrée vide par-dessus.
+const segmentedPrefix = 'segments_v2';
 const manifestKey = `${segmentedPrefix}:manifest`;
 const isLegacyJwtKey = supabaseAnonKey.startsWith('eyJ');
 
