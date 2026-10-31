@@ -5,6 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 31/10/2026 (Multi-site : vérification d'isolation Hippo Cormontreuil)
+
+- Vérification côté base (SQL direct, sans passer par l'UI — hors de ma portée ici, voir note ci-dessous) : écriture d'une clé test sous `site_id='hippo_cormontreuil'` dans `suivi_gestion_app_state`, confirmée invisible en filtrant sur `hippo_thillois` (0 ligne), puis nettoyée (retour à 42 lignes, toutes `hippo_thillois`). Policies RLS relues : SELECT/INSERT/UPDATE sur `suivi_gestion_app_state` exigent `access_scope='all'` ou une ligne `(user_id, site_id)` correspondante dans `suivi_gestion_user_site_access` ; cette dernière n'autorise la lecture que de ses propres lignes. CHECK constraints des deux tables incluent bien `hippo_thillois` et `hippo_cormontreuil`.
+- **Reste à faire par le développeur** (vérification visuelle, cf. règle du projet) : créer un compte réel rattaché à `hippo_cormontreuil` via la page Utilisateurs, se connecter, confirmer que le sélecteur de site apparaît, et que les premiers écrans (accueil, dashboard, paramètres entreprise) démarrent bien à vide plutôt que d'afficher les données de Thillois.
+
 ## 31/10/2026 (Multi-site : nettoyage du nom "Buro Monte" codé en dur)
 
 - Les 6 derniers endroits où le nom du restaurant était codé en dur ("Buro Monte") lisent désormais `companySettings.companyName` (par site) : `DashboardTableHeader.tsx` (nouvelle prop `companyLabel`, fournie par `Dashboard.tsx`), `EdgAnnuelTabs.tsx`, `RecapAnnuel.tsx` (×2), `ConfigSalaires.tsx`, `VisuelVacances.tsx`. Plus aucun composant n'affiche un nom de site fixe. 269 tests, tsc OK.
