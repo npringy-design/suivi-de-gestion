@@ -247,11 +247,15 @@ export default function AuthGate({ children }: AuthGateProps) {
     setActiveSiteId(null);
   };
 
+  // Changer de site recharge entièrement la page plutôt que de basculer l'état React à chaud :
+  // tout le cache local et les abonnements cloud de DataContext supposent un site stable pendant
+  // la vie du composant (voir DataContext.tsx), et un rechargement garantit un état propre.
   const handleChangeSite = (siteId: SiteId) => {
+    if (siteId === activeSiteId) return;
     if (session?.user?.id) {
       setBrowserStorageItem(activeSiteStorageKey(session.user.id), siteId);
     }
-    setActiveSiteId(siteId);
+    window.location.reload();
   };
 
   if (isCheckingSession) {

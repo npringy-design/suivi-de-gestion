@@ -38,6 +38,7 @@ import {
 import HomePeriodCalendar from '@/components/HomePeriodCalendar';
 import HomePeriodMonthPicker from '@/components/HomePeriodMonthPicker';
 import HomePeriodYearPicker from '@/components/HomePeriodYearPicker';
+import SiteSwitcher from '@/components/SiteSwitcher';
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { getValidAccessToken } from '@/services/supabaseAuth';
@@ -971,6 +972,7 @@ export default function Home() {
                 <div className="mt-1 text-lg font-black text-cyan-50">Accueil</div>
               </div>
               <div className="flex items-center gap-2">
+                <SiteSwitcher />
                 <button
                   onClick={signOut}
                   title={session.user?.email ? `Déconnexion (${session.user.email})` : 'Déconnexion'}

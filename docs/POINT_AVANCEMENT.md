@@ -5,10 +5,14 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 31/10/2026 (Multi-site : sélecteur de site)
+
+- `SiteSwitcher` (`src/components/SiteSwitcher.tsx`) : masqué si le compte n'a accès qu'à un seul site, sinon liste déroulante des sites autorisés (`accessProfile.siteIds`), affiché dans la barre latérale de `Home.tsx` près du bouton de déconnexion. Changer de site persiste le choix puis **recharge la page** (`AuthGate.handleChangeSite`) plutôt que de basculer l'état React à chaud : le cache local et les abonnements cloud de `DataContext` supposent un site stable pendant toute la vie du composant. 269 tests, tsc OK.
+- Reste à faire : attribution de site dans la gestion des utilisateurs, nettoyage des libellés codés en dur ("Buro Monte"/Thillois), test d'isolation réel avec Hippo Cormontreuil.
+
 ## 31/10/2026 (Multi-site : fondations)
 
 - Multi-site (modèle repris de Gestion Commandes Doquet) : table `suivi_gestion_app_state` dotée d'un `site_id` (clé composite `site_id,key`, RLS restreinte aux utilisateurs authentifiés et scopée par site — l'accès `anon` ouvert précédent est supprimé), nouvelle table `suivi_gestion_user_site_access` (sites autorisés par utilisateur), rôles existants conservés (`super_admin`/`global_admin` = accès à tous les sites, `user` = sites explicitement attribués). Sites déclarés dans `@/lib/sites` (`hippo_thillois`, `hippo_cormontreuil`). `supabaseAppState.ts` : toutes les fonctions cloud prennent désormais `siteId` en premier paramètre (plus de site fixé par variable d'env au build). `AuthGate` expose `accessProfile`/`activeSiteId`/`setActiveSiteId` (site actif mémorisé par utilisateur en local, changement de site = à faire recharger la page par l'appelant). `DataContext` branché sur `activeSiteId` : tous les appels cloud et les clés de cache local (localStorage) sont désormais suffixés par site, pour qu'un même navigateur ne mélange jamais les données de deux sites (y compris `companySettings`, donc le nom d'entreprise/ville/etc. est bien par site). Migration appliquée en prod : les données existantes sont rattachées à `hippo_thillois`. 269 tests, tsc OK.
-- Reste à faire : sélecteur de site (UI), attribution de site dans la gestion des utilisateurs, nettoyage des libellés codés en dur ("Buro Monte"/Thillois), test d'isolation réel avec Hippo Cormontreuil.
 
 ## 13/10/2026 (Planification : croissances par-dessus le CA cible)
 
