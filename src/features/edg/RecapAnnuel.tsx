@@ -51,7 +51,8 @@ const COLS_BUDGET: ColDef[] = [
   { g: 'CA',            l: 'CA HT SOIR',        bg: BG_BUDG,  w: 70 }, // col 1
   { g: 'CA',            l: 'CA HT JOUR',        bg: BG_BUDG,  w: 75 }, // col 3
   { g: 'CA',            l: 'CUMUL DEPUIS LE 01', bg: BG_BUDG,  w: 80 }, // col 4 (last day)
-  { g: 'CA',            l: 'VAR VS N-1',        bg: BG_HATCH, w: 65 }, // calc local
+  { g: 'CA',            l: 'VS Budget\nN-1',    bg: BG_HATCH, w: 65 }, // calc local
+  { g: 'CA',            l: 'VS Réalisé\nN-1',   bg: BG_HATCH, w: 65 }, // calc local
   { g: 'COUVERT MIDI',  l: 'NB CVTS',           bg: BG_BUDG,  w: 65 }, // col 6
   { g: 'COUVERT MIDI',  l: 'CVTS MOY HT',       bg: BG_BUDG,  w: 75 }, // CA Midi / NB Midi
   { g: 'COUVERT SOIR',  l: 'NB CVTS',           bg: BG_BUDG,  w: 65 }, // col 8
@@ -59,7 +60,8 @@ const COLS_BUDGET: ColDef[] = [
   { g: 'COUVERT JOUR',  l: 'NB CVTS',           bg: BG_BUDG,  w: 65 }, // col 10
   { g: 'COUVERT JOUR',  l: 'CVTS MOY',          bg: BG_BUDG,  w: 65 }, // CA Jour / NB Jour
   { g: 'COUVERT JOUR',  l: 'CVTS CUMUL',        bg: BG_BUDG,  w: 75 }, // col 12 (last day)
-  { g: 'COUVERT JOUR',  l: 'VAR VS N-1',        bg: BG_HATCH, w: 65 }, // calc local
+  { g: 'COUVERT JOUR',  l: 'VS Budget\nN-1',    bg: BG_HATCH, w: 65 }, // calc local
+  { g: 'COUVERT JOUR',  l: 'VS Réalisé\nN-1',   bg: BG_HATCH, w: 65 }, // calc local
 ];
 
 const COLS_REALISE: ColDef[] = [
@@ -247,6 +249,13 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   const CA_N1_BY_MONTH = caByMonthN1;
   const CA_N1 = CA_N1_BY_MONTH.reduce((a, b) => a + b, 0);
   const CVTS_N1_BY_MONTH = Array.from({ length: 12 }, (_, mi) => Math.round(getValN1(mi, 29)));
+  const CVTS_N1 = CVTS_N1_BY_MONTH.reduce((a, b) => a + b, 0);
+
+  // CA et couverts BUDGET N-1 (col 3 / col 10 de l'année N-1), distincts du réalisé N-1 ci-dessus
+  const CA_N1_BUDGET_BY_MONTH = Array.from({ length: 12 }, (_, mi) => getValN1(mi, 3));
+  const CA_N1_BUDGET = CA_N1_BUDGET_BY_MONTH.reduce((a, b) => a + b, 0);
+  const CVTS_N1_BUDGET_BY_MONTH = Array.from({ length: 12 }, (_, mi) => Math.round(getValN1(mi, 10)));
+  const CVTS_N1_BUDGET = CVTS_N1_BUDGET_BY_MONTH.reduce((a, b) => a + b, 0);
 
   // Mapping ordonné des 11 catégories FG → [box, colGroup]
   const FG_MAPPING: [number, number][] = [
@@ -293,7 +302,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
       // ── 13 valeurs ──────────────────────────────────────────────────────────
       case 'budget': {
-        const cvtsN1    = CVTS_N1_BY_MONTH[mi] ?? 0;
+        const cvtsN1       = CVTS_N1_BY_MONTH[mi] ?? 0;
+        const caN1Budget   = CA_N1_BUDGET_BY_MONTH[mi] ?? 0;
+        const cvtsN1Budget = CVTS_N1_BUDGET_BY_MONTH[mi] ?? 0;
         const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
         const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 10))).reduce((a, b) => a + b, 0);
         return [
@@ -301,6 +312,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           fe(g(1)),
           fe(g(3)),
           fe(cumulCA),
+          fp(caN1Budget > 0 ? ((g(3) - caN1Budget) / caN1Budget) * 100 : 0),
           fp(caN1 > 0 ? ((g(3) - caN1) / caN1) * 100 : 0),
           String(Math.round(g(6))),
           fe(g(6) > 0 ? g(0) / g(6) : 0),
@@ -309,6 +321,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(g(10))),
           fe(g(10) > 0 ? g(3) / g(10) : 0),
           String(cumulCvts),
+          fp(cvtsN1Budget > 0 ? ((g(10) - cvtsN1Budget) / cvtsN1Budget) * 100 : 0),
           fp(cvtsN1 > 0 ? ((g(10) - cvtsN1) / cvtsN1) * 100 : 0),
         ];
       }
@@ -505,13 +518,15 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const totalCvtsJour = s(10);
         const totalCumulCA   = totalCaJour;
         const totalCumulCvts = Math.round(totalCvtsJour);
-        const totalVarBudget = CA_N1 > 0 ? ((totalCaJour - CA_N1) / CA_N1) * 100 : 0;
+        const totalVarBudgetVsBudgetN1  = CA_N1_BUDGET > 0 ? ((totalCaJour - CA_N1_BUDGET) / CA_N1_BUDGET) * 100 : 0;
+        const totalVarBudgetVsRealiseN1 = CA_N1 > 0 ? ((totalCaJour - CA_N1) / CA_N1) * 100 : 0;
         return [
           fe(totalCaMidi),
           fe(totalCaSoir),
           fe(totalCaJour),
           fe(totalCumulCA),
-          fp(totalVarBudget),
+          fp(totalVarBudgetVsBudgetN1),
+          fp(totalVarBudgetVsRealiseN1),
           String(Math.round(totalCvtsMidi)),
           fe(totalCvtsMidi > 0 ? totalCaMidi / totalCvtsMidi : 0),
           String(Math.round(totalCvtsSoir)),
@@ -519,7 +534,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(totalCvtsJour)),
           fe(totalCvtsJour > 0 ? (totalCaMidi + totalCaSoir) / totalCvtsJour : 0), // TM restaurant : sans VAE ni limonade
           String(totalCumulCvts),
-          fp(((totalCvtsJour - 54338) / 54338) * 100),
+          fp(CVTS_N1_BUDGET > 0 ? ((totalCvtsJour - CVTS_N1_BUDGET) / CVTS_N1_BUDGET) * 100 : 0),
+          fp(CVTS_N1 > 0 ? ((totalCvtsJour - CVTS_N1) / CVTS_N1) * 100 : 0),
         ];
       }
 
