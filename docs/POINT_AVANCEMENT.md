@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 01/11/2026 (fix création de site : CHECK legacy sur site_id)
+
+- `supabase/SITES_FIX_CONSTRAINT.sql` : remplace `suivi_gestion_app_state_site_id_check` et `suivi_gestion_user_site_access_site_id_check` (liste figée des 2 sites, constatées en prod, bloquaient la création de site) par des FK vers `suivi_gestion_sites(site_id)`. À exécuter après `SITES_SETUP.sql` ; vérifié en lecture : tous les `site_id` existants (dont `au-bureau`) sont dans `suivi_gestion_sites`. Script non encore exécuté en base. Aucun changement de code.
+
 ## 01/11/2026 (Création de site dynamique, super admin)
 
 - Sites : `SiteId` devient `string` ; registre `@/lib/sites` (`getSiteIds`, `getSiteLabel`, `getSiteBrand` avec repli explicite sur `hippo`) alimenté par la table `suivi_gestion_sites` (`supabase/SITES_SETUP.sql`, à exécuter une fois ; seed des 2 sites existants ; sans la table, repli sur les 2 sites historiques) chargée par `AuthGate` avant le profil. Page `/sites` (`features/sites/`, bouton « Sites » de l'Accueil, `canCreateSites` = super_admin actif) : nom → identifiant kebab-case unique (vérifié en base) + enseigne, insertion via `/api/suiviAccount` (`action: 'create-site'`, super_admin vérifié côté API ; `sanitizeSiteIds` lit désormais la table), bootstrap des valeurs par défaut pour ce seul `site_id` (`bootstrapSiteState`, refuse tout identifiant vide ou invalide, jamais `DEFAULT_SITE_ID`), puis attribution via `SiteAccessCheckboxList`. 9 tests dont non-régression (aucune lecture/écriture de `hippo_thillois`/`hippo_cormontreuil`), 278 tests, tsc OK, build OK. Rendu de la page non vérifié visuellement (connexion Supabase requise).

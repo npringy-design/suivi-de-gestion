@@ -162,7 +162,7 @@ Exemples :
 - Si deux personnes modifient **le meme mois** exactement en meme temps depuis deux PC differents, la derniere sauvegarde de ce mois peut remplacer la precedente (les autres mois ne sont plus concernes grace au filtrage des snapshots modifies).
 - Un autre PC deja ouvert ne se met pas automatiquement a jour en direct ; il retrouvera les donnees au rechargement de l'application.
 - Le chargement mensuel a la demande reduit fortement le poids d'ouverture, mais certaines pages annuelles peuvent demander plusieurs mois si elles doivent calculer une annee complete.
-- La version multi-site fine devra passer par une structure plus stricte avec `site_id` ou des cles par site bien controlees.
+- Multi-site : l'isolation passe par `site_id` dans la cle primaire `(site_id, key)`. Les contraintes CHECK legacy sur `site_id` (liste figee des deux premiers sites) de `suivi_gestion_app_state` et `suivi_gestion_user_site_access` sont remplacees par des FK vers `suivi_gestion_sites` (`supabase/SITES_FIX_CONSTRAINT.sql`, a lancer apres `SITES_SETUP.sql`).
 
 ## Controle de deploiement
 
