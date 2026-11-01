@@ -5,37 +5,6 @@ import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 import { sectionChrome, tint } from '@/lib/tableChrome';
 import { useRecapAnnuelData } from './useRecapAnnuelData';
 
-// CA Réalisé N-1 (2025) par mois — source : feuille "Variation 2025"
-const CA_N1_BY_MONTH = [
-  100140.41,  // janvier
-  122148.18,  // février
-  113683.74,  // mars
-  104913.83,  // avril
-  116309.09,  // mai
-  102128.20,  // juin
-  114122.14,  // juillet
-  115047.47,  // août
-   90585.35,  // septembre
-  125965.82,  // octobre
-  116430.32,  // novembre
-  150217.73,  // décembre
-];
-const CA_N1 = CA_N1_BY_MONTH.reduce((a, b) => a + b, 0); // 1 371 692,28
-// Couverts réalisés N-1 (2025) par mois — source : feuille "Couverts Restaurant" 2025
-const CVTS_N1_BY_MONTH = [
-  3956,  // janvier
-  4863,  // février
-  4440,  // mars
-  4239,  // avril
-  4506,  // mai
-  4002,  // juin
-  4493,  // juillet
-  4604,  // août
-  3470,  // septembre
-  5082,  // octobre
-  4694,  // novembre
-  5989,  // décembre
-]; // total 54338
 const MONTHS_FULL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const MONTHS_SHORT_LABELS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const CONTRATS_FG = [
@@ -273,6 +242,11 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     getVal: getValN1,
     caByMonth: caByMonthN1,
   } = useRecapAnnuelData(dataN1, YEAR - 1);
+
+  // CA et couverts réalisés N-1 du restaurant actif (données de l'année YEAR - 1)
+  const CA_N1_BY_MONTH = caByMonthN1;
+  const CA_N1 = CA_N1_BY_MONTH.reduce((a, b) => a + b, 0);
+  const CVTS_N1_BY_MONTH = Array.from({ length: 12 }, (_, mi) => Math.round(getValN1(mi, 29)));
 
   // Mapping ordonné des 11 catégories FG → [box, colGroup]
   const FG_MAPPING: [number, number][] = [

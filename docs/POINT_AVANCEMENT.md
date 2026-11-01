@@ -5,6 +5,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+<<<<<<< HEAD
 ## 31/10/2026 (Multi-site : bandeau restaurant de l'Accueil + fix chevauchement bouton Utilisateurs)
 
 - `@/lib/siteBrandTheme` : champs `heroGradient`/`heroBottomOverlay` ajoutés (grand bandeau du nom du restaurant en haut de l'Accueil, `au_bureau` = dégradé marine historique inchangé, `hippo` = dégradé rouge sombre). `Home.tsx` : le bandeau (`home-banner`) et son overlay bas ne sont plus en dégradé bleu nuit codé en dur, ils suivent désormais l'enseigne.
@@ -56,6 +57,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 ## 31/10/2026 (Multi-site : fondations)
 
 - Multi-site (modèle repris de Gestion Commandes Doquet) : table `suivi_gestion_app_state` dotée d'un `site_id` (clé composite `site_id,key`, RLS restreinte aux utilisateurs authentifiés et scopée par site — l'accès `anon` ouvert précédent est supprimé), nouvelle table `suivi_gestion_user_site_access` (sites autorisés par utilisateur), rôles existants conservés (`super_admin`/`global_admin` = accès à tous les sites, `user` = sites explicitement attribués). Sites déclarés dans `@/lib/sites` (`hippo_thillois`, `hippo_cormontreuil`). `supabaseAppState.ts` : toutes les fonctions cloud prennent désormais `siteId` en premier paramètre (plus de site fixé par variable d'env au build). `AuthGate` expose `accessProfile`/`activeSiteId`/`setActiveSiteId` (site actif mémorisé par utilisateur en local, changement de site = à faire recharger la page par l'appelant). `DataContext` branché sur `activeSiteId` : tous les appels cloud et les clés de cache local (localStorage) sont désormais suffixés par site, pour qu'un même navigateur ne mélange jamais les données de deux sites (y compris `companySettings`, donc le nom d'entreprise/ville/etc. est bien par site). Migration appliquée en prod : les données existantes sont rattachées à `hippo_thillois`. 269 tests, tsc OK.
+=======
+## 01/11/2026 (fix Récap annuel : N-1 propre au restaurant)
+
+- `RecapAnnuel.tsx` : « CA N-1 » de l'en-tête et colonnes « VAR VS N-1 » (CA, couverts, TM, ratios) utilisaient des tableaux codés en dur (CA et couverts de Hippopotamus Thillois 2025), identiques quels que soient le restaurant et l'année. Ils sont désormais calculés depuis les données réalisées de l'année `selectedYear - 1` du restaurant actif (CA col 21, couverts col 29 du total mois, via `useRecapAnnuelData(dataN1)`). Mois N-1 absent ou non importé : N-1 à 0, variation non calculée. tsc OK.
+>>>>>>> a0dcbc8 (fix: N-1 du récap annuel calculé depuis les données du restaurant actif)
 
 ## 13/10/2026 (Planification : croissances par-dessus le CA cible)
 
