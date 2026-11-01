@@ -257,6 +257,14 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   const CVTS_N1_BUDGET_BY_MONTH = Array.from({ length: 12 }, (_, mi) => Math.round(getValN1(mi, 10)));
   const CVTS_N1_BUDGET = CVTS_N1_BUDGET_BY_MONTH.reduce((a, b) => a + b, 0);
 
+  // Référence N-1 pour la colonne "VS Réalisé N-1" du Budget : réalisé N-1, ou à défaut budget N-1
+  // pour un mois pas encore écoulé (ex. nov./déc. de l'année en cours) — sinon un mois sans réalisé
+  // N-1 serait absent du total et gonflerait artificiellement l'écart annuel.
+  const CA_N1_REF_BY_MONTH = Array.from({ length: 12 }, (_, mi) => CA_N1_BY_MONTH[mi] > 0 ? CA_N1_BY_MONTH[mi] : CA_N1_BUDGET_BY_MONTH[mi]);
+  const CA_N1_REF = CA_N1_REF_BY_MONTH.reduce((a, b) => a + b, 0);
+  const CVTS_N1_REF_BY_MONTH = Array.from({ length: 12 }, (_, mi) => CVTS_N1_BY_MONTH[mi] > 0 ? CVTS_N1_BY_MONTH[mi] : CVTS_N1_BUDGET_BY_MONTH[mi]);
+  const CVTS_N1_REF = CVTS_N1_REF_BY_MONTH.reduce((a, b) => a + b, 0);
+
   // Mapping ordonné des 11 catégories FG → [box, colGroup]
   const FG_MAPPING: [number, number][] = [
     [0, 0], // Entretien & Réparation
@@ -302,7 +310,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
       // ── 13 valeurs ──────────────────────────────────────────────────────────
       case 'budget': {
-        const cvtsN1       = CVTS_N1_BY_MONTH[mi] ?? 0;
+        const caN1Ref      = CA_N1_REF_BY_MONTH[mi] ?? 0;
+        const cvtsN1Ref     = CVTS_N1_REF_BY_MONTH[mi] ?? 0;
         const caN1Budget   = CA_N1_BUDGET_BY_MONTH[mi] ?? 0;
         const cvtsN1Budget = CVTS_N1_BUDGET_BY_MONTH[mi] ?? 0;
         const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
@@ -313,7 +322,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           fe(g(3)),
           fe(cumulCA),
           fp(caN1Budget > 0 ? ((g(3) - caN1Budget) / caN1Budget) * 100 : 0),
-          fp(caN1 > 0 ? ((g(3) - caN1) / caN1) * 100 : 0),
+          fp(caN1Ref > 0 ? ((g(3) - caN1Ref) / caN1Ref) * 100 : 0),
           String(Math.round(g(6))),
           fe(g(6) > 0 ? g(0) / g(6) : 0),
           String(Math.round(g(8))),
@@ -322,7 +331,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           fe(g(10) > 0 ? g(3) / g(10) : 0),
           String(cumulCvts),
           fp(cvtsN1Budget > 0 ? ((g(10) - cvtsN1Budget) / cvtsN1Budget) * 100 : 0),
-          fp(cvtsN1 > 0 ? ((g(10) - cvtsN1) / cvtsN1) * 100 : 0),
+          fp(cvtsN1Ref > 0 ? ((g(10) - cvtsN1Ref) / cvtsN1Ref) * 100 : 0),
         ];
       }
 
@@ -519,7 +528,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const totalCumulCA   = totalCaJour;
         const totalCumulCvts = Math.round(totalCvtsJour);
         const totalVarBudgetVsBudgetN1  = CA_N1_BUDGET > 0 ? ((totalCaJour - CA_N1_BUDGET) / CA_N1_BUDGET) * 100 : 0;
-        const totalVarBudgetVsRealiseN1 = CA_N1 > 0 ? ((totalCaJour - CA_N1) / CA_N1) * 100 : 0;
+        const totalVarBudgetVsRealiseN1 = CA_N1_REF > 0 ? ((totalCaJour - CA_N1_REF) / CA_N1_REF) * 100 : 0;
         return [
           fe(totalCaMidi),
           fe(totalCaSoir),
@@ -535,7 +544,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           fe(totalCvtsJour > 0 ? (totalCaMidi + totalCaSoir) / totalCvtsJour : 0), // TM restaurant : sans VAE ni limonade
           String(totalCumulCvts),
           fp(CVTS_N1_BUDGET > 0 ? ((totalCvtsJour - CVTS_N1_BUDGET) / CVTS_N1_BUDGET) * 100 : 0),
-          fp(CVTS_N1 > 0 ? ((totalCvtsJour - CVTS_N1) / CVTS_N1) * 100 : 0),
+          fp(CVTS_N1_REF > 0 ? ((totalCvtsJour - CVTS_N1_REF) / CVTS_N1_REF) * 100 : 0),
         ];
       }
 
