@@ -1,4 +1,4 @@
-import { normalizeSiteIds, SITE_IDS, type SiteId } from '@/lib/sites';
+import { getSiteIds, normalizeSiteIds, type SiteId } from '@/lib/sites';
 
 export type SuiviRole = 'super_admin' | 'global_admin' | 'user' | 'admin';
 
@@ -66,9 +66,13 @@ export const hasAllSiteAccess = (profile: SuiviProfileLike | null | undefined): 
 };
 
 export const siteIdsForProfile = (profile: SuiviProfileLike | null | undefined): SiteId[] => {
-  if (hasAllSiteAccess(profile)) return [...SITE_IDS];
+  if (hasAllSiteAccess(profile)) return getSiteIds();
   return normalizeSiteIds(profile?.site_ids);
 };
 
 export const canAccessSite = (profile: SuiviProfileLike | null | undefined, siteId: SiteId): boolean =>
   hasAllSiteAccess(profile) || siteIdsForProfile(profile).includes(siteId);
+
+// Création de site : réservée au super_admin actif (s'appuie sur la garde de la gestion utilisateurs).
+export const canCreateSites = (profile: SuiviProfileLike | null | undefined): boolean =>
+  canAccessUserManagement(profile) && normalizeSuiviRole(profile?.role) === 'super_admin';

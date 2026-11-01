@@ -11,6 +11,7 @@ import {
   SupabaseAuthSession,
   validateAuthSession,
 } from '@/services/supabaseAuth';
+import { loadSitesRegistry } from '@/services/supabaseSites';
 
 type AuthGateProps = {
   children: ReactNode;
@@ -191,6 +192,8 @@ export default function AuthGate({ children }: AuthGateProps) {
   // Charge le rôle et les sites autorisés, puis active la session seulement si cette
   // étape réussit : un compte sans accès à aucun site ne doit jamais entrer dans l'appli.
   const activateSession = useCallback(async (nextSession: SupabaseAuthSession) => {
+    // Le registre des sites doit être chargé avant le profil : les admins reçoivent « tous les sites ».
+    await loadSitesRegistry();
     const profile = await fetchSuiviAccessProfile(nextSession);
     if (profile.siteIds.length === 0) {
       throw new Error('Ce compte n\'a accès à aucun site. Contacte un administrateur Suivi de gestion.');

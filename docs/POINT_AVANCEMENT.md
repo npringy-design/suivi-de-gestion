@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 01/11/2026 (Création de site dynamique, super admin)
+
+- Sites : `SiteId` devient `string` ; registre `@/lib/sites` (`getSiteIds`, `getSiteLabel`, `getSiteBrand` avec repli explicite sur `hippo`) alimenté par la table `suivi_gestion_sites` (`supabase/SITES_SETUP.sql`, à exécuter une fois ; seed des 2 sites existants ; sans la table, repli sur les 2 sites historiques) chargée par `AuthGate` avant le profil. Page `/sites` (`features/sites/`, bouton « Sites » de l'Accueil, `canCreateSites` = super_admin actif) : nom → identifiant kebab-case unique (vérifié en base) + enseigne, insertion via `/api/suiviAccount` (`action: 'create-site'`, super_admin vérifié côté API ; `sanitizeSiteIds` lit désormais la table), bootstrap des valeurs par défaut pour ce seul `site_id` (`bootstrapSiteState`, refuse tout identifiant vide ou invalide, jamais `DEFAULT_SITE_ID`), puis attribution via `SiteAccessCheckboxList`. 9 tests dont non-régression (aucune lecture/écriture de `hippo_thillois`/`hippo_cormontreuil`), 278 tests, tsc OK, build OK. Rendu de la page non vérifié visuellement (connexion Supabase requise).
+
 ## 31/10/2026 (Multi-site : bandeau restaurant de l'Accueil + fix chevauchement bouton Utilisateurs)
 
 - `@/lib/siteBrandTheme` : champs `heroGradient`/`heroBottomOverlay` ajoutés (grand bandeau du nom du restaurant en haut de l'Accueil, `au_bureau` = dégradé marine historique inchangé, `hippo` = dégradé rouge sombre). `Home.tsx` : le bandeau (`home-banner`) et son overlay bas ne sont plus en dégradé bleu nuit codé en dur, ils suivent désormais l'enseigne.

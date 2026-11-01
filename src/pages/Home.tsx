@@ -19,6 +19,7 @@ import {
   X,
   Calendar,
   Users,
+  Building2,
   LogOut,
 } from 'lucide-react';
 import {
@@ -44,6 +45,7 @@ import { useSiteBrandTheme } from '@/lib/siteBrandTheme';
 import { parseMoneyValue } from '@/lib/money';
 import { getValidAccessToken } from '@/services/supabaseAuth';
 import { useAuthSession } from '@/AuthGate';
+import { canCreateSites } from '@/lib/suiviPermissions';
 import { getDashboardRowIndices } from '@/lib/utils';
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
@@ -213,7 +215,7 @@ const formatHomePeriodLabel = (period: HomePeriodSelection) => {
 export default function Home() {
   const { data, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, companySettings } = useData();
   const navigate = useNavigate();
-  const { session, signOut } = useAuthSession();
+  const { session, signOut, accessProfile } = useAuthSession();
   const sidebarTheme = useSiteBrandTheme();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -237,6 +239,10 @@ export default function Home() {
   const [today, setToday] = useState(() => new Date());
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
   const [canManageUsers, setCanManageUsers] = useState(false);
+  const adminEntries = [
+    { show: canManageUsers, path: '/utilisateurs', title: 'Gestion des utilisateurs', label: 'Utilisateurs', Icon: Users },
+    { show: canCreateSites(accessProfile), path: '/sites', title: 'Création de site', label: 'Sites', Icon: Building2 },
+  ];
 
   const year = selectedYear;
   const month = selectedMonth;
@@ -1038,11 +1044,11 @@ export default function Home() {
             </NavGroup>
           </nav>
 
-          {canManageUsers && (
-            <div className="relative hidden shrink-0 px-2 pb-3 pt-1 lg:block">
+          {adminEntries.filter((entry) => entry.show).map((entry) => (
+            <div key={entry.path} className="relative hidden shrink-0 px-2 pb-3 pt-1 lg:block">
               <button
                 type="button"
-                onClick={() => navigate('/utilisateurs')}
+                onClick={() => navigate(entry.path)}
                 className="group relative w-full overflow-hidden rounded-xl border px-3 py-2.5 text-left text-[12.5px] font-black uppercase tracking-[0.12em] shadow-inner shadow-black/10 transition-all duration-300 hover:text-white hover:bg-[var(--user-btn-hover-bg)]"
                 style={{
                   borderColor: sidebarTheme.sidebarBorderSoft,
@@ -1050,20 +1056,20 @@ export default function Home() {
                   color: sidebarTheme.sidebarHeaderTitle,
                   '--user-btn-hover-bg': sidebarTheme.navItemHoverBg,
                 } as React.CSSProperties}
-                title="Gestion des utilisateurs"
+                title={entry.title}
               >
                 <div className="flex items-center gap-2">
                   <span
                     className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
                     style={{ backgroundColor: sidebarTheme.navGroupIconBg, color: sidebarTheme.navGroupIconText, boxShadow: `0 0 0 1px ${sidebarTheme.navGroupIconRing}` }}
                   >
-                    <Users className="h-3.5 w-3.5" />
+                    <entry.Icon className="h-3.5 w-3.5" />
                   </span>
-                  <span>Utilisateurs</span>
+                  <span>{entry.label}</span>
                 </div>
               </button>
             </div>
-          )}
+          ))}
         </div>
       </aside>
 

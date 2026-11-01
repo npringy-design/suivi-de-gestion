@@ -47,6 +47,7 @@ const SuiviQuotidienV2 = lazy(() => import('@/features/dashboard/SuiviQuotidienV
 const SaisieCaisseDynamique = lazy(() => import('@/features/caisse/SaisieCaisseDynamique'));
 const ExportComptable = lazy(() => import('@/features/comptabilite/ExportComptable'));
 const UserManagementPage = lazy(() => import('@/UserManagementPage'));
+const SiteCreationPage = lazy(() => import('@/features/sites/SiteCreationPage'));
 
 const parseMonthParam = (value: string | undefined, fallback: number) => {
   const month = value ? parseInt(value, 10) : NaN;
@@ -206,6 +207,7 @@ const router = createHashRouter([
   { path: '/caisse-dynamique/:systemId/:month', element: <CaisseDynamiqueRoute /> },
   { path: '/ecritures-comptables', element: <PageRoute Component={ExportComptable} backPath='/' /> },
   { path: '/utilisateurs', element: <PageRoute Component={UserManagementPage} backPath='/' /> },
+  { path: '/sites', element: <PageRoute Component={SiteCreationPage} backPath='/' /> },
 ]);
 
 function EdgMensuelRoute() {

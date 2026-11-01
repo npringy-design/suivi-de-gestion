@@ -1,4 +1,4 @@
-import { SITE_IDS, getSiteLabel, getSiteBrand, type SiteId } from '@/lib/sites';
+import { getSiteIds, getSiteLabel, getSiteBrand, type SiteId } from '@/lib/sites';
 import { getSiteBrandTheme } from '@/lib/siteBrandTheme';
 
 // Liste de cases à cocher pour choisir les sites autorisés d'un compte "user" — utilisée à la
@@ -15,7 +15,7 @@ export default function SiteAccessCheckboxList({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      {SITE_IDS.map((siteId) => (
+      {getSiteIds().map((siteId) => (
         <label key={siteId} className={`flex items-center gap-2 ${labelClassName}`}>
           <input
             type="checkbox"

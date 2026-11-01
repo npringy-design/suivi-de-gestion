@@ -3,22 +3,15 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const appUrl = process.env.APP_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '') || 'https://suivi-de-gestion-8irh.vercel.app';
 const table = 'suivi_gestion_user_access';
 const siteAccessTable = 'suivi_gestion_user_site_access';
+const sitesTable = 'suivi_gestion_sites';
 
 type SuiviRole = 'super_admin' | 'global_admin' | 'user';
 type ApiResponse = Record<string, unknown>;
 
-// Doit rester synchronisé avec @/lib/sites (frontend) et le CHECK constraint SQL de
-// suivi_gestion_app_state / suivi_gestion_user_site_access. Les fonctions serverless (api/)
-// ne partagent pas de build avec src/, donc la liste est dupliquée ici volontairement.
-const SITE_IDS = ['hippo_thillois', 'hippo_cormontreuil'] as const;
-type SuiviSiteId = (typeof SITE_IDS)[number];
-const isSuiviSiteId = (value: unknown): value is SuiviSiteId =>
-  typeof value === 'string' && (SITE_IDS as readonly string[]).includes(value);
-const sanitizeSiteIds = (value: unknown): SuiviSiteId[] => {
-  const raw = Array.isArray(value) ? value : [];
-  const valid = new Set(raw.filter(isSuiviSiteId));
-  return SITE_IDS.filter((siteId) => valid.has(siteId));
-};
+// Sites historiques : repli si suivi_gestion_sites n'existe pas encore (SITES_SETUP.sql non exécuté).
+const BUILTIN_SITE_IDS = ['hippo_thillois', 'hippo_cormontreuil'];
+const SITE_BRANDS = ['hippo', 'au_bureau'];
+const SITE_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const json = (res: any, status: number, payload: ApiResponse) => res.status(status).json(payload);
 const bad = (res: any, message: string) => json(res, 400, { ok: false, error: message });
@@ -91,6 +84,24 @@ const baseSupabaseUrl = () => normalizeSupabaseUrl(supabaseUrl);
 const restUrl = () => `${baseSupabaseUrl()}/rest/v1`;
 const authUrl = () => `${baseSupabaseUrl()}/auth/v1`;
 
+// Identifiants de site connus (table suivi_gestion_sites), dans l'ordre de création.
+const fetchKnownSiteIds = async (): Promise<string[]> => {
+  const response = await fetch(
+    `${restUrl()}/${sitesTable}?is_active=eq.true&select=site_id&order=created_at.asc`,
+    { headers: headers() },
+  );
+  if (!response.ok) return BUILTIN_SITE_IDS;
+  const rows = await response.json() as Array<{ site_id: string }>;
+  return rows.length > 0 ? rows.map((row) => row.site_id) : BUILTIN_SITE_IDS;
+};
+
+const sanitizeSiteIds = async (value: unknown): Promise<string[]> => {
+  const known = await fetchKnownSiteIds();
+  const raw = Array.isArray(value) ? value : [];
+  const valid = new Set(raw.filter((id): id is string => typeof id === 'string'));
+  return known.filter((siteId) => valid.has(siteId));
+};
+
 const requireAdmin = async (req: any) => {
   const token = readBearer(req);
   if (!token) return { ok: false as const, status: 401, error: 'Connexion admin requise.' };
@@ -117,7 +128,7 @@ const requireAdmin = async (req: any) => {
 };
 
 // Récupère tous les site_id actifs, groupés par user_id (une seule requête pour toute la liste).
-const fetchSiteIdsByUser = async (): Promise<Record<string, SuiviSiteId[]>> => {
+const fetchSiteIdsByUser = async (): Promise<Record<string, string[]>> => {
   const response = await fetch(
     `${restUrl()}/${siteAccessTable}?is_active=eq.true&select=user_id,site_id`,
     { headers: headers() },
@@ -125,9 +136,9 @@ const fetchSiteIdsByUser = async (): Promise<Record<string, SuiviSiteId[]>> => {
   if (!response.ok) throw new Error(await readError(response));
 
   const rows = await response.json();
-  const byUser: Record<string, SuiviSiteId[]> = {};
+  const byUser: Record<string, string[]> = {};
   rows.forEach((row: any) => {
-    if (!isSuiviSiteId(row.site_id)) return;
+    if (typeof row.site_id !== 'string') return;
     const existing = byUser[row.user_id] || [];
     existing.push(row.site_id);
     byUser[row.user_id] = existing;
@@ -137,7 +148,7 @@ const fetchSiteIdsByUser = async (): Promise<Record<string, SuiviSiteId[]>> => {
 
 // Remplace entièrement les sites attribués à un utilisateur (delete puis insert) : pas de demi-mesure,
 // la liste envoyée par l'UI est la vérité pour cet utilisateur.
-const replaceSiteIds = async (userId: string, siteIds: SuiviSiteId[]): Promise<void> => {
+const replaceSiteIds = async (userId: string, siteIds: string[]): Promise<void> => {
   const deleteResponse = await fetch(
     `${restUrl()}/${siteAccessTable}?user_id=eq.${encodeURIComponent(userId)}`,
     { method: 'DELETE', headers: headers() },
@@ -235,6 +246,35 @@ const createAuthUser = async (
   };
 };
 
+// Création d'un site : réservée au super_admin. Insert simple (pas d'upsert) : un identifiant déjà pris
+// est refusé (409) sans toucher au site existant.
+const createSite = async (req: any, res: any, actorRole: SuiviRole) => {
+  if (actorRole !== 'super_admin') return forbid(res, 'Création de site réservée au super admin.');
+
+  const siteId = String(req.body?.siteId || '').trim();
+  const label = String(req.body?.label || '').trim();
+  const brand = String(req.body?.brand || '');
+
+  if (!SITE_SLUG_PATTERN.test(siteId) || siteId.length < 3 || siteId.length > 40) return bad(res, 'Identifiant de site invalide.');
+  if (!label || label.length > 80) return bad(res, 'Nom du site requis (80 caractères maximum).');
+  if (!SITE_BRANDS.includes(brand)) return bad(res, 'Enseigne invalide.');
+
+  const response = await fetch(
+    `${restUrl()}/${sitesTable}?select=site_id,label,brand,is_active`,
+    {
+      method: 'POST',
+      headers: { ...headers(), Prefer: 'return=representation' },
+      body: JSON.stringify({ site_id: siteId, label, brand, is_active: true }),
+    },
+  );
+
+  if (response.status === 409) return json(res, 409, { ok: false, error: 'Ce site existe déjà.' });
+  if (!response.ok) return fail(res, await readError(response));
+
+  const rows = await response.json();
+  return json(res, 201, { ok: true, site: rows[0] });
+};
+
 const createRow = async (req: any, res: any, actorRole: SuiviRole) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
   const fullName = String(req.body?.fullName || '').trim() || null;
@@ -242,7 +282,7 @@ const createRow = async (req: any, res: any, actorRole: SuiviRole) => {
   const role = normalizeRole(String(req.body?.role || 'user'));
   const sendInvite = Boolean(req.body?.sendInvite);
   // Sites ignorés pour les rôles admin : super_admin/global_admin ont déjà accès à tous les sites.
-  const siteIds = sanitizeSiteIds(req.body?.siteIds);
+  const siteIds = await sanitizeSiteIds(req.body?.siteIds);
 
   if (!email) return bad(res, 'Email requis.');
   if (!canCreateRole(actorRole, role)) return forbid(res, 'Droits insuffisants pour creer ce role.');
@@ -332,7 +372,7 @@ const patchRow = async (req: any, res: any, actorRole: SuiviRole) => {
     if (isAdminRole(targetRole)) {
       return bad(res, 'Les comptes super admin / global admin ont déjà accès à tous les sites.');
     }
-    const siteIds = sanitizeSiteIds(req.body?.siteIds);
+    const siteIds = await sanitizeSiteIds(req.body?.siteIds);
     if (siteIds.length === 0) return bad(res, 'Au moins un site requis pour un compte utilisateur.');
 
     await replaceSiteIds(userId, siteIds);
@@ -380,7 +420,9 @@ export default async function handler(req: any, res: any) {
     const actorRole = normalizeRole(admin.access.role);
 
     if (req.method === 'GET') return listRows(res);
-    if (req.method === 'POST') return createRow(req, res, actorRole);
+    if (req.method === 'POST') {
+      return req.body?.action === 'create-site' ? createSite(req, res, actorRole) : createRow(req, res, actorRole);
+    }
     if (req.method === 'PATCH') return patchRow(req, res, actorRole);
 
     res.setHeader('Allow', 'GET, POST, PATCH');
