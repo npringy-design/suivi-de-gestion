@@ -67,12 +67,16 @@ const parseIsoParts = (iso: string): { year: number; month: number; day: number 
 
 // Une entrée par jour réellement réalisé (col 21 > 0) et strictement antérieur à aujourd'hui :
 // aujourd'hui peut n'avoir qu'un service saisi, les jours futurs n'ont que du budget.
+// budgetFallback : pour les jours sans réalisé (y compris les jours futurs, non exclus dans ce
+// mode), reprend le budget du jour comme valeur « reel » de repli, tant qu'il est renseigné. Un
+// jour sans réalisé ET sans budget reste absent de l'échantillon.
 export function collectDailySamples(
   allData: Record<number, Record<number, MonthData>>,
   months: AnalyseMonthRef[],
   startIso: string,
   endIso: string,
   todayIso: string,
+  budgetFallback = false,
 ): AnalyseDaySample[] {
   const samples: AnalyseDaySample[] = [];
 
@@ -85,22 +89,26 @@ export function collectDailySamples(
     Object.entries(indices).forEach(([dayKey, rIdx]) => {
       const day = Number(dayKey);
       const date = toIsoDate(year, month, day);
-      if (date < startIso || date > endIso || date >= todayIso) return;
+      if (date < startIso || date > endIso || (!budgetFallback && date >= todayIso)) return;
 
       const cell = (col: number) => parseMoneyValue(computed[`${rIdx}-${col}`]);
-      if (cell(21) <= 0) return;
+      const budget = {
+        caMidi: cell(0), caSoir: cell(1), caLimo: cell(2),
+        cvMidi: cell(6), cvSoir: cell(8), cvLimo: cell(14),
+      };
+      const hasReel = cell(21) > 0;
+      if (!hasReel && (!budgetFallback || (budget.cvMidi <= 0 && budget.cvSoir <= 0))) return;
 
       samples.push({
         date,
         weekday: new Date(year, month, day).getDay(),
-        budget: {
-          caMidi: cell(0), caSoir: cell(1), caLimo: cell(2),
-          cvMidi: cell(6), cvSoir: cell(8), cvLimo: cell(14),
-        },
-        reel: {
-          caMidi: cell(18), caSoir: cell(19), caLimo: cell(20), vae: cell(17),
-          cvMidi: cell(25), cvSoir: cell(27), cvLimo: cell(34),
-        },
+        budget,
+        reel: hasReel
+          ? {
+            caMidi: cell(18), caSoir: cell(19), caLimo: cell(20), vae: cell(17),
+            cvMidi: cell(25), cvSoir: cell(27), cvLimo: cell(34),
+          }
+          : { caMidi: budget.caMidi, caSoir: budget.caSoir, caLimo: budget.caLimo, vae: 0, cvMidi: budget.cvMidi, cvSoir: budget.cvSoir, cvLimo: budget.cvLimo },
       });
     });
   });

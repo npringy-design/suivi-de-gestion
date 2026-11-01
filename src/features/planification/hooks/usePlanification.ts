@@ -58,7 +58,9 @@ export function usePlanification() {
     const now = new Date();
     const todayIso = toIsoDate(now.getFullYear(), now.getMonth(), now.getDate());
     const months = baseYears.flatMap(year => ALL_MONTHS.map(month => ({ year, month })));
-    return collectDailySamples(allData, months, '0000-01-01', '9999-12-31', todayIso);
+    // budgetFallback : un mois d'historique (ex. nov./déc. de l'année en cours) sans réalisé
+    // encore saisi utilise le budget de la même période plutôt que d'être ignoré.
+    return collectDailySamples(allData, months, '0000-01-01', '9999-12-31', todayIso, true);
   }, [allData, baseYears]);
 
   const basePlan = useMemo(() => generatePlan(samples, holidayCalendar, settings), [samples, holidayCalendar, settings]);
