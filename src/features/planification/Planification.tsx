@@ -50,6 +50,14 @@ export default function Planification({ onBack }: PlanificationProps) {
             </button>
             <button
               type="button"
+              onClick={planning.exportXlsx}
+              className="flex items-center gap-2 rounded-lg border border-cyan-200/30 bg-white/[0.06] px-3 py-2 text-xs font-black uppercase tracking-wide text-cyan-50 hover:bg-white/15"
+            >
+              <Download size={14} />
+              Exporter Excel
+            </button>
+            <button
+              type="button"
               onClick={() => setConfirming(true)}
               disabled={isLoading}
               className="flex items-center gap-2 rounded-lg bg-amber-300 px-3 py-2 text-xs font-black uppercase tracking-wide text-slate-900 hover:bg-amber-200 disabled:cursor-wait disabled:opacity-50"

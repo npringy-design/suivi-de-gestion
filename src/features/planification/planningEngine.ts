@@ -506,26 +506,42 @@ export function buildBudgetWrites(
   return writes;
 }
 
-// --- Export CSV (relecture) ---
+// --- Export CSV / Excel (relecture) ---
+
+export const PLAN_ROW_HEADER = ['Date', 'Jour', 'Statut', 'Service', 'Couverts', 'TM', 'CA', 'Confiance', 'Échantillons', 'Source', 'Estimateur', 'Modifié'] as const;
+
+export type PlanRow = {
+  date: string; weekday: string; status: string; service: PlanService;
+  cv: number; tm: number; ca: number;
+  confidence: string; n: number; source: PlanSource; estimator: PlanEstimator; manual: string;
+};
 
 const CONFIDENCE_LABEL: Record<PlanConfidence, string> = { fiable: 'fiable', faible: 'faible', critique: 'critique' };
 const STATUS_LABEL: Record<PlanVacationStatus, string> = { vacances: 'vacances', hors_vacances: 'hors vacances', ete: 'été', ferie: 'férié' };
 const WEEKDAY_LABEL = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 
+// Une ligne par jour × service, source commune au CSV et à l'export Excel.
+export function planRows(plan: PlanDay[]): PlanRow[] {
+  return plan.flatMap(day => PLAN_SERVICES.map(service => {
+    const p = day[service];
+    return {
+      date: day.date, weekday: WEEKDAY_LABEL[day.weekday], status: STATUS_LABEL[day.status], service,
+      cv: p.cv, tm: p.tm, ca: p.ca,
+      confidence: CONFIDENCE_LABEL[p.confidence], n: p.n, source: p.source, estimator: p.estimator, manual: p.manual ? 'oui' : 'non',
+    };
+  }));
+}
+
 const csvNumber = (value: number): string => String(value).replace('.', ',');
 
 export function planToCsv(plan: PlanDay[]): string {
-  const header = ['Date', 'Jour', 'Statut', 'Service', 'Couverts', 'TM', 'CA', 'Confiance', 'Échantillons', 'Source', 'Estimateur', 'Modifié'];
-  const lines = [header.join(';')];
-  plan.forEach(day => {
-    PLAN_SERVICES.forEach(service => {
-      const p = day[service];
-      lines.push([
-        day.date, WEEKDAY_LABEL[day.weekday], STATUS_LABEL[day.status], service,
-        p.cv, csvNumber(p.tm), csvNumber(p.ca),
-        CONFIDENCE_LABEL[p.confidence], p.n, p.source, p.estimator, p.manual ? 'oui' : 'non',
-      ].join(';'));
-    });
+  const lines = [PLAN_ROW_HEADER.join(';')];
+  planRows(plan).forEach(r => {
+    lines.push([
+      r.date, r.weekday, r.status, r.service,
+      r.cv, csvNumber(r.tm), csvNumber(r.ca),
+      r.confidence, r.n, r.source, r.estimator, r.manual,
+    ].join(';'));
   });
   return '﻿' + lines.join('\r\n');
 }

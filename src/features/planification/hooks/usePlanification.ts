@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { MONTH_NAMES } from '@/lib/constants';
 import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
 import type { PlanManualOverride, PlanService, PlanSettings, PlanWriteMode } from '@/types/dataTypes';
 
@@ -12,7 +13,9 @@ import {
   detectExistingBudget,
   generatePlan,
   planMonthlyVae,
+  planRows,
   planToCsv,
+  PLAN_ROW_HEADER,
   proposeAnnualCA,
   proposeAnnualVAE,
   summarizeByMonth,
@@ -21,13 +24,17 @@ import {
 
 const ALL_MONTHS = Array.from({ length: 12 }, (_, month) => month);
 
-const downloadCsv = (fileName: string, content: string) => {
-  const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
+const downloadBlob = (fileName: string, blob: Blob) => {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
   link.download = fileName;
   link.click();
   URL.revokeObjectURL(url);
+};
+
+const downloadCsv = (fileName: string, content: string) => {
+  downloadBlob(fileName, new Blob([content], { type: 'text/csv;charset=utf-8' }));
 };
 
 // Tout le calcul est une simulation en mémoire : rien n'est écrit dans allData avant confirmWrite.
@@ -140,6 +147,40 @@ export function usePlanification() {
     downloadCsv(`planification-${targetYear}.csv`, planToCsv(plan));
   }, [plan, targetYear]);
 
+  const exportXlsx = useCallback(async () => {
+    const { Workbook } = await import('exceljs');
+    const workbook = new Workbook();
+
+    const monthly = workbook.addWorksheet('Résumé mensuel');
+    monthly.addRow([
+      'Mois', 'Couverts midi', 'Couverts soir', 'CA midi', 'CA soir', 'CA cible avant croissance',
+      'CA restaurant prévu', 'TM restaurant', 'VAE', 'TM avec VAE', 'Jours critiques', 'Jours faibles', 'Jours modifiés', 'Prévisions existantes',
+    ]).font = { bold: true };
+    monthSummaries.forEach(s => {
+      const vae = vaeByMonth[s.month] ?? 0;
+      const cv = s.cvMidi + s.cvSoir;
+      const ca = s.caMidi + s.caSoir;
+      monthly.addRow([
+        MONTH_NAMES[s.month], s.cvMidi, s.cvSoir, s.caMidi, s.caSoir,
+        settings.targetMonthlyCA[s.month] ?? Math.round(baseCaByMonth[s.month] ?? ca),
+        ca, s.tm, vae, cv > 0 ? (ca + vae) / cv : null,
+        s.daysCritique, s.daysFaible, s.daysManual, existingByMonth[s.month] ?? 0,
+      ]);
+    });
+    ['D', 'E', 'F', 'G', 'H', 'I', 'J'].forEach(col => { monthly.getColumn(col).numFmt = '#,##0.00 €'; });
+
+    const daily = workbook.addWorksheet('Jour par jour');
+    daily.addRow([...PLAN_ROW_HEADER]).font = { bold: true };
+    planRows(plan).forEach(r => daily.addRow([
+      r.date, r.weekday, r.status, r.service, r.cv, r.tm, r.ca, r.confidence, r.n, r.source, r.estimator, r.manual,
+    ]));
+    daily.getColumn('F').numFmt = '#,##0.00 €';
+    daily.getColumn('G').numFmt = '#,##0.00 €';
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    downloadBlob(`planification-${targetYear}.xlsx`, new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+  }, [plan, targetYear, monthSummaries, vaeByMonth, settings.targetMonthlyCA, baseCaByMonth, existingByMonth]);
+
   const confirmWrite = useCallback(async (mode: PlanWriteMode) => {
     const dashboards = Object.fromEntries(ALL_MONTHS.map(month => [month, allData[targetYear]?.[month]?.dashboard]));
     const writes = buildBudgetWrites(targetYear, plan, dashboards, mode);
@@ -154,7 +195,7 @@ export function usePlanification() {
     settings, updateSettings, setMonthGrowth, setMonthTarget, annualProposal, baseCaByMonth, vaeProposal, vaeByMonth, setMonthVae,
     plan, monthSummaries, overrides, editService, clearOverride,
     existingByMonth, isLoading, status,
-    exportCsv, confirmWrite,
+    exportCsv, exportXlsx, confirmWrite,
     holidayZone: holidayCalendar.zone,
     sampleCount: samples.length,
     baseYears,
