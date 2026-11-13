@@ -6,6 +6,7 @@ import type {
   ShiftStaffMember,
   ShiftUnmet,
 } from '@/types/dataTypes';
+
 import {
   computeLegalAlerts,
   dayRevenue,
@@ -137,7 +138,9 @@ export function generateWeek(input: GenerateInput): GenerateResult {
   if (settings.elearningHours > 0) {
     staff.filter(member => member.apprenti).forEach(member => {
       const hours = settings.elearningHours;
-      const days = [...weekDates].sort((a, b) => staffShifts(member).filter(s => s.date === a).length - staffShifts(member).filter(s => s.date === b).length);
+      // Jour de faible activité : CA budgété le plus bas, puis jour le moins chargé pour ce collaborateur.
+      const days = [...weekDates].sort((a, b) => dayRevenue(budgetOf(a)) - dayRevenue(budgetOf(b))
+        || staffShifts(member).filter(s => s.date === a).length - staffShifts(member).filter(s => s.date === b).length);
       const makeShift = (date: string, start: number, service: ShiftService): Shift => ({
         id: idOf(date, member.key, ELEARNING_ROLE_ID, service, formatShiftTime(start)),
         staffKey: member.key, date, start: formatShiftTime(start), end: formatShiftTime(start + hours * 60),
@@ -203,8 +206,15 @@ export function generateWeek(input: GenerateInput): GenerateResult {
       }));
       if (!placed) break;
     }
-    if (remaining >= MIN_TOP_UP_HOURS) {
-      unmet.push({ date: weekDates[0], message: `${member.nom} : ${Math.round(remaining * 10) / 10} h de contrat non placées (compteur de période négatif en fin de période)` });
+    const info = periodInfo?.[member.key];
+    if (info && info.weeksLeft === 1) {
+      // Dernière semaine à planifier de la période : le compteur de fin de période doit revenir à 0.
+      const endCounter = info.balance + hoursOf(member) - member.contractHours;
+      if (Math.abs(endCounter) >= 1) {
+        unmet.push({ date: weekDates[0], message: `${member.nom} : compteur de fin de période impossible à remettre à 0 (${endCounter > 0 ? '+' : '−'}${Math.abs(Math.round(endCounter * 10) / 10)} h)` });
+      }
+    } else if (remaining >= MIN_TOP_UP_HOURS) {
+      unmet.push({ date: weekDates[0], message: `${member.nom} : ${Math.round(remaining * 10) / 10} h de contrat non placées sur la semaine` });
     }
   });
 

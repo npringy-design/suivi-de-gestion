@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 
 import type { ShiftRoleDef, ShiftService, ShiftSlotRule } from '@/types/dataTypes';
+
 import ShiftDaysPicker from './ShiftDaysPicker';
 
 type Props = { rules: ShiftSlotRule[]; roles: ShiftRoleDef[]; onChange: (rules: ShiftSlotRule[]) => void };

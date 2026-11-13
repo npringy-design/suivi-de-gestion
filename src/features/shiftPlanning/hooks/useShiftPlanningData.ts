@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import type { ShiftStaffMember } from '@/types/dataTypes';
+import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
+
 import { EMPTY_DAY_BUDGET, type DayBudget } from '../shiftCalculations';
 import { dateFromIso, monthsOfDates } from '../shiftDates';
-import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
 import { buildStaffMembers, buildWeekDayContext, collectWeekBudget, deriveStaffCandidates, staffSourceLabel } from '../shiftSources';
 
 // Données existantes lues en lecture seule : personnel + taux horaire chargé (salariesConfig),

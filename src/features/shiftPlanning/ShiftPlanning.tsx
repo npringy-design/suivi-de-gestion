@@ -4,6 +4,7 @@ import { Lock } from 'lucide-react';
 import { useAuthSession } from '@/AuthGate';
 import { canAccessShiftPlanning } from '@/lib/suiviPermissions';
 import type { Shift, ShiftStaffMember } from '@/types/dataTypes';
+
 import ShiftEditDialog from './components/ShiftEditDialog';
 import ShiftGrid, { type StaffGroup } from './components/ShiftGrid';
 import ShiftKpiCards from './components/ShiftKpiCards';
@@ -62,6 +63,7 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
   const generation = useShiftGeneration({
     mondayIso, staff: data.staff, absences: docs.absences, settings: docs.settings, budgetOf: data.budgetOf,
     periodInfo: period.periodInfo, shifts: docs.shifts, updateShifts: docs.updateShifts,
+    isLoading: docs.isLoading || data.isLoading,
   });
 
   useEffect(() => {
@@ -130,6 +132,8 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
 
         <ShiftKpiCards metrics={metrics} settings={docs.settings} />
 
+        <ShiftUnmetList unmet={generation.unmet} />
+
         <ShiftGrid
           groups={groups}
           roles={docs.settings.roles}
@@ -144,8 +148,6 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
           todayIso={isoFromDate(new Date())}
           onCellClick={(staffKey, date) => setEditing({ staffKey, date })}
         />
-
-        <ShiftUnmetList unmet={generation.unmet} />
 
         {metrics.alerts.length > 0 && (
           <ul className="space-y-1 rounded-2xl bg-white p-4 text-xs text-red-700 shadow-sm">

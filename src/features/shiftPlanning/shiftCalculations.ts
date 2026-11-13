@@ -7,6 +7,7 @@ import type {
   ShiftService,
   ShiftStaffMember,
 } from '@/types/dataTypes';
+
 import { addDaysIso } from './shiftDates';
 
 // Calculs purs du planning : aucune autre formule métier que celles listées ici.

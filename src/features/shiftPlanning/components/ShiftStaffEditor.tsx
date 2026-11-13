@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 
 import type { ShiftAbsence, ShiftRoleDef, ShiftStaffMember } from '@/types/dataTypes';
+
 import { formatShortDate } from '../shiftDates';
 
 // Boutons L à D ; valeur = getDay() (0 = dimanche).

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SiteId } from '@/lib/sites';
 import { loadShiftDoc, saveShiftDoc, weekDocKey } from '@/services/supabaseShiftPlanning';
 import type { Shift, ShiftAbsence, ShiftPlanningSettings, ShiftStaffMember } from '@/types/dataTypes';
+
 import { DEFAULT_SHIFT_SETTINGS } from '../shiftCalculations';
 import { normalizeSettings, readArray } from '../shiftSources';
 

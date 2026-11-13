@@ -2,8 +2,10 @@ import type { ReactNode } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 
 import type { ShiftAbsence, ShiftLegalRule, ShiftPlanningSettings as Settings, ShiftRoleDef, ShiftStaffMember } from '@/types/dataTypes';
+
 import { ELEARNING_ROLE_ID, LEGAL_RULE_LABELS } from '../shiftCalculations';
 import { BEBAS_FONT } from '../shiftRoleStyle';
+
 import ShiftGuardRulesEditor from './ShiftGuardRulesEditor';
 import ShiftPayPeriodsEditor from './ShiftPayPeriodsEditor';
 import ShiftServiceWindowsEditor from './ShiftServiceWindowsEditor';

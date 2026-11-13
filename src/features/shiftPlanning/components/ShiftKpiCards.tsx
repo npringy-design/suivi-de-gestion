@@ -1,5 +1,6 @@
 import { formatDecimal } from '@/lib/formatters';
 import type { ShiftPlanningSettings } from '@/types/dataTypes';
+
 import type { WeekMetrics } from '../hooks/useShiftWeekMetrics';
 import { BEBAS_FONT } from '../shiftRoleStyle';
 

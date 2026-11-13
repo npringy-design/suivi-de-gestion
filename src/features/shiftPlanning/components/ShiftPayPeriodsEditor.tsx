@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 
 import type { ShiftPayPeriod } from '@/types/dataTypes';
+
 import { formatShortDate } from '../shiftDates';
 
 type Props = { periods: ShiftPayPeriod[]; onChange: (periods: ShiftPayPeriod[]) => void };

@@ -1,5 +1,6 @@
 import { formatDecimal } from '@/lib/formatters';
 import type { Shift, ShiftAbsence, ShiftRoleDef, ShiftStaffMember } from '@/types/dataTypes';
+
 import type { DayMetrics } from '../hooks/useShiftWeekMetrics';
 import { findAbsence } from '../shiftCalculations';
 import type { DayContext } from '../shiftSources';
@@ -165,8 +166,8 @@ function StaffRow({ member, roles, days, shifts, absences, alertShiftIds, weekHo
           {formatDecimal(weekHours, 1)} h / {member.forfaitJour ? 'forfait' : `${member.contractHours} h`}
         </div>
         {counter !== null && (
-          <div className="text-[11px] font-semibold" style={{ color: counter > 0 ? '#b45309' : counter < 0 ? '#0e7490' : '#16a34a' }}>
-            Compteur {counter > 0 ? '+' : ''}{formatDecimal(counter, 1)} h
+          <div className="text-[11px] font-semibold" style={{ color: counter > 0 ? '#b45309' : counter < 0 ? '#ea580c' : '#16a34a' }}>
+            Période : {counter > 0 ? '+' : counter < 0 ? '−' : ''}{formatDecimal(Math.abs(counter), 1)} h
           </div>
         )}
       </div>

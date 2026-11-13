@@ -1,4 +1,5 @@
 import type { ShiftRoleDef } from '@/types/dataTypes';
+
 import { roleGradient } from '../shiftRoleStyle';
 
 export default function ShiftLegend({ roles }: { roles: ShiftRoleDef[] }) {

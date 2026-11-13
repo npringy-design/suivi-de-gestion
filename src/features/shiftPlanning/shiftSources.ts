@@ -4,6 +4,7 @@ import { collectDailySamples } from '@/features/analyse/ecartsAnalysis';
 import { vacationStatusOf } from '@/features/planification/planningEngine';
 import { payrollNameKey } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import type { CustomEvent, MonthData, MonthDataSalariesConfig, PersonnelDepartment, SchoolHolidayCalendar, ShiftPlanningSettings, ShiftStaffMember } from '@/types/dataTypes';
+
 import { ELEARNING_ROLE_ID, type DayBudget } from './shiftCalculations';
 import { monthsOfDates } from './shiftDates';
 

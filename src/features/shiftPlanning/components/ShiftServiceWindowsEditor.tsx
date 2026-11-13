@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 
 import type { ShiftService, ShiftServiceWindow } from '@/types/dataTypes';
+
 import ShiftDaysPicker from './ShiftDaysPicker';
 
 type Props = { windows: ShiftServiceWindow[]; onChange: (windows: ShiftServiceWindow[]) => void };
