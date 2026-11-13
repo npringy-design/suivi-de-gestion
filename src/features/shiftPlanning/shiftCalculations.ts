@@ -13,6 +13,8 @@ import { addDaysIso } from './shiftDates';
 
 const MINUTES_PER_DAY = 24 * 60;
 
+export const ELEARNING_ROLE_ID = 'elearning';
+
 export const parseShiftTime = (value: string): number | null => {
   const match = /^(\d{1,2})h(\d{2})$/.exec(value.trim());
   if (!match) return null;
@@ -78,6 +80,7 @@ export type RoleNeed = { roleId: string; service: ShiftService; need: number };
 export const computeDayNeeds = (rules: ShiftGuardRule[], budget: DayBudget): RoleNeed[] => {
   const needs = new Map<string, RoleNeed>();
   rules.forEach(rule => {
+    if (rule.roleId === ELEARNING_ROLE_ID) return; // le rôle technique n'entre jamais dans les besoins de présence
     const services: ShiftService[] = rule.service === 'both' ? ['midi', 'soir'] : [rule.service];
     services.forEach(service => {
       const need = requiredStaff(rule, service === 'midi' ? budget.cvMidi : budget.cvSoir);
@@ -115,7 +118,7 @@ const absoluteEndMinutes = (shift: Shift, mondayIso: string): number =>
 
 const formatHours = (hours: number): string => `${Math.round(hours * 10) / 10} h`;
 
-// Alertes légales de la semaine (mode « alerte » uniquement : « bloquer » est stocké mais pas appliqué).
+// Alertes légales de la semaine ; l'appelant choisit les règles évaluées (alerte, ou blocage à la saisie).
 export function computeLegalAlerts(
   shifts: Shift[],
   staff: ShiftStaffMember[],
@@ -134,6 +137,8 @@ export function computeLegalAlerts(
 
     if (enabled.has('rest11h')) {
       for (let i = 1; i < own.length; i += 1) {
+        // Deux shifts du même jour forment une coupure (limitée par amplitude13h / oneBreak), pas un repos quotidien.
+        if (own[i].date === own[i - 1].date) continue;
         const gapHours = (absoluteStartMinutes(own[i], mondayIso) - absoluteEndMinutes(own[i - 1], mondayIso)) / 60;
         if (gapHours < 11) {
           alerts.push({
@@ -170,6 +175,33 @@ export function computeLegalAlerts(
       }
     }
 
+    if (enabled.has('amplitude13h')) {
+      days.forEach(date => {
+        const dayShifts = own.filter(shift => shift.date === date);
+        if (dayShifts.length < 2) return;
+        const first = Math.min(...dayShifts.map(shift => absoluteStartMinutes(shift, mondayIso)));
+        const last = Math.max(...dayShifts.map(shift => absoluteEndMinutes(shift, mondayIso)));
+        if ((last - first) / 60 > 13) {
+          alerts.push({
+            ruleId: 'amplitude13h', staffKey: member.key, shiftIds: dayShifts.map(s => s.id),
+            message: `${member.nom} : amplitude de ${formatHours((last - first) / 60)} le ${date} (13 h maximum)`,
+          });
+        }
+      });
+    }
+
+    if (enabled.has('oneBreak')) {
+      days.forEach(date => {
+        const dayShifts = own.filter(shift => shift.date === date);
+        if (dayShifts.length > 2) {
+          alerts.push({
+            ruleId: 'oneBreak', staffKey: member.key, shiftIds: dayShifts.map(s => s.id),
+            message: `${member.nom} : ${dayShifts.length} shifts le ${date} (2 maximum, une seule coupure)`,
+          });
+        }
+      });
+    }
+
     if (enabled.has('contractHours') && !member.forfaitJour && member.contractHours > 0 && weekHours > member.contractHours) {
       alerts.push({
         ruleId: 'contractHours', staffKey: member.key, shiftIds: allIds,
@@ -201,12 +233,25 @@ export const DEFAULT_SHIFT_SETTINGS: ShiftPlanningSettings = {
     { id: 'max48hWeek', mode: 'alert' },
     { id: 'restDays2', mode: 'alert' },
     { id: 'contractHours', mode: 'alert' },
+    { id: 'amplitude13h', mode: 'alert' },
+    { id: 'oneBreak', mode: 'alert' },
   ],
   roles: [
     { id: 'encadrement', label: 'Encadrement', couleur: '#1e3a5f' },
     { id: 'salle', label: 'Salle', couleur: '#f59e0b' },
     { id: 'cuisine', label: 'Cuisine', couleur: '#be123c' },
+    { id: ELEARNING_ROLE_ID, label: 'E-learning', couleur: '#64748b' },
   ],
+  // Horaires d'origine modifiables dans les paramètres : service du midi et du soir, tous les jours.
+  serviceWindows: [
+    { service: 'midi', days: [0, 1, 2, 3, 4, 5, 6], start: '11h30', end: '15h00' },
+    { service: 'soir', days: [0, 1, 2, 3, 4, 5, 6], start: '18h30', end: '00h00' },
+  ],
+  slotRules: [],
+  payPeriods: [],
+  managerOpenToClose: true,
+  elearningHours: 3,
+  elearningInProductivity: true,
 };
 
 export const LEGAL_RULE_LABELS: Record<ShiftLegalRuleId, string> = {
@@ -215,4 +260,30 @@ export const LEGAL_RULE_LABELS: Record<ShiftLegalRuleId, string> = {
   max48hWeek: '48 h maximum par semaine',
   restDays2: '2 jours de repos par semaine',
   contractHours: 'Dépassement des heures contractuelles',
+  amplitude13h: '13 h maximum entre le premier et le dernier shift du jour',
+  oneBreak: '2 shifts maximum par jour (une seule coupure)',
 };
+
+export const HARD_LEGAL_RULES: ShiftLegalRuleId[] = ['rest11h', 'max10hDay', 'max48hWeek', 'restDays2', 'amplitude13h', 'oneBreak'];
+
+// Heures prises en compte pour la productivité : l'e-learning en est exclu si l'option est désactivée.
+export const productiveHours = (shifts: Shift[], includeElearning: boolean): number =>
+  totalHours(includeElearning ? shifts : shifts.filter(shift => shift.roleId !== ELEARNING_ROLE_ID));
+
+// Infractions nouvelles (non présentes avant la saisie) aux règles en mode « bloquer » pour un collaborateur.
+export function newBlockingViolations(
+  weekShifts: Shift[],
+  member: ShiftStaffMember,
+  date: string,
+  newCellShifts: Shift[],
+  mondayIso: string,
+  legalRules: Array<{ id: ShiftLegalRuleId; mode: 'alert' | 'block' }>,
+): string[] {
+  const blocking = legalRules.filter(rule => rule.mode === 'block').map(rule => rule.id);
+  if (blocking.length === 0) return [];
+  const others = weekShifts.filter(shift => !(shift.staffKey === member.key && shift.date === date));
+  const before = new Set(computeLegalAlerts(weekShifts, [member], mondayIso, blocking).map(alert => alert.message));
+  return computeLegalAlerts([...others, ...newCellShifts], [member], mondayIso, blocking)
+    .map(alert => alert.message)
+    .filter(message => !before.has(message));
+}

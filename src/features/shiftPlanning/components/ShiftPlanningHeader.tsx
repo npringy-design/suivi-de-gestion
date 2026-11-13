@@ -12,6 +12,7 @@ type Props = {
   onNextWeek: () => void;
   onOpenSettings: () => void;
   onValidate: () => void;
+  onGenerate: () => void;
 };
 
 const SAVE_LABELS: Record<ShiftSaveStatus, string> = {
@@ -22,7 +23,7 @@ const SAVE_LABELS: Record<ShiftSaveStatus, string> = {
 };
 
 export default function ShiftPlanningHeader({
-  weekLabel, proposedCount, saveStatus, onBack, onPrevWeek, onNextWeek, onOpenSettings, onValidate,
+  weekLabel, proposedCount, saveStatus, onBack, onPrevWeek, onNextWeek, onOpenSettings, onValidate, onGenerate,
 }: Props) {
   return (
     <header
@@ -52,9 +53,9 @@ export default function ShiftPlanningHeader({
         </button>
         <button
           type="button"
-          disabled
-          title="Étape 2"
-          className="cursor-not-allowed rounded-xl border border-white/20 px-4 py-2 text-sm font-bold text-white/40"
+          onClick={onGenerate}
+          title="Génère les shifts proposés de la semaine (les shifts validés sont conservés)"
+          className="rounded-xl border border-white/30 px-4 py-2 text-sm font-bold text-white hover:bg-white/10"
         >
           Générer
         </button>

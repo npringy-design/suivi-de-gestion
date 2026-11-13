@@ -2,9 +2,12 @@ import type { ReactNode } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 
 import type { ShiftAbsence, ShiftLegalRule, ShiftPlanningSettings as Settings, ShiftRoleDef, ShiftStaffMember } from '@/types/dataTypes';
-import { LEGAL_RULE_LABELS } from '../shiftCalculations';
+import { ELEARNING_ROLE_ID, LEGAL_RULE_LABELS } from '../shiftCalculations';
 import { BEBAS_FONT } from '../shiftRoleStyle';
 import ShiftGuardRulesEditor from './ShiftGuardRulesEditor';
+import ShiftPayPeriodsEditor from './ShiftPayPeriodsEditor';
+import ShiftServiceWindowsEditor from './ShiftServiceWindowsEditor';
+import ShiftSlotRulesEditor from './ShiftSlotRulesEditor';
 import { ShiftAbsencesEditor, ShiftStaffEditor } from './ShiftStaffEditor';
 
 type Props = {
@@ -33,6 +36,8 @@ export default function ShiftPlanningSettings({
   settings, staff, staffSourceLabels, absences, onSettingsChange, onStaffChange, onAbsencesChange, onClose,
 }: Props) {
   const patch = (change: Partial<Settings>) => onSettingsChange({ ...settings, ...change });
+  // Le rôle technique e-learning n'entre jamais dans les besoins de présence ni dans les rôles du personnel.
+  const presenceRoles = settings.roles.filter(role => role.id !== ELEARNING_ROLE_ID);
 
   const patchRole = (id: string, change: Partial<ShiftRoleDef>) =>
     patch({ roles: settings.roles.map(role => (role.id === id ? { ...role, ...change } : role)) });
@@ -70,7 +75,7 @@ export default function ShiftPlanningSettings({
               <option value="autoriser">Autoriser</option>
             </select>
           </label>
-          <label className="flex items-center justify-between gap-2">Recalcul automatique (étape 2)
+          <label className="flex items-center justify-between gap-2">Recalcul automatique après saisie
             <select className={field} value={settings.autoRegenerate ? 'oui' : 'non'} onChange={event => patch({ autoRegenerate: event.target.value === 'oui' })}>
               <option value="oui">Oui</option>
               <option value="non">Non</option>
@@ -80,7 +85,35 @@ export default function ShiftPlanningSettings({
       </Section>
 
       <Section title="Garde-fous">
-        <ShiftGuardRulesEditor rules={settings.guardRules} roles={settings.roles} onChange={guardRules => patch({ guardRules })} />
+        <ShiftGuardRulesEditor rules={settings.guardRules} roles={presenceRoles} onChange={guardRules => patch({ guardRules })} />
+      </Section>
+
+      <Section title="Horaires des services">
+        <ShiftServiceWindowsEditor windows={settings.serviceWindows} onChange={serviceWindows => patch({ serviceWindows })} />
+      </Section>
+
+      <Section title="Besoins par créneau">
+        <label className="mb-3 flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={settings.managerOpenToClose} onChange={event => patch({ managerOpenToClose: event.target.checked })} />
+          1 encadrement présent de l'ouverture à la fermeture, chaque jour
+        </label>
+        <ShiftSlotRulesEditor rules={settings.slotRules} roles={presenceRoles} onChange={slotRules => patch({ slotRules })} />
+      </Section>
+
+      <Section title="Périodes de paie">
+        <ShiftPayPeriodsEditor periods={settings.payPeriods} onChange={payPeriods => patch({ payPeriods })} />
+      </Section>
+
+      <Section title="E-learning apprentis">
+        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-700">
+          <label className="flex items-center gap-2">Heures par semaine
+            <input type="number" min={0} className={`${field} w-20`} value={settings.elearningHours} onChange={event => patch({ elearningHours: Number(event.target.value) })} />
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={settings.elearningInProductivity} onChange={event => patch({ elearningInProductivity: event.target.checked })} />
+            Inclure dans la productivité
+          </label>
+        </div>
       </Section>
 
       <Section title="Règles légales">
@@ -94,7 +127,7 @@ export default function ShiftPlanningSettings({
               </select>
             </div>
           ))}
-          <p className="text-xs text-slate-500">Le mode « Bloquer » est enregistré mais pas encore appliqué (étape 2) : seules les alertes s'affichent.</p>
+          <p className="text-xs text-slate-500">En mode « Bloquer », la saisie d'un shift qui enfreint la règle est refusée.</p>
         </div>
       </Section>
 
@@ -104,7 +137,7 @@ export default function ShiftPlanningSettings({
             <div key={role.id} className="flex items-center gap-2 text-sm">
               <input type="color" value={role.couleur} aria-label={`Couleur ${role.label}`} onChange={event => patchRole(role.id, { couleur: event.target.value })} className="h-8 w-10 rounded" />
               <input className={`${field} w-56`} value={role.label} aria-label="Libellé du rôle" onChange={event => patchRole(role.id, { label: event.target.value })} />
-              <button type="button" onClick={() => patch({ roles: settings.roles.filter(r => r.id !== role.id) })} aria-label="Supprimer le rôle" className="rounded-lg p-1 text-red-600 hover:bg-red-50">
+              <button type="button" hidden={role.id === ELEARNING_ROLE_ID} onClick={() => patch({ roles: settings.roles.filter(r => r.id !== role.id) })} aria-label="Supprimer le rôle" className="rounded-lg p-1 text-red-600 hover:bg-red-50">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
@@ -114,7 +147,7 @@ export default function ShiftPlanningSettings({
       </Section>
 
       <Section title="Personnel">
-        <ShiftStaffEditor staff={staff} roles={settings.roles} sourceLabels={staffSourceLabels} onChange={onStaffChange} />
+        <ShiftStaffEditor staff={staff} roles={presenceRoles} sourceLabels={staffSourceLabels} onChange={onStaffChange} />
       </Section>
 
       <Section title="Absences">

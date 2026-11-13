@@ -4,7 +4,7 @@ import { collectDailySamples } from '@/features/analyse/ecartsAnalysis';
 import { vacationStatusOf } from '@/features/planification/planningEngine';
 import { payrollNameKey } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import type { CustomEvent, MonthData, MonthDataSalariesConfig, PersonnelDepartment, SchoolHolidayCalendar, ShiftPlanningSettings, ShiftStaffMember } from '@/types/dataTypes';
-import type { DayBudget } from './shiftCalculations';
+import { ELEARNING_ROLE_ID, type DayBudget } from './shiftCalculations';
 import { monthsOfDates } from './shiftDates';
 
 // Lecture seule des données existantes : aucune écriture dans allData.
@@ -78,8 +78,8 @@ export const buildStaffMembers = (candidates: StaffCandidate[], stored: ShiftSta
   return candidates.map(candidate => {
     const saved = storedByKey.get(candidate.key);
     return saved
-      ? { ...saved, nom: candidate.nom }
-      : { key: candidate.key, nom: candidate.nom, roles: proposedRoles(candidate, roleIds), contractHours: 35, forfaitJour: candidate.forfaitJour, preferredRestDays: [] };
+      ? { ...saved, nom: candidate.nom, apprenti: candidate.category === 'apprenti' }
+      : { key: candidate.key, nom: candidate.nom, roles: proposedRoles(candidate, roleIds), contractHours: 35, forfaitJour: candidate.forfaitJour, preferredRestDays: [], apprenti: candidate.category === 'apprenti' };
   });
 };
 
@@ -126,17 +126,27 @@ export function collectWeekBudget(allData: AllData, weekDates: string[]): Record
 // Gardes de forme à la lecture des documents Supabase (le contenu vient d'un jsonb non typé).
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
+// Fusionne un document enregistré avec les défauts : les anciens documents (sans les champs de l'étape 2)
+// restent valides, les règles légales et le rôle technique e-learning manquants sont ajoutés.
 export const normalizeSettings = (raw: unknown, defaults: ShiftPlanningSettings): ShiftPlanningSettings => {
   if (!isRecord(raw)) return defaults;
   const value = raw as Partial<ShiftPlanningSettings>;
+  const storedLegal = Array.isArray(value.legalRules) ? value.legalRules : [];
+  const storedRoles = Array.isArray(value.roles) && value.roles.length > 0 ? value.roles : defaults.roles;
   return {
     minProductivity: typeof value.minProductivity === 'number' ? value.minProductivity : defaults.minProductivity,
     targetPayrollPct: typeof value.targetPayrollPct === 'number' ? value.targetPayrollPct : defaults.targetPayrollPct,
     avoidOvertime: typeof value.avoidOvertime === 'boolean' ? value.avoidOvertime : defaults.avoidOvertime,
     autoRegenerate: typeof value.autoRegenerate === 'boolean' ? value.autoRegenerate : defaults.autoRegenerate,
     guardRules: Array.isArray(value.guardRules) ? value.guardRules : defaults.guardRules,
-    legalRules: Array.isArray(value.legalRules) ? value.legalRules : defaults.legalRules,
-    roles: Array.isArray(value.roles) && value.roles.length > 0 ? value.roles : defaults.roles,
+    legalRules: [...storedLegal, ...defaults.legalRules.filter(rule => !storedLegal.some(stored => stored.id === rule.id))],
+    roles: [...storedRoles, ...defaults.roles.filter(role => role.id === ELEARNING_ROLE_ID && !storedRoles.some(stored => stored.id === role.id))],
+    serviceWindows: Array.isArray(value.serviceWindows) ? value.serviceWindows : defaults.serviceWindows,
+    slotRules: Array.isArray(value.slotRules) ? value.slotRules : defaults.slotRules,
+    payPeriods: Array.isArray(value.payPeriods) ? value.payPeriods : defaults.payPeriods,
+    managerOpenToClose: typeof value.managerOpenToClose === 'boolean' ? value.managerOpenToClose : defaults.managerOpenToClose,
+    elearningHours: typeof value.elearningHours === 'number' ? value.elearningHours : defaults.elearningHours,
+    elearningInProductivity: typeof value.elearningInProductivity === 'boolean' ? value.elearningInProductivity : defaults.elearningInProductivity,
   };
 };
 

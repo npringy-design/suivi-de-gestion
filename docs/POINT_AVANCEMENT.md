@@ -9,6 +9,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 - Planning shifts (étape 1/3) : page super_admin Thillois (`#/planning-shifts`, `features/shiftPlanning/`, aucun lien de menu, `canAccessShiftPlanning`), paramètres, rôles, saisie shifts, KPI productivité/MS, alertes légales, table `suivi_gestion_shift_planning` (`supabase/SHIFT_PLANNING_SETUP.sql`, SQL à exécuter ; service `supabaseShiftPlanning.ts`, hors DataContext). tsc OK.
 - Planning shifts : tuile accueil super_admin Thillois, pastilles férié/vacances/événements, rôles proposés depuis Config Salaires. tsc OK.
+- Planning shifts (étape 2/3) : horaires de service, besoins par créneau, périodes de paie (compteur par collaborateur), e-learning apprentis, règles légales amplitude 13 h et une seule coupure, mode « bloquer » appliqué à la saisie, moteur `generateWeek` (légal, minimums, productivité, contrat lissé sur la période, repos, équilibre week-ends/fermetures) et bouton « Générer ». Correctif : le repos de 11 h ne compare plus deux shifts du même jour. tsc OK.
 
 ## 01/11/2026 (fix création de site : CHECK legacy sur site_id)
 

@@ -10,9 +10,13 @@ import ShiftKpiCards from './components/ShiftKpiCards';
 import ShiftLegend from './components/ShiftLegend';
 import ShiftPlanningHeader from './components/ShiftPlanningHeader';
 import ShiftPlanningSettings from './components/ShiftPlanningSettings';
+import ShiftUnmetList from './components/ShiftUnmetList';
 import { useShiftPlanningData } from './hooks/useShiftPlanningData';
+import { useShiftGeneration } from './hooks/useShiftGeneration';
+import { useShiftPeriodData } from './hooks/useShiftPeriodData';
 import { useShiftPlanningDocs } from './hooks/useShiftPlanningDocs';
 import { useShiftWeekMetrics } from './hooks/useShiftWeekMetrics';
+import { newBlockingViolations } from './shiftCalculations';
 import { addDaysIso, formatShortDate, isoFromDate, isoWeekNumber, mondayOfIso, weekDaysIso } from './shiftDates';
 
 const FONT_LINK_ID = 'shift-planning-bebas-neue';
@@ -54,6 +58,11 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
   const roleIds = useMemo(() => docs.settings.roles.map(role => role.id), [docs.settings.roles]);
   const data = useShiftPlanningData(weekDates, docs.storedStaff, roleIds);
   const metrics = useShiftWeekMetrics(weekDates, docs.shifts, data.staff, data.hourlyRates, docs.settings, data.budgetOf);
+  const period = useShiftPeriodData(activeSiteId, mondayIso, docs.settings, data.staff, docs.shifts);
+  const generation = useShiftGeneration({
+    mondayIso, staff: data.staff, absences: docs.absences, settings: docs.settings, budgetOf: data.budgetOf,
+    periodInfo: period.periodInfo, shifts: docs.shifts, updateShifts: docs.updateShifts,
+  });
 
   useEffect(() => {
     if (document.getElementById(FONT_LINK_ID)) return;
@@ -71,10 +80,11 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
     updateShifts(list => list.map<Shift>(shift => (shift.status === 'proposed' ? { ...shift, status: 'validated' } : shift)));
   }, [updateShifts]);
 
+  const { applyManualShifts } = generation;
   const saveCell = useCallback((staffKey: string, date: string, cellShifts: Shift[]) => {
-    updateShifts(list => [...list.filter(shift => !(shift.staffKey === staffKey && shift.date === date)), ...cellShifts]);
+    applyManualShifts([...docs.shifts.filter(shift => !(shift.staffKey === staffKey && shift.date === date)), ...cellShifts]);
     setEditing(null);
-  }, [updateShifts]);
+  }, [applyManualShifts, docs.shifts]);
 
   if (showSettings) {
     return (
@@ -107,6 +117,7 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
         onNextWeek={() => setMondayIso(addDaysIso(mondayIso, 7))}
         onOpenSettings={() => setShowSettings(true)}
         onValidate={validateWeek}
+        onGenerate={generation.generate}
       />
 
       <main className="space-y-5 p-4 sm:p-6">
@@ -128,10 +139,13 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
           absences={docs.absences}
           alertShiftIds={metrics.alertShiftIds}
           hoursByStaff={metrics.hoursByStaff}
+          counters={period.counters}
           minProductivity={docs.settings.minProductivity}
           todayIso={isoFromDate(new Date())}
           onCellClick={(staffKey, date) => setEditing({ staffKey, date })}
         />
+
+        <ShiftUnmetList unmet={generation.unmet} />
 
         {metrics.alerts.length > 0 && (
           <ul className="space-y-1 rounded-2xl bg-white p-4 text-xs text-red-700 shadow-sm">
@@ -149,6 +163,7 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
           date={editing.date}
           cellShifts={docs.shifts.filter(shift => shift.staffKey === editing.staffKey && shift.date === editing.date)}
           roles={docs.settings.roles}
+          getBlockingReasons={cellShifts => newBlockingViolations(docs.shifts, editedMember, editing.date, cellShifts, mondayIso, docs.settings.legalRules)}
           onSave={cellShifts => saveCell(editing.staffKey, editing.date, cellShifts)}
           onClose={() => setEditing(null)}
         />

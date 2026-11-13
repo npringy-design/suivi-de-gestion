@@ -8,6 +8,7 @@ import {
   dayRevenue,
   overtimeHours,
   payrollPct,
+  productiveHours,
   productivity,
   totalCost,
   totalHours,
@@ -52,7 +53,8 @@ export function useShiftWeekMetrics(
     const days = weekDates.map<DayMetrics>(date => {
       const budget = budgetOf(date);
       const dayShifts = shifts.filter(shift => shift.date === date);
-      const hours = totalHours(dayShifts);
+      // L'e-learning n'entre dans la productivité que si l'option est active.
+      const hours = productiveHours(dayShifts, settings.elearningInProductivity);
       return {
         date,
         budget,
@@ -73,7 +75,7 @@ export function useShiftWeekMetrics(
       weekHours,
       weekCost,
       weekRevenue,
-      weekProductivity: productivity(weekRevenue, weekHours),
+      weekProductivity: productivity(weekRevenue, productiveHours(shifts, settings.elearningInProductivity)),
       weekPayrollPct: payrollPct(weekCost, weekRevenue),
       overtime: overtimeHours(shifts, staff),
       alerts,
@@ -81,5 +83,5 @@ export function useShiftWeekMetrics(
       hoursByStaff: Object.fromEntries(staff.map(member => [member.key, totalHours(shifts.filter(s => s.staffKey === member.key))])),
       proposedCount: shifts.filter(shift => shift.status === 'proposed').length,
     };
-  },[weekDates, shifts, staff, hourlyRates, settings.guardRules, settings.legalRules, budgetOf]);
+  },[weekDates, shifts, staff, hourlyRates, settings.guardRules, settings.legalRules, settings.elearningInProductivity, budgetOf]);
 }

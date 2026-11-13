@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 
 import type { Shift, ShiftRoleDef, ShiftService, ShiftStaffMember } from '@/types/dataTypes';
-import { inferShiftService, parseShiftTime } from '../shiftCalculations';
+import { ELEARNING_ROLE_ID, inferShiftService, parseShiftTime } from '../shiftCalculations';
 import { formatShortDate } from '../shiftDates';
 
 type Props = {
@@ -10,20 +10,25 @@ type Props = {
   date: string;
   cellShifts: Shift[];
   roles: ShiftRoleDef[];
+  // Raisons du refus si les shifts saisis enfreignent une règle légale en mode « bloquer ».
+  getBlockingReasons: (shifts: Shift[]) => string[];
   onSave: (shifts: Shift[]) => void;
   onClose: () => void;
 };
 
 const newShiftId = () => `shift-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-export default function ShiftEditDialog({ member, date, cellShifts, roles, onSave, onClose }: Props) {
+export default function ShiftEditDialog({ member, date, cellShifts, roles, getBlockingReasons, onSave, onClose }: Props) {
   const roleOptions = member.roles.length > 0
     ? member.roles.map(id => roles.find(r => r.id === id)).filter((role): role is ShiftRoleDef => role !== undefined)
     : roles;
+  // L'e-learning peut toujours être saisi à la main.
+  const elearningRole = roles.find(role => role.id === ELEARNING_ROLE_ID);
+  const selectableRoles = elearningRole && !roleOptions.includes(elearningRole) ? [...roleOptions, elearningRole] : roleOptions;
   const defaultRoleId = roleOptions[0]?.id ?? '';
 
   const [drafts, setDrafts] = useState<Shift[]>(cellShifts);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
 
   const patch = (id: string, change: Partial<Shift>) =>
     setDrafts(list => list.map(shift => (shift.id === id ? { ...shift, ...change } : shift)));
@@ -36,11 +41,17 @@ export default function ShiftEditDialog({ member, date, cellShifts, roles, onSav
   const handleSave = () => {
     const invalid = drafts.some(shift => parseShiftTime(shift.start) === null || parseShiftTime(shift.end) === null || !shift.roleId);
     if (invalid) {
-      setError('Horaires au format 11h30 et rôle obligatoires.');
+      setErrors(['Horaires au format 11h30 et rôle obligatoires.']);
       return;
     }
     // Un shift saisi à la main est validé.
-    onSave(drafts.map(shift => ({ ...shift, status: 'validated' })));
+    const validated = drafts.map<Shift>(shift => ({ ...shift, status: 'validated' }));
+    const reasons = getBlockingReasons(validated);
+    if (reasons.length > 0) {
+      setErrors(reasons.map(reason => `Enregistrement refusé : ${reason}`));
+      return;
+    }
+    onSave(validated);
   };
 
   const inputClass = 'w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm';
@@ -71,7 +82,7 @@ export default function ShiftEditDialog({ member, date, cellShifts, roles, onSav
                 aria-label="Rôle"
                 onChange={event => patch(shift.id, { roleId: event.target.value })}
               >
-                {roleOptions.map(role => <option key={role.id} value={role.id}>{role.label}</option>)}
+                {selectableRoles.map(role => <option key={role.id} value={role.id}>{role.label}</option>)}
               </select>
               <select
                 className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
@@ -97,7 +108,7 @@ export default function ShiftEditDialog({ member, date, cellShifts, roles, onSav
           </button>
         </div>
 
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {errors.map(message => <p key={message} className="mt-3 text-sm text-red-600">{message}</p>)}
 
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-xl px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100">Annuler</button>

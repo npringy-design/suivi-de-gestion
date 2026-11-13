@@ -635,6 +635,7 @@ export type ShiftStaffMember = {
   contractHours: number; // heures hebdomadaires
   forfaitJour: boolean;
   preferredRestDays: number[]; // 0 (dimanche) à 6 (samedi)
+  apprenti?: boolean; // catégorie apprenti de Config Salaires : reçoit les heures d'e-learning
 };
 
 export type ShiftAbsenceType = 'cp' | 'rtt' | 'maladie' | 'repos';
@@ -667,7 +668,43 @@ export type ShiftGuardRule = {
   max: number;
 };
 
-export type ShiftLegalRuleId = 'rest11h' | 'max10hDay' | 'max48hWeek' | 'restDays2' | 'contractHours';
+// amplitude13h : 13 h maximum entre le début du premier shift et la fin du dernier de la journée ;
+// oneBreak : 2 shifts maximum par jour (une seule coupure, sans durée minimum).
+export type ShiftLegalRuleId = 'rest11h' | 'max10hDay' | 'max48hWeek' | 'restDays2' | 'contractHours' | 'amplitude13h' | 'oneBreak';
+
+// Horaires d'un service : le soir finit à l'heure `end` (fermeture).
+export type ShiftServiceWindow = {
+  service: ShiftService;
+  days: number[]; // 0 (dimanche) à 6 (samedi)
+  start: string; // 'HHhMM'
+  end: string; // 'HHhMM'
+};
+
+// Besoin par créneau : `count` personnes d'un rôle, début entre startEarliest et startLatest,
+// jusqu'à la fin du service ; untilClose = présence jusqu'à la fermeture (compte comme fermeture).
+export type ShiftSlotRule = {
+  id: string;
+  label: string;
+  roleId: ShiftRoleId;
+  service: ShiftService;
+  days: number[];
+  count: number;
+  startEarliest: string;
+  startLatest: string;
+  untilClose: boolean;
+};
+
+// Période de paie saisie à la main (YYYY-MM-DD, bornes incluses).
+export type ShiftPayPeriod = {
+  start: string;
+  end: string;
+};
+
+// Besoin non couvert ou objectif non tenu à l'issue d'une génération.
+export type ShiftUnmet = {
+  date: string;
+  message: string;
+};
 
 export type ShiftLegalRule = {
   id: ShiftLegalRuleId;
@@ -682,6 +719,12 @@ export type ShiftPlanningSettings = {
   guardRules: ShiftGuardRule[];
   legalRules: ShiftLegalRule[];
   roles: ShiftRoleDef[];
+  serviceWindows: ShiftServiceWindow[];
+  slotRules: ShiftSlotRule[];
+  payPeriods: ShiftPayPeriod[];
+  managerOpenToClose: boolean; // 1 encadrement couvre toute la fenêtre de chaque service
+  elearningHours: number; // heures hebdomadaires d'e-learning des apprentis
+  elearningInProductivity: boolean;
 };
 
 export type ShiftWeekDoc = { shifts: Shift[] };

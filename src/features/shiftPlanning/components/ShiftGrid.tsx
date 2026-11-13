@@ -20,6 +20,7 @@ type Props = {
   absences: ShiftAbsence[];
   alertShiftIds: Set<string>;
   hoursByStaff: Record<string, number>;
+  counters: Record<string, number | null>;
   minProductivity: number;
   todayIso: string;
   onCellClick: (staffKey: string, date: string) => void;
@@ -91,7 +92,7 @@ function ShiftBlock({ shift, roles, hasAlert }: { shift: Shift; roles: ShiftRole
 }
 
 export default function ShiftGrid({
-  groups, roles, days, dayContext, shifts, absences, alertShiftIds, hoursByStaff, minProductivity, todayIso, onCellClick,
+  groups, roles, days, dayContext, shifts, absences, alertShiftIds, hoursByStaff, counters, minProductivity, todayIso, onCellClick,
 }: Props) {
   return (
     <div className="overflow-x-auto rounded-2xl shadow-sm">
@@ -111,6 +112,7 @@ export default function ShiftGrid({
             absences={absences}
             alertShiftIds={alertShiftIds}
             hoursByStaff={hoursByStaff}
+            counters={counters}
             onCellClick={onCellClick}
           />
         ))}
@@ -125,9 +127,9 @@ export default function ShiftGrid({
   );
 }
 
-type GroupProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'hoursByStaff' | 'onCellClick'> & { group: StaffGroup };
+type GroupProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'hoursByStaff' | 'counters' | 'onCellClick'> & { group: StaffGroup };
 
-function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursByStaff, onCellClick }: GroupProps) {
+function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursByStaff, counters, onCellClick }: GroupProps) {
   return (
     <>
       <div className="col-span-8 bg-[#e8e3da] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-600">{group.label}</div>
@@ -141,6 +143,7 @@ function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursB
           absences={absences}
           alertShiftIds={alertShiftIds}
           weekHours={hoursByStaff[member.key] ?? 0}
+          counter={counters[member.key] ?? null}
           onCellClick={onCellClick}
         />
       ))}
@@ -148,9 +151,9 @@ function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursB
   );
 }
 
-type RowProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'onCellClick'> & { member: ShiftStaffMember; weekHours: number };
+type RowProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'onCellClick'> & { member: ShiftStaffMember; weekHours: number; counter: number | null };
 
-function StaffRow({ member, roles, days, shifts, absences, alertShiftIds, weekHours, onCellClick }: RowProps) {
+function StaffRow({ member, roles, days, shifts, absences, alertShiftIds, weekHours, counter, onCellClick }: RowProps) {
   const primaryColor = member.roles[0] ? roleColorOf(roles, member.roles[0]) : NO_ROLE_COLOR;
   const roleLabels = member.roles.map(id => roles.find(r => r.id === id)?.label ?? id).join(' › ');
   return (
@@ -161,6 +164,11 @@ function StaffRow({ member, roles, days, shifts, absences, alertShiftIds, weekHo
         <div className="text-[11px] font-semibold text-slate-600">
           {formatDecimal(weekHours, 1)} h / {member.forfaitJour ? 'forfait' : `${member.contractHours} h`}
         </div>
+        {counter !== null && (
+          <div className="text-[11px] font-semibold" style={{ color: counter > 0 ? '#b45309' : counter < 0 ? '#0e7490' : '#16a34a' }}>
+            Compteur {counter > 0 ? '+' : ''}{formatDecimal(counter, 1)} h
+          </div>
+        )}
       </div>
       {days.map(day => {
         const absence = findAbsence(absences, member.key, day.date);
