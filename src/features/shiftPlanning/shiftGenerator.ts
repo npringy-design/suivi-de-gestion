@@ -148,12 +148,18 @@ export function generateWeek(input: GenerateInput): GenerateResult {
     return 0;
   };
 
+  // Le contrat passe avant les minimums : un collaborateur n'est pas affecté au-delà de son objectif d'heures
+  // (un besoin resté sans personne est repris en F avec les heures de contrat, sinon signalé).
+  const withinContract = (member: ShiftStaffMember, shift: Shift): boolean =>
+    member.forfaitJour || member.contractHours <= 0
+    || hoursOf(member) + shiftDurationHours(shift.start, shift.end) <= targetOf(member) + TOP_UP_TOLERANCE_HOURS;
+
   const assignNeed = (need: Need, excludeKey?: string): boolean => {
     const { demand, template } = need;
     const eligible = staff
       .filter(member => member.key !== excludeKey && member.roles.includes(demand.roleId))
       .map(member => ({ member, shift: shiftOf(member, demand.date, template, demand.roleId, demand.service) }))
-      .filter(({ member, shift }) => canAdd(member, shift));
+      .filter(({ member, shift }) => withinContract(member, shift) && canAdd(member, shift));
     if (eligible.length === 0) return false;
     const best = eligible
       .map(entry => ({ ...entry, rank: rankCandidate(entry.member, demand) }))
@@ -175,10 +181,7 @@ export function generateWeek(input: GenerateInput): GenerateResult {
     scored.sort((a, b) => a.count - b.count || a.need.demand.rank - b.need.demand.rank || a.need.demand.date.localeCompare(b.need.demand.date));
     const [next] = scored;
     pending.splice(next.index, 1);
-    if (!assignNeed(next.need)) {
-      const { demand, template } = next.need;
-      unmet.push({ date: demand.date, kind: 'besoin', message: `${demand.date} ${demand.service} : aucun ${demand.roleId} disponible (${template.start} – ${template.end})` });
-    }
+    assignNeed(next.need); // un échec est repris en F (heures de contrat) puis signalé s'il reste non couvert
   }
 
   // E-learning des apprentis : un jour de faible activité, jamais sur un repos.
@@ -240,7 +243,11 @@ export function generateWeek(input: GenerateInput): GenerateResult {
   const serviceRevenue = (date: string, service: ShiftService) => (service === 'midi' ? budgetOf(date).caMidi : budgetOf(date).caSoir);
   const exceeded = new Map<string, { date: string; service: ShiftService; roleId: string }>();
 
-  type Slot = { date: string; service: ShiftService; roleId: string; hours: number; shift: Shift; overMax: boolean };
+  type Slot = { date: string; service: ShiftService; roleId: string; hours: number; shift: Shift; overMax: boolean; coversNeed: boolean };
+  const requiredBy = new Map<string, number>();
+  const requiredKey = (date: string, service: ShiftService, roleId: string) => `${date}|${service}|${roleId}`;
+  needs.forEach(({ demand }) => requiredBy.set(requiredKey(demand.date, demand.service, demand.roleId), (requiredBy.get(requiredKey(demand.date, demand.service, demand.roleId)) ?? 0) + 1));
+  kept.forEach(shift => requiredBy.set(requiredKey(shift.date, shift.service, shift.roleId), (requiredBy.get(requiredKey(shift.date, shift.service, shift.roleId)) ?? 0) + 1));
 
   staff.filter(member => !member.forfaitJour && member.contractHours > 0).forEach(member => {
     const roleIds = member.roles.filter(id => id !== ELEARNING_ROLE_ID);
@@ -275,13 +282,14 @@ export function generateWeek(input: GenerateInput): GenerateResult {
         templatesFor(settings.templates, roleId, service, weekdayOf(date)).forEach(template => {
           const shift = shiftOf(member, date, template, roleId, service);
           if (!canAdd(member, shift)) return;
-          slots.push({ date, service, roleId, hours: shiftDurationHours(template.start, template.end), shift, overMax: presentCount(date, service, roleId) >= guardMaxOf(roleId, service) });
+          slots.push({ date, service, roleId, hours: shiftDurationHours(template.start, template.end), shift, overMax: presentCount(date, service, roleId) >= guardMaxOf(roleId, service), coversNeed: presentCount(date, service, roleId) < (requiredBy.get(requiredKey(date, service, roleId)) ?? 0) });
         });
       })));
       return slots;
     };
     const coversPerPerson = (slot: Slot) => serviceCovers(slot.date, slot.service) / Math.max(1, servicePeople(slot.date, slot.service));
-    const byImpact = (a: Slot, b: Slot) => Number(a.overMax) - Number(b.overMax)
+    const byImpact = (a: Slot, b: Slot) => Number(b.coversNeed) - Number(a.coversNeed) // d'abord un minimum de personnel manquant
+      || Number(a.overMax) - Number(b.overMax)
       || coversPerPerson(b) - coversPerPerson(a)
       || serviceRevenue(b.date, b.service) - serviceRevenue(a.date, a.service)
       || b.hours - a.hours;
@@ -316,6 +324,15 @@ export function generateWeek(input: GenerateInput): GenerateResult {
     } else if (remaining >= MIN_REMAINING_FOR_TOP_UP) {
       unmet.push({ date: weekDates[0], kind: 'contrat', message: `${member.nom} : ${round1(remaining)} h de contrat non placées sur la semaine` });
     }
+  });
+
+  // Minimums restés non couverts : le contrat l'a emporté (heures déjà atteintes) ou personne n'est disponible.
+  requiredBy.forEach((required, key) => {
+    const [date, service, roleId] = key.split('|');
+    const present = assigned.filter(shift => shift.date === date && shift.service === service && shift.roleId === roleId).length;
+    if (present >= required) return;
+    const roleLabel = settings.roles.find(role => role.id === roleId)?.label ?? roleId;
+    unmet.push({ date, kind: 'besoin', message: `${date} ${service} : ${required - present} ${roleLabel.toLowerCase()} manquant (contrat atteint ou personne de disponible)` });
   });
 
   exceeded.forEach(({ date, service, roleId }) => {
