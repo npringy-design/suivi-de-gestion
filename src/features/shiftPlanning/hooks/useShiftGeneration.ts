@@ -67,5 +67,5 @@ export function useShiftGeneration({ mondayIso, staff, absences, settings, budge
     return () => clearTimeout(timer);
   }, [isLoading, mondayIso, signature, settings.autoRegenerate, run]);
 
-  return { generate, applyManualShifts, unmet: result?.monday === mondayIso ? result.unmet : [] };
+  return { generate, applyManualShifts, resetUnmet: () => setResult(null), unmet: result?.monday === mondayIso ? result.unmet : [] };
 }

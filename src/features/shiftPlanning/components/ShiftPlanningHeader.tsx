@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Settings, Trash2 } from 'lucide-react';
 
 import type { ShiftSaveStatus } from '../hooks/useShiftPlanningDocs';
 import { BEBAS_FONT } from '../shiftRoleStyle';
@@ -13,6 +13,8 @@ type Props = {
   onOpenSettings: () => void;
   onValidate: () => void;
   onGenerate: () => void;
+  onReset: () => void;
+  shiftCount: number;
 };
 
 const SAVE_LABELS: Record<ShiftSaveStatus, string> = {
@@ -23,7 +25,7 @@ const SAVE_LABELS: Record<ShiftSaveStatus, string> = {
 };
 
 export default function ShiftPlanningHeader({
-  weekLabel, proposedCount, saveStatus, onBack, onPrevWeek, onNextWeek, onOpenSettings, onValidate, onGenerate,
+  weekLabel, proposedCount, saveStatus, onBack, onPrevWeek, onNextWeek, onOpenSettings, onValidate, onGenerate, onReset, shiftCount,
 }: Props) {
   return (
     <header
@@ -50,6 +52,15 @@ export default function ShiftPlanningHeader({
       <div className="ml-auto flex items-center gap-3">
         <button type="button" onClick={onOpenSettings} aria-label="Paramètres" title="Paramètres" className="rounded-lg p-2 hover:bg-white/10">
           <Settings className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          onClick={onReset}
+          disabled={shiftCount === 0}
+          title="RAZ : supprime tous les shifts de la semaine"
+          className="flex items-center gap-1 rounded-xl border border-red-300/60 px-3 py-2 text-sm font-bold text-red-200 hover:bg-red-500/20 disabled:opacity-40"
+        >
+          <Trash2 className="h-4 w-4" /> RAZ
         </button>
         <button
           type="button"

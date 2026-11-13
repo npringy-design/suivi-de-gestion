@@ -88,6 +88,14 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
     [data.staff, docs.shifts, docs.absences, weekDates],
   );
 
+  // RAZ : supprime tous les shifts de la semaine affichée (validés compris), après confirmation.
+  const { resetUnmet } = generation;
+  const resetWeek = useCallback(() => {
+    if (!window.confirm(`Supprimer les ${docs.shifts.length} shifts de la semaine (validés compris) ? Cette action est définitive.`)) return;
+    updateShifts(() => []);
+    resetUnmet();
+  }, [docs.shifts.length, updateShifts, resetUnmet]);
+
   const { applyManualShifts } = generation;
   const saveCell = useCallback((staffKey: string, date: string, cellShifts: Shift[]) => {
     applyManualShifts([...docs.shifts.filter(shift => !(shift.staffKey === staffKey && shift.date === date)), ...cellShifts]);
@@ -126,6 +134,8 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
         onOpenSettings={() => setShowSettings(true)}
         onValidate={validateWeek}
         onGenerate={generation.generate}
+        onReset={resetWeek}
+        shiftCount={docs.shifts.length}
       />
 
       <main className="space-y-5 p-4 sm:p-6">
