@@ -8,6 +8,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 ## 13/11/2026 (Planning shifts, étape 1/3)
 
 - Planning shifts (étape 1/3) : page super_admin Thillois (`#/planning-shifts`, `features/shiftPlanning/`, aucun lien de menu, `canAccessShiftPlanning`), paramètres, rôles, saisie shifts, KPI productivité/MS, alertes légales, table `suivi_gestion_shift_planning` (`supabase/SHIFT_PLANNING_SETUP.sql`, SQL à exécuter ; service `supabaseShiftPlanning.ts`, hors DataContext). tsc OK.
+- Planning shifts : tuile accueil super_admin Thillois, pastilles férié/vacances/événements, rôles proposés depuis Config Salaires. tsc OK.
 
 ## 01/11/2026 (fix création de site : CHECK legacy sur site_id)
 

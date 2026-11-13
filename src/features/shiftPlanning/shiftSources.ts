@@ -1,7 +1,9 @@
 import { parseMoneyValue } from '@/lib/money';
+import { isPublicHoliday } from '@/lib/publicHolidays';
 import { collectDailySamples } from '@/features/analyse/ecartsAnalysis';
+import { vacationStatusOf } from '@/features/planification/planningEngine';
 import { payrollNameKey } from '@/features/dashboard/importHelpers/personnelSalaryImport';
-import type { MonthData, MonthDataSalariesConfig, ShiftPlanningSettings, ShiftStaffMember } from '@/types/dataTypes';
+import type { CustomEvent, MonthData, MonthDataSalariesConfig, PersonnelDepartment, SchoolHolidayCalendar, ShiftPlanningSettings, ShiftStaffMember } from '@/types/dataTypes';
 import type { DayBudget } from './shiftCalculations';
 import { monthsOfDates } from './shiftDates';
 
@@ -9,7 +11,14 @@ import { monthsOfDates } from './shiftDates';
 
 type AllData = Record<number, Record<number, MonthData>>;
 
-export type StaffCandidate = { key: string; nom: string; hourlyRate: number; forfaitJour: boolean };
+export type StaffCandidate = {
+  key: string;
+  nom: string;
+  hourlyRate: number;
+  forfaitJour: boolean;
+  category: string; // clé de config.categories (cadre, maitrise, niv12, niv3, apprenti)
+  department?: PersonnelDepartment;
+};
 
 export type StaffSource = { candidates: StaffCandidate[]; year: number; month: number } | null;
 
@@ -41,29 +50,65 @@ export function deriveStaffCandidates(allData: AllData, year: number, month: num
   const forfaitKeys = new Set(lines.filter(line => line.forfaitJour).map(line => payrollNameKey(line.nom)));
 
   const byKey = new Map<string, StaffCandidate>();
-  Object.values(found.config.categories).forEach(rows => {
+  Object.entries(found.config.categories).forEach(([category, rows]) => {
     rows.forEach(row => {
       const nom = row.nom.trim();
       if (!nom) return;
       const key = payrollNameKey(nom);
       if (leavers.has(key) || byKey.has(key)) return;
-      byKey.set(key, { key, nom, hourlyRate: parseMoneyValue(row.coutHoraire), forfaitJour: forfaitKeys.has(key) });
+      byKey.set(key, { key, nom, hourlyRate: parseMoneyValue(row.coutHoraire), forfaitJour: forfaitKeys.has(key), category, department: row.department });
     });
   });
 
   return { candidates: [...byKey.values()].sort((a, b) => a.nom.localeCompare(b.nom, 'fr')), year: found.year, month: found.month };
 }
 
-// Fiche collaborateur : valeurs enregistrées, sinon défauts (35 h, aucun rôle, aucun repos préféré).
-export const buildStaffMembers = (candidates: StaffCandidate[], stored: ShiftStaffMember[]): ShiftStaffMember[] => {
+// Rôle proposé à un collaborateur sans fiche : catégorie cadre/maîtrise → encadrement, sinon service cuisine/salle.
+// Un identifiant absent des rôles configurés ne donne aucun rôle.
+const proposedRoles = (candidate: StaffCandidate, roleIds: string[]): string[] => {
+  const wanted = candidate.category === 'cadre' || candidate.category === 'maitrise'
+    ? 'encadrement'
+    : candidate.department ?? '';
+  return roleIds.includes(wanted) ? [wanted] : [];
+};
+
+// Fiche collaborateur : valeurs enregistrées (jamais modifiées), sinon défauts (35 h, rôle proposé, aucun repos préféré).
+export const buildStaffMembers = (candidates: StaffCandidate[], stored: ShiftStaffMember[], roleIds: string[]): ShiftStaffMember[] => {
   const storedByKey = new Map(stored.map(member => [member.key, member]));
   return candidates.map(candidate => {
     const saved = storedByKey.get(candidate.key);
     return saved
       ? { ...saved, nom: candidate.nom }
-      : { key: candidate.key, nom: candidate.nom, roles: [], contractHours: 35, forfaitJour: candidate.forfaitJour, preferredRestDays: [] };
+      : { key: candidate.key, nom: candidate.nom, roles: proposedRoles(candidate, roleIds), contractHours: 35, forfaitJour: candidate.forfaitJour, preferredRestDays: [] };
   });
 };
+
+const CATEGORY_LABELS: Record<string, string> = { cadre: 'Cadre', maitrise: 'Maîtrise', niv12: 'Niveau 1-2', niv3: 'Niveau 3', apprenti: 'Apprenti' };
+const DEPARTMENT_LABELS: Record<PersonnelDepartment, string> = { cuisine: 'Cuisine', salle: 'Salle' };
+
+// Source affichée en gris dans les paramètres : « catégorie · service » de Config Salaires.
+export const staffSourceLabel = (candidate: StaffCandidate): string =>
+  [CATEGORY_LABELS[candidate.category] ?? candidate.category, candidate.department ? DEPARTMENT_LABELS[candidate.department] : null]
+    .filter(Boolean)
+    .join(' · ');
+
+export type DayContext = { holiday: string | null; vacation: boolean; events: string[] };
+
+// Contexte de chaque jour : férié, vacances scolaires (hors férié, prioritaire) et événements personnalisés.
+export function buildWeekDayContext(
+  weekDates: string[],
+  calendar: SchoolHolidayCalendar,
+  customEvents: CustomEvent[],
+): Record<string, DayContext> {
+  return Object.fromEntries(weekDates.map(date => {
+    const status = vacationStatusOf(date, calendar);
+    return [date, {
+      holiday: isPublicHoliday(date, Number(date.slice(0, 4))),
+      vacation: status === 'vacances' || status === 'ete',
+      events: customEvents.filter(event => event.date.slice(0, 10) === date).map(event => event.label),
+    }];
+  }));
+}
 
 // Couverts et CA budgétés par jour, via collectDailySamples (budgetFallback : jours futurs inclus).
 export function collectWeekBudget(allData: AllData, weekDates: string[]): Record<string, DayBudget> {

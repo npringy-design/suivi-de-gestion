@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Shift, ShiftStaffMember } from '@/types/dataTypes';
+import type { SchoolHolidayCalendar, Shift, ShiftStaffMember } from '@/types/dataTypes';
 import {
   computeDayNeeds,
   computeDayShortages,
@@ -12,6 +12,7 @@ import {
   shiftDurationHours,
 } from './shiftCalculations';
 import { isoWeekNumber, mondayOfIso } from './shiftDates';
+import { buildStaffMembers, buildWeekDayContext } from './shiftSources';
 
 const member = (overrides: Partial<ShiftStaffMember> = {}): ShiftStaffMember => ({
   key: 'A', nom: 'Alice', roles: ['salle'], contractHours: 35, forfaitJour: false, preferredRestDays: [], ...overrides,
@@ -80,5 +81,31 @@ describe('dates', () => {
     expect(mondayOfIso('2026-11-15')).toBe('2026-11-09');
     expect(isoWeekNumber('2026-11-09')).toBe(46);
     expect(isoWeekNumber('2026-01-01')).toBe(1);
+  });
+});
+
+describe('contexte du jour et rôles proposés', () => {
+  const calendar = { zone: 'B', periods: [{ name: 'Toussaint', schoolYear: '2026-2027', start: '2026-10-17', end: '2026-11-01' }] } as unknown as SchoolHolidayCalendar;
+
+  it('férié, vacances et événements', () => {
+    const context = buildWeekDayContext(['2026-11-01', '2026-11-11', '2026-10-20'], calendar, [{ id: '1', date: '2026-10-20', label: 'Match' }]);
+    expect(context['2026-11-11'].holiday).toBe('Armistice 1918');
+    expect(context['2026-10-20']).toEqual({ holiday: null, vacation: true, events: ['Match'] });
+    expect(context['2026-11-01'].holiday).not.toBeNull();
+  });
+
+  it('rôle proposé sans fiche, fiche enregistrée intacte', () => {
+    const base = { hourlyRate: 10, forfaitJour: false };
+    const candidates = [
+      { ...base, key: 'A', nom: 'A', category: 'cadre' },
+      { ...base, key: 'B', nom: 'B', category: 'niv12', department: 'cuisine' as const },
+      { ...base, key: 'C', nom: 'C', category: 'niv3', department: 'salle' as const },
+      { ...base, key: 'D', nom: 'D', category: 'niv3' },
+      { ...base, key: 'E', nom: 'E', category: 'cadre' },
+    ];
+    const saved = [member({ key: 'E', nom: 'E', roles: [] })];
+    const result = buildStaffMembers(candidates, saved, ['encadrement', 'salle', 'cuisine']);
+    expect(result.map(m => m.roles)).toEqual([['encadrement'], ['cuisine'], ['salle'], [], []]);
+    expect(buildStaffMembers(candidates.slice(2, 3), [], ['encadrement'])[0].roles).toEqual([]);
   });
 });

@@ -10,6 +10,7 @@ import { ShiftAbsencesEditor, ShiftStaffEditor } from './ShiftStaffEditor';
 type Props = {
   settings: Settings;
   staff: ShiftStaffMember[];
+  staffSourceLabels: Record<string, string>;
   absences: ShiftAbsence[];
   onSettingsChange: (settings: Settings) => void;
   onStaffChange: (staff: ShiftStaffMember[]) => void;
@@ -29,7 +30,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export default function ShiftPlanningSettings({
-  settings, staff, absences, onSettingsChange, onStaffChange, onAbsencesChange, onClose,
+  settings, staff, staffSourceLabels, absences, onSettingsChange, onStaffChange, onAbsencesChange, onClose,
 }: Props) {
   const patch = (change: Partial<Settings>) => onSettingsChange({ ...settings, ...change });
 
@@ -113,7 +114,7 @@ export default function ShiftPlanningSettings({
       </Section>
 
       <Section title="Personnel">
-        <ShiftStaffEditor staff={staff} roles={settings.roles} onChange={onStaffChange} />
+        <ShiftStaffEditor staff={staff} roles={settings.roles} sourceLabels={staffSourceLabels} onChange={onStaffChange} />
       </Section>
 
       <Section title="Absences">

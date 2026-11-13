@@ -20,6 +20,7 @@ import {
   Calendar,
   Users,
   Building2,
+  CalendarClock,
   LogOut,
 } from 'lucide-react';
 import {
@@ -45,7 +46,7 @@ import { useSiteBrandTheme } from '@/lib/siteBrandTheme';
 import { parseMoneyValue } from '@/lib/money';
 import { getValidAccessToken } from '@/services/supabaseAuth';
 import { useAuthSession } from '@/AuthGate';
-import { canCreateSites } from '@/lib/suiviPermissions';
+import { canAccessShiftPlanning, canCreateSites } from '@/lib/suiviPermissions';
 import { getDashboardRowIndices } from '@/lib/utils';
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
@@ -215,7 +216,7 @@ const formatHomePeriodLabel = (period: HomePeriodSelection) => {
 export default function Home() {
   const { data, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, companySettings } = useData();
   const navigate = useNavigate();
-  const { session, signOut, accessProfile } = useAuthSession();
+  const { session, signOut, accessProfile, activeSiteId } = useAuthSession();
   const sidebarTheme = useSiteBrandTheme();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -242,6 +243,7 @@ export default function Home() {
   const adminEntries = [
     { show: canManageUsers, path: '/utilisateurs', title: 'Gestion des utilisateurs', label: 'Utilisateurs', Icon: Users },
     { show: canCreateSites(accessProfile), path: '/sites', title: 'Création de site', label: 'Sites', Icon: Building2 },
+    { show: canAccessShiftPlanning(accessProfile, activeSiteId), path: '/planning-shifts', title: 'Planning des shifts', label: 'Planning', Icon: CalendarClock },
   ];
 
   const year = selectedYear;

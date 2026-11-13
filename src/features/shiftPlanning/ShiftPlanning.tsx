@@ -51,7 +51,8 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
 
   const weekDates = useMemo(() => weekDaysIso(mondayIso), [mondayIso]);
   const docs = useShiftPlanningDocs(activeSiteId, mondayIso);
-  const data = useShiftPlanningData(weekDates, docs.storedStaff);
+  const roleIds = useMemo(() => docs.settings.roles.map(role => role.id), [docs.settings.roles]);
+  const data = useShiftPlanningData(weekDates, docs.storedStaff, roleIds);
   const metrics = useShiftWeekMetrics(weekDates, docs.shifts, data.staff, data.hourlyRates, docs.settings, data.budgetOf);
 
   useEffect(() => {
@@ -81,6 +82,7 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
         <ShiftPlanningSettings
           settings={docs.settings}
           staff={data.staff}
+          staffSourceLabels={data.staffSourceLabels}
           absences={docs.absences}
           onSettingsChange={docs.setSettings}
           onStaffChange={docs.setStoredStaff}
@@ -121,6 +123,7 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
           groups={groups}
           roles={docs.settings.roles}
           days={metrics.days}
+          dayContext={data.dayContext}
           shifts={docs.shifts}
           absences={docs.absences}
           alertShiftIds={metrics.alertShiftIds}

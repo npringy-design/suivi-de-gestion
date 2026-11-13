@@ -2,6 +2,7 @@ import { formatDecimal } from '@/lib/formatters';
 import type { Shift, ShiftAbsence, ShiftRoleDef, ShiftStaffMember } from '@/types/dataTypes';
 import type { DayMetrics } from '../hooks/useShiftWeekMetrics';
 import { findAbsence } from '../shiftCalculations';
+import type { DayContext } from '../shiftSources';
 import { dateFromIso } from '../shiftDates';
 import { BEBAS_FONT, NO_ROLE_COLOR, roleColorOf, roleGradient, roleTextColor } from '../shiftRoleStyle';
 
@@ -14,6 +15,7 @@ type Props = {
   groups: StaffGroup[];
   roles: ShiftRoleDef[];
   days: DayMetrics[];
+  dayContext: Record<string, DayContext>;
   shifts: Shift[];
   absences: ShiftAbsence[];
   alertShiftIds: Set<string>;
@@ -23,7 +25,21 @@ type Props = {
   onCellClick: (staffKey: string, date: string) => void;
 };
 
-function DayHeader({ day, roles, minProductivity, isToday }: { day: DayMetrics; roles: ShiftRoleDef[]; minProductivity: number; isToday: boolean }) {
+function ContextPills({ context }: { context: DayContext | undefined }) {
+  if (!context) return null;
+  const pill = "mt-1 mr-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold";
+  return (
+    <div>
+      {context.holiday && <span className={pill} style={{ background: '#fee2e2', color: '#991b1b' }}>Férié · {context.holiday}</span>}
+      {context.vacation && <span className={pill} style={{ background: '#e0f2fe', color: '#075985' }}>Vacances</span>}
+      {context.events.map(label => (
+        <span key={label} className={pill} style={{ background: 'rgba(255,255,255,.15)', color: '#fff' }}>{label}</span>
+      ))}
+    </div>
+  );
+}
+
+function DayHeader({ day, context, roles, minProductivity, isToday }: { day: DayMetrics; context: DayContext | undefined; roles: ShiftRoleDef[]; minProductivity: number; isToday: boolean }) {
   const date = dateFromIso(day.date);
   const productivityOk = day.productivity !== null && day.productivity >= minProductivity;
   return (
@@ -35,6 +51,7 @@ function DayHeader({ day, roles, minProductivity, isToday }: { day: DayMetrics; 
         {DAY_LABELS[date.getDay()]} {String(date.getDate()).padStart(2, '0')}
       </div>
       <div className="mt-1 text-[11px] opacity-80">{Math.round(day.covers)} couverts</div>
+      <ContextPills context={context} />
       {day.productivity !== null && (
         <span
           className="mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
@@ -74,14 +91,14 @@ function ShiftBlock({ shift, roles, hasAlert }: { shift: Shift; roles: ShiftRole
 }
 
 export default function ShiftGrid({
-  groups, roles, days, shifts, absences, alertShiftIds, hoursByStaff, minProductivity, todayIso, onCellClick,
+  groups, roles, days, dayContext, shifts, absences, alertShiftIds, hoursByStaff, minProductivity, todayIso, onCellClick,
 }: Props) {
   return (
     <div className="overflow-x-auto rounded-2xl shadow-sm">
       <div className="grid min-w-[1050px] gap-px bg-slate-200" style={{ gridTemplateColumns: GRID_COLUMNS }}>
         <div className="flex items-end bg-[#0b1f33] px-3 py-2 text-xs font-bold uppercase tracking-wider text-white/70">Équipe</div>
         {days.map(day => (
-          <DayHeader key={day.date} day={day} roles={roles} minProductivity={minProductivity} isToday={day.date === todayIso} />
+          <DayHeader key={day.date} day={day} context={dayContext[day.date]} roles={roles} minProductivity={minProductivity} isToday={day.date === todayIso} />
         ))}
 
         {groups.map(group => (

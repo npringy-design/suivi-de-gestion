@@ -15,10 +15,11 @@ const field = 'rounded-lg border border-slate-300 px-2 py-1 text-sm';
 type StaffProps = {
   staff: ShiftStaffMember[];
   roles: ShiftRoleDef[];
+  sourceLabels: Record<string, string>;
   onChange: (staff: ShiftStaffMember[]) => void;
 };
 
-export function ShiftStaffEditor({ staff, roles, onChange }: StaffProps) {
+export function ShiftStaffEditor({ staff, roles, sourceLabels, onChange }: StaffProps) {
   const patch = (key: string, change: Partial<ShiftStaffMember>) =>
     onChange(staff.map(member => (member.key === key ? { ...member, ...change } : member)));
 
@@ -43,7 +44,10 @@ export function ShiftStaffEditor({ staff, roles, onChange }: StaffProps) {
     <div className="space-y-2">
       {staff.map(member => (
         <div key={member.key} className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2 text-sm">
-          <span className="w-44 truncate font-bold text-slate-800">{member.nom}</span>
+          <span className="w-52 font-bold text-slate-800">
+            <span className="block truncate">{member.nom}</span>
+            {sourceLabels[member.key] && <span className="block truncate text-[11px] font-normal text-slate-400">{sourceLabels[member.key]}</span>}
+          </span>
           {[0, 1, 2].map(slot => (
             <select
               key={slot}
