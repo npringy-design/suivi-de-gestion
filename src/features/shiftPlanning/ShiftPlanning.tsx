@@ -65,6 +65,7 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
     mondayIso, staff: data.staff, absences: docs.absences, settings: docs.settings, budgetOf: data.budgetOf,
     periodInfo: period.periodInfo, shifts: docs.shifts, updateShifts: docs.updateShifts,
     isLoading: docs.isLoading || data.isLoading,
+    flushPending: docs.flushPending,
   });
 
   useEffect(() => {
@@ -109,11 +110,16 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
           settings={docs.settings}
           staff={data.staff}
           staffSourceLabels={data.staffSourceLabels}
+          weekDates={weekDates}
+          budgetOf={data.budgetOf}
+          saveStatus={docs.saveStatus}
+          lastSavedAt={docs.lastSavedAt}
+          saveError={docs.error}
           absences={docs.absences}
           onSettingsChange={docs.setSettings}
           onStaffChange={docs.setStoredStaff}
           onAbsencesChange={docs.setAbsences}
-          onClose={() => setShowSettings(false)}
+          onClose={() => { docs.flushPending(); setShowSettings(false); }}
         />
       </div>
     );

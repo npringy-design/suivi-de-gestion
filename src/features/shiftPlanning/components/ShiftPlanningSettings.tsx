@@ -3,7 +3,8 @@ import { Plus, Trash2, X } from 'lucide-react';
 
 import type { ShiftAbsence, ShiftLegalRule, ShiftPlanningSettings as Settings, ShiftRoleDef, ShiftStaffMember } from '@/types/dataTypes';
 
-import { ELEARNING_ROLE_ID, LEGAL_RULE_LABELS } from '../shiftCalculations';
+import type { ShiftSaveStatus } from '../hooks/useShiftPlanningDocs';
+import { ELEARNING_ROLE_ID, LEGAL_RULE_LABELS, type DayBudget } from '../shiftCalculations';
 import { BEBAS_FONT } from '../shiftRoleStyle';
 
 import ShiftGuardRulesEditor from './ShiftGuardRulesEditor';
@@ -17,10 +18,15 @@ type Props = {
   settings: Settings;
   staff: ShiftStaffMember[];
   staffSourceLabels: Record<string, string>;
+  weekDates: string[];
+  budgetOf: (date: string) => DayBudget;
   absences: ShiftAbsence[];
   onSettingsChange: (settings: Settings) => void;
   onStaffChange: (staff: ShiftStaffMember[]) => void;
   onAbsencesChange: (absences: ShiftAbsence[]) => void;
+  saveStatus: ShiftSaveStatus;
+  lastSavedAt: Date | null;
+  saveError: string | null;
   onClose: () => void;
 };
 
@@ -36,7 +42,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export default function ShiftPlanningSettings({
-  settings, staff, staffSourceLabels, absences, onSettingsChange, onStaffChange, onAbsencesChange, onClose,
+  settings, staff, staffSourceLabels, weekDates, budgetOf, absences, onSettingsChange, onStaffChange, onAbsencesChange, saveStatus, lastSavedAt, saveError, onClose,
 }: Props) {
   const patch = (change: Partial<Settings>) => onSettingsChange({ ...settings, ...change });
   // Le rôle technique e-learning n'entre jamais dans les besoins de présence ni dans les rôles du personnel.
@@ -64,6 +70,15 @@ export default function ShiftPlanningSettings({
         </button>
       </div>
 
+      <p
+        className={`text-sm font-semibold ${saveStatus === 'error' ? 'text-red-600' : saveStatus === 'saving' ? 'text-slate-500' : 'text-green-700'}`}
+        role="status"
+      >
+        {saveStatus === 'saving' && 'Enregistrement…'}
+        {saveStatus === 'saved' && `Enregistré à ${(lastSavedAt ?? new Date()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
+        {saveStatus === 'error' && `Erreur : ${saveError ?? 'enregistrement impossible'}`}
+      </p>
+
       <Section title="Objectifs">
         <div className="grid gap-4 sm:grid-cols-2 text-sm text-slate-700">
           <label className="flex items-center justify-between gap-2">Productivité minimum (€/h)
@@ -87,8 +102,8 @@ export default function ShiftPlanningSettings({
         </div>
       </Section>
 
-      <Section title="Garde-fous">
-        <ShiftGuardRulesEditor rules={settings.guardRules} roles={presenceRoles} onChange={guardRules => patch({ guardRules })} />
+      <Section title="Effectif par service selon les couverts">
+        <ShiftGuardRulesEditor rules={settings.guardRules} roles={presenceRoles} weekDates={weekDates} budgetOf={budgetOf} onChange={guardRules => patch({ guardRules })} />
       </Section>
 
       <Section title="Horaires des services">

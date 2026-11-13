@@ -25,12 +25,12 @@ import { dateFromIso, weekDaysIso } from './shiftDates';
 import { buildDemands, SERVICES, windowOf, type Demand } from './shiftGeneratorDemands';
 import { chooseRestDays } from './shiftGeneratorRest';
 import { isClosing, type PeriodInfo } from './shiftPeriod';
-import { pickTemplate, templatesFor } from './shiftTemplates';
+import { pickTemplate, templatesFor, WEEKDAY_NAMES } from './shiftTemplates';
 
 // Moteur de génération d'une semaine (fonctions pures), raisonnant d'abord sur la semaine entière.
-// Priorités strictes : légal > minimums > productivité > heures de contrat lissées > repos > équilibre.
+// Priorités strictes : légal > heures de contrat (obligatoires) > minimums de personnel > productivité (objectif) > repos > équilibre.
 // A besoins → modèles · B repos décidés en premier · C objectifs d'heures · D affectation (le plus contraint d'abord)
-// · E productivité · F complément d'heures · G contrôle légal final.
+// · E productivité (objectif) · F heures de contrat obligatoires · G contrôle légal final.
 
 export type GenerateInput = {
   mondayIso: string;
@@ -49,6 +49,7 @@ type Meta = { kind: 'need' | 'elearning' | 'topup'; need?: Need; order: number }
 
 const TOP_UP_TOLERANCE_HOURS = 0.5;
 const MIN_REMAINING_FOR_TOP_UP = 1.5;
+const MIN_MANDATORY_SHORTFALL_HOURS = 0.5;
 const MAX_FINAL_PASSES = 40;
 
 const idOf = (date: string, staffKey: string, roleId: string, service: ShiftService, start: string): string =>
@@ -81,11 +82,7 @@ export function generateWeek(input: GenerateInput): GenerateResult {
   const staffShifts = (member: ShiftStaffMember) => assigned.filter(shift => shift.staffKey === member.key);
   const hoursOf = (member: ShiftStaffMember) => totalHours(staffShifts(member));
   const weekdayOf = (date: string) => dateFromIso(date).getDay();
-  const dayShifts = (date: string) => assigned.filter(shift => shift.date === date);
-  const dayHours = (date: string) => productiveHours(dayShifts(date), settings.elearningInProductivity);
   const revenueOf = (date: string) => dayRevenue(budgetOf(date));
-  const productivityOk = (date: string, extraHours: number) =>
-    revenueOf(date) >= settings.minProductivity * (dayHours(date) + extraHours);
 
   // ── A. Besoins de la semaine, convertis en besoins de modèles (jamais d'horaire inventé).
   const demands = buildDemands(weekDates, settings, budgetOf, kept);
@@ -118,16 +115,12 @@ export function generateWeek(input: GenerateInput): GenerateResult {
     return computeLegalAlerts([...own, candidate], [member], mondayIso, HARD_LEGAL_RULES).length === 0;
   };
 
-  // ── C. Objectif d'heures de la semaine : contrat lissé sur la période, réparti sur les jours travaillables.
+  // ── C. Objectif d'heures de la semaine : contrat lissé sur la période de paie.
   const targetOf = (member: ShiftStaffMember): number => {
     if (member.forfaitJour || member.contractHours <= 0) return 0;
     const info = periodInfo?.[member.key];
     if (!info) return member.contractHours;
     return Math.max(0, member.contractHours - info.balance / info.weeksLeft);
-  };
-  const perDayTarget = (member: ShiftStaffMember): number => {
-    const days = weekDates.filter(date => isAvailable(member, date)).length;
-    return days > 0 ? targetOf(member) / days : 0;
   };
 
   const shiftOf = (member: ShiftStaffMember, date: string, template: ShiftTemplate, roleId: string, service: ShiftService): Shift => ({
@@ -228,78 +221,109 @@ export function generateWeek(input: GenerateInput): GenerateResult {
     });
   }
 
-  // ── E. Productivité : un jour sous le minimum perd d'abord les shifts proposés au-delà des minimums
-  // (e-learning relogé ailleurs, puis excédent d'un rôle, en commençant par qui est au-dessus de son objectif).
-  const underTarget = (date: string) => revenueOf(date) > 0 && dayHours(date) > 0 && revenueOf(date) / dayHours(date) < settings.minProductivity;
-  const surplusOf = (key: string) => {
-    const member = staff.find(candidate => candidate.key === key);
-    return member ? hoursOf(member) - targetOf(member) : 0;
-  };
-  weekDates.filter(underTarget).forEach(date => {
-    dayShifts(date).filter(shift => meta.get(shift.id)?.kind === 'elearning').forEach(shift => {
-      const member = staff.find(candidate => candidate.key === shift.staffKey);
-      if (!member || !settings.elearningInProductivity) return;
-      assigned.splice(assigned.indexOf(shift), 1);
-      meta.delete(shift.id);
-      if (!placeElearning(member, other => other !== date && productivityOk(other, settings.elearningHours))) {
-        unmet.push({ date, kind: 'productivite', message: `${date} : e-learning de ${member.nom} retiré (productivité sous le minimum), non replacé` });
-      }
-    });
-    SERVICES.forEach(service => [...new Set(dayShifts(date).map(shift => shift.roleId))].forEach(roleId => {
-      const required = needs.filter(n => n.demand.date === date && n.demand.service === service && n.demand.roleId === roleId).length;
-      const excess = dayShifts(date)
-        .filter(shift => shift.service === service && shift.roleId === roleId && meta.get(shift.id)?.kind === 'need')
-        .sort((a, b) => surplusOf(b.staffKey) - surplusOf(a.staffKey));
-      excess.slice(0, Math.max(0, excess.length - required)).forEach(shift => {
-        assigned.splice(assigned.indexOf(shift), 1);
-        meta.delete(shift.id);
-      });
-    }));
-  });
+  // ── E. Productivité = objectif, plus un blocage : aucun shift n'est retiré pour la remonter (un shift nécessaire
+  // au contrat ne l'est jamais). Elle oriente seulement le choix des services en F et est signalée dans unmet.
 
-  // ── F. Complément d'heures de contrat : modèles uniquement, jours non au repos uniquement, productivité du jour préservée,
-  // jours à plus grande marge d'abord ; une seule coupure par jour et amplitude de 13 h (via canAdd).
+  // ── F. Heures de contrat OBLIGATOIRES : le compteur de fin de période doit revenir à 0 (sans période : contrat de la semaine),
+  // tant qu'il reste un jour non au repos et un modèle compatible. Les heures qui restent après les minimums vont d'abord
+  // aux services où la productivité souffre le moins (couverts par personne présente les plus élevés, puis CA le plus élevé).
+  // Le maximum des garde-fous est un plafond souhaité : dépassable uniquement ici, et signalé.
+  const guardMaxOf = (roleId: string, service: ShiftService): number => {
+    const rules = settings.guardRules.filter(rule => rule.roleId === roleId && (rule.service === 'both' || rule.service === service));
+    return rules.length > 0 ? Math.max(...rules.map(rule => rule.max)) : Number.POSITIVE_INFINITY;
+  };
+  const presentCount = (date: string, service: ShiftService, roleId: string) =>
+    assigned.filter(shift => shift.date === date && shift.service === service && shift.roleId === roleId).length;
+  const servicePeople = (date: string, service: ShiftService) =>
+    assigned.filter(shift => shift.date === date && shift.service === service && shift.roleId !== ELEARNING_ROLE_ID).length;
+  const serviceCovers = (date: string, service: ShiftService) => (service === 'midi' ? budgetOf(date).cvMidi : budgetOf(date).cvSoir);
+  const serviceRevenue = (date: string, service: ShiftService) => (service === 'midi' ? budgetOf(date).caMidi : budgetOf(date).caSoir);
+  const exceeded = new Map<string, { date: string; service: ShiftService; roleId: string }>();
+
+  type Slot = { date: string; service: ShiftService; roleId: string; hours: number; shift: Shift; overMax: boolean };
+
   staff.filter(member => !member.forfaitJour && member.contractHours > 0).forEach(member => {
     const roleIds = member.roles.filter(id => id !== ELEARNING_ROLE_ID);
     if (roleIds.length === 0) return;
+    const info = periodInfo?.[member.key];
+    const mandatory = !info || info.weeksLeft === 1; // dernière semaine à planifier : le compteur doit tomber à 0
+    const targetMinutes = Math.round(targetOf(member) * 60);
     let remaining = targetOf(member) - hoursOf(member);
-    const share = perDayTarget(member);
-    const margin = (date: string) => revenueOf(date) - settings.minProductivity * dayHours(date);
 
-    const tryPlace = (respectDailyShare: boolean): boolean => {
-      const days = weekDates.filter(date => isAvailable(member, date)).sort((a, b) => margin(b) - margin(a));
-      return days.some(date => {
-        if (respectDailyShare && totalHours(staffShifts(member).filter(shift => shift.date === date)) >= share) return false;
-        return roleIds.some(roleId => SERVICES.some(service => templatesFor(settings.templates, roleId, service, weekdayOf(date))
-          .filter(template => shiftDurationHours(template.start, template.end) <= remaining + TOP_UP_TOLERANCE_HOURS)
-          .sort((a, b) => shiftDurationHours(b.start, b.end) - shiftDurationHours(a.start, a.end))
-          .some(template => {
-            const length = shiftDurationHours(template.start, template.end);
-            const shift = shiftOf(member, date, template, roleId, service);
-            if (!productivityOk(date, length) || !canAdd(member, shift)) return false;
-            assigned.push(shift);
-            order += 1;
-            meta.set(shift.id, { kind: 'topup', order });
-            remaining -= length;
-            return true;
-          })));
-      });
+    // Durées réalisables avec les modèles du collaborateur : sert à viser un compte exact (sac à dos en minutes).
+    const durations = [...new Set(settings.templates
+      .filter(template => roleIds.includes(template.roleId))
+      .map(template => Math.round(shiftDurationHours(template.start, template.end) * 60)))].filter(minutes => minutes > 0);
+    const reach: boolean[] = Array.from({ length: Math.max(0, targetMinutes) + 1 }, (_, minutes) => minutes === 0);
+    for (let minutes = 1; minutes < reach.length; minutes += 1) reach[minutes] = durations.some(duration => minutes >= duration && reach[minutes - duration]);
+    const canFill = (restHours: number) => {
+      const minutes = Math.round(restHours * 60);
+      return minutes <= 1 || (minutes < reach.length && reach[minutes]);
     };
 
-    while (remaining >= MIN_REMAINING_FOR_TOP_UP && (tryPlace(true) || tryPlace(false))) {
-      // un modèle placé par tour
+    // Écart final estimé si l'on s'arrête après un reste donné : 0 si les modèles permettent de le combler exactement,
+    // sinon le plus petit dépassement possible avec un modèle de plus (un déficit pèse double).
+    const gapAfter = (restHours: number) => {
+      if (canFill(restHours)) return 0;
+      const overshoots = durations.map(minutes => minutes / 60).filter(hours => hours >= restHours).map(hours => hours - restHours);
+      return overshoots.length > 0 ? Math.min(...overshoots) : Math.abs(restHours) * 2;
+    };
+
+    const slotsFor = (): Slot[] => {
+      const slots: Slot[] = [];
+      weekDates.filter(date => isAvailable(member, date)).forEach(date => roleIds.forEach(roleId => SERVICES.forEach(service => {
+        templatesFor(settings.templates, roleId, service, weekdayOf(date)).forEach(template => {
+          const shift = shiftOf(member, date, template, roleId, service);
+          if (!canAdd(member, shift)) return;
+          slots.push({ date, service, roleId, hours: shiftDurationHours(template.start, template.end), shift, overMax: presentCount(date, service, roleId) >= guardMaxOf(roleId, service) });
+        });
+      })));
+      return slots;
+    };
+    const coversPerPerson = (slot: Slot) => serviceCovers(slot.date, slot.service) / Math.max(1, servicePeople(slot.date, slot.service));
+    const byImpact = (a: Slot, b: Slot) => Number(a.overMax) - Number(b.overMax)
+      || coversPerPerson(b) - coversPerPerson(a)
+      || serviceRevenue(b.date, b.service) - serviceRevenue(a.date, a.service)
+      || b.hours - a.hours;
+
+    while (remaining > (mandatory ? 0.25 : MIN_REMAINING_FOR_TOP_UP - 0.01)) {
+      const slots = slotsFor();
+      if (slots.length === 0) break;
+      const fitting = slots.filter(slot => slot.hours <= remaining + TOP_UP_TOLERANCE_HOURS);
+      // Parmi les modèles qui tiennent, on garde ceux qui laissent le plus petit écart final au contrat.
+      const lowestGap = Math.min(...fitting.map(slot => gapAfter(remaining - slot.hours)));
+      let pool = fitting.filter(slot => gapAfter(remaining - slot.hours) <= lowestGap + 1e-6);
+      // Aucun modèle ne tient dans le reste : sur une semaine obligatoire, on prend le plus court plutôt que de finir
+      // sous le contrat (compteur négatif = régularisation de paie) ; le dépassement éventuel est signalé dans unmet.
+      if (pool.length === 0 && mandatory && remaining >= MIN_MANDATORY_SHORTFALL_HOURS) {
+        const shortest = Math.min(...slots.map(slot => slot.hours));
+        pool = slots.filter(slot => slot.hours === shortest);
+      }
+      if (pool.length === 0) break;
+      const best = [...pool].sort(byImpact)[0];
+      assigned.push(best.shift);
+      order += 1;
+      meta.set(best.shift.id, { kind: 'topup', order });
+      remaining -= best.hours;
+      if (best.overMax) exceeded.set(`${best.date}|${best.service}|${best.roleId}`, { date: best.date, service: best.service, roleId: best.roleId });
     }
 
-    const info = periodInfo?.[member.key];
-    if (info && info.weeksLeft === 1) {
-      // Dernière semaine à planifier de la période : le compteur de fin de période doit revenir à 0.
-      const endCounter = info.balance + hoursOf(member) - member.contractHours;
-      if (Math.abs(endCounter) >= 1) {
-        unmet.push({ date: weekDates[0], kind: 'contrat', message: `${member.nom} : compteur de fin de période impossible à remettre à 0 (${endCounter > 0 ? '+' : '−'}${Math.abs(round1(endCounter))} h)` });
+    if (mandatory) {
+      const endCounter = (info?.balance ?? 0) + hoursOf(member) - member.contractHours;
+      if (Math.abs(endCounter) >= 0.25) {
+        unmet.push({ date: weekDates[0], kind: 'contrat', message: `${member.nom} : compteur de ${info ? 'fin de période' : 'la semaine'} à ${endCounter > 0 ? '+' : '−'}${Math.abs(round1(endCounter))} h au lieu de 0` });
       }
     } else if (remaining >= MIN_REMAINING_FOR_TOP_UP) {
       unmet.push({ date: weekDates[0], kind: 'contrat', message: `${member.nom} : ${round1(remaining)} h de contrat non placées sur la semaine` });
     }
+  });
+
+  exceeded.forEach(({ date, service, roleId }) => {
+    const present = presentCount(date, service, roleId);
+    const max = guardMaxOf(roleId, service);
+    if (present <= max) return;
+    const roleLabel = settings.roles.find(role => role.id === roleId)?.label ?? roleId;
+    unmet.push({ date, kind: 'contrat', message: `${roleLabel} ${WEEKDAY_NAMES[weekdayOf(date)]} ${service} : ${present} présents pour un maximum de ${max}, heures de contrat à placer` });
   });
 
   // ── G. Contrôle légal final : tout shift proposé en infraction est retiré, puis son besoin est reproposé à un autre.
@@ -319,10 +343,20 @@ export function generateWeek(input: GenerateInput): GenerateResult {
     }
   }
 
-  // Jours restés sous la productivité minimum avec les seuls minimums de personnel.
-  weekDates.filter(underTarget).forEach(date => {
-    unmet.push({ date, kind: 'productivite', message: `${date} : productivité de ${Math.round(revenueOf(date) / dayHours(date))} €/h sous le minimum de ${settings.minProductivity} €/h` });
-  });
+  // Productivité de la semaine : objectif, signalé s'il n'est pas tenu.
+  const weekRevenue = weekDates.reduce((sum, date) => sum + revenueOf(date), 0);
+  const weekHours = productiveHours(assigned, settings.elearningInProductivity);
+  if (weekRevenue > 0 && weekHours > 0 && weekRevenue / weekHours < settings.minProductivity) {
+    const extra = assigned.filter(shift => meta.get(shift.id)?.kind === 'topup').reduce((sum, shift) => sum + shiftDurationHours(shift.start, shift.end), 0);
+    const productivity = Math.round(weekRevenue / weekHours);
+    unmet.push({
+      date: weekDates[0],
+      kind: 'productivite',
+      message: extra > 0
+        ? `Productivité semaine ${productivity} €/h sous l'objectif de ${settings.minProductivity} €/h : ${round1(extra)} h de contrat au-delà du besoin`
+        : `Productivité semaine ${productivity} €/h sous l'objectif de ${settings.minProductivity} €/h : minimums de personnel seuls`,
+    });
+  }
 
   return { shifts: assigned, unmet };
 }

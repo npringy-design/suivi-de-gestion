@@ -17,20 +17,22 @@ type Params = {
   shifts: Shift[];
   updateShifts: (updater: (shifts: Shift[]) => Shift[]) => void;
   isLoading: boolean;
+  flushPending: () => void; // envoie immédiatement les réglages et documents en attente
 };
 
 const AUTO_REGENERATE_DEBOUNCE_MS = 800;
 
 // Génération de la semaine : les shifts proposés sont recalculés, les shifts validés sont conservés.
-export function useShiftGeneration({ mondayIso, staff, absences, settings, budgetOf, periodInfo, shifts, updateShifts, isLoading }: Params) {
+export function useShiftGeneration({ mondayIso, staff, absences, settings, budgetOf, periodInfo, shifts, updateShifts, isLoading, flushPending }: Params) {
   // Le résultat n'est affiché que pour la semaine générée.
   const [result, setResult] = useState<{ monday: string; unmet: ShiftUnmet[] } | null>(null);
 
   const run = useCallback((base: Shift[]) => {
+    flushPending(); // les réglages utilisés sont d'abord enregistrés
     const generated = generateWeek({ mondayIso, staff, absences, settings, budgetOf, existingShifts: base, periodInfo });
     updateShifts(() => generated.shifts);
     setResult({ monday: mondayIso, unmet: generated.unmet });
-  }, [mondayIso, staff, absences, settings, budgetOf, periodInfo, updateShifts]);
+  }, [mondayIso, staff, absences, settings, budgetOf, periodInfo, updateShifts, flushPending]);
 
   const generate = useCallback(() => run(shifts), [run, shifts]);
 

@@ -21,6 +21,7 @@ export function useShiftPlanningDocs(siteId: SiteId, mondayIso: string) {
   const [baseLoaded, setBaseLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState<ShiftSaveStatus>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   const pendingRef = useRef(new Map<string, object>());
   const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
@@ -37,6 +38,7 @@ export function useShiftPlanningDocs(siteId: SiteId, mondayIso: string) {
     try {
       await saveShiftDoc(siteId, docKey, data);
       setSaveStatus('saved');
+      setLastSavedAt(new Date());
       setError(null);
     } catch (err) {
       setSaveStatus('error');
@@ -57,6 +59,9 @@ export function useShiftPlanningDocs(siteId: SiteId, mondayIso: string) {
   }, [flushKey]);
 
   useEffect(() => () => flushAll(), [flushAll]);
+
+  // Envoi immédiat des sauvegardes en attente (fermeture des paramètres, avant une génération).
+  const flushPending = flushAll;
 
   useEffect(() => {
     let cancelled = false;
@@ -97,19 +102,22 @@ export function useShiftPlanningDocs(siteId: SiteId, mondayIso: string) {
   }, [siteId, mondayIso, flushAll]);
 
   const setSettings = useCallback((next: ShiftPlanningSettings) => {
+    if (!baseLoaded) return;
     setSettingsState(next);
     scheduleSave('settings', next);
-  }, [scheduleSave]);
+  }, [baseLoaded, scheduleSave]);
 
   const setStoredStaff = useCallback((members: ShiftStaffMember[]) => {
+    if (!baseLoaded) return;
     setStoredStaffState(members);
     scheduleSave('staff', { members });
-  }, [scheduleSave]);
+  }, [baseLoaded, scheduleSave]);
 
   const setAbsences = useCallback((next: ShiftAbsence[]) => {
+    if (!baseLoaded) return;
     setAbsencesState(next);
     scheduleSave('absences', { absences: next });
-  }, [scheduleSave]);
+  }, [baseLoaded, scheduleSave]);
 
   const updateShifts = useCallback((updater: (shifts: Shift[]) => Shift[]) => {
     const current = weekRef.current;
@@ -130,6 +138,8 @@ export function useShiftPlanningDocs(siteId: SiteId, mondayIso: string) {
     updateShifts,
     isLoading: !baseLoaded || !weekReady,
     saveStatus,
+    lastSavedAt,
+    flushPending,
     error,
   };
 }
