@@ -76,3 +76,10 @@ export const canAccessSite = (profile: SuiviProfileLike | null | undefined, site
 // Création de site : réservée au super_admin actif (s'appuie sur la garde de la gestion utilisateurs).
 export const canCreateSites = (profile: SuiviProfileLike | null | undefined): boolean =>
   canAccessUserManagement(profile) && normalizeSuiviRole(profile?.role) === 'super_admin';
+
+// Planning des shifts (étape 1) : super_admin actif, site Hippo Thillois uniquement.
+export const canAccessShiftPlanning = (profile: SuiviProfileLike | null | undefined, activeSiteId: string): boolean =>
+  Boolean(profile)
+  && isSuiviAccountActive(profile)
+  && normalizeSuiviRole(profile?.role) === 'super_admin'
+  && activeSiteId === 'hippo_thillois';

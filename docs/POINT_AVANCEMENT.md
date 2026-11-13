@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 13/11/2026 (Planning shifts, étape 1/3)
+
+- Planning shifts (étape 1/3) : page super_admin Thillois (`#/planning-shifts`, `features/shiftPlanning/`, aucun lien de menu, `canAccessShiftPlanning`), paramètres, rôles, saisie shifts, KPI productivité/MS, alertes légales, table `suivi_gestion_shift_planning` (`supabase/SHIFT_PLANNING_SETUP.sql`, SQL à exécuter ; service `supabaseShiftPlanning.ts`, hors DataContext). tsc OK.
+
 ## 01/11/2026 (fix création de site : CHECK legacy sur site_id)
 
 - `supabase/SITES_FIX_CONSTRAINT.sql` : remplace `suivi_gestion_app_state_site_id_check` et `suivi_gestion_user_site_access_site_id_check` (liste figée des 2 sites, constatées en prod, bloquaient la création de site) par des FK vers `suivi_gestion_sites(site_id)`. À exécuter après `SITES_SETUP.sql` ; vérifié en lecture : tous les `site_id` existants (dont `au-bureau`) sont dans `suivi_gestion_sites`. Script exécuté en base le 01/11/2026 (contraintes vérifiées). Aucun changement de code.

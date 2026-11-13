@@ -617,3 +617,73 @@ export type PayrollCostsData = {
   alertThresholds: PayrollAlertThresholds;
   forfaitsJourPeriods: PayrollForfaitsJourPeriod[];
 };
+
+// --- Planning des shifts (features/shiftPlanning) ---
+
+export type ShiftRoleId = string;
+
+export type ShiftRoleDef = {
+  id: ShiftRoleId;
+  label: string;
+  couleur: string; // #RRGGBB
+};
+
+export type ShiftStaffMember = {
+  key: string; // nom normalisé (même logique que PayrollStoredLine.key)
+  nom: string;
+  roles: ShiftRoleId[]; // ordonnés par préférence
+  contractHours: number; // heures hebdomadaires
+  forfaitJour: boolean;
+  preferredRestDays: number[]; // 0 (dimanche) à 6 (samedi)
+};
+
+export type ShiftAbsenceType = 'cp' | 'rtt' | 'maladie' | 'repos';
+
+export type ShiftAbsence = {
+  staffKey: string;
+  type: ShiftAbsenceType;
+  dateFrom: string; // YYYY-MM-DD
+  dateTo: string; // YYYY-MM-DD
+};
+
+export type ShiftService = 'midi' | 'soir';
+
+export type Shift = {
+  id: string;
+  staffKey: string;
+  date: string; // YYYY-MM-DD
+  start: string; // 'HHhMM'
+  end: string; // 'HHhMM'
+  roleId: ShiftRoleId;
+  service: ShiftService;
+  status: 'proposed' | 'validated';
+};
+
+export type ShiftGuardRule = {
+  roleId: ShiftRoleId;
+  service: ShiftService | 'both';
+  coversPerPerson: number | null;
+  min: number;
+  max: number;
+};
+
+export type ShiftLegalRuleId = 'rest11h' | 'max10hDay' | 'max48hWeek' | 'restDays2' | 'contractHours';
+
+export type ShiftLegalRule = {
+  id: ShiftLegalRuleId;
+  mode: 'alert' | 'block'; // 'block' stocké mais pas encore appliqué (étape 2)
+};
+
+export type ShiftPlanningSettings = {
+  minProductivity: number; // €/h
+  targetPayrollPct: number; // % du CA
+  avoidOvertime: boolean;
+  autoRegenerate: boolean;
+  guardRules: ShiftGuardRule[];
+  legalRules: ShiftLegalRule[];
+  roles: ShiftRoleDef[];
+};
+
+export type ShiftWeekDoc = { shifts: Shift[] };
+export type ShiftStaffDoc = { members: ShiftStaffMember[] };
+export type ShiftAbsencesDoc = { absences: ShiftAbsence[] };

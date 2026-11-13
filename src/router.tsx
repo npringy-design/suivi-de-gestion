@@ -48,6 +48,7 @@ const SaisieCaisseDynamique = lazy(() => import('@/features/caisse/SaisieCaisseD
 const ExportComptable = lazy(() => import('@/features/comptabilite/ExportComptable'));
 const UserManagementPage = lazy(() => import('@/UserManagementPage'));
 const SiteCreationPage = lazy(() => import('@/features/sites/SiteCreationPage'));
+const ShiftPlanning = lazy(() => import('@/features/shiftPlanning/ShiftPlanning'));
 
 const parseMonthParam = (value: string | undefined, fallback: number) => {
   const month = value ? parseInt(value, 10) : NaN;
@@ -208,6 +209,7 @@ const router = createHashRouter([
   { path: '/ecritures-comptables', element: <PageRoute Component={ExportComptable} backPath='/' /> },
   { path: '/utilisateurs', element: <PageRoute Component={UserManagementPage} backPath='/' /> },
   { path: '/sites', element: <PageRoute Component={SiteCreationPage} backPath='/' /> },
+  { path: '/planning-shifts', element: <PageRoute Component={ShiftPlanning} backPath='/' /> },
 ]);
 
 function EdgMensuelRoute() {

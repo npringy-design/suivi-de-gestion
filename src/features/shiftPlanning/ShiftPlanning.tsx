@@ -1,0 +1,161 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Lock } from 'lucide-react';
+
+import { useAuthSession } from '@/AuthGate';
+import { canAccessShiftPlanning } from '@/lib/suiviPermissions';
+import type { Shift, ShiftStaffMember } from '@/types/dataTypes';
+import ShiftEditDialog from './components/ShiftEditDialog';
+import ShiftGrid, { type StaffGroup } from './components/ShiftGrid';
+import ShiftKpiCards from './components/ShiftKpiCards';
+import ShiftLegend from './components/ShiftLegend';
+import ShiftPlanningHeader from './components/ShiftPlanningHeader';
+import ShiftPlanningSettings from './components/ShiftPlanningSettings';
+import { useShiftPlanningData } from './hooks/useShiftPlanningData';
+import { useShiftPlanningDocs } from './hooks/useShiftPlanningDocs';
+import { useShiftWeekMetrics } from './hooks/useShiftWeekMetrics';
+import { addDaysIso, formatShortDate, isoFromDate, isoWeekNumber, mondayOfIso, weekDaysIso } from './shiftDates';
+
+const FONT_LINK_ID = 'shift-planning-bebas-neue';
+const FONT_HREF = 'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap';
+
+// Regroupe les collaborateurs par rôle principal, dans l'ordre des rôles configurés.
+const groupStaffByPrimaryRole = (staff: ShiftStaffMember[], roles: Array<{ id: string; label: string }>): StaffGroup[] => {
+  const groups: StaffGroup[] = roles.map(role => ({
+    roleId: role.id,
+    label: role.label,
+    members: staff.filter(member => member.roles[0] === role.id),
+  }));
+  const knownIds = new Set(roles.map(role => role.id));
+  const others = staff.filter(member => !member.roles[0] || !knownIds.has(member.roles[0]));
+  if (others.length > 0) groups.push({ roleId: null, label: 'Sans rôle principal', members: others });
+  return groups.filter(group => group.members.length > 0);
+};
+
+function LockedScreen({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow">
+        <Lock className="mx-auto h-8 w-8 text-slate-400" />
+        <p className="mt-3 text-sm font-semibold text-slate-700">Page réservée</p>
+        <button type="button" onClick={onBack} className="mt-4 text-sm font-bold text-cyan-700">Retour</button>
+      </div>
+    </div>
+  );
+}
+
+function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
+  const { activeSiteId } = useAuthSession();
+  const [mondayIso, setMondayIso] = useState(() => mondayOfIso(isoFromDate(new Date())));
+  const [showSettings, setShowSettings] = useState(false);
+  const [editing, setEditing] = useState<{ staffKey: string; date: string } | null>(null);
+
+  const weekDates = useMemo(() => weekDaysIso(mondayIso), [mondayIso]);
+  const docs = useShiftPlanningDocs(activeSiteId, mondayIso);
+  const data = useShiftPlanningData(weekDates, docs.storedStaff);
+  const metrics = useShiftWeekMetrics(weekDates, docs.shifts, data.staff, data.hourlyRates, docs.settings, data.budgetOf);
+
+  useEffect(() => {
+    if (document.getElementById(FONT_LINK_ID)) return;
+    const link = document.createElement('link');
+    link.id = FONT_LINK_ID;
+    link.rel = 'stylesheet';
+    link.href = FONT_HREF;
+    document.head.appendChild(link);
+  }, []);
+
+  const groups = useMemo(() => groupStaffByPrimaryRole(data.staff, docs.settings.roles), [data.staff, docs.settings.roles]);
+
+  const { updateShifts } = docs;
+  const validateWeek = useCallback(() => {
+    updateShifts(list => list.map<Shift>(shift => (shift.status === 'proposed' ? { ...shift, status: 'validated' } : shift)));
+  }, [updateShifts]);
+
+  const saveCell = useCallback((staffKey: string, date: string, cellShifts: Shift[]) => {
+    updateShifts(list => [...list.filter(shift => !(shift.staffKey === staffKey && shift.date === date)), ...cellShifts]);
+    setEditing(null);
+  }, [updateShifts]);
+
+  if (showSettings) {
+    return (
+      <div className="min-h-screen" style={{ background: '#f4f1ec' }}>
+        <ShiftPlanningSettings
+          settings={docs.settings}
+          staff={data.staff}
+          absences={docs.absences}
+          onSettingsChange={docs.setSettings}
+          onStaffChange={docs.setStoredStaff}
+          onAbsencesChange={docs.setAbsences}
+          onClose={() => setShowSettings(false)}
+        />
+      </div>
+    );
+  }
+
+  const editedMember = editing ? data.staff.find(member => member.key === editing.staffKey) : undefined;
+  const weekLabel = `S.${String(isoWeekNumber(mondayIso)).padStart(2, '0')} · ${formatShortDate(mondayIso)} – ${formatShortDate(addDaysIso(mondayIso, 6))}`;
+
+  return (
+    <div className="min-h-screen" style={{ background: '#f4f1ec' }}>
+      <ShiftPlanningHeader
+        weekLabel={weekLabel}
+        proposedCount={metrics.proposedCount}
+        saveStatus={docs.saveStatus}
+        onBack={onBack}
+        onPrevWeek={() => setMondayIso(addDaysIso(mondayIso, -7))}
+        onNextWeek={() => setMondayIso(addDaysIso(mondayIso, 7))}
+        onOpenSettings={() => setShowSettings(true)}
+        onValidate={validateWeek}
+      />
+
+      <main className="space-y-5 p-4 sm:p-6">
+        {docs.error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {docs.error} (si la table n'existe pas encore : exécuter supabase/SHIFT_PLANNING_SETUP.sql)
+          </div>
+        )}
+        {(docs.isLoading || data.isLoading) && <p className="text-sm text-slate-500">Chargement…</p>}
+
+        <ShiftKpiCards metrics={metrics} settings={docs.settings} />
+
+        <ShiftGrid
+          groups={groups}
+          roles={docs.settings.roles}
+          days={metrics.days}
+          shifts={docs.shifts}
+          absences={docs.absences}
+          alertShiftIds={metrics.alertShiftIds}
+          hoursByStaff={metrics.hoursByStaff}
+          minProductivity={docs.settings.minProductivity}
+          todayIso={isoFromDate(new Date())}
+          onCellClick={(staffKey, date) => setEditing({ staffKey, date })}
+        />
+
+        {metrics.alerts.length > 0 && (
+          <ul className="space-y-1 rounded-2xl bg-white p-4 text-xs text-red-700 shadow-sm">
+            {metrics.alerts.map((alert, index) => <li key={index}>{alert.message}</li>)}
+          </ul>
+        )}
+
+        <ShiftLegend roles={docs.settings.roles} />
+      </main>
+
+      {editing && editedMember && (
+        <ShiftEditDialog
+          key={`${editing.staffKey}-${editing.date}`}
+          member={editedMember}
+          date={editing.date}
+          cellShifts={docs.shifts.filter(shift => shift.staffKey === editing.staffKey && shift.date === editing.date)}
+          roles={docs.settings.roles}
+          onSave={cellShifts => saveCell(editing.staffKey, editing.date, cellShifts)}
+          onClose={() => setEditing(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function ShiftPlanning({ onBack }: { onBack: () => void }) {
+  const { accessProfile, activeSiteId } = useAuthSession();
+  if (!canAccessShiftPlanning({ role: accessProfile.role }, activeSiteId)) return <LockedScreen onBack={onBack} />;
+  return <ShiftPlanningContent onBack={onBack} />;
+}
