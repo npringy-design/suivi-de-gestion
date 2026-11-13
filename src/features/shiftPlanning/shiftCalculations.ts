@@ -107,7 +107,7 @@ export const computeDayShortages = (needs: RoleNeed[], dayShifts: Shift[]): Role
 export const findAbsence = (absences: ShiftAbsence[], staffKey: string, date: string): ShiftAbsence | undefined =>
   absences.find(a => a.staffKey === staffKey && date >= a.dateFrom && date <= a.dateTo);
 
-export type LegalAlert = { ruleId: ShiftLegalRuleId; staffKey: string; shiftIds: string[]; message: string };
+export type LegalAlert = { ruleId: ShiftLegalRuleId | 'outOfTemplate'; staffKey: string; shiftIds: string[]; message: string };
 
 const absoluteStartMinutes = (shift: Shift, mondayIso: string): number => {
   const dayIndex = Math.round((Date.parse(`${shift.date}T00:00:00Z`) - Date.parse(`${mondayIso}T00:00:00Z`)) / 86400000);
@@ -253,6 +253,17 @@ export const DEFAULT_SHIFT_SETTINGS: ShiftPlanningSettings = {
   managerOpenToClose: true,
   elearningHours: 3,
   elearningInProductivity: true,
+  // Modèles de départ (modifiables) : arrivée et fermeture maximum par rôle, service et jour.
+  templates: [
+    { id: 'tpl-enc-midi', label: 'Encadrement midi', roleId: 'encadrement', service: 'midi', days: [0, 1, 2, 3, 4, 5, 6], start: '11h00', end: '15h00' },
+    { id: 'tpl-enc-soir', label: 'Encadrement soir', roleId: 'encadrement', service: 'soir', days: [0, 1, 2, 3, 4, 5, 6], start: '18h00', end: '00h00' },
+    { id: 'tpl-salle-ouv', label: 'Ouverture salle', roleId: 'salle', service: 'midi', days: [0, 1, 2, 3, 4, 5, 6], start: '10h00', end: '15h00' },
+    { id: 'tpl-salle-midi', label: 'Service midi salle', roleId: 'salle', service: 'midi', days: [0, 1, 2, 3, 4, 5, 6], start: '11h30', end: '15h00' },
+    { id: 'tpl-salle-soir', label: 'Service soir salle', roleId: 'salle', service: 'soir', days: [0, 1, 2, 3, 4, 5, 6], start: '18h30', end: '23h30' },
+    { id: 'tpl-salle-ferm', label: 'Fermeture salle', roleId: 'salle', service: 'soir', days: [5, 6], start: '18h30', end: '00h00' },
+    { id: 'tpl-cuis-matin', label: 'Cuisine matin', roleId: 'cuisine', service: 'midi', days: [0, 1, 2, 3, 4, 5, 6], start: '09h30', end: '15h00' },
+    { id: 'tpl-cuis-soir', label: 'Cuisine soir', roleId: 'cuisine', service: 'soir', days: [0, 1, 2, 3, 4, 5, 6], start: '18h00', end: '23h30' },
+  ],
 };
 
 export const LEGAL_RULE_LABELS: Record<ShiftLegalRuleId, string> = {

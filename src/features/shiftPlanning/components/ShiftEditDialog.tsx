@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 
-import type { Shift, ShiftRoleDef, ShiftService, ShiftStaffMember } from '@/types/dataTypes';
+import type { Shift, ShiftRoleDef, ShiftService, ShiftStaffMember, ShiftTemplate } from '@/types/dataTypes';
 
 import { ELEARNING_ROLE_ID, inferShiftService, parseShiftTime } from '../shiftCalculations';
 import { formatShortDate } from '../shiftDates';
+import { matchesTemplate, templatesFor } from '../shiftTemplates';
 
 type Props = {
   member: ShiftStaffMember;
   date: string;
   cellShifts: Shift[];
   roles: ShiftRoleDef[];
+  templates: ShiftTemplate[];
   // Raisons du refus si les shifts saisis enfreignent une règle légale en mode « bloquer ».
   getBlockingReasons: (shifts: Shift[]) => string[];
   onSave: (shifts: Shift[]) => void;
@@ -19,7 +21,7 @@ type Props = {
 
 const newShiftId = () => `shift-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-export default function ShiftEditDialog({ member, date, cellShifts, roles, getBlockingReasons, onSave, onClose }: Props) {
+export default function ShiftEditDialog({ member, date, cellShifts, roles, templates, getBlockingReasons, onSave, onClose }: Props) {
   const roleOptions = member.roles.length > 0
     ? member.roles.map(id => roles.find(r => r.id === id)).filter((role): role is ShiftRoleDef => role !== undefined)
     : roles;
@@ -85,6 +87,22 @@ export default function ShiftEditDialog({ member, date, cellShifts, roles, getBl
               >
                 {selectableRoles.map(role => <option key={role.id} value={role.id}>{role.label}</option>)}
               </select>
+              <select
+                className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                value=""
+                aria-label="Modèle"
+                onChange={event => {
+                  const template = templates.find(item => item.id === event.target.value);
+                  if (template) patch(shift.id, { start: template.start, end: template.end, service: template.service });
+                }}
+              >
+                <option value="">Modèle…</option>
+                {templatesFor(templates, shift.roleId, 'midi', new Date(`${date}T12:00:00`).getDay()).concat(templatesFor(templates, shift.roleId, 'soir', new Date(`${date}T12:00:00`).getDay()))
+                  .map(template => <option key={template.id} value={template.id}>{template.label} {template.start}–{template.end}</option>)}
+              </select>
+              {templates.length > 0 && shift.roleId !== ELEARNING_ROLE_ID && !matchesTemplate(shift, templates, new Date(`${date}T12:00:00`).getDay()) && (
+                <span className="text-xs font-bold text-amber-700">hors modèle</span>
+              )}
               <select
                 className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
                 value={shift.service}

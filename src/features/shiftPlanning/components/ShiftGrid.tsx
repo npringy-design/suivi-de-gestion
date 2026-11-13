@@ -3,11 +3,13 @@ import type { Shift, ShiftAbsence, ShiftRoleDef, ShiftStaffMember } from '@/type
 
 import type { DayMetrics } from '../hooks/useShiftWeekMetrics';
 import { findAbsence } from '../shiftCalculations';
+import type { RestSummary } from '../shiftGeneratorRest';
 import type { DayContext } from '../shiftSources';
 import { dateFromIso } from '../shiftDates';
 import { BEBAS_FONT, NO_ROLE_COLOR, roleColorOf, roleGradient, roleTextColor } from '../shiftRoleStyle';
 
 const DAY_LABELS = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM'];
+const DAY_SHORT = ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'];
 const GRID_COLUMNS = '210px repeat(7, minmax(120px, 1fr))';
 
 export type StaffGroup = { roleId: string | null; label: string; members: ShiftStaffMember[] };
@@ -22,6 +24,7 @@ type Props = {
   alertShiftIds: Set<string>;
   hoursByStaff: Record<string, number>;
   counters: Record<string, number | null>;
+  rests: Record<string, RestSummary | null>;
   minProductivity: number;
   todayIso: string;
   onCellClick: (staffKey: string, date: string) => void;
@@ -62,6 +65,9 @@ function DayHeader({ day, context, roles, minProductivity, isToday }: { day: Day
           {formatDecimal(day.productivity, 0)} €/h
         </span>
       )}
+      {day.payrollPct !== null && (
+        <div className="mt-1 text-[10px] font-semibold opacity-90">MS {formatDecimal(day.payrollPct, 1)} %</div>
+      )}
       {day.shortages.map(shortage => (
         <div key={shortage.roleId} className="mt-1 text-[10px] font-bold" style={{ color: isToday ? '#7f1d1d' : '#fca5a5' }}>
           {shortage.missing} {(roles.find(r => r.id === shortage.roleId)?.label ?? shortage.roleId).toLowerCase()} manquant{shortage.missing > 1 ? 's' : ''}
@@ -93,7 +99,7 @@ function ShiftBlock({ shift, roles, hasAlert }: { shift: Shift; roles: ShiftRole
 }
 
 export default function ShiftGrid({
-  groups, roles, days, dayContext, shifts, absences, alertShiftIds, hoursByStaff, counters, minProductivity, todayIso, onCellClick,
+  groups, roles, days, dayContext, shifts, absences, alertShiftIds, hoursByStaff, counters, rests, minProductivity, todayIso, onCellClick,
 }: Props) {
   return (
     <div className="overflow-x-auto rounded-2xl shadow-sm">
@@ -114,6 +120,7 @@ export default function ShiftGrid({
             alertShiftIds={alertShiftIds}
             hoursByStaff={hoursByStaff}
             counters={counters}
+            rests={rests}
             onCellClick={onCellClick}
           />
         ))}
@@ -128,9 +135,9 @@ export default function ShiftGrid({
   );
 }
 
-type GroupProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'hoursByStaff' | 'counters' | 'onCellClick'> & { group: StaffGroup };
+type GroupProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'hoursByStaff' | 'counters' | 'rests' | 'onCellClick'> & { group: StaffGroup };
 
-function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursByStaff, counters, onCellClick }: GroupProps) {
+function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursByStaff, counters, rests, onCellClick }: GroupProps) {
   return (
     <>
       <div className="col-span-8 bg-[#e8e3da] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-600">{group.label}</div>
@@ -145,6 +152,7 @@ function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursB
           alertShiftIds={alertShiftIds}
           weekHours={hoursByStaff[member.key] ?? 0}
           counter={counters[member.key] ?? null}
+          rest={rests[member.key] ?? null}
           onCellClick={onCellClick}
         />
       ))}
@@ -152,9 +160,9 @@ function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursB
   );
 }
 
-type RowProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'onCellClick'> & { member: ShiftStaffMember; weekHours: number; counter: number | null };
+type RowProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'onCellClick'> & { member: ShiftStaffMember; weekHours: number; counter: number | null; rest: RestSummary | null };
 
-function StaffRow({ member, roles, days, shifts, absences, alertShiftIds, weekHours, counter, onCellClick }: RowProps) {
+function StaffRow({ member, roles, days, shifts, absences, alertShiftIds, weekHours, counter, rest, onCellClick }: RowProps) {
   const primaryColor = member.roles[0] ? roleColorOf(roles, member.roles[0]) : NO_ROLE_COLOR;
   const roleLabels = member.roles.map(id => roles.find(r => r.id === id)?.label ?? id).join(' › ');
   return (
@@ -165,6 +173,18 @@ function StaffRow({ member, roles, days, shifts, absences, alertShiftIds, weekHo
         <div className="text-[11px] font-semibold text-slate-600">
           {formatDecimal(weekHours, 1)} h / {member.forfaitJour ? 'forfait' : `${member.contractHours} h`}
         </div>
+        {rest && rest.days.length > 0 && (
+          <div className="text-[11px] text-slate-600">
+            Repos : {rest.days.map(date => DAY_SHORT[dateFromIso(date).getDay()]).join(', ')}
+            {(!rest.consecutive || !rest.onPreferred) && (
+              <span
+                className="ml-1 inline-block h-2 w-2 rounded-full align-middle"
+                style={{ background: '#ea580c' }}
+                title={!rest.consecutive ? 'Repos non consécutifs' : 'Aucun jour de repos préféré obtenu'}
+              />
+            )}
+          </div>
+        )}
         {counter !== null && (
           <div className="text-[11px] font-semibold" style={{ color: counter > 0 ? '#b45309' : counter < 0 ? '#ea580c' : '#16a34a' }}>
             Période : {counter > 0 ? '+' : counter < 0 ? '−' : ''}{formatDecimal(Math.abs(counter), 1)} h

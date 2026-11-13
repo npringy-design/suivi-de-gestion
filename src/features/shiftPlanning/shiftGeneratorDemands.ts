@@ -14,6 +14,8 @@ export type Demand = {
   // 0 : encadrement sur toute la fenêtre ; 1 : besoin par créneau ; 2 : besoin des garde-fous.
   rank: 0 | 1 | 2;
   closing: boolean; // shift qui finit à la fermeture du service du soir
+  startEarliest?: string; // créneau : arrivée au plus tôt (start = arrivée au plus tard)
+  untilClose?: boolean; // créneau : jusqu'à la fermeture
 };
 
 export const SERVICES: ShiftService[] = ['midi', 'soir'];
@@ -76,7 +78,7 @@ export function buildDemands(
         roleSlots.forEach(rule => {
           for (let i = 0; i < rule.count; i += 1) {
             // Début au plus tard : le shift est le plus court qui honore le créneau ; il finit avec le service.
-            group.push({ date, service, roleId, start: rule.startLatest, end: window.end, rank: 1, closing: closing || rule.untilClose });
+            group.push({ date, service, roleId, start: rule.startLatest, end: window.end, rank: 1, closing: closing || rule.untilClose, startEarliest: rule.startEarliest, untilClose: rule.untilClose });
           }
         });
         while (group.length < total) group.push({ date, service, roleId, start: window.start, end: window.end, rank: 2, closing });

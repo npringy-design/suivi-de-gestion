@@ -10,6 +10,7 @@ import ShiftGuardRulesEditor from './ShiftGuardRulesEditor';
 import ShiftPayPeriodsEditor from './ShiftPayPeriodsEditor';
 import ShiftServiceWindowsEditor from './ShiftServiceWindowsEditor';
 import ShiftSlotRulesEditor from './ShiftSlotRulesEditor';
+import ShiftTemplatesEditor from './ShiftTemplatesEditor';
 import { ShiftAbsencesEditor, ShiftStaffEditor } from './ShiftStaffEditor';
 
 type Props = {
@@ -92,6 +93,10 @@ export default function ShiftPlanningSettings({
 
       <Section title="Horaires des services">
         <ShiftServiceWindowsEditor windows={settings.serviceWindows} onChange={serviceWindows => patch({ serviceWindows })} />
+      </Section>
+
+      <Section title="Modèles de shifts">
+        <ShiftTemplatesEditor templates={settings.templates} roles={presenceRoles} onChange={templates => patch({ templates })} />
       </Section>
 
       <Section title="Besoins par créneau">

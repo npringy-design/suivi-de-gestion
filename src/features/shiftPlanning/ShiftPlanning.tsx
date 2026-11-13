@@ -18,6 +18,7 @@ import { useShiftPeriodData } from './hooks/useShiftPeriodData';
 import { useShiftPlanningDocs } from './hooks/useShiftPlanningDocs';
 import { useShiftWeekMetrics } from './hooks/useShiftWeekMetrics';
 import { newBlockingViolations } from './shiftCalculations';
+import { restSummary } from './shiftGeneratorRest';
 import { addDaysIso, formatShortDate, isoFromDate, isoWeekNumber, mondayOfIso, weekDaysIso } from './shiftDates';
 
 const FONT_LINK_ID = 'shift-planning-bebas-neue';
@@ -82,6 +83,11 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
     updateShifts(list => list.map<Shift>(shift => (shift.status === 'proposed' ? { ...shift, status: 'validated' } : shift)));
   }, [updateShifts]);
 
+  const rests = useMemo(
+    () => Object.fromEntries(data.staff.map(member => [member.key, restSummary(member, docs.shifts, docs.absences, weekDates)])),
+    [data.staff, docs.shifts, docs.absences, weekDates],
+  );
+
   const { applyManualShifts } = generation;
   const saveCell = useCallback((staffKey: string, date: string, cellShifts: Shift[]) => {
     applyManualShifts([...docs.shifts.filter(shift => !(shift.staffKey === staffKey && shift.date === date)), ...cellShifts]);
@@ -144,6 +150,7 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
           alertShiftIds={metrics.alertShiftIds}
           hoursByStaff={metrics.hoursByStaff}
           counters={period.counters}
+          rests={rests}
           minProductivity={docs.settings.minProductivity}
           todayIso={isoFromDate(new Date())}
           onCellClick={(staffKey, date) => setEditing({ staffKey, date })}
@@ -165,6 +172,7 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
           date={editing.date}
           cellShifts={docs.shifts.filter(shift => shift.staffKey === editing.staffKey && shift.date === editing.date)}
           roles={docs.settings.roles}
+          templates={docs.settings.templates}
           getBlockingReasons={cellShifts => newBlockingViolations(docs.shifts, editedMember, editing.date, cellShifts, mondayIso, docs.settings.legalRules)}
           onSave={cellShifts => saveCell(editing.staffKey, editing.date, cellShifts)}
           onClose={() => setEditing(null)}

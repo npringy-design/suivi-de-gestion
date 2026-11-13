@@ -700,9 +700,24 @@ export type ShiftPayPeriod = {
   end: string;
 };
 
+// Modèle de shift : le moteur ne crée que des shifts issus d'un modèle compatible (rôle, service, jour).
+// start = heure d'arrivée ; end = heure de fin, qui est aussi la fermeture maximum.
+export type ShiftTemplate = {
+  id: string;
+  label: string;
+  roleId: ShiftRoleId;
+  service: ShiftService;
+  days: number[]; // 0 (dimanche) à 6 (samedi)
+  start: string; // 'HHhMM'
+  end: string; // 'HHhMM'
+};
+
+export type ShiftUnmetKind = 'repos' | 'besoin' | 'productivite' | 'contrat' | 'modele';
+
 // Besoin non couvert ou objectif non tenu à l'issue d'une génération.
 export type ShiftUnmet = {
   date: string;
+  kind: ShiftUnmetKind;
   message: string;
 };
 
@@ -725,6 +740,7 @@ export type ShiftPlanningSettings = {
   managerOpenToClose: boolean; // 1 encadrement couvre toute la fenêtre de chaque service
   elearningHours: number; // heures hebdomadaires d'e-learning des apprentis
   elearningInProductivity: boolean;
+  templates: ShiftTemplate[];
 };
 
 export type ShiftWeekDoc = { shifts: Shift[] };

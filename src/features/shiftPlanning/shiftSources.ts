@@ -2,7 +2,8 @@ import { parseMoneyValue } from '@/lib/money';
 import { isPublicHoliday } from '@/lib/publicHolidays';
 import { collectDailySamples } from '@/features/analyse/ecartsAnalysis';
 import { vacationStatusOf } from '@/features/planification/planningEngine';
-import { payrollNameKey } from '@/features/dashboard/importHelpers/personnelSalaryImport';
+import { averagePayrollRate, getPayrollProvisionMultiplier, payrollNameKey } from '@/features/dashboard/importHelpers/personnelSalaryImport';
+import { parseHourInputToDecimal } from '@/lib/utils';
 import type { CustomEvent, MonthData, MonthDataSalariesConfig, PersonnelDepartment, SchoolHolidayCalendar, ShiftPlanningSettings, ShiftStaffMember } from '@/types/dataTypes';
 
 import { ELEARNING_ROLE_ID, type DayBudget } from './shiftCalculations';
@@ -57,7 +58,12 @@ export function deriveStaffCandidates(allData: AllData, year: number, month: num
       if (!nom) return;
       const key = payrollNameKey(nom);
       if (leavers.has(key) || byKey.has(key)) return;
-      byKey.set(key, { key, nom, hourlyRate: parseMoneyValue(row.coutHoraire), forfaitJour: forfaitKeys.has(key), category, department: row.department });
+      // SalarieRow.coutHoraire est toujours vide : taux chargé = coût global × provision ÷ heures (comme Config Salaires),
+      // à défaut (heures à 0) moyenne de la catégorie.
+      const heures = parseHourInputToDecimal(row.heures);
+      const ownRate = heures > 0 ? (parseMoneyValue(row.coutGlobal) * getPayrollProvisionMultiplier(category)) / heures : 0;
+      const hourlyRate = ownRate > 0 ? ownRate : averagePayrollRate(rows, undefined, category);
+      byKey.set(key, { key, nom, hourlyRate, forfaitJour: forfaitKeys.has(key), category, department: row.department });
     });
   });
 
@@ -148,6 +154,7 @@ export const normalizeSettings = (raw: unknown, defaults: ShiftPlanningSettings)
     managerOpenToClose: typeof value.managerOpenToClose === 'boolean' ? value.managerOpenToClose : defaults.managerOpenToClose,
     elearningHours: typeof value.elearningHours === 'number' ? value.elearningHours : defaults.elearningHours,
     elearningInProductivity: typeof value.elearningInProductivity === 'boolean' ? value.elearningInProductivity : defaults.elearningInProductivity,
+    templates: Array.isArray(value.templates) ? value.templates : defaults.templates,
   };
 };
 
