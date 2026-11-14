@@ -11,6 +11,7 @@ import ShiftKpiCards from './components/ShiftKpiCards';
 import ShiftLegend from './components/ShiftLegend';
 import ShiftPlanningHeader from './components/ShiftPlanningHeader';
 import ShiftPlanningSettings from './components/ShiftPlanningSettings';
+import ShiftSurplusPanel from './components/ShiftSurplusPanel';
 import ShiftUnmetList from './components/ShiftUnmetList';
 import { useShiftPlanningData } from './hooks/useShiftPlanningData';
 import { useShiftGeneration } from './hooks/useShiftGeneration';
@@ -19,6 +20,7 @@ import { useShiftPlanningDocs } from './hooks/useShiftPlanningDocs';
 import { useShiftWeekMetrics } from './hooks/useShiftWeekMetrics';
 import { newBlockingViolations } from './shiftCalculations';
 import { restSummary } from './shiftGeneratorRest';
+import { computeWeekSurplus } from './shiftSurplus';
 import { coveredServicesLabel } from './shiftStaffing';
 import { addDaysIso, formatShortDate, isoFromDate, isoWeekNumber, mondayOfIso, weekDaysIso } from './shiftDates';
 
@@ -61,6 +63,10 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
   const roleIds = useMemo(() => docs.settings.roles.map(role => role.id), [docs.settings.roles]);
   const data = useShiftPlanningData(weekDates, docs.storedStaff, roleIds);
   const metrics = useShiftWeekMetrics(weekDates, docs.shifts, data.staff, data.hourlyRates, docs.settings, data.budgetOf);
+  const surplus = useMemo(
+    () => computeWeekSurplus(weekDates, docs.shifts, data.staff, data.hourlyRates, docs.settings, data.budgetOf),
+    [weekDates, docs.shifts, data.staff, data.hourlyRates, docs.settings, data.budgetOf],
+  );
   const period = useShiftPeriodData(activeSiteId, mondayIso, docs.settings, data.staff, docs.shifts);
   const generation = useShiftGeneration({
     mondayIso, staff: data.staff, absences: docs.absences, settings: docs.settings, budgetOf: data.budgetOf,
@@ -154,6 +160,8 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
         {(docs.isLoading || data.isLoading) && <p className="text-sm text-slate-500">Chargement…</p>}
 
         <ShiftKpiCards metrics={metrics} settings={docs.settings} />
+
+        <ShiftSurplusPanel surplus={surplus} />
 
         <ShiftUnmetList unmet={generation.unmet} />
 

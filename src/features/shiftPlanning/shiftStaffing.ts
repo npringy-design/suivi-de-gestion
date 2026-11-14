@@ -1,4 +1,4 @@
-import type { Shift, ShiftPlanningSettings, ShiftService, ShiftServiceWindow } from '@/types/dataTypes';
+import type { Shift, ShiftPlanningSettings, ShiftService } from '@/types/dataTypes';
 
 import { ELEARNING_ROLE_ID, inferShiftService, parseShiftTime, type DayBudget } from './shiftCalculations';
 
@@ -12,10 +12,10 @@ export const SERVICES: ShiftService[] = ['midi', 'soir'];
 
 export type StaffingSettings = Pick<
   ShiftPlanningSettings,
-  'staffingRules' | 'serviceWindows' | 'midiReferenceTime' | 'soirReferenceTime' | 'managerCountsInSalle'
+  'staffingRules' | 'serviceWindows' | 'midiReferenceTime' | 'soirReferenceTime' | 'managerCountsInSalle' | 'reliefTime'
 >;
 
-type TimeSpan = { start: string; end: string };
+export type TimeSpan = { start: string; end: string };
 
 // Début et fin en minutes ; une fin ≤ début passe minuit (fin ramenée au-dessus de 24 h).
 export const spanOf = (item: TimeSpan): [number, number] => {
@@ -49,34 +49,46 @@ export const serviceOfShift = (item: TimeSpan, settings: Pick<ShiftPlanningSetti
   return services.includes('midi') ? 'midi' : 'soir';
 };
 
-// Un service est ouvert un jour si une fenêtre de service du jour contient son heure de référence
-// (ce qui couvre aussi les jours en continu : une seule fenêtre contient les deux heures de référence).
-export const openServices = (settings: StaffingSettings, weekday: number): ShiftService[] =>
-  SERVICES.filter(service => settings.serviceWindows.some(window => window.days.includes(weekday) && coversReference(window, referenceOf(settings, service))));
+// Organisation d'un jour d'après les horaires du restaurant (serviceWindows) : fermé, coupé (midi + soir)
+// ou en continu (une seule fenêtre qui contient l'heure de relève).
+export type DayLayout =
+  | { mode: 'closed' }
+  | { mode: 'cut'; midi: TimeSpan | null; soir: TimeSpan | null }
+  | { mode: 'continuous'; start: string; end: string };
 
-export const windowFor = (settings: StaffingSettings, service: ShiftService, weekday: number): ShiftServiceWindow | undefined =>
-  settings.serviceWindows.find(window => window.days.includes(weekday) && coversReference(window, referenceOf(settings, service)));
+export function dayLayout(settings: StaffingSettings, weekday: number): DayLayout {
+  const windows = settings.serviceWindows.filter(window => window.days.includes(weekday));
+  if (windows.length === 0) return { mode: 'closed' };
+  const relief = parseShiftTime(settings.reliefTime) ?? 16 * 60;
+  if (windows.length === 1) {
+    const [start, end] = spanOf(windows[0]);
+    if (start < relief && relief < end) return { mode: 'continuous', start: windows[0].start, end: windows[0].end };
+  }
+  const midi = windows.find(window => window.service === 'midi') ?? null;
+  const soir = windows.find(window => window.service === 'soir') ?? null;
+  return { mode: 'cut', midi: midi && { start: midi.start, end: midi.end }, soir: soir && { start: soir.start, end: soir.end } };
+}
 
-// Fenêtre en continu : une seule fenêtre du jour couvre les deux heures de référence.
-export const continuousWindow = (settings: StaffingSettings, weekday: number): ServiceWindowLike | null =>
-  settings.serviceWindows.find(window => window.days.includes(weekday)
-    && coversReference(window, referenceOf(settings, 'midi')) && coversReference(window, referenceOf(settings, 'soir'))) ?? null;
-
-type ServiceWindowLike = ShiftServiceWindow;
+// Services ouverts un jour : les deux en continu, sinon ceux qui ont une fenêtre.
+export const openServices = (settings: StaffingSettings, weekday: number): ShiftService[] => {
+  const layout = dayLayout(settings, weekday);
+  if (layout.mode === 'closed') return [];
+  if (layout.mode === 'continuous') return SERVICES;
+  return SERVICES.filter(service => layout[service] !== null);
+};
 
 export type RoleNeed = { roleId: string; service: ShiftService; need: number };
 
-// Besoin d'un rôle sur un service : ⌈couverts ÷ couverts par personne⌉, au moins 1 si les couverts sont > 0.
+// Besoin d'un rôle sur un service ouvert : ⌈couverts ÷ couverts par personne⌉, au moins 1.
 export const staffNeed = (covers: number, coversPerPerson: number): number =>
-  covers > 0 ? (coversPerPerson > 0 ? Math.max(1, Math.ceil(covers / coversPerPerson)) : 1) : 0;
+  covers > 0 && coversPerPerson > 0 ? Math.max(1, Math.ceil(covers / coversPerPerson)) : 1;
 
 // Besoins d'un jour : par rôle et par service ouvert (couverts du midi et du soir lus séparément) ;
-// l'encadrement compte pour exactement 1 présent à chaque heure de référence d'un service ouvert.
+// l'encadrement compte pour 1 présent par service ouvert (et pour 1 dans le besoin salle si managerCountsInSalle).
 export function computeDayNeeds(settings: StaffingSettings, weekday: number, budget: DayBudget): RoleNeed[] {
   const needs: RoleNeed[] = [];
   openServices(settings, weekday).forEach(service => {
     const covers = service === 'midi' ? budget.cvMidi : budget.cvSoir;
-    if (covers <= 0) return;
     settings.staffingRules.forEach(rule => needs.push({ roleId: rule.roleId, service, need: staffNeed(covers, rule.coversPerPerson) }));
     needs.push({ roleId: MANAGER_ROLE_ID, service, need: 1 });
   });
@@ -111,14 +123,17 @@ export const computeDayShortages = (needs: RoleNeed[], dayShifts: Shift[], setti
   return [...missingByRole.entries()].map(([roleId, missing]) => ({ roleId, missing }));
 };
 
-// Parties d'une fenêtre [from, to] (minutes) non couvertes par les intervalles donnés.
-export const uncoveredParts = (intervals: Array<[number, number]>, from: number, to: number): Array<[number, number]> => {
-  const gaps: Array<[number, number]> = [];
-  let cursor = from;
-  [...intervals].sort((a, b) => a[0] - b[0]).forEach(([start, end]) => {
-    if (start > cursor) gaps.push([cursor, Math.min(start, to)]);
-    cursor = Math.max(cursor, end);
-  });
-  if (cursor < to) gaps.push([cursor, to]);
-  return gaps.filter(([start, end]) => end > start);
-};
+// Explication du besoin d'un jour, par exemple « Midi 55 cv → salle 3 · cuisine 2 | Soir 45 cv → salle 2 · cuisine 2 ».
+export function describeDayNeeds(settings: StaffingSettings, weekday: number, budget: DayBudget, roleLabelOf: (roleId: string) => string): string {
+  const needs = computeDayNeeds(settings, weekday, budget);
+  return SERVICES
+    .filter(service => needs.some(need => need.service === service))
+    .map(service => {
+      const covers = Math.round(service === 'midi' ? budget.cvMidi : budget.cvSoir);
+      const roles = needs
+        .filter(need => need.service === service && need.roleId !== MANAGER_ROLE_ID)
+        .map(need => `${roleLabelOf(need.roleId).toLowerCase()} ${need.need}`);
+      return `${service === 'midi' ? 'Midi' : 'Soir'} ${covers} cv → ${roles.join(' · ')}`;
+    })
+    .join(' | ');
+}

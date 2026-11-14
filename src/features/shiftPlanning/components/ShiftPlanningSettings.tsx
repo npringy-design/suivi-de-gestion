@@ -8,9 +8,9 @@ import { ELEARNING_ROLE_ID, LEGAL_RULE_LABELS, type DayBudget } from '../shiftCa
 import { BEBAS_FONT } from '../shiftRoleStyle';
 
 import ShiftPayPeriodsEditor from './ShiftPayPeriodsEditor';
-import ShiftServiceWindowsEditor from './ShiftServiceWindowsEditor';
+import ShiftElearningEditor from './ShiftElearningEditor';
+import ShiftHoursEditor from './ShiftHoursEditor';
 import ShiftStaffingEditor from './ShiftStaffingEditor';
-import ShiftTemplatesEditor from './ShiftTemplatesEditor';
 import { ShiftAbsencesEditor, ShiftStaffEditor } from './ShiftStaffEditor';
 
 type Props = {
@@ -86,51 +86,51 @@ export default function ShiftPlanningSettings({
           <label className="flex items-center justify-between gap-2">Masse salariale cible (% du CA)
             <input type="number" min={0} className={`${field} w-24`} value={settings.targetPayrollPct} onChange={event => patch({ targetPayrollPct: Number(event.target.value) })} />
           </label>
-          <label className="flex items-center justify-between gap-2">Heures sup
-            <select className={field} value={settings.avoidOvertime ? 'eviter' : 'autoriser'} onChange={event => patch({ avoidOvertime: event.target.value === 'eviter' })}>
-              <option value="eviter">Éviter</option>
-              <option value="autoriser">Autoriser</option>
-            </select>
-          </label>
-          <label className="flex items-center justify-between gap-2">Recalcul automatique après saisie
-            <select className={field} value={settings.autoRegenerate ? 'oui' : 'non'} onChange={event => patch({ autoRegenerate: event.target.value === 'oui' })}>
-              <option value="oui">Oui</option>
-              <option value="non">Non</option>
-            </select>
-          </label>
         </div>
       </Section>
 
       <Section title="Effectif selon les couverts">
-                <ShiftStaffingEditor settings={settings} roles={presenceRoles} weekDates={weekDates} budgetOf={budgetOf} onChange={patch} />
+        <ShiftStaffingEditor settings={settings} roles={presenceRoles} weekDates={weekDates} budgetOf={budgetOf} onChange={patch} />
       </Section>
 
-      <Section title="Horaires des services">
-        <ShiftServiceWindowsEditor windows={settings.serviceWindows} onChange={serviceWindows => patch({ serviceWindows })} />
+      <Section title="Horaires">
+        <ShiftHoursEditor settings={settings} onChange={patch} />
       </Section>
 
-      <Section title="Modèles de shifts">
-        <ShiftTemplatesEditor templates={settings.templates} roles={presenceRoles} references={settings} onChange={templates => patch({ templates })} />
+      <Section title="Équipe">
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-slate-700">Rôles</h3>
+            {settings.roles.map(role => (
+              <div key={role.id} className="flex items-center gap-2 text-sm">
+                <input type="color" value={role.couleur} aria-label={`Couleur ${role.label}`} onChange={event => patchRole(role.id, { couleur: event.target.value })} className="h-8 w-10 rounded" />
+                <input className={`${field} w-56`} value={role.label} aria-label="Libellé du rôle" onChange={event => patchRole(role.id, { label: event.target.value })} />
+                <button type="button" hidden={role.id === ELEARNING_ROLE_ID} onClick={() => patch({ roles: settings.roles.filter(r => r.id !== role.id) })} aria-label="Supprimer le rôle" className="rounded-lg p-1 text-red-600 hover:bg-red-50">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={addRole} className="flex items-center gap-1 text-sm font-bold text-cyan-700"><Plus className="h-4 w-4" /> Ajouter un rôle</button>
+          </div>
+          <ShiftStaffEditor staff={staff} roles={presenceRoles} sourceLabels={staffSourceLabels} onChange={onStaffChange} />
+        </div>
+      </Section>
+
+      <Section title="Absences">
+        <ShiftAbsencesEditor staff={staff} absences={absences} onChange={onAbsencesChange} />
       </Section>
 
       <Section title="Périodes de paie">
         <ShiftPayPeriodsEditor periods={settings.payPeriods} onChange={payPeriods => patch({ payPeriods })} />
       </Section>
 
-      <Section title="E-learning apprentis">
-        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-700">
-          <label className="flex items-center gap-2">Heures par semaine
-            <input type="number" min={0} className={`${field} w-20`} value={settings.elearningHours} onChange={event => patch({ elearningHours: Number(event.target.value) })} />
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={settings.elearningInProductivity} onChange={event => patch({ elearningInProductivity: event.target.checked })} />
-            Inclure dans la productivité
-          </label>
-        </div>
+      <Section title="E-learning">
+        <ShiftElearningEditor settings={settings} staff={staff} onChange={patch} />
       </Section>
 
-      <Section title="Règles légales">
-        <div className="space-y-2">
+      <details className="rounded-2xl bg-white p-5 shadow-sm">
+        <summary className="cursor-pointer text-2xl text-slate-900" style={{ fontFamily: BEBAS_FONT }}>Avancé : règles légales</summary>
+        <div className="mt-3 space-y-2">
           {settings.legalRules.map(rule => (
             <div key={rule.id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm">
               <span className="text-slate-700">{LEGAL_RULE_LABELS[rule.id]}</span>
@@ -142,30 +142,7 @@ export default function ShiftPlanningSettings({
           ))}
           <p className="text-xs text-slate-500">En mode « Bloquer », la saisie d'un shift qui enfreint la règle est refusée.</p>
         </div>
-      </Section>
-
-      <Section title="Rôles">
-        <div className="space-y-2">
-          {settings.roles.map(role => (
-            <div key={role.id} className="flex items-center gap-2 text-sm">
-              <input type="color" value={role.couleur} aria-label={`Couleur ${role.label}`} onChange={event => patchRole(role.id, { couleur: event.target.value })} className="h-8 w-10 rounded" />
-              <input className={`${field} w-56`} value={role.label} aria-label="Libellé du rôle" onChange={event => patchRole(role.id, { label: event.target.value })} />
-              <button type="button" hidden={role.id === ELEARNING_ROLE_ID} onClick={() => patch({ roles: settings.roles.filter(r => r.id !== role.id) })} aria-label="Supprimer le rôle" className="rounded-lg p-1 text-red-600 hover:bg-red-50">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-          <button type="button" onClick={addRole} className="flex items-center gap-1 text-sm font-bold text-cyan-700"><Plus className="h-4 w-4" /> Ajouter un rôle</button>
-        </div>
-      </Section>
-
-      <Section title="Personnel">
-        <ShiftStaffEditor staff={staff} roles={presenceRoles} sourceLabels={staffSourceLabels} onChange={onStaffChange} />
-      </Section>
-
-      <Section title="Absences">
-        <ShiftAbsencesEditor staff={staff} absences={absences} onChange={onAbsencesChange} />
-      </Section>
+      </details>
     </div>
   );
 }

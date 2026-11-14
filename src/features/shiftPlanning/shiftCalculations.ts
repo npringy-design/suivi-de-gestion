@@ -70,7 +70,7 @@ export const dayRevenue = (budget: DayBudget): number => budget.caMidi + budget.
 export const findAbsence = (absences: ShiftAbsence[], staffKey: string, date: string): ShiftAbsence | undefined =>
   absences.find(a => a.staffKey === staffKey && date >= a.dateFrom && date <= a.dateTo);
 
-export type LegalAlert = { ruleId: ShiftLegalRuleId | 'outOfTemplate'; staffKey: string; shiftIds: string[]; message: string };
+export type LegalAlert = { ruleId: ShiftLegalRuleId; staffKey: string; shiftIds: string[]; message: string };
 
 const absoluteStartMinutes = (shift: Shift, mondayIso: string): number => {
   const dayIndex = Math.round((Date.parse(`${shift.date}T00:00:00Z`) - Date.parse(`${mondayIso}T00:00:00Z`)) / 86400000);
@@ -212,27 +212,25 @@ export const DEFAULT_SHIFT_SETTINGS: ShiftPlanningSettings = {
     { id: 'cuisine', label: 'Cuisine', couleur: '#be123c' },
     { id: ELEARNING_ROLE_ID, label: 'E-learning', couleur: '#64748b' },
   ],
-  // Horaires d'origine modifiables dans les paramètres : service du midi et du soir, tous les jours.
+  // Horaires du restaurant : jours coupés (midi + soir) en semaine, en continu le week-end (relève à reliefTime).
   serviceWindows: [
-    { service: 'midi', days: [0, 1, 2, 3, 4, 5, 6], start: '11h30', end: '15h00' },
-    { service: 'soir', days: [0, 1, 2, 3, 4, 5, 6], start: '18h30', end: '00h00' },
+    { service: 'midi', days: [1, 2, 3, 4, 5], start: '11h30', end: '15h00' },
+    { service: 'soir', days: [1, 2, 3, 4, 5], start: '18h30', end: '00h00' },
+    { service: 'midi', days: [0, 6], start: '11h30', end: '23h00' },
   ],
   slotRules: [],
   payPeriods: [],
   managerOpenToClose: true,
-  elearningHours: 3,
+  elearningSlots: [],
   elearningInProductivity: true,
-  // Modèles de départ (modifiables) : arrivée et fermeture maximum par rôle ; les services couverts se déduisent des heures de référence.
-  templates: [
-    { id: 'tpl-enc-midi', label: 'Encadrement midi', roleId: 'encadrement', order: 1, days: [0, 1, 2, 3, 4, 5, 6], start: '11h00', end: '15h00' },
-    { id: 'tpl-enc-soir', label: 'Encadrement soir', roleId: 'encadrement', order: 2, days: [0, 1, 2, 3, 4, 5, 6], start: '18h00', end: '00h00' },
-    { id: 'tpl-salle-ouv', label: 'Ouverture salle', roleId: 'salle', order: 1, days: [0, 1, 2, 3, 4, 5, 6], start: '10h00', end: '15h00' },
-    { id: 'tpl-salle-ferm', label: 'Fermeture salle', roleId: 'salle', order: 2, days: [0, 1, 2, 3, 4, 5, 6], start: '18h30', end: '00h00' },
-    { id: 'tpl-salle-midi', label: 'Service midi salle', roleId: 'salle', order: 3, days: [0, 1, 2, 3, 4, 5, 6], start: '11h30', end: '15h00' },
-    { id: 'tpl-salle-soir', label: 'Service soir salle', roleId: 'salle', order: 4, days: [0, 1, 2, 3, 4, 5, 6], start: '18h30', end: '23h30' },
-    { id: 'tpl-cuis-matin', label: 'Cuisine matin', roleId: 'cuisine', order: 1, days: [0, 1, 2, 3, 4, 5, 6], start: '09h30', end: '15h00' },
-    { id: 'tpl-cuis-soir', label: 'Cuisine soir', roleId: 'cuisine', order: 2, days: [0, 1, 2, 3, 4, 5, 6], start: '18h00', end: '23h30' },
-  ],
+  templates: [],
+  salleOpenTime: '10h00',
+  kitchenOpenTimes: { 0: '08h00', 1: '10h00', 2: '10h00', 3: '09h00', 4: '10h00', 5: '08h00', 6: '08h00' },
+  defaultArrival: '11h45',
+  midiEndOffsetMin: 30,
+  closeExtraMin: 60,
+  reliefTime: '16h00',
+  reliefOverlapMin: 15,
 };
 
 export const LEGAL_RULE_LABELS: Record<ShiftLegalRuleId, string> = {

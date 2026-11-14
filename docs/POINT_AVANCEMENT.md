@@ -15,6 +15,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - Planning shifts : contrat prioritaire sur les minimums de personnel (un collaborateur n'est pas affecté au-delà de son objectif d'heures ; les minimums manquants sont repris en premier avec les heures de contrat, sinon signalés). tsc OK.
 - Planning shifts : effectif = ⌈couverts service ÷ couverts/personne⌉ par rôle, encadrant compté en salle, heures de référence midi/soir, remplissage uniquement par modèles ordonnés, garde-fous min/max supprimés. tsc OK.
 - Planning shifts : bouton RAZ (supprime tous les shifts de la semaine affichée, avec confirmation). tsc OK.
+- Planning shifts : horaires déduits des heures d'ouverture (ouverture salle et cuisine, arrivée 11h45, fin midi +30, fermeture +60, relève week-end), effectif = couverts ÷ ratio par équipe, contrats obligatoires avec récapitulatif du surplus, paramètres simplifiés. tsc OK.
 
 ## 01/11/2026 (fix création de site : CHECK legacy sur site_id)
 

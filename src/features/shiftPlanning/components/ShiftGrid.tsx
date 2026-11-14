@@ -57,6 +57,7 @@ function DayHeader({ day, context, roles, minProductivity, isToday }: { day: Day
         {DAY_LABELS[date.getDay()]} {String(date.getDate()).padStart(2, '0')}
       </div>
       <div className="mt-1 text-[11px] opacity-80">{Math.round(day.covers)} couverts</div>
+      {day.needsLabel && <div className="mt-1 text-[10px] leading-tight opacity-80">{day.needsLabel}</div>}
       <ContextPills context={context} />
       {day.productivity !== null && (
         <span

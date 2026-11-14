@@ -4,7 +4,7 @@ import { collectDailySamples } from '@/features/analyse/ecartsAnalysis';
 import { vacationStatusOf } from '@/features/planification/planningEngine';
 import { averagePayrollRate, getPayrollProvisionMultiplier, payrollNameKey } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import { parseHourInputToDecimal } from '@/lib/utils';
-import type { CustomEvent, MonthData, MonthDataSalariesConfig, PersonnelDepartment, SchoolHolidayCalendar, ShiftGuardRule, ShiftPlanningSettings, ShiftStaffMember, ShiftStaffingRule } from '@/types/dataTypes';
+import type { CustomEvent, MonthData, MonthDataSalariesConfig, PersonnelDepartment, SchoolHolidayCalendar, ShiftGuardRule, ShiftPlanningSettings, ShiftStaffMember, ShiftStaffingRule, ShiftWeekday } from '@/types/dataTypes';
 
 import { ELEARNING_ROLE_ID, type DayBudget } from './shiftCalculations';
 import { monthsOfDates } from './shiftDates';
@@ -146,6 +146,16 @@ const migrateGuardRules = (raw: unknown, fallback: ShiftStaffingRule[]): ShiftSt
   return migrated.length > 0 ? migrated : fallback;
 };
 
+// Ouverture cuisine par jour : les jours absents ou invalides reprennent la valeur par défaut.
+const mergeKitchenOpenTimes = (raw: unknown, defaults: ShiftPlanningSettings['kitchenOpenTimes']): ShiftPlanningSettings['kitchenOpenTimes'] => {
+  if (!isRecord(raw)) return defaults;
+  const pick = (weekday: ShiftWeekday): string => {
+    const stored = raw[String(weekday)];
+    return typeof stored === 'string' ? stored : defaults[weekday];
+  };
+  return { 0: pick(0), 1: pick(1), 2: pick(2), 3: pick(3), 4: pick(4), 5: pick(5), 6: pick(6) };
+};
+
 // Fusionne un document enregistré avec les défauts : les anciens documents (sans les champs de l'étape 2)
 // restent valides, les règles légales et le rôle technique e-learning manquants sont ajoutés.
 export const normalizeSettings = (raw: unknown, defaults: ShiftPlanningSettings): ShiftPlanningSettings => {
@@ -168,7 +178,14 @@ export const normalizeSettings = (raw: unknown, defaults: ShiftPlanningSettings)
     slotRules: Array.isArray(value.slotRules) ? value.slotRules : defaults.slotRules,
     payPeriods: Array.isArray(value.payPeriods) ? value.payPeriods : defaults.payPeriods,
     managerOpenToClose: typeof value.managerOpenToClose === 'boolean' ? value.managerOpenToClose : defaults.managerOpenToClose,
-    elearningHours: typeof value.elearningHours === 'number' ? value.elearningHours : defaults.elearningHours,
+    elearningSlots: Array.isArray(value.elearningSlots) ? value.elearningSlots : defaults.elearningSlots,
+    salleOpenTime: typeof value.salleOpenTime === 'string' ? value.salleOpenTime : defaults.salleOpenTime,
+    kitchenOpenTimes: mergeKitchenOpenTimes(value.kitchenOpenTimes, defaults.kitchenOpenTimes),
+    defaultArrival: typeof value.defaultArrival === 'string' ? value.defaultArrival : defaults.defaultArrival,
+    midiEndOffsetMin: typeof value.midiEndOffsetMin === 'number' ? value.midiEndOffsetMin : defaults.midiEndOffsetMin,
+    closeExtraMin: typeof value.closeExtraMin === 'number' ? value.closeExtraMin : defaults.closeExtraMin,
+    reliefTime: typeof value.reliefTime === 'string' ? value.reliefTime : defaults.reliefTime,
+    reliefOverlapMin: typeof value.reliefOverlapMin === 'number' ? value.reliefOverlapMin : defaults.reliefOverlapMin,
     elearningInProductivity: typeof value.elearningInProductivity === 'boolean' ? value.elearningInProductivity : defaults.elearningInProductivity,
     templates: Array.isArray(value.templates)
       ? value.templates.map((template, index) => ({ ...template, order: typeof template.order === 'number' ? template.order : index + 1 }))

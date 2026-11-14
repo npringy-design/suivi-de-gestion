@@ -31,7 +31,7 @@ export default function ShiftStaffingEditor({ settings, roles, weekDates, budget
     <div className="space-y-3">
       <p className="text-sm text-slate-600">
         Le besoin d'un service est calculé par rôle : couverts budgétés du service ÷ couverts par personne, arrondi à l'entier supérieur
-        (au moins 1 si le service est ouvert et a des couverts). L'encadrement compte pour exactement 1 présent à l'heure de référence de chaque service.
+        (au moins 1 si le service est ouvert). Un encadrant est présent à chaque service ouvert.
       </p>
 
       {rules.map((rule, index) => (
@@ -81,12 +81,6 @@ export default function ShiftStaffingEditor({ settings, roles, weekDates, budget
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={settings.managerCountsInSalle} onChange={event => onChange({ managerCountsInSalle: event.target.checked })} />
           L'encadrant compte dans l'effectif salle
-        </label>
-        <label className="flex items-center gap-2">Heure de référence midi
-          <input className={`${cell} w-20`} value={settings.midiReferenceTime} onChange={event => onChange({ midiReferenceTime: event.target.value })} />
-        </label>
-        <label className="flex items-center gap-2">soir
-          <input className={`${cell} w-20`} value={settings.soirReferenceTime} onChange={event => onChange({ soirReferenceTime: event.target.value })} />
         </label>
       </div>
 

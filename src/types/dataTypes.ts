@@ -658,6 +658,7 @@ export type Shift = {
   roleId: ShiftRoleId;
   service: ShiftService;
   status: 'proposed' | 'validated';
+  reinforcement?: boolean; // renfort posé par le moteur pour les heures de contrat (surplus par rapport au besoin)
 };
 
 // Ancienne règle d'effectif (minimum / maximum) : conservée pour migrer les documents déjà enregistrés vers ShiftStaffingRule.
@@ -734,6 +735,17 @@ export type ShiftLegalRule = {
   mode: 'alert' | 'block'; // 'block' stocké mais pas encore appliqué (étape 2)
 };
 
+// Jour de la semaine : 0 (dimanche) à 6 (samedi).
+export type ShiftWeekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+// Créneau d'e-learning : staffKey d'un apprenti ou 'all' (tous les apprentis), jour, horaires.
+export type ShiftElearningSlot = {
+  staffKey: string;
+  day: ShiftWeekday;
+  start: string; // 'HHhMM'
+  end: string; // 'HHhMM'
+};
+
 export type ShiftPlanningSettings = {
   minProductivity: number; // €/h
   targetPayrollPct: number; // % du CA
@@ -741,19 +753,41 @@ export type ShiftPlanningSettings = {
   autoRegenerate: boolean;
   staffingRules: ShiftStaffingRule[];
   managerCountsInSalle: boolean; // l'encadrant présent compte pour 1 dans le besoin salle du service
-  midiReferenceTime: string; // un shift couvre le midi s'il est présent à cette heure ('HHhMM')
+  midiReferenceTime: string; // stocké, non utilisé par le moteur (services couverts affichés d'après ces heures)
   soirReferenceTime: string;
   legalRules: ShiftLegalRule[];
   roles: ShiftRoleDef[];
-  serviceWindows: ShiftServiceWindow[];
-  slotRules: ShiftSlotRule[];
+  serviceWindows: ShiftServiceWindow[]; // horaires du restaurant
+  slotRules: ShiftSlotRule[]; // stocké, non utilisé par le moteur
   payPeriods: ShiftPayPeriod[];
-  managerOpenToClose: boolean; // 1 encadrement couvre toute la fenêtre de chaque service
-  elearningHours: number; // heures hebdomadaires d'e-learning des apprentis
+  managerOpenToClose: boolean; // stocké, non utilisé par le moteur
+  elearningSlots: ShiftElearningSlot[];
   elearningInProductivity: boolean;
-  templates: ShiftTemplate[];
+  templates: ShiftTemplate[]; // stocké, non utilisé par le moteur
+  // Horaires déduits des heures d'ouverture (shiftShapes.ts), au format 'HHhMM' ou en minutes.
+  salleOpenTime: string; // ouverture salle (encadrant et 1 serveur du midi)
+  kitchenOpenTimes: Record<ShiftWeekday, string>; // ouverture cuisine par jour
+  defaultArrival: string; // arrivée des autres collaborateurs du midi
+  midiEndOffsetMin: number; // fin du midi = fin de la fenêtre midi + ce délai
+  closeExtraMin: number; // fermeture = fin de la fenêtre du soir + ce délai (encadrant et 1 cuisinier)
+  reliefTime: string; // relève des jours en continu
+  reliefOverlapMin: number; // chevauchement de la relève
 };
 
 export type ShiftWeekDoc = { shifts: Shift[] };
 export type ShiftStaffDoc = { members: ShiftStaffMember[] };
 export type ShiftAbsencesDoc = { absences: ShiftAbsence[] };
+
+// Forme de shift déduite des heures d'ouverture (shiftShapes.ts) : ouverture, « autres » (arrivée par défaut / service) ou fermeture.
+export type ShiftShapeKind = 'ouverture' | 'autres' | 'fermeture';
+
+export type ShiftShape = {
+  roleId: ShiftRoleId;
+  service: ShiftService;
+  kind: ShiftShapeKind;
+  start: string; // 'HHhMM'
+  end: string; // 'HHhMM'
+};
+
+// Poste à pourvoir un jour : une forme de shift pour une personne.
+export type ShiftPosition = ShiftShape & { id: string; date: string };

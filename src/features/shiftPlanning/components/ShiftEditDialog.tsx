@@ -6,7 +6,6 @@ import type { Shift, ShiftPlanningSettings, ShiftRoleDef, ShiftStaffMember } fro
 import { ELEARNING_ROLE_ID, parseShiftTime } from '../shiftCalculations';
 import { formatShortDate } from '../shiftDates';
 import { coveredServicesLabel, serviceOfShift } from '../shiftStaffing';
-import { matchesTemplate, templatesFor } from '../shiftTemplates';
 
 type Props = {
   member: ShiftStaffMember;
@@ -23,8 +22,6 @@ type Props = {
 const newShiftId = () => `shift-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export default function ShiftEditDialog({ member, date, cellShifts, roles, settings, getBlockingReasons, onSave, onClose }: Props) {
-  const templates = settings.templates;
-  const weekday = new Date(`${date}T12:00:00`).getDay();
   const roleOptions = member.roles.length > 0
     ? member.roles.map(id => roles.find(r => r.id === id)).filter((role): role is ShiftRoleDef => role !== undefined)
     : roles;
@@ -91,22 +88,6 @@ export default function ShiftEditDialog({ member, date, cellShifts, roles, setti
               >
                 {selectableRoles.map(role => <option key={role.id} value={role.id}>{role.label}</option>)}
               </select>
-              <select
-                className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
-                value=""
-                aria-label="Modèle"
-                onChange={event => {
-                  const template = templates.find(item => item.id === event.target.value);
-                  if (template) patch(shift.id, { start: template.start, end: template.end });
-                }}
-              >
-                <option value="">Modèle…</option>
-                {templatesFor(templates, shift.roleId, weekday)
-                  .map(template => <option key={template.id} value={template.id}>{template.label} {template.start}–{template.end}</option>)}
-              </select>
-              {templates.length > 0 && shift.roleId !== ELEARNING_ROLE_ID && !matchesTemplate(shift, templates, weekday) && (
-                <span className="text-xs font-bold text-amber-700">hors modèle</span>
-              )}
               <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">{coveredServicesLabel(shift, settings)}</span>
               <button
                 type="button"
