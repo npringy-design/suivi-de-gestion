@@ -25,6 +25,7 @@ type Props = {
   hoursByStaff: Record<string, number>;
   counters: Record<string, number | null>;
   rests: Record<string, RestSummary | null>;
+  serviceLabelOf: (shift: Shift) => string; // services couverts d'après les heures de référence
   minProductivity: number;
   todayIso: string;
   onCellClick: (staffKey: string, date: string) => void;
@@ -77,7 +78,7 @@ function DayHeader({ day, context, roles, minProductivity, isToday }: { day: Day
   );
 }
 
-function ShiftBlock({ shift, roles, hasAlert }: { shift: Shift; roles: ShiftRoleDef[]; hasAlert: boolean }) {
+function ShiftBlock({ shift, roles, hasAlert, serviceLabel }: { shift: Shift; roles: ShiftRoleDef[]; hasAlert: boolean; serviceLabel: string }) {
   const couleur = roleColorOf(roles, shift.roleId);
   const proposed = shift.status === 'proposed';
   return (
@@ -91,7 +92,7 @@ function ShiftBlock({ shift, roles, hasAlert }: { shift: Shift; roles: ShiftRole
       }}
     >
       <div className="text-[9px] font-bold uppercase tracking-wider opacity-80">
-        {shift.service === 'midi' ? 'MIDI' : 'SOIR'}{proposed ? ' · PROPOSÉ' : ''}
+        {serviceLabel}{proposed ? ' · PROPOSÉ' : ''}
       </div>
       <div className="font-bold">{shift.start} – {shift.end}</div>
     </div>
@@ -99,7 +100,7 @@ function ShiftBlock({ shift, roles, hasAlert }: { shift: Shift; roles: ShiftRole
 }
 
 export default function ShiftGrid({
-  groups, roles, days, dayContext, shifts, absences, alertShiftIds, hoursByStaff, counters, rests, minProductivity, todayIso, onCellClick,
+  groups, roles, days, dayContext, shifts, absences, alertShiftIds, hoursByStaff, counters, rests, serviceLabelOf, minProductivity, todayIso, onCellClick,
 }: Props) {
   return (
     <div className="overflow-x-auto rounded-2xl shadow-sm">
@@ -121,6 +122,7 @@ export default function ShiftGrid({
             hoursByStaff={hoursByStaff}
             counters={counters}
             rests={rests}
+            serviceLabelOf={serviceLabelOf}
             onCellClick={onCellClick}
           />
         ))}
@@ -135,9 +137,9 @@ export default function ShiftGrid({
   );
 }
 
-type GroupProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'hoursByStaff' | 'counters' | 'rests' | 'onCellClick'> & { group: StaffGroup };
+type GroupProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'hoursByStaff' | 'counters' | 'rests' | 'serviceLabelOf' | 'onCellClick'> & { group: StaffGroup };
 
-function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursByStaff, counters, rests, onCellClick }: GroupProps) {
+function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursByStaff, counters, rests, serviceLabelOf, onCellClick }: GroupProps) {
   return (
     <>
       <div className="col-span-8 bg-[#e8e3da] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-600">{group.label}</div>
@@ -153,6 +155,7 @@ function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursB
           weekHours={hoursByStaff[member.key] ?? 0}
           counter={counters[member.key] ?? null}
           rest={rests[member.key] ?? null}
+          serviceLabelOf={serviceLabelOf}
           onCellClick={onCellClick}
         />
       ))}
@@ -160,9 +163,9 @@ function GroupRows({ group, roles, days, shifts, absences, alertShiftIds, hoursB
   );
 }
 
-type RowProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'onCellClick'> & { member: ShiftStaffMember; weekHours: number; counter: number | null; rest: RestSummary | null };
+type RowProps = Pick<Props, 'roles' | 'days' | 'shifts' | 'absences' | 'alertShiftIds' | 'serviceLabelOf' | 'onCellClick'> & { member: ShiftStaffMember; weekHours: number; counter: number | null; rest: RestSummary | null };
 
-function StaffRow({ member, roles, days, shifts, absences, alertShiftIds, weekHours, counter, rest, onCellClick }: RowProps) {
+function StaffRow({ member, roles, days, shifts, absences, alertShiftIds, weekHours, counter, rest, serviceLabelOf, onCellClick }: RowProps) {
   const primaryColor = member.roles[0] ? roleColorOf(roles, member.roles[0]) : NO_ROLE_COLOR;
   const roleLabels = member.roles.map(id => roles.find(r => r.id === id)?.label ?? id).join(' › ');
   return (
@@ -211,7 +214,7 @@ function StaffRow({ member, roles, days, shifts, absences, alertShiftIds, weekHo
               </span>
             )}
             {cellShifts.map(shift => (
-              <ShiftBlock key={shift.id} shift={shift} roles={roles} hasAlert={alertShiftIds.has(shift.id)} />
+              <ShiftBlock key={shift.id} shift={shift} roles={roles} hasAlert={alertShiftIds.has(shift.id)} serviceLabel={serviceLabelOf(shift)} />
             ))}
             {!absence && cellShifts.length === 0 && (
               <span className="text-center text-lg text-slate-300 opacity-0 group-hover:opacity-100">+</span>

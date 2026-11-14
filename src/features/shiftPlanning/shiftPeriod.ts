@@ -2,6 +2,7 @@ import type { Shift, ShiftPayPeriod, ShiftPlanningSettings, ShiftStaffMember } f
 
 import { shiftDurationHours, totalHours } from './shiftCalculations';
 import { addDaysIso, dateFromIso, mondayOfIso } from './shiftDates';
+import { coveredServices } from './shiftStaffing';
 import { closingEndOf } from './shiftTemplates';
 
 // Période de paie contenant la semaine : celle qui chevauche la semaine (lundi → dimanche), le lundi en priorité.
@@ -50,7 +51,7 @@ export type PeriodInfo = {
 };
 
 export const isClosing = (shift: Shift, settings: ShiftPlanningSettings): boolean => {
-  if (shift.service !== 'soir') return false;
+  if (!coveredServices(shift, settings).includes('soir')) return false;
   const weekday = dateFromIso(shift.date).getDay();
   return closingEndOf(settings, weekday) === shift.end;
 };

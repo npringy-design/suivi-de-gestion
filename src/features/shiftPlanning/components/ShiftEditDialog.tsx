@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 
-import type { Shift, ShiftRoleDef, ShiftService, ShiftStaffMember, ShiftTemplate } from '@/types/dataTypes';
+import type { Shift, ShiftPlanningSettings, ShiftRoleDef, ShiftStaffMember } from '@/types/dataTypes';
 
-import { ELEARNING_ROLE_ID, inferShiftService, parseShiftTime } from '../shiftCalculations';
+import { ELEARNING_ROLE_ID, parseShiftTime } from '../shiftCalculations';
 import { formatShortDate } from '../shiftDates';
+import { coveredServicesLabel, serviceOfShift } from '../shiftStaffing';
 import { matchesTemplate, templatesFor } from '../shiftTemplates';
 
 type Props = {
@@ -12,7 +13,7 @@ type Props = {
   date: string;
   cellShifts: Shift[];
   roles: ShiftRoleDef[];
-  templates: ShiftTemplate[];
+  settings: ShiftPlanningSettings;
   // Raisons du refus si les shifts saisis enfreignent une règle légale en mode « bloquer ».
   getBlockingReasons: (shifts: Shift[]) => string[];
   onSave: (shifts: Shift[]) => void;
@@ -21,7 +22,9 @@ type Props = {
 
 const newShiftId = () => `shift-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-export default function ShiftEditDialog({ member, date, cellShifts, roles, templates, getBlockingReasons, onSave, onClose }: Props) {
+export default function ShiftEditDialog({ member, date, cellShifts, roles, settings, getBlockingReasons, onSave, onClose }: Props) {
+  const templates = settings.templates;
+  const weekday = new Date(`${date}T12:00:00`).getDay();
   const roleOptions = member.roles.length > 0
     ? member.roles.map(id => roles.find(r => r.id === id)).filter((role): role is ShiftRoleDef => role !== undefined)
     : roles;
@@ -48,7 +51,8 @@ export default function ShiftEditDialog({ member, date, cellShifts, roles, templ
       return;
     }
     // Un shift saisi à la main est validé.
-    const validated = drafts.map<Shift>(shift => ({ ...shift, status: 'validated' }));
+    // Le service porté par le shift se déduit des heures de référence.
+    const validated = drafts.map<Shift>(shift => ({ ...shift, service: serviceOfShift(shift, settings), status: 'validated' }));
     const reasons = getBlockingReasons(validated);
     if (reasons.length > 0) {
       setErrors(reasons.map(reason => `Enregistrement refusé : ${reason}`));
@@ -75,7 +79,7 @@ export default function ShiftEditDialog({ member, date, cellShifts, roles, templ
                 className={inputClass}
                 value={shift.start}
                 aria-label="Heure de début"
-                onChange={event => patch(shift.id, { start: event.target.value, service: inferShiftService(event.target.value) })}
+                onChange={event => patch(shift.id, { start: event.target.value })}
               />
               <span className="text-slate-400">→</span>
               <input className={inputClass} value={shift.end} aria-label="Heure de fin" onChange={event => patch(shift.id, { end: event.target.value })} />
@@ -93,25 +97,17 @@ export default function ShiftEditDialog({ member, date, cellShifts, roles, templ
                 aria-label="Modèle"
                 onChange={event => {
                   const template = templates.find(item => item.id === event.target.value);
-                  if (template) patch(shift.id, { start: template.start, end: template.end, service: template.service });
+                  if (template) patch(shift.id, { start: template.start, end: template.end });
                 }}
               >
                 <option value="">Modèle…</option>
-                {templatesFor(templates, shift.roleId, 'midi', new Date(`${date}T12:00:00`).getDay()).concat(templatesFor(templates, shift.roleId, 'soir', new Date(`${date}T12:00:00`).getDay()))
+                {templatesFor(templates, shift.roleId, weekday)
                   .map(template => <option key={template.id} value={template.id}>{template.label} {template.start}–{template.end}</option>)}
               </select>
-              {templates.length > 0 && shift.roleId !== ELEARNING_ROLE_ID && !matchesTemplate(shift, templates, new Date(`${date}T12:00:00`).getDay()) && (
+              {templates.length > 0 && shift.roleId !== ELEARNING_ROLE_ID && !matchesTemplate(shift, templates, weekday) && (
                 <span className="text-xs font-bold text-amber-700">hors modèle</span>
               )}
-              <select
-                className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
-                value={shift.service}
-                aria-label="Service"
-                onChange={event => patch(shift.id, { service: event.target.value as ShiftService })}
-              >
-                <option value="midi">Midi</option>
-                <option value="soir">Soir</option>
-              </select>
+              <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">{coveredServicesLabel(shift, settings)}</span>
               <button
                 type="button"
                 onClick={() => setDrafts(list => list.filter(item => item.id !== shift.id))}

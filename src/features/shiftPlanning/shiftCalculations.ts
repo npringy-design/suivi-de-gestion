@@ -1,7 +1,6 @@
 import type {
   Shift,
   ShiftAbsence,
-  ShiftGuardRule,
   ShiftLegalRuleId,
   ShiftPlanningSettings,
   ShiftService,
@@ -67,42 +66,6 @@ export type DayBudget = { cvMidi: number; cvSoir: number; caMidi: number; caSoir
 export const EMPTY_DAY_BUDGET: DayBudget = { cvMidi: 0, cvSoir: 0, caMidi: 0, caSoir: 0 };
 
 export const dayRevenue = (budget: DayBudget): number => budget.caMidi + budget.caSoir;
-
-// Besoin = max(min, ⌈couverts ÷ coversPerPerson⌉), plafonné à max ; coversPerPerson null → min.
-export const requiredStaff = (rule: ShiftGuardRule, covers: number): number => {
-  if (rule.coversPerPerson === null || rule.coversPerPerson <= 0) return rule.min;
-  const need = Math.max(rule.min, Math.ceil(covers / rule.coversPerPerson));
-  return Math.min(need, rule.max);
-};
-
-export type RoleNeed = { roleId: string; service: ShiftService; need: number };
-
-// Plusieurs règles sur un même rôle et service : on retient le besoin le plus élevé.
-export const computeDayNeeds = (rules: ShiftGuardRule[], budget: DayBudget): RoleNeed[] => {
-  const needs = new Map<string, RoleNeed>();
-  rules.forEach(rule => {
-    if (rule.roleId === ELEARNING_ROLE_ID) return; // le rôle technique n'entre jamais dans les besoins de présence
-    const services: ShiftService[] = rule.service === 'both' ? ['midi', 'soir'] : [rule.service];
-    services.forEach(service => {
-      const need = requiredStaff(rule, service === 'midi' ? budget.cvMidi : budget.cvSoir);
-      const key = `${rule.roleId}|${service}`;
-      const existing = needs.get(key);
-      if (!existing || need > existing.need) needs.set(key, { roleId: rule.roleId, service, need });
-    });
-  });
-  return [...needs.values()];
-};
-
-export type RoleShortage = { roleId: string; missing: number };
-
-export const computeDayShortages = (needs: RoleNeed[], dayShifts: Shift[]): RoleShortage[] => {
-  const missingByRole = new Map<string, number>();
-  needs.forEach(({ roleId, service, need }) => {
-    const covered = dayShifts.filter(shift => shift.roleId === roleId && shift.service === service).length;
-    if (need > covered) missingByRole.set(roleId, (missingByRole.get(roleId) ?? 0) + (need - covered));
-  });
-  return [...missingByRole.entries()].map(([roleId, missing]) => ({ roleId, missing }));
-};
 
 export const findAbsence = (absences: ShiftAbsence[], staffKey: string, date: string): ShiftAbsence | undefined =>
   absences.find(a => a.staffKey === staffKey && date >= a.dateFrom && date <= a.dateTo);
@@ -227,7 +190,13 @@ export const DEFAULT_SHIFT_SETTINGS: ShiftPlanningSettings = {
   targetPayrollPct: 24,
   avoidOvertime: true,
   autoRegenerate: true,
-  guardRules: [],
+  staffingRules: [
+    { roleId: 'salle', coversPerPerson: 25 },
+    { roleId: 'cuisine', coversPerPerson: 30 },
+  ],
+  managerCountsInSalle: true,
+  midiReferenceTime: '12h30',
+  soirReferenceTime: '20h00',
   legalRules: [
     { id: 'rest11h', mode: 'alert' },
     { id: 'max10hDay', mode: 'alert' },
@@ -253,16 +222,16 @@ export const DEFAULT_SHIFT_SETTINGS: ShiftPlanningSettings = {
   managerOpenToClose: true,
   elearningHours: 3,
   elearningInProductivity: true,
-  // Modèles de départ (modifiables) : arrivée et fermeture maximum par rôle, service et jour.
+  // Modèles de départ (modifiables) : arrivée et fermeture maximum par rôle ; les services couverts se déduisent des heures de référence.
   templates: [
-    { id: 'tpl-enc-midi', label: 'Encadrement midi', roleId: 'encadrement', service: 'midi', days: [0, 1, 2, 3, 4, 5, 6], start: '11h00', end: '15h00' },
-    { id: 'tpl-enc-soir', label: 'Encadrement soir', roleId: 'encadrement', service: 'soir', days: [0, 1, 2, 3, 4, 5, 6], start: '18h00', end: '00h00' },
-    { id: 'tpl-salle-ouv', label: 'Ouverture salle', roleId: 'salle', service: 'midi', days: [0, 1, 2, 3, 4, 5, 6], start: '10h00', end: '15h00' },
-    { id: 'tpl-salle-midi', label: 'Service midi salle', roleId: 'salle', service: 'midi', days: [0, 1, 2, 3, 4, 5, 6], start: '11h30', end: '15h00' },
-    { id: 'tpl-salle-soir', label: 'Service soir salle', roleId: 'salle', service: 'soir', days: [0, 1, 2, 3, 4, 5, 6], start: '18h30', end: '23h30' },
-    { id: 'tpl-salle-ferm', label: 'Fermeture salle', roleId: 'salle', service: 'soir', days: [5, 6], start: '18h30', end: '00h00' },
-    { id: 'tpl-cuis-matin', label: 'Cuisine matin', roleId: 'cuisine', service: 'midi', days: [0, 1, 2, 3, 4, 5, 6], start: '09h30', end: '15h00' },
-    { id: 'tpl-cuis-soir', label: 'Cuisine soir', roleId: 'cuisine', service: 'soir', days: [0, 1, 2, 3, 4, 5, 6], start: '18h00', end: '23h30' },
+    { id: 'tpl-enc-midi', label: 'Encadrement midi', roleId: 'encadrement', order: 1, days: [0, 1, 2, 3, 4, 5, 6], start: '11h00', end: '15h00' },
+    { id: 'tpl-enc-soir', label: 'Encadrement soir', roleId: 'encadrement', order: 2, days: [0, 1, 2, 3, 4, 5, 6], start: '18h00', end: '00h00' },
+    { id: 'tpl-salle-ouv', label: 'Ouverture salle', roleId: 'salle', order: 1, days: [0, 1, 2, 3, 4, 5, 6], start: '10h00', end: '15h00' },
+    { id: 'tpl-salle-ferm', label: 'Fermeture salle', roleId: 'salle', order: 2, days: [0, 1, 2, 3, 4, 5, 6], start: '18h30', end: '00h00' },
+    { id: 'tpl-salle-midi', label: 'Service midi salle', roleId: 'salle', order: 3, days: [0, 1, 2, 3, 4, 5, 6], start: '11h30', end: '15h00' },
+    { id: 'tpl-salle-soir', label: 'Service soir salle', roleId: 'salle', order: 4, days: [0, 1, 2, 3, 4, 5, 6], start: '18h30', end: '23h30' },
+    { id: 'tpl-cuis-matin', label: 'Cuisine matin', roleId: 'cuisine', order: 1, days: [0, 1, 2, 3, 4, 5, 6], start: '09h30', end: '15h00' },
+    { id: 'tpl-cuis-soir', label: 'Cuisine soir', roleId: 'cuisine', order: 2, days: [0, 1, 2, 3, 4, 5, 6], start: '18h00', end: '23h30' },
   ],
 };
 

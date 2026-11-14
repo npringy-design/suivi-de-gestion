@@ -660,6 +660,7 @@ export type Shift = {
   status: 'proposed' | 'validated';
 };
 
+// Ancienne règle d'effectif (minimum / maximum) : conservée pour migrer les documents déjà enregistrés vers ShiftStaffingRule.
 export type ShiftGuardRule = {
   roleId: ShiftRoleId;
   service: ShiftService | 'both';
@@ -671,6 +672,12 @@ export type ShiftGuardRule = {
 // amplitude13h : 13 h maximum entre le début du premier shift et la fin du dernier de la journée ;
 // oneBreak : 2 shifts maximum par jour (une seule coupure, sans durée minimum).
 export type ShiftLegalRuleId = 'rest11h' | 'max10hDay' | 'max48hWeek' | 'restDays2' | 'contractHours' | 'amplitude13h' | 'oneBreak';
+
+// Effectif d'un rôle : besoin d'un service = ⌈couverts budgétés du service ÷ coversPerPerson⌉ (au moins 1 si service ouvert et couverts > 0).
+export type ShiftStaffingRule = {
+  roleId: ShiftRoleId;
+  coversPerPerson: number;
+};
 
 // Horaires d'un service : le soir finit à l'heure `end` (fermeture).
 export type ShiftServiceWindow = {
@@ -706,7 +713,8 @@ export type ShiftTemplate = {
   id: string;
   label: string;
   roleId: ShiftRoleId;
-  service: ShiftService;
+  service?: ShiftService; // hérité des anciens modèles, plus lu : les services couverts se déduisent des heures de référence
+  order: number; // ordre d'utilisation pour un rôle et un jour (1 = d'abord)
   days: number[]; // 0 (dimanche) à 6 (samedi)
   start: string; // 'HHhMM'
   end: string; // 'HHhMM'
@@ -731,7 +739,10 @@ export type ShiftPlanningSettings = {
   targetPayrollPct: number; // % du CA
   avoidOvertime: boolean;
   autoRegenerate: boolean;
-  guardRules: ShiftGuardRule[];
+  staffingRules: ShiftStaffingRule[];
+  managerCountsInSalle: boolean; // l'encadrant présent compte pour 1 dans le besoin salle du service
+  midiReferenceTime: string; // un shift couvre le midi s'il est présent à cette heure ('HHhMM')
+  soirReferenceTime: string;
   legalRules: ShiftLegalRule[];
   roles: ShiftRoleDef[];
   serviceWindows: ShiftServiceWindow[];

@@ -13,6 +13,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - Planning shifts (étape 2 bis) : taux horaire calculé comme Config Salaires (MS % affichée), modèles de shifts (arrivée / fermeture max), moteur semaine (repos consécutifs décidés en premier, affectation par contrainte, contrôle légal final). tsc OK.
 - Planning shifts (étape 2 ter) : contrat obligatoire (compteur période = 0), productivité en objectif, maximum des garde-fous dépassable pour le contrat, garde-fous clarifiés avec aperçu semaine, état d'enregistrement des paramètres. tsc OK.
 - Planning shifts : contrat prioritaire sur les minimums de personnel (un collaborateur n'est pas affecté au-delà de son objectif d'heures ; les minimums manquants sont repris en premier avec les heures de contrat, sinon signalés). tsc OK.
+- Planning shifts : effectif = ⌈couverts service ÷ couverts/personne⌉ par rôle, encadrant compté en salle, heures de référence midi/soir, remplissage uniquement par modèles ordonnés, garde-fous min/max supprimés. tsc OK.
 - Planning shifts : bouton RAZ (supprime tous les shifts de la semaine affichée, avec confirmation). tsc OK.
 
 ## 01/11/2026 (fix création de site : CHECK legacy sur site_id)

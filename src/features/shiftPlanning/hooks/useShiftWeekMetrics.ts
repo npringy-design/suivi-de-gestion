@@ -3,8 +3,6 @@ import { useMemo } from 'react';
 import type { Shift, ShiftPlanningSettings, ShiftStaffMember } from '@/types/dataTypes';
 
 import {
-  computeDayNeeds,
-  computeDayShortages,
   computeLegalAlerts,
   dayRevenue,
   ELEARNING_ROLE_ID,
@@ -16,8 +14,9 @@ import {
   totalHours,
   type DayBudget,
   type LegalAlert,
-  type RoleShortage,
 } from '../shiftCalculations';
+import { dateFromIso } from '../shiftDates';
+import { computeDayNeeds, computeDayShortages, type RoleShortage } from '../shiftStaffing';
 import { matchesTemplate } from '../shiftTemplates';
 
 export type DayMetrics = {
@@ -66,7 +65,7 @@ export function useShiftWeekMetrics(
         hours,
         productivity: productivity(dayRevenue(budget), hours),
         payrollPct: payrollPct(totalCost(dayShifts, hourlyRates), dayRevenue(budget)),
-        shortages: computeDayShortages(computeDayNeeds(settings.guardRules, budget), dayShifts),
+        shortages: computeDayShortages(computeDayNeeds(settings, dateFromIso(date).getDay(), budget), dayShifts, settings, date),
       };
     });
 
@@ -98,5 +97,5 @@ export function useShiftWeekMetrics(
       hoursByStaff: Object.fromEntries(staff.map(member => [member.key, totalHours(shifts.filter(s => s.staffKey === member.key))])),
       proposedCount: shifts.filter(shift => shift.status === 'proposed').length,
     };
-  },[weekDates, shifts, staff, hourlyRates, settings.guardRules, settings.legalRules, settings.templates, settings.elearningInProductivity, budgetOf]);
+  }, [weekDates, shifts, staff, hourlyRates, settings, budgetOf]);
 }

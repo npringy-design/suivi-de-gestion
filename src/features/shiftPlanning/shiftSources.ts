@@ -4,7 +4,7 @@ import { collectDailySamples } from '@/features/analyse/ecartsAnalysis';
 import { vacationStatusOf } from '@/features/planification/planningEngine';
 import { averagePayrollRate, getPayrollProvisionMultiplier, payrollNameKey } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import { parseHourInputToDecimal } from '@/lib/utils';
-import type { CustomEvent, MonthData, MonthDataSalariesConfig, PersonnelDepartment, SchoolHolidayCalendar, ShiftPlanningSettings, ShiftStaffMember } from '@/types/dataTypes';
+import type { CustomEvent, MonthData, MonthDataSalariesConfig, PersonnelDepartment, SchoolHolidayCalendar, ShiftGuardRule, ShiftPlanningSettings, ShiftStaffMember, ShiftStaffingRule } from '@/types/dataTypes';
 
 import { ELEARNING_ROLE_ID, type DayBudget } from './shiftCalculations';
 import { monthsOfDates } from './shiftDates';
@@ -133,6 +133,19 @@ export function collectWeekBudget(allData: AllData, weekDates: string[]): Record
 // Gardes de forme à la lecture des documents Supabase (le contenu vient d'un jsonb non typé).
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
+// Anciennes règles d'effectif (minimum / maximum) : on ne garde que le rôle et les couverts par personne ;
+// l'ancienne règle encadrement est ignorée, un rôle n'apparaît qu'une fois.
+const migrateGuardRules = (raw: unknown, fallback: ShiftStaffingRule[]): ShiftStaffingRule[] => {
+  const legacy = isRecord(raw) && Array.isArray(raw.guardRules) ? raw.guardRules as ShiftGuardRule[] : null;
+  if (!legacy) return fallback;
+  const migrated: ShiftStaffingRule[] = [];
+  legacy.forEach(rule => {
+    if (rule.roleId === 'encadrement' || !rule.coversPerPerson || rule.coversPerPerson <= 0) return;
+    if (!migrated.some(existing => existing.roleId === rule.roleId)) migrated.push({ roleId: rule.roleId, coversPerPerson: rule.coversPerPerson });
+  });
+  return migrated.length > 0 ? migrated : fallback;
+};
+
 // Fusionne un document enregistré avec les défauts : les anciens documents (sans les champs de l'étape 2)
 // restent valides, les règles légales et le rôle technique e-learning manquants sont ajoutés.
 export const normalizeSettings = (raw: unknown, defaults: ShiftPlanningSettings): ShiftPlanningSettings => {
@@ -145,7 +158,10 @@ export const normalizeSettings = (raw: unknown, defaults: ShiftPlanningSettings)
     targetPayrollPct: typeof value.targetPayrollPct === 'number' ? value.targetPayrollPct : defaults.targetPayrollPct,
     avoidOvertime: typeof value.avoidOvertime === 'boolean' ? value.avoidOvertime : defaults.avoidOvertime,
     autoRegenerate: typeof value.autoRegenerate === 'boolean' ? value.autoRegenerate : defaults.autoRegenerate,
-    guardRules: Array.isArray(value.guardRules) ? value.guardRules : defaults.guardRules,
+    staffingRules: Array.isArray(value.staffingRules) ? value.staffingRules : migrateGuardRules(raw, defaults.staffingRules),
+    managerCountsInSalle: typeof value.managerCountsInSalle === 'boolean' ? value.managerCountsInSalle : defaults.managerCountsInSalle,
+    midiReferenceTime: typeof value.midiReferenceTime === 'string' ? value.midiReferenceTime : defaults.midiReferenceTime,
+    soirReferenceTime: typeof value.soirReferenceTime === 'string' ? value.soirReferenceTime : defaults.soirReferenceTime,
     legalRules: [...storedLegal, ...defaults.legalRules.filter(rule => !storedLegal.some(stored => stored.id === rule.id))],
     roles: [...storedRoles, ...defaults.roles.filter(role => role.id === ELEARNING_ROLE_ID && !storedRoles.some(stored => stored.id === role.id))],
     serviceWindows: Array.isArray(value.serviceWindows) ? value.serviceWindows : defaults.serviceWindows,
@@ -154,7 +170,9 @@ export const normalizeSettings = (raw: unknown, defaults: ShiftPlanningSettings)
     managerOpenToClose: typeof value.managerOpenToClose === 'boolean' ? value.managerOpenToClose : defaults.managerOpenToClose,
     elearningHours: typeof value.elearningHours === 'number' ? value.elearningHours : defaults.elearningHours,
     elearningInProductivity: typeof value.elearningInProductivity === 'boolean' ? value.elearningInProductivity : defaults.elearningInProductivity,
-    templates: Array.isArray(value.templates) ? value.templates : defaults.templates,
+    templates: Array.isArray(value.templates)
+      ? value.templates.map((template, index) => ({ ...template, order: typeof template.order === 'number' ? template.order : index + 1 }))
+      : defaults.templates,
   };
 };
 

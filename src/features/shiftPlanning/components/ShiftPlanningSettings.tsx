@@ -7,10 +7,9 @@ import type { ShiftSaveStatus } from '../hooks/useShiftPlanningDocs';
 import { ELEARNING_ROLE_ID, LEGAL_RULE_LABELS, type DayBudget } from '../shiftCalculations';
 import { BEBAS_FONT } from '../shiftRoleStyle';
 
-import ShiftGuardRulesEditor from './ShiftGuardRulesEditor';
 import ShiftPayPeriodsEditor from './ShiftPayPeriodsEditor';
 import ShiftServiceWindowsEditor from './ShiftServiceWindowsEditor';
-import ShiftSlotRulesEditor from './ShiftSlotRulesEditor';
+import ShiftStaffingEditor from './ShiftStaffingEditor';
 import ShiftTemplatesEditor from './ShiftTemplatesEditor';
 import { ShiftAbsencesEditor, ShiftStaffEditor } from './ShiftStaffEditor';
 
@@ -102,8 +101,8 @@ export default function ShiftPlanningSettings({
         </div>
       </Section>
 
-      <Section title="Effectif par service selon les couverts">
-        <ShiftGuardRulesEditor rules={settings.guardRules} roles={presenceRoles} weekDates={weekDates} budgetOf={budgetOf} onChange={guardRules => patch({ guardRules })} />
+      <Section title="Effectif selon les couverts">
+                <ShiftStaffingEditor settings={settings} roles={presenceRoles} weekDates={weekDates} budgetOf={budgetOf} onChange={patch} />
       </Section>
 
       <Section title="Horaires des services">
@@ -111,15 +110,7 @@ export default function ShiftPlanningSettings({
       </Section>
 
       <Section title="Modèles de shifts">
-        <ShiftTemplatesEditor templates={settings.templates} roles={presenceRoles} onChange={templates => patch({ templates })} />
-      </Section>
-
-      <Section title="Besoins par créneau">
-        <label className="mb-3 flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" checked={settings.managerOpenToClose} onChange={event => patch({ managerOpenToClose: event.target.checked })} />
-          1 encadrement présent de l'ouverture à la fermeture, chaque jour
-        </label>
-        <ShiftSlotRulesEditor rules={settings.slotRules} roles={presenceRoles} onChange={slotRules => patch({ slotRules })} />
+        <ShiftTemplatesEditor templates={settings.templates} roles={presenceRoles} references={settings} onChange={templates => patch({ templates })} />
       </Section>
 
       <Section title="Périodes de paie">

@@ -22,15 +22,31 @@ import {
   type DayBudget,
 } from './shiftCalculations';
 import { dateFromIso, weekDaysIso } from './shiftDates';
-import { buildDemands, SERVICES, windowOf, type Demand } from './shiftGeneratorDemands';
-import { chooseRestDays } from './shiftGeneratorRest';
+import { chooseRestDays, type DayRoleNeed } from './shiftGeneratorRest';
 import { isClosing, type PeriodInfo } from './shiftPeriod';
-import { pickTemplate, templatesFor, WEEKDAY_NAMES } from './shiftTemplates';
+import {
+  computeDayNeeds,
+  continuousWindow,
+  coverageCount,
+  coversReference,
+  coveredServices,
+  MANAGER_ROLE_ID,
+  referenceOf,
+  serviceOfShift,
+  SERVICES,
+  spanOf,
+  uncoveredParts,
+  windowFor,
+  type RoleNeed,
+} from './shiftStaffing';
+import { closingEndOf, templatesFor, WEEKDAY_NAMES } from './shiftTemplates';
 
-// Moteur de génération d'une semaine (fonctions pures), raisonnant d'abord sur la semaine entière.
-// Priorités strictes : légal > heures de contrat (obligatoires) > minimums de personnel > productivité (objectif) > repos > équilibre.
-// A besoins → modèles · B repos décidés en premier · C objectifs d'heures · D affectation (le plus contraint d'abord)
-// · E productivité (objectif) · F heures de contrat obligatoires · G contrôle légal final.
+// Moteur de génération d'une semaine (fonctions pures). Règles de base :
+// besoin d'un rôle = ⌈couverts du service ÷ couverts par personne⌉, l'encadrement compte dans l'effectif salle,
+// un shift couvre un service s'il est présent à son heure de référence, et les horaires viennent UNIQUEMENT des modèles.
+// Priorités strictes : légal > heures de contrat (obligatoires) > effectif > productivité (objectif) > repos > équilibre.
+// A besoins par jour · B repos décidés en premier · C objectifs d'heures · D remplissage jour par jour (encadrement,
+// puis chaque rôle dans l'ordre des modèles) · E-learning · F heures de contrat · G contrôle légal final.
 
 export type GenerateInput = {
   mondayIso: string;
@@ -44,26 +60,20 @@ export type GenerateInput = {
 
 export type GenerateResult = { shifts: Shift[]; unmet: ShiftUnmet[] };
 
-type Need = { demand: Demand; template: ShiftTemplate };
-type Meta = { kind: 'need' | 'elearning' | 'topup'; need?: Need; order: number };
+type Meta = { kind: 'need' | 'elearning' | 'topup'; order: number; date?: string; roleId?: string; template?: ShiftTemplate };
 
 const TOP_UP_TOLERANCE_HOURS = 0.5;
 const MIN_REMAINING_FOR_TOP_UP = 1.5;
 const MIN_MANDATORY_SHORTFALL_HOURS = 0.5;
 const MAX_FINAL_PASSES = 40;
+const MAX_FILL_ROUNDS = 30;
 
-const idOf = (date: string, staffKey: string, roleId: string, service: ShiftService, start: string): string =>
-  `auto-${date}-${staffKey.replace(/\s+/g, '_')}-${roleId}-${service}-${start}`;
-
-const intervalOf = (shift: Pick<Shift, 'start' | 'end'>): [number, number] => {
-  const start = parseShiftTime(shift.start) ?? 0;
-  const end = parseShiftTime(shift.end) ?? 0;
-  return [start, end <= start ? end + 1440 : end];
-};
+const idOf = (date: string, staffKey: string, roleId: string, start: string, end: string): string =>
+  `auto-${date}-${staffKey.replace(/\s+/g, '_')}-${roleId}-${start}-${end}`;
 
 const overlaps = (a: Pick<Shift, 'start' | 'end'>, b: Pick<Shift, 'start' | 'end'>): boolean => {
-  const [aStart, aEnd] = intervalOf(a);
-  const [bStart, bEnd] = intervalOf(b);
+  const [aStart, aEnd] = spanOf(a);
+  const [bStart, bEnd] = spanOf(b);
   return aStart < bEnd && bStart < aEnd;
 };
 
@@ -83,26 +93,24 @@ export function generateWeek(input: GenerateInput): GenerateResult {
   const hoursOf = (member: ShiftStaffMember) => totalHours(staffShifts(member));
   const weekdayOf = (date: string) => dateFromIso(date).getDay();
   const revenueOf = (date: string) => dayRevenue(budgetOf(date));
+  const roleLabelOf = (roleId: string) => settings.roles.find(role => role.id === roleId)?.label ?? roleId;
 
-  // ── A. Besoins de la semaine, convertis en besoins de modèles (jamais d'horaire inventé).
-  const demands = buildDemands(weekDates, settings, budgetOf, kept);
-  const needs: Need[] = [];
-  const reported = new Set<string>();
-  demands.forEach(demand => {
-    const weekday = weekdayOf(demand.date);
-    const window = windowOf(settings, demand.service, weekday);
-    if (!window) return;
-    const pick = pickTemplate(demand, settings, window, weekday);
-    if (pick.template) {
-      needs.push({ demand, template: pick.template });
-    } else if (!reported.has(`${demand.date}|${pick.reason}`)) {
-      reported.add(`${demand.date}|${pick.reason}`);
-      unmet.push({ date: demand.date, kind: 'modele', message: `${demand.date} : ${pick.reason}` });
-    }
+  // ── A. Besoins de chaque jour : ⌈couverts du service ÷ couverts par personne⌉ par rôle, 1 encadrant par service ouvert.
+  const needsByDate = new Map<string, RoleNeed[]>(weekDates.map(date => [date, computeDayNeeds(settings, weekdayOf(date), budgetOf(date))]));
+  const dayRoleNeeds: DayRoleNeed[] = weekDates.flatMap(date => {
+    const byRole = new Map<string, number>();
+    (needsByDate.get(date) ?? []).forEach(need => byRole.set(need.roleId, Math.max(byRole.get(need.roleId) ?? 0, need.need)));
+    return [...byRole.entries()].map(([roleId, count]) => ({ date, roleId, count }));
   });
+  const reportedTemplates = new Set<string>();
+  const missingTemplate = (date: string, roleId: string) => {
+    if (reportedTemplates.has(`${date}|${roleId}`)) return;
+    reportedTemplates.add(`${date}|${roleId}`);
+    unmet.push({ date, kind: 'modele', message: `${date} : aucun modèle ${roleLabelOf(roleId).toLowerCase()} le ${WEEKDAY_NAMES[weekdayOf(date)]}` });
+  };
 
   // ── B. Repos décidés EN PREMIER : jours ensuite interdits (contrainte dure).
-  const restResult = chooseRestDays({ weekDates, staff, absences, keptShifts: kept, demands, periodInfo });
+  const restResult = chooseRestDays({ weekDates, staff, absences, keptShifts: kept, needs: dayRoleNeeds, periodInfo });
   unmet.push(...restResult.unmet);
   const isAvailable = (member: ShiftStaffMember, date: string) =>
     !findAbsence(absences, member.key, date) && !restResult.rest.get(member.key)?.has(date);
@@ -123,21 +131,28 @@ export function generateWeek(input: GenerateInput): GenerateResult {
     return Math.max(0, member.contractHours - info.balance / info.weeksLeft);
   };
 
-  const shiftOf = (member: ShiftStaffMember, date: string, template: ShiftTemplate, roleId: string, service: ShiftService): Shift => ({
-    id: idOf(date, member.key, roleId, service, template.start),
-    staffKey: member.key, date, start: template.start, end: template.end, roleId, service, status: 'proposed',
+  // Tout horaire proposé reprend exactement le début et la fin d'un modèle.
+  const shiftOf = (member: ShiftStaffMember, date: string, template: ShiftTemplate, roleId: string): Shift => ({
+    id: idOf(date, member.key, roleId, template.start, template.end),
+    staffKey: member.key, date, start: template.start, end: template.end, roleId,
+    service: serviceOfShift(template, settings), status: 'proposed',
   });
 
-  // ── D. Affectation sur la semaine entière : les besoins les plus contraints d'abord.
-  const rankCandidate = (member: ShiftStaffMember, demand: Demand): number[] => {
+  // Le contrat passe avant l'effectif : pas d'affectation au-delà de l'objectif d'heures (un besoin laissé vide est repris en F).
+  const withinContract = (member: ShiftStaffMember, shift: Shift): boolean =>
+    member.forfaitJour || member.contractHours <= 0
+    || hoursOf(member) + shiftDurationHours(shift.start, shift.end) <= targetOf(member) + TOP_UP_TOLERANCE_HOURS;
+
+  const rankCandidate = (member: ShiftStaffMember, date: string, template: ShiftTemplate, roleId: string): number[] => {
     const info = periodInfo?.[member.key];
-    const weekday = weekdayOf(demand.date);
+    const weekday = weekdayOf(date);
     const own = staffShifts(member);
     const weekendLoad = (weekday === 6 ? (info?.saturdays ?? 0) + own.filter(s => weekdayOf(s.date) === 6).length : 0)
       + (weekday === 0 ? (info?.sundays ?? 0) + own.filter(s => weekdayOf(s.date) === 0).length : 0);
-    const closingLoad = demand.closing ? (info?.closings ?? 0) + own.filter(s => isClosing(s, settings)).length : 0;
+    const closing = coveredServices(template, settings).includes('soir') && template.end === closingEndOf(settings, weekday);
+    const closingLoad = closing ? (info?.closings ?? 0) + own.filter(s => isClosing(s, settings)).length : 0;
     return [
-      member.roles.indexOf(demand.roleId), // rang du rôle dans les préférences
+      member.roles.indexOf(roleId), // rang du rôle dans les préférences
       -Math.round((targetOf(member) - totalHours(own)) / 2), // plus grand écart objectif / heures (paliers de 2 h)
       weekendLoad,
       closingLoad,
@@ -148,51 +163,86 @@ export function generateWeek(input: GenerateInput): GenerateResult {
     return 0;
   };
 
-  // Le contrat passe avant les minimums : un collaborateur n'est pas affecté au-delà de son objectif d'heures
-  // (un besoin resté sans personne est repris en F avec les heures de contrat, sinon signalé).
-  const withinContract = (member: ShiftStaffMember, shift: Shift): boolean =>
-    member.forfaitJour || member.contractHours <= 0
-    || hoursOf(member) + shiftDurationHours(shift.start, shift.end) <= targetOf(member) + TOP_UP_TOLERANCE_HOURS;
-
-  const assignNeed = (need: Need, excludeKey?: string): boolean => {
-    const { demand, template } = need;
+  // Pose un shift de ce modèle pour le meilleur candidat disponible.
+  const assignTemplate = (date: string, roleId: string, template: ShiftTemplate, excludeKey?: string): boolean => {
     const eligible = staff
-      .filter(member => member.key !== excludeKey && member.roles.includes(demand.roleId))
-      .map(member => ({ member, shift: shiftOf(member, demand.date, template, demand.roleId, demand.service) }))
+      .filter(member => member.key !== excludeKey && member.roles.includes(roleId))
+      .map(member => ({ member, shift: shiftOf(member, date, template, roleId) }))
       .filter(({ member, shift }) => withinContract(member, shift) && canAdd(member, shift));
     if (eligible.length === 0) return false;
     const best = eligible
-      .map(entry => ({ ...entry, rank: rankCandidate(entry.member, demand) }))
+      .map(entry => ({ ...entry, rank: rankCandidate(entry.member, date, template, roleId) }))
       .sort((a, b) => compareRanks(a.rank, b.rank) || a.member.nom.localeCompare(b.member.nom, 'fr'))[0];
     assigned.push(best.shift);
     order += 1;
-    meta.set(best.shift.id, { kind: 'need', need, order });
+    meta.set(best.shift.id, { kind: 'need', order, date, roleId, template });
     return true;
   };
 
-  const pending = [...needs];
-  while (pending.length > 0) {
-    const scored = pending.map((need, index) => ({
-      index,
-      need,
-      count: staff.filter(member => member.roles.includes(need.demand.roleId) && isAvailable(member, need.demand.date)
-        && !staffShifts(member).some(shift => shift.date === need.demand.date && shift.service === need.demand.service)).length,
-    }));
-    scored.sort((a, b) => a.count - b.count || a.need.demand.rank - b.need.demand.rank || a.need.demand.date.localeCompare(b.need.demand.date));
-    const [next] = scored;
-    pending.splice(next.index, 1);
-    assignNeed(next.need); // un échec est repris en F (heures de contrat) puis signalé s'il reste non couvert
-  }
+  const needOf = (date: string, service: ShiftService, roleId: string) =>
+    (needsByDate.get(date) ?? []).find(need => need.roleId === roleId && need.service === service)?.need ?? 0;
+  const coverageOf = (date: string, service: ShiftService, roleId: string) => coverageCount(assigned, settings, date, service, roleId);
+
+  // a) Encadrement : 1 présent à chaque heure de référence d'un service ouvert, sans interruption les jours en continu.
+  const fillManager = (date: string) => {
+    const weekday = weekdayOf(date);
+    const services = SERVICES.filter(service => needOf(date, service, MANAGER_ROLE_ID) > 0);
+    if (services.length === 0) return;
+    const templates = templatesFor(settings.templates, MANAGER_ROLE_ID, weekday);
+    if (templates.length === 0) { missingTemplate(date, MANAGER_ROLE_ID); return; }
+    const continuous = continuousWindow(settings, weekday);
+    const managerShifts = () => assigned.filter(shift => shift.date === date && shift.roleId === MANAGER_ROLE_ID);
+    const gaps = (): Array<[number, number]> => {
+      if (continuous) return uncoveredParts(managerShifts().map(spanOf), ...spanOf(continuous));
+      return services
+        .map(service => referenceOf(settings, service))
+        .filter(reference => !managerShifts().some(shift => coversReference(shift, reference)))
+        .map<[number, number]>(reference => [reference, reference]);
+    };
+    const contributes = (template: ShiftTemplate) => {
+      const [start, end] = spanOf(template);
+      return gaps().some(([from, to]) => (from === to ? start <= from && from <= end : Math.min(end, to) > Math.max(start, from)));
+    };
+    for (let round = 0; round < MAX_FILL_ROUNDS && gaps().length > 0; round += 1) {
+      const next = templates.find(template => contributes(template) && assignTemplate(date, MANAGER_ROLE_ID, template));
+      if (!next) break;
+    }
+  };
+
+  // b) Un rôle : des shifts posés dans l'ordre des modèles (un par modèle utile et par tour) jusqu'à couvrir
+  // le besoin du midi ET du soir ; un shift qui couvre les deux services compte pour les deux.
+  const fillRole = (date: string, roleId: string) => {
+    const services = SERVICES.filter(service => needOf(date, service, roleId) > 0);
+    if (services.length === 0) return;
+    const templates = templatesFor(settings.templates, roleId, weekdayOf(date));
+    if (templates.length === 0) { missingTemplate(date, roleId); return; }
+    const deficit = (service: ShiftService) => needOf(date, service, roleId) - coverageOf(date, service, roleId);
+    for (let round = 0; round < MAX_FILL_ROUNDS; round += 1) {
+      let placed = false;
+      templates.forEach(template => {
+        if (!coveredServices(template, settings).some(service => deficit(service) > 0)) return;
+        if (assignTemplate(date, roleId, template)) placed = true;
+      });
+      if (!placed) break;
+    }
+  };
+
+  // Jours les plus chargés d'abord : les collaborateurs rares vont là où il y a le plus de couverts.
+  const covers = (date: string) => budgetOf(date).cvMidi + budgetOf(date).cvSoir;
+  // L'encadrement de TOUTE la semaine est posé d'abord : ses heures ne doivent pas être consommées par des shifts salle.
+  const busiestFirst = [...weekDates].sort((x, y) => covers(y) - covers(x) || x.localeCompare(y));
+  busiestFirst.forEach(fillManager);
+  busiestFirst.forEach(date => settings.staffingRules.forEach(rule => fillRole(date, rule.roleId)));
 
   // E-learning des apprentis : un jour de faible activité, jamais sur un repos.
-  const placeElearning = (member: ShiftStaffMember, dayOk: (date: string) => boolean): boolean => {
+  const placeElearning = (member: ShiftStaffMember): boolean => {
     const hours = settings.elearningHours;
     const days = weekDates
-      .filter(date => isAvailable(member, date) && dayOk(date))
+      .filter(date => isAvailable(member, date))
       .sort((a, b) => revenueOf(a) - revenueOf(b)
         || staffShifts(member).filter(s => s.date === a).length - staffShifts(member).filter(s => s.date === b).length);
     const make = (date: string, start: number, service: ShiftService): Shift => ({
-      id: idOf(date, member.key, ELEARNING_ROLE_ID, service, formatShiftTime(start)),
+      id: idOf(date, member.key, ELEARNING_ROLE_ID, formatShiftTime(start), formatShiftTime(start + hours * 60)),
       staffKey: member.key, date, start: formatShiftTime(start), end: formatShiftTime(start + hours * 60),
       roleId: ELEARNING_ROLE_ID, service, status: 'proposed',
     });
@@ -210,7 +260,7 @@ export function generateWeek(input: GenerateInput): GenerateResult {
     });
     if (before) return true;
     return days.some(date => {
-      const startText = windowOf(settings, 'midi', weekdayOf(date))?.start;
+      const startText = windowFor(settings, 'midi', weekdayOf(date))?.start;
       const start = startText ? parseShiftTime(startText) : null;
       return start !== null && !staffShifts(member).some(shift => shift.date === date) && place(make(date, start, 'midi'));
     });
@@ -218,7 +268,7 @@ export function generateWeek(input: GenerateInput): GenerateResult {
 
   if (settings.elearningHours > 0) {
     staff.filter(member => member.apprenti).forEach(member => {
-      if (!placeElearning(member, () => true)) {
+      if (!placeElearning(member)) {
         unmet.push({ date: weekDates[0], kind: 'contrat', message: `${member.nom} : ${settings.elearningHours} h d'e-learning non placées` });
       }
     });
@@ -228,26 +278,16 @@ export function generateWeek(input: GenerateInput): GenerateResult {
   // au contrat ne l'est jamais). Elle oriente seulement le choix des services en F et est signalée dans unmet.
 
   // ── F. Heures de contrat OBLIGATOIRES : le compteur de fin de période doit revenir à 0 (sans période : contrat de la semaine),
-  // tant qu'il reste un jour non au repos et un modèle compatible. Les heures qui restent après les minimums vont d'abord
-  // aux services où la productivité souffre le moins (couverts par personne présente les plus élevés, puis CA le plus élevé).
-  // Le maximum des garde-fous est un plafond souhaité : dépassable uniquement ici, et signalé.
-  const guardMaxOf = (roleId: string, service: ShiftService): number => {
-    const rules = settings.guardRules.filter(rule => rule.roleId === roleId && (rule.service === 'both' || rule.service === service));
-    return rules.length > 0 ? Math.max(...rules.map(rule => rule.max)) : Number.POSITIVE_INFINITY;
+  // tant qu'il reste un jour non au repos et un modèle compatible. Les heures qui restent vont d'abord à un effectif manquant,
+  // puis aux services où la productivité souffre le moins (couverts par personne présente les plus élevés, puis CA le plus élevé).
+  const servicePeople = (date: string, service: ShiftService) => {
+    const reference = referenceOf(settings, service);
+    return assigned.filter(shift => shift.date === date && shift.roleId !== ELEARNING_ROLE_ID && coversReference(shift, reference)).length;
   };
-  const presentCount = (date: string, service: ShiftService, roleId: string) =>
-    assigned.filter(shift => shift.date === date && shift.service === service && shift.roleId === roleId).length;
-  const servicePeople = (date: string, service: ShiftService) =>
-    assigned.filter(shift => shift.date === date && shift.service === service && shift.roleId !== ELEARNING_ROLE_ID).length;
   const serviceCovers = (date: string, service: ShiftService) => (service === 'midi' ? budgetOf(date).cvMidi : budgetOf(date).cvSoir);
   const serviceRevenue = (date: string, service: ShiftService) => (service === 'midi' ? budgetOf(date).caMidi : budgetOf(date).caSoir);
-  const exceeded = new Map<string, { date: string; service: ShiftService; roleId: string }>();
 
-  type Slot = { date: string; service: ShiftService; roleId: string; hours: number; shift: Shift; overMax: boolean; coversNeed: boolean };
-  const requiredBy = new Map<string, number>();
-  const requiredKey = (date: string, service: ShiftService, roleId: string) => `${date}|${service}|${roleId}`;
-  needs.forEach(({ demand }) => requiredBy.set(requiredKey(demand.date, demand.service, demand.roleId), (requiredBy.get(requiredKey(demand.date, demand.service, demand.roleId)) ?? 0) + 1));
-  kept.forEach(shift => requiredBy.set(requiredKey(shift.date, shift.service, shift.roleId), (requiredBy.get(requiredKey(shift.date, shift.service, shift.roleId)) ?? 0) + 1));
+  type Slot = { date: string; hours: number; shift: Shift; services: ShiftService[]; coversNeed: boolean };
 
   staff.filter(member => !member.forfaitJour && member.contractHours > 0).forEach(member => {
     const roleIds = member.roles.filter(id => id !== ELEARNING_ROLE_ID);
@@ -267,9 +307,7 @@ export function generateWeek(input: GenerateInput): GenerateResult {
       const minutes = Math.round(restHours * 60);
       return minutes <= 1 || (minutes < reach.length && reach[minutes]);
     };
-
-    // Écart final estimé si l'on s'arrête après un reste donné : 0 si les modèles permettent de le combler exactement,
-    // sinon le plus petit dépassement possible avec un modèle de plus (un déficit pèse double).
+    // Écart final estimé après un reste donné : 0 si comblable exactement, sinon le plus petit dépassement (un déficit pèse double).
     const gapAfter = (restHours: number) => {
       if (canFill(restHours)) return 0;
       const overshoots = durations.map(minutes => minutes / 60).filter(hours => hours >= restHours).map(hours => hours - restHours);
@@ -278,20 +316,24 @@ export function generateWeek(input: GenerateInput): GenerateResult {
 
     const slotsFor = (): Slot[] => {
       const slots: Slot[] = [];
-      weekDates.filter(date => isAvailable(member, date)).forEach(date => roleIds.forEach(roleId => SERVICES.forEach(service => {
-        templatesFor(settings.templates, roleId, service, weekdayOf(date)).forEach(template => {
-          const shift = shiftOf(member, date, template, roleId, service);
+      weekDates.filter(date => isAvailable(member, date)).forEach(date => roleIds.forEach(roleId => {
+        templatesFor(settings.templates, roleId, weekdayOf(date)).forEach(template => {
+          const shift = shiftOf(member, date, template, roleId);
           if (!canAdd(member, shift)) return;
-          slots.push({ date, service, roleId, hours: shiftDurationHours(template.start, template.end), shift, overMax: presentCount(date, service, roleId) >= guardMaxOf(roleId, service), coversNeed: presentCount(date, service, roleId) < (requiredBy.get(requiredKey(date, service, roleId)) ?? 0) });
+          const services = coveredServices(template, settings);
+          slots.push({
+            date, shift, services, hours: shiftDurationHours(template.start, template.end),
+            coversNeed: services.some(service => needOf(date, service, roleId) > coverageOf(date, service, roleId)),
+          });
         });
-      })));
+      }));
       return slots;
     };
-    const coversPerPerson = (slot: Slot) => serviceCovers(slot.date, slot.service) / Math.max(1, servicePeople(slot.date, slot.service));
-    const byImpact = (a: Slot, b: Slot) => Number(b.coversNeed) - Number(a.coversNeed) // d'abord un minimum de personnel manquant
-      || Number(a.overMax) - Number(b.overMax)
+    const coversPerPerson = (slot: Slot) => Math.max(0, ...slot.services.map(service => serviceCovers(slot.date, service) / Math.max(1, servicePeople(slot.date, service))));
+    const revenue = (slot: Slot) => slot.services.reduce((sum, service) => sum + serviceRevenue(slot.date, service), 0);
+    const byImpact = (a: Slot, b: Slot) => Number(b.coversNeed) - Number(a.coversNeed) // d'abord un effectif manquant
       || coversPerPerson(b) - coversPerPerson(a)
-      || serviceRevenue(b.date, b.service) - serviceRevenue(a.date, a.service)
+      || revenue(b) - revenue(a)
       || b.hours - a.hours;
 
     while (remaining > (mandatory ? 0.25 : MIN_REMAINING_FOR_TOP_UP - 0.01)) {
@@ -313,7 +355,6 @@ export function generateWeek(input: GenerateInput): GenerateResult {
       order += 1;
       meta.set(best.shift.id, { kind: 'topup', order });
       remaining -= best.hours;
-      if (best.overMax) exceeded.set(`${best.date}|${best.service}|${best.roleId}`, { date: best.date, service: best.service, roleId: best.roleId });
     }
 
     if (mandatory) {
@@ -324,23 +365,6 @@ export function generateWeek(input: GenerateInput): GenerateResult {
     } else if (remaining >= MIN_REMAINING_FOR_TOP_UP) {
       unmet.push({ date: weekDates[0], kind: 'contrat', message: `${member.nom} : ${round1(remaining)} h de contrat non placées sur la semaine` });
     }
-  });
-
-  // Minimums restés non couverts : le contrat l'a emporté (heures déjà atteintes) ou personne n'est disponible.
-  requiredBy.forEach((required, key) => {
-    const [date, service, roleId] = key.split('|');
-    const present = assigned.filter(shift => shift.date === date && shift.service === service && shift.roleId === roleId).length;
-    if (present >= required) return;
-    const roleLabel = settings.roles.find(role => role.id === roleId)?.label ?? roleId;
-    unmet.push({ date, kind: 'besoin', message: `${date} ${service} : ${required - present} ${roleLabel.toLowerCase()} manquant (contrat atteint ou personne de disponible)` });
-  });
-
-  exceeded.forEach(({ date, service, roleId }) => {
-    const present = presentCount(date, service, roleId);
-    const max = guardMaxOf(roleId, service);
-    if (present <= max) return;
-    const roleLabel = settings.roles.find(role => role.id === roleId)?.label ?? roleId;
-    unmet.push({ date, kind: 'contrat', message: `${roleLabel} ${WEEKDAY_NAMES[weekdayOf(date)]} ${service} : ${present} présents pour un maximum de ${max}, heures de contrat à placer` });
   });
 
   // ── G. Contrôle légal final : tout shift proposé en infraction est retiré, puis son besoin est reproposé à un autre.
@@ -354,11 +378,32 @@ export function generateWeek(input: GenerateInput): GenerateResult {
     const removedMeta = meta.get(removed.id);
     assigned.splice(assigned.indexOf(removed), 1);
     meta.delete(removed.id);
-    if (removedMeta?.kind === 'need' && removedMeta.need && !assignNeed(removedMeta.need, removed.staffKey)) {
-      const { demand } = removedMeta.need;
-      unmet.push({ date: demand.date, kind: 'besoin', message: `${demand.date} ${demand.service} : aucun ${demand.roleId} disponible après contrôle légal` });
+    if (removedMeta?.kind === 'need' && removedMeta.date && removedMeta.roleId && removedMeta.template) {
+      assignTemplate(removedMeta.date, removedMeta.roleId, removedMeta.template, removed.staffKey);
     }
   }
+
+  // Effectif resté insuffisant : le contrat l'a emporté (heures déjà atteintes) ou personne n'est disponible.
+  weekDates.forEach(date => {
+    const weekday = weekdayOf(date);
+    const continuous = continuousWindow(settings, weekday);
+    (needsByDate.get(date) ?? []).forEach(need => {
+      if (need.roleId === MANAGER_ROLE_ID) {
+        const reference = referenceOf(settings, need.service);
+        const present = assigned.some(shift => shift.date === date && shift.roleId === MANAGER_ROLE_ID && coversReference(shift, reference));
+        if (!present && !continuous) unmet.push({ date, kind: 'besoin', message: `${date} ${need.service} : aucun encadrant présent à ${formatShiftTime(reference)}` });
+        return;
+      }
+      const missing = need.need - coverageOf(date, need.service, need.roleId);
+      if (missing > 0) {
+        unmet.push({ date, kind: 'besoin', message: `${date} ${need.service} : ${missing} ${roleLabelOf(need.roleId).toLowerCase()} manquant (contrat atteint ou personne de disponible)` });
+      }
+    });
+    if (continuous && (needsByDate.get(date) ?? []).some(need => need.roleId === MANAGER_ROLE_ID)) {
+      const gaps = uncoveredParts(assigned.filter(shift => shift.date === date && shift.roleId === MANAGER_ROLE_ID).map(spanOf), ...spanOf(continuous));
+      if (gaps.length > 0) unmet.push({ date, kind: 'besoin', message: `${date} : présence de l'encadrement non continue de ${continuous.start} à ${continuous.end}` });
+    }
+  });
 
   // Productivité de la semaine : objectif, signalé s'il n'est pas tenu.
   const weekRevenue = weekDates.reduce((sum, date) => sum + revenueOf(date), 0);
@@ -371,7 +416,7 @@ export function generateWeek(input: GenerateInput): GenerateResult {
       kind: 'productivite',
       message: extra > 0
         ? `Productivité semaine ${productivity} €/h sous l'objectif de ${settings.minProductivity} €/h : ${round1(extra)} h de contrat au-delà du besoin`
-        : `Productivité semaine ${productivity} €/h sous l'objectif de ${settings.minProductivity} €/h : minimums de personnel seuls`,
+        : `Productivité semaine ${productivity} €/h sous l'objectif de ${settings.minProductivity} €/h : effectif minimum seul`,
     });
   }
 

@@ -19,6 +19,7 @@ import { useShiftPlanningDocs } from './hooks/useShiftPlanningDocs';
 import { useShiftWeekMetrics } from './hooks/useShiftWeekMetrics';
 import { newBlockingViolations } from './shiftCalculations';
 import { restSummary } from './shiftGeneratorRest';
+import { coveredServicesLabel } from './shiftStaffing';
 import { addDaysIso, formatShortDate, isoFromDate, isoWeekNumber, mondayOfIso, weekDaysIso } from './shiftDates';
 
 const FONT_LINK_ID = 'shift-planning-bebas-neue';
@@ -167,6 +168,7 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
           hoursByStaff={metrics.hoursByStaff}
           counters={period.counters}
           rests={rests}
+          serviceLabelOf={shift => coveredServicesLabel(shift, docs.settings).toUpperCase()}
           minProductivity={docs.settings.minProductivity}
           todayIso={isoFromDate(new Date())}
           onCellClick={(staffKey, date) => setEditing({ staffKey, date })}
@@ -188,7 +190,7 @@ function ShiftPlanningContent({ onBack }: { onBack: () => void }) {
           date={editing.date}
           cellShifts={docs.shifts.filter(shift => shift.staffKey === editing.staffKey && shift.date === editing.date)}
           roles={docs.settings.roles}
-          templates={docs.settings.templates}
+          settings={docs.settings}
           getBlockingReasons={cellShifts => newBlockingViolations(docs.shifts, editedMember, editing.date, cellShifts, mondayIso, docs.settings.legalRules)}
           onSave={cellShifts => saveCell(editing.staffKey, editing.date, cellShifts)}
           onClose={() => setEditing(null)}

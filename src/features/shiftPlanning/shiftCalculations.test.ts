@@ -3,16 +3,15 @@ import { describe, expect, it } from 'vitest';
 import type { SchoolHolidayCalendar, Shift, ShiftStaffMember } from '@/types/dataTypes';
 
 import {
-  computeDayNeeds,
-  computeDayShortages,
+  DEFAULT_SHIFT_SETTINGS,
   computeLegalAlerts,
   payrollPct,
   productivity,
-  requiredStaff,
   shiftCost,
   shiftDurationHours,
 } from './shiftCalculations';
 import { isoWeekNumber, mondayOfIso } from './shiftDates';
+import { computeDayNeeds, computeDayShortages } from './shiftStaffing';
 import { buildStaffMembers, buildWeekDayContext } from './shiftSources';
 
 const member = (overrides: Partial<ShiftStaffMember> = {}): ShiftStaffMember => ({
@@ -42,20 +41,29 @@ describe('indicateurs', () => {
   });
 });
 
-describe('besoins par rôle', () => {
-  const rule = { roleId: 'salle', service: 'both' as const, coversPerPerson: 25, min: 2, max: 4 };
-  it('arrondi supérieur, plancher min, plafond max', () => {
-    expect(requiredStaff(rule, 51)).toBe(3);
-    expect(requiredStaff(rule, 10)).toBe(2);
-    expect(requiredStaff(rule, 500)).toBe(4);
+describe('besoins par couverts', () => {
+  const settings = { ...DEFAULT_SHIFT_SETTINGS, staffingRules: [{ roleId: 'salle', coversPerPerson: 25 }] };
+  const budget = { cvMidi: 55, cvSoir: 0, caMidi: 0, caSoir: 0 };
+
+  it('55 couverts à 25 par personne : 3 en salle et 1 encadrant', () => {
+    expect(computeDayNeeds(settings, 1, budget)).toEqual([
+      { roleId: 'salle', service: 'midi', need: 3 },
+      { roleId: 'encadrement', service: 'midi', need: 1 },
+    ]);
   });
-  it('coversPerPerson null → min', () => {
-    expect(requiredStaff({ ...rule, coversPerPerson: null }, 500)).toBe(2);
+
+  it('au moins 1 si le service a des couverts, rien sans couverts', () => {
+    expect(computeDayNeeds(settings, 1, { ...budget, cvMidi: 5, cvSoir: 0 }).find(need => need.roleId === 'salle')?.need).toBe(1);
+    expect(computeDayNeeds(settings, 1, { ...budget, cvMidi: 0, cvSoir: 0 })).toEqual([]);
   });
-  it('manquants calculés par service', () => {
-    const needs = computeDayNeeds([rule], { cvMidi: 51, cvSoir: 10, caMidi: 0, caSoir: 0 });
-    const shortages = computeDayShortages(needs, [shift('1', '2026-11-09', '11h30', '15h00')].map(s => ({ ...s, service: 'midi' as const })));
-    expect(shortages).toEqual([{ roleId: 'salle', missing: 4 }]);
+
+  it("l'encadrant compte dans l'effectif salle", () => {
+    const needs = computeDayNeeds(settings, 1, budget);
+    const dayShifts: Shift[] = [
+      { ...shift('1', '2026-11-09', '11h00', '15h00'), roleId: 'encadrement', service: 'midi' },
+      { ...shift('2', '2026-11-09', '11h30', '15h00'), roleId: 'salle', service: 'midi' },
+    ];
+    expect(computeDayShortages(needs, dayShifts, settings, '2026-11-09')).toEqual([{ roleId: 'salle', missing: 1 }]);
   });
 });
 

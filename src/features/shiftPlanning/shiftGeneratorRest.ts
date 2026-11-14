@@ -2,7 +2,6 @@ import type { Shift, ShiftAbsence, ShiftStaffMember, ShiftUnmet } from '@/types/
 
 import { ELEARNING_ROLE_ID, findAbsence } from './shiftCalculations';
 import { dateFromIso } from './shiftDates';
-import type { Demand } from './shiftGeneratorDemands';
 import type { PeriodInfo } from './shiftPeriod';
 
 // Phase B du moteur : les repos de la semaine sont décidés EN PREMIER, collaborateur par collaborateur,
@@ -19,9 +18,12 @@ export type RestInput = {
   staff: ShiftStaffMember[];
   absences: ShiftAbsence[];
   keptShifts: Shift[]; // shifts validés : jours travaillés, contraintes fixes
-  demands: Demand[];
+  needs: DayRoleNeed[];
   periodInfo: Record<string, PeriodInfo> | null;
 };
+
+// Nombre de personnes d'un rôle nécessaires un jour donné (maximum des services : une même personne peut tenir midi et soir).
+export type DayRoleNeed = { date: string; roleId: string; count: number };
 
 export type RestResult = { rest: Map<string, Set<string>>; unmet: ShiftUnmet[] };
 
@@ -29,19 +31,14 @@ type Option = { days: string[]; consecutive: boolean };
 
 const presenceRoles = (member: ShiftStaffMember) => member.roles.filter(id => id !== ELEARNING_ROLE_ID);
 
-export function chooseRestDays({ weekDates, staff, absences, keptShifts, demands, periodInfo }: RestInput): RestResult {
+export function chooseRestDays({ weekDates, staff, absences, keptShifts, needs, periodInfo }: RestInput): RestResult {
   const rest = new Map<string, Set<string>>();
   const unmet: ShiftUnmet[] = [];
   const active = staff.filter(member => presenceRoles(member).length > 0);
 
-  // Besoin de présence par jour et rôle : un même collaborateur peut tenir midi et soir, donc max des deux services.
+  // Besoin de présence par jour et rôle.
   const needBy = new Map<string, number>();
-  const perService = new Map<string, number>();
-  demands.forEach(d => perService.set(`${d.date}|${d.roleId}|${d.service}`, (perService.get(`${d.date}|${d.roleId}|${d.service}`) ?? 0) + 1));
-  perService.forEach((count, key) => {
-    const [date, roleId] = key.split('|');
-    needBy.set(`${date}|${roleId}`, Math.max(needBy.get(`${date}|${roleId}`) ?? 0, count));
-  });
+  needs.forEach(need => needBy.set(`${need.date}|${need.roleId}`, Math.max(needBy.get(`${need.date}|${need.roleId}`) ?? 0, need.count)));
 
   // Capacité restante : collaborateurs disponibles (ni absents, ni déjà au repos) par jour et rôle.
   const capacity = new Map<string, number>();
