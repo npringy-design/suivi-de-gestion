@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Lot 4 — Écarts N-1 « à date », couverts, TM de la Synthèse)
+
+- Suivi quotidien (dashboardCalculations.ts) : écarts N-1 réalisé jour (cols 118/119 CA, 123/124 couverts) calculés seulement sur un jour ayant du réalisé ; semaine et mois comparent donc le réalisé aux mêmes jours N-1 (avant : semaine entamée de 3 jours comparée à 7 jours N-1, ex. −53 % au lieu de +10 %). Col 143 (écart budget couverts cumulé) calculée même sans données N-1. Col 122 semaine et mois : couverts restaurant + limonade (col 120) vs budget 10 + 14 sur les jours réalisés, même périmètre que le jour.
+- Récap annuel, Synthèse : TM = (CA midi + soir) / couverts restaurant, hors VAE et limonade, comme la ligne TOTAL, au mois, en N-1 et en cumul.
+- Vérifié sur un mois simulé : semaine de 3 jours à 1 100 € vs 1 000 € N-1 → +10 %, mois +10 %, jour futur sans écart. tsc OK, build OK.
+
 ## 17/11/2026 (Lot 3 — Schéma du personnel unique, N-1 et semaines ISO prêts pour 2027)
 
 - Schéma du personnel : `features/dashboard/personnelSchema.ts` (`resolvePersonnelSchema` : schéma enregistré par l'import, sinon colonnes d'heures saisies, sinon `splitCuisineSalle` du site, défaut cuisine/salle). Utilisé par le Suivi quotidien (calcul et colonnes affichées), l'Accueil, `computeMonthDashboard` (EDG), le Récap annuel et le Reporting. Avant : un mois sans import était lu en cuisine/salle par le Suivi et l'Accueil, en global par l'EDG, le Récap et le Reporting (masse salariale à 0 dans les vues annuelles). Le Récap et le Reporting n'appliquent plus le schéma du premier mois à toute l'année : Reporting en global dès qu'un mois l'est, heures cuisine + salle regroupées par catégorie.

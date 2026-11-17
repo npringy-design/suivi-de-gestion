@@ -515,19 +515,27 @@ export function computeDashboardData(
             }
             const caRealiseN = parseMoneyValue(data[`${rIdx}-21`]);
             cumulN1CA += n1.caRealise;
-            // ECART VS N-1 jour vs jour (CA réalisé)
-            const ecartJourCA = caRealiseN - n1.caRealise;
-            data[`${rIdx}-118`] = ecartJourCA.toFixed(2);
-            if (n1.caRealise > 0) data[`${rIdx}-119`] = ((ecartJourCA / n1.caRealise) * 100).toFixed(2);
-            // ECART VS N-1 jour vs jour (CVTS réalisé)
+            // ECART VS N-1 jour vs jour (CA réalisé), seulement sur un jour ayant du réalisé : un jour
+            // futur ne doit pas peser -100 % dans les écarts semaine et mois (comparaison « à date »).
+            if (caRealiseN > 0) {
+              const ecartJourCA = caRealiseN - n1.caRealise;
+              data[`${rIdx}-118`] = ecartJourCA.toFixed(2);
+              if (n1.caRealise > 0) data[`${rIdx}-119`] = ((ecartJourCA / n1.caRealise) * 100).toFixed(2);
+            }
+            // ECART VS N-1 jour vs jour (CVTS réalisé), même règle.
             cumulN1Cvts += n1.cvtsRealise;
             const cvtsJour = parseMoneyValue(data[`${rIdx}-25`]) + parseMoneyValue(data[`${rIdx}-27`]);
-            const ecartJourCvts = cvtsJour - n1.cvtsRealise;
-            data[`${rIdx}-123`] = ecartJourCvts.toFixed(2);
-            if (n1.cvtsRealise > 0) data[`${rIdx}-124`] = ((ecartJourCvts / n1.cvtsRealise) * 100).toFixed(2);
-            // Écart budget couverts CUMUL
-            data[`${rIdx}-143`] = (cumulCvtsRealise - cumulCvts).toFixed(0);
+            if (cvtsJour > 0) {
+              const ecartJourCvts = cvtsJour - n1.cvtsRealise;
+              data[`${rIdx}-123`] = ecartJourCvts.toFixed(2);
+              if (n1.cvtsRealise > 0) data[`${rIdx}-124`] = ((ecartJourCvts / n1.cvtsRealise) * 100).toFixed(2);
+            }
           }
+        }
+
+        // Écart budget couverts CUMUL (réalisé − budget), indépendant de la présence de données N-1.
+        if (totalCvtsJour > 0) {
+          data[`${rIdx}-143`] = (cumulCvtsRealise - cumulCvts).toFixed(0);
         }
       }
     });
@@ -649,7 +657,10 @@ export function computeDashboardData(
               ? sum + parseMoneyValue(data[`${day.originalIdx}-10`] || '') + parseMoneyValue(data[`${day.originalIdx}-14`] || '')
               : sum;
           }, 0);
-          const ecartCvtsW = parseMoneyValue(data[`${rIdx}-33`]);
+          // Même périmètre que le jour : couverts restaurant + limonade (col 120) vs budget 10 + 14.
+          const ecartCvtsW = weekDays.reduce((sum, day) => (
+            parseMoneyValue(data[`${day.originalIdx}-21`] || '') > 0 ? sum + parseMoneyValue(data[`${day.originalIdx}-120`] || '') : sum
+          ), 0) - budgetCvtsAtDate;
           if (budgetCvtsAtDate > 0) data[`${rIdx}-122`] = ((ecartCvtsW / budgetCvtsAtDate) * 100).toFixed(2);
         }
         // Démarques semaine
@@ -703,7 +714,10 @@ export function computeDashboardData(
 
           // Réalisé CA
           const weeklyRealCA = parseMoneyValue(data[`${rIdx}-21`] || '');
-          const weeklyN1RealCA = weekDays.reduce((s, d) => s + (nMinus1ByDate.get(n1KeyOf(d))?.caRealise ?? 0), 0);
+          // N-1 « à date » : seulement les jours de la semaine ayant du réalisé.
+          const weeklyN1RealCA = weekDays.reduce((s, d) => (
+            parseMoneyValue(data[`${d.originalIdx}-21`] || '') > 0 ? s + (nMinus1ByDate.get(n1KeyOf(d))?.caRealise ?? 0) : s
+          ), 0);
           if (weeklyN1RealCA !== 0) {
             const ecartRealCA = weeklyRealCA - weeklyN1RealCA;
             data[`${rIdx}-118`] = ecartRealCA.toFixed(2);
@@ -712,7 +726,9 @@ export function computeDashboardData(
 
           // Réalisé couverts
           const weeklyRealCvts = parseMoneyValue(data[`${rIdx}-29`] || '');
-          const weeklyN1RealCvts = weekDays.reduce((s, d) => s + (nMinus1ByDate.get(n1KeyOf(d))?.cvtsRealise ?? 0), 0);
+          const weeklyN1RealCvts = weekDays.reduce((s, d) => (
+            parseMoneyValue(data[`${d.originalIdx}-29`] || '') > 0 ? s + (nMinus1ByDate.get(n1KeyOf(d))?.cvtsRealise ?? 0) : s
+          ), 0);
           if (weeklyN1RealCvts !== 0) {
             const ecartRealCvts = weeklyRealCvts - weeklyN1RealCvts;
             data[`${rIdx}-123`] = ecartRealCvts.toFixed(2);
@@ -898,7 +914,9 @@ export function computeDashboardData(
             ? sum + parseMoneyValue(data[`${day.originalIdx}-10`] || '') + parseMoneyValue(data[`${day.originalIdx}-14`] || '')
             : sum;
         }, 0);
-        const ecartCvtsM = parseMoneyValue(data[`${monthTotalIdx}-33`]);
+        const ecartCvtsM = allDays.reduce((sum, day) => (
+          parseMoneyValue(data[`${day.originalIdx}-21`] || '') > 0 ? sum + parseMoneyValue(data[`${day.originalIdx}-120`] || '') : sum
+        ), 0) - budgetCvtsAtDateM;
         if (budgetCvtsAtDateM > 0) data[`${monthTotalIdx}-122`] = ((ecartCvtsM / budgetCvtsAtDateM) * 100).toFixed(2);
       }
 

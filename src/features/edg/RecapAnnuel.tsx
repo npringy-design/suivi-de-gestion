@@ -520,8 +520,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const nbCvtsN1    = CVTS_N1_BY_MONTH[mi] ?? 0;
         const varCvtsN1   = nbCvtsN1 > 0 ? ((nbCvts - nbCvtsN1) / nbCvtsN1) * 100 : 0;
         const varCvtsBud  = nbCvtsBud > 0 ? ((nbCvts - nbCvtsBud) / nbCvtsBud) * 100 : 0;
-        const tmHT        = nbCvts > 0 ? ca / nbCvts : 0;
-        const tmN1        = nbCvtsN1 > 0 ? caN1 / nbCvtsN1 : 0;
+        // TM restaurant hors VAE et limonade (CA midi + soir / couverts restaurant), comme la ligne TOTAL.
+        const tmHT        = nbCvts > 0 ? (g(18) + g(19)) / nbCvts : 0;
+        const tmN1        = nbCvtsN1 > 0 ? (getValN1(mi, 18) + getValN1(mi, 19)) / nbCvtsN1 : 0;
         const varTmN1     = tmN1 > 0 ? ((tmHT - tmN1) / tmN1) * 100 : 0;
         // Coût Matière
         const totalAchats = g(58);
@@ -788,8 +789,10 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const totalCvtsN1Ytd  = ytd(i => CVTS_N1_BY_MONTH[i] ?? 0);
         const varCvtsN1       = totalCvtsN1Ytd > 0 ? ((totalCvts - totalCvtsN1Ytd) / totalCvtsN1Ytd) * 100 : 0;
         const varCvtsBud      = totalCvtsBud  > 0 ? ((totalCvts - totalCvtsBud)    / totalCvtsBud)    * 100 : 0;
-        const tmHT            = totalCvts > 0 ? totalCA / totalCvts : 0;
-        const tmN1            = totalCvtsN1Ytd > 0 ? totalCaN1Ytd / totalCvtsN1Ytd : 0;
+        const totalCaResto    = ytd(i => getVal(i, 18) + getVal(i, 19));
+        const totalCaRestoN1  = ytd(i => getValN1(i, 18) + getValN1(i, 19));
+        const tmHT            = totalCvts > 0 ? totalCaResto / totalCvts : 0;
+        const tmN1            = totalCvtsN1Ytd > 0 ? totalCaRestoN1 / totalCvtsN1Ytd : 0;
         const varTmN1         = tmN1 > 0 ? ((tmHT - tmN1) / tmN1) * 100 : 0;
         // Coût Matière
         const totalAchats     = ytd(i => getVal(i, 58));
