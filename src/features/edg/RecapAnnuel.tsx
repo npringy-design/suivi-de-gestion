@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { resolvePersonnelSchema } from '@/features/dashboard/personnelSchema';
 
 import { useData } from '@/contexts/DataContext';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
@@ -294,7 +295,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   // Détection schéma personnel (global = 5 cats unifiées, cuisine_salle = 10 cats)
   const personnelSchema = useMemo(() =>
-    Object.values(data).find(m => m?.personnelSchema)?.personnelSchema ?? 'global',
+    Object.values(data).some(m => resolvePersonnelSchema(m) === 'global') ? 'global' : 'cuisine_salle',
   [data]);
   const isGlobal = personnelSchema === 'global';
 

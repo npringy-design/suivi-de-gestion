@@ -1,5 +1,5 @@
 import { parseMoneyValue, type MoneyInputValue } from '@/lib/money';
-import { parseHourInputToDecimal } from '@/lib/utils';
+import { getDashboardRowIndices, getISOWeekAndYear, parseHourInputToDecimal } from '@/lib/utils';
 import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import type { SalarieRow, PersonnelSchema } from '@/contexts/DataContext';
 import type { DashboardColumn, DashboardRow } from './dashboardTypes';
@@ -131,6 +131,52 @@ export const formatValue = (val: string | number | undefined, c: string[], colIn
   return isCurrency ? `${prefix}${formattedNum} €` : `${prefix}${formattedNum}`;
 };
 
+// Date N-1 appariée : même semaine ISO et même jour de semaine, dans l'année ISO précédente. Une semaine 53
+// absente en N-1 tombe sur la semaine 1 suivante (mondayOfISOWeek déborde naturellement).
+export const getN1TargetDate = (currentDate: Date): Date => {
+  const { week, year } = getISOWeekAndYear(currentDate);
+  const jan4 = new Date(year - 1, 0, 4);
+  const monday = new Date(jan4);
+  monday.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (week - 1) * 7);
+  const dow = (currentDate.getDay() + 6) % 7; // 0 = lundi
+  return new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + dow);
+};
+
+// Cellules N-1 utiles à l'appairage d'un mois : mois N-1, plus les 7 derniers jours du mois précédent et
+// les 7 premiers du mois suivant (l'appairage ISO décale de -7 à +2 jours, ex. toute l'année 2027).
+const N1_PAIRING_COLS = [6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27];
+export function buildNMinus1Data(
+  allData: Record<number, Record<number, { dashboard?: Record<string, string> }>>,
+  year: number,
+  month: number,
+): { cellData: Record<string, string>; rows: DashboardRow[] } | undefined {
+  if (!allData[year - 1]?.[month]?.dashboard) return undefined;
+  const cellData: Record<string, string> = {};
+  const rows: DashboardRow[] = [];
+  const addMonth = (y: number, m: number, fromDay: number, toDay: number) => {
+    const source = allData[y]?.[m]?.dashboard;
+    const indices = getDashboardRowIndices(m, y);
+    for (let day = fromDay; day <= toDay; day++) {
+      const srcIdx = indices[day];
+      if (srcIdx === undefined) continue;
+      const idx = rows.length;
+      rows.push({ type: 'day', label: '', dateObj: new Date(y, m, day), dayIndex: day, weekIndex: 0 });
+      if (!source) continue;
+      N1_PAIRING_COLS.forEach(col => {
+        const value = source[`${srcIdx}-${col}`];
+        if (value !== undefined) cellData[`${idx}-${col}`] = value;
+      });
+    }
+  };
+  const prev = new Date(year - 1, month - 1, 1);
+  const next = new Date(year - 1, month + 1, 1);
+  const prevDays = new Date(prev.getFullYear(), prev.getMonth() + 1, 0).getDate();
+  addMonth(prev.getFullYear(), prev.getMonth(), prevDays - 6, prevDays);
+  addMonth(year - 1, month, 1, new Date(year - 1, month + 1, 0).getDate());
+  addMonth(next.getFullYear(), next.getMonth(), 1, 7);
+  return { cellData, rows };
+}
+
 export function computeDashboardData(
   cellData: Record<string, string>,
   rows: DashboardRow[],
@@ -144,30 +190,7 @@ export function computeDashboardData(
     const data: Record<string, string> = { ...cellData };
     const isGlobalSchema = personnelSchema === 'global';
 
-    // Index N-1 par date exacte (YYYY-M-D)
-    // Appairage par numéro de semaine ISO + jour de la semaine : même semaine ISO, même jour, année N-1.
-    const getN1TargetDate = (currentDate: Date): Date => {
-      const getISOWeek = (d: Date): number => {
-        const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-        tmp.setUTCDate(tmp.getUTCDate() + 4 - (tmp.getUTCDay() || 7));
-        const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-        return Math.ceil((((tmp.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-      };
-      const mondayOfISOWeek = (y: number, w: number): Date => {
-        const jan4 = new Date(Date.UTC(y, 0, 4));
-        const dow = jan4.getUTCDay() || 7;
-        const monday = new Date(jan4);
-        monday.setUTCDate(jan4.getUTCDate() - (dow - 1) + (w - 1) * 7);
-        return monday;
-      };
-      const isoWeek = getISOWeek(currentDate);
-      const dow = currentDate.getDay() || 7; // 1=lun … 7=dim (local)
-      const mondayN1 = mondayOfISOWeek(currentDate.getFullYear() - 1, isoWeek);
-      // Convertir en date locale pour que la clé YYYY-M-D soit cohérente avec nMinus1ByDate
-      const utcMs = mondayN1.getTime() + (dow - 1) * 86400000;
-      return new Date(utcMs);
-    };
-
+    // Appairage N-1 : même semaine ISO, même jour de semaine, année ISO précédente (getN1TargetDate).
     const nMinus1ByDate = new Map<string, { caBudget: number; cvtsBudget: number; caRealise: number; cvtsRealise: number }>();
     if (nMinus1Data) {
       nMinus1Data.rows.forEach((row, rIdx) => {
@@ -179,10 +202,13 @@ export function computeDashboardData(
         const moyMidiN1 = parseMoneyValue(cd[`${rIdx}-7`]);
         const cvtsSoirN1 = parseMoneyValue(cd[`${rIdx}-8`]);
         const moySoirN1 = parseMoneyValue(cd[`${rIdx}-9`]);
+        // Même périmètre que l'année N (col 3 et col 21) : limonade comprise pour les sites qui en ont.
+        const caLimoBudgetN1 = hasLimonade ? parseMoneyValue(cd[`${rIdx}-14`]) * parseMoneyValue(cd[`${rIdx}-15`]) : 0;
+        const caLimoRealiseN1 = hasLimonade ? parseMoneyValue(cd[`${rIdx}-20`]) : 0;
         nMinus1ByDate.set(dateKey, {
-          caBudget: cvtsMidiN1 * moyMidiN1 + cvtsSoirN1 * moySoirN1,
+          caBudget: cvtsMidiN1 * moyMidiN1 + cvtsSoirN1 * moySoirN1 + caLimoBudgetN1,
           cvtsBudget: cvtsMidiN1 + cvtsSoirN1,
-          caRealise: parseMoneyValue(cd[`${rIdx}-17`]) + parseMoneyValue(cd[`${rIdx}-18`]) + parseMoneyValue(cd[`${rIdx}-19`]),
+          caRealise: parseMoneyValue(cd[`${rIdx}-17`]) + parseMoneyValue(cd[`${rIdx}-18`]) + parseMoneyValue(cd[`${rIdx}-19`]) + caLimoRealiseN1,
           cvtsRealise: parseMoneyValue(cd[`${rIdx}-25`]) + parseMoneyValue(cd[`${rIdx}-27`]),
         });
       });

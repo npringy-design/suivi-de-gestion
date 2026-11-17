@@ -5,6 +5,14 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Lot 3 — Schéma du personnel unique, N-1 et semaines ISO prêts pour 2027)
+
+- Schéma du personnel : `features/dashboard/personnelSchema.ts` (`resolvePersonnelSchema` : schéma enregistré par l'import, sinon colonnes d'heures saisies, sinon `splitCuisineSalle` du site, défaut cuisine/salle). Utilisé par le Suivi quotidien (calcul et colonnes affichées), l'Accueil, `computeMonthDashboard` (EDG), le Récap annuel et le Reporting. Avant : un mois sans import était lu en cuisine/salle par le Suivi et l'Accueil, en global par l'EDG, le Récap et le Reporting (masse salariale à 0 dans les vues annuelles). Le Récap et le Reporting n'appliquent plus le schéma du premier mois à toute l'année : Reporting en global dès qu'un mois l'est, heures cuisine + salle regroupées par catégorie.
+- N-1 du Suivi quotidien : `getN1TargetDate` (dashboardCalculations.ts) apparie sur l'année ISO (`getISOWeekAndYear` dans lib/utils) : le 1er janvier 2027 n'est plus comparé à lui-même, les 29-31 décembre 2025 plus à janvier 2024. `buildNMinus1Data` charge le mois N-1 avec les 7 derniers jours du mois précédent et les 7 premiers du suivant : en 2027 (appairage décalé d'une semaine car 2026 a 53 semaines), les premiers jours de chaque mois ont leur N-1 (ex. lundi 1er mars 2027 ↔ lundi 23 février 2026). Logique sortie de Dashboard.tsx.
+- N-1 sites Au Bureau : CA budget et CA réalisé N-1 incluent la limonade, comme l'année N (col 3 et 21).
+- Reporting hebdo : semaines de l'année ISO (52 ou 53, S53 de 2026 affichée), jours de fin décembre N-1 / début janvier N+1 rattachés à leur semaine ISO (années voisines chargées).
+- tsc OK, build OK. Vérifié par calcul : 2027-01-01 ↔ 2026-01-02, 2027-03-01 ↔ 2026-02-23, 2025-12-30 ↔ 2024-12-31.
+
 ## 17/11/2026 (Lot 2b — Frais généraux → EDG, frais fixes mensuels par site)
 
 - Paramètre EDG : nouvelles cartes « Frais généraux du Suivi quotidien → lignes EDG » (`components/EdgFgMappingSection.tsx`) et « Frais fixes mensuels » (`components/FixedMonthlyCostsSection.tsx`), stockées par site dans `companySettings.edgFgMapping` et `companySettings.fixedMonthlyCosts` (types dans dataTypes.ts, constantes et rattachement par défaut dans `features/edg/edgFgMapping.ts`). Par défaut : Entretien → Entretien & répar. locaux, Petit matériel et Matériel de bureau → Matériel et outillage, Tenue → Vêtement pro, Animation → Prestation animation, Ecolab → Nettoyage locaux, Marketing → Publicité locale, Énergie → Energie, Transport → Transport, HACCP, Autres frais et Divers → Honoraires divers.

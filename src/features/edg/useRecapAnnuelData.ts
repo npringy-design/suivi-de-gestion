@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { resolvePersonnelSchema } from '@/features/dashboard/personnelSchema';
 
 import type { MonthData } from '@/types/dataTypes';
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
@@ -31,7 +32,7 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
     for (let mi = 0; mi <= 11; mi++) {
       const monthData = data[mi];
       const cellData = monthData?.dashboard ?? {};
-      const schema = monthData?.personnelSchema ?? 'global';
+      const schema = resolvePersonnelSchema(monthData);
       monthSchemas.push(schema);
       const rows = buildMonthRows(year, mi);
       const dynamicColumns = buildDynamicColumns(

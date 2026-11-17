@@ -43,6 +43,14 @@ export const parseHourInputToDecimal = (value: string | number) => {
   return parseFloat(normalizedValue.replace(',', '.')) || 0;
 };
 
+// Semaine ISO et année ISO d'une date (le 1er janvier 2027 est en semaine 53 de 2026, le 29 décembre
+// 2025 en semaine 1 de 2026) : l'année calendaire ne suffit pas pour apparier ou regrouper les semaines.
+export const getISOWeekAndYear = (date: Date): { week: number; year: number } => {
+  const thursday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  thursday.setDate(thursday.getDate() - ((date.getDay() + 6) % 7) + 3);
+  return { week: getISOWeek(date), year: thursday.getFullYear() };
+};
+
 export const getISOWeek = (date: Date) => {
   const target = new Date(date.valueOf());
   const dayNr = (date.getDay() + 6) % 7;

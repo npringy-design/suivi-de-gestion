@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, useCallback, type ComponentType, type ReactNode } from 'react';
+import { resolvePersonnelSchema } from '@/features/dashboard/personnelSchema';
 import { useNavigate } from 'react-router-dom';
 import {
   BarChart3,
@@ -695,7 +696,7 @@ export default function Home() {
       rows,
       dynamicColumns,
       monthData?.salariesConfig?.categories,
-      monthData?.personnelSchema,
+      resolvePersonnelSchema(monthData),
       undefined,
       monthData?.salariesConfig?.tauxCibles,
       siteHasLimonade(activeSiteId),

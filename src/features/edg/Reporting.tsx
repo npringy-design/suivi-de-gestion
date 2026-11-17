@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 
-import { getDashboardRowIndices, getISOWeek } from '@/lib/utils';
+import { getDashboardRowIndices, getISOWeekAndYear } from '@/lib/utils';
+import { resolvePersonnelSchema } from '@/features/dashboard/personnelSchema';
 import { formatDecimal, formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 import { useHasLimonade } from '@/lib/useHasLimonade';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
@@ -15,7 +16,6 @@ const AMBER = '#f59e0b';
 const BLUE = '#3b82f6';
 const GREEN = '#10b981';
 
-const WEEKS = Array.from({ length: 52 }, (_, i) => `S${i + 1}`);
 
 // Colonnes du Suivi quotidien sommées par le Reporting : 17 VAE, 18/19 CA midi/soir, 20 CA limonade,
 // 21 CA jour, 25/27/29 couverts midi/soir/jour, 34 couverts limonade, 76 total heures, 87 coût global.
@@ -35,18 +35,29 @@ interface ReportingProps {
 }
 
 export default function Reporting({ onBack, hideHeader = false }: ReportingProps) {
-  const { data, selectedYear } = useData();
+  const { data, allData, selectedYear, loadYearFromCloud } = useData();
   const YEAR = selectedYear;
   const hasLimonade = useHasLimonade();
   const MONTHS_SHORT = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'].map(m => `${m}-${YEAR.toString().slice(-2)}`);
   
   const [activeTab, setActiveTab] = useState<'mensuel' | 'hebdo_ca' | 'hebdo_rh'>('mensuel');
 
-  // Schéma du personnel (global = 5 catégories, cuisine_salle = 10) : même détection que le Récap Annuel.
+  // Schéma du personnel : global dès qu'un mois est en global (les mois cuisine/salle sont alors regroupés
+  // par catégorie), sinon cuisine/salle. Même résolution par mois que le Suivi quotidien et le Récap.
   const personnelSchema = useMemo(
-    () => Object.values(data).find(m => m?.personnelSchema)?.personnelSchema ?? 'global',
+    () => (Object.values(data).some(m => resolvePersonnelSchema(m) === 'global') ? 'global' : 'cuisine_salle'),
     [data],
   );
+  // Semaines ISO de l'année : la semaine 1 peut commencer fin décembre N-1 et la semaine 53 finir début
+  // janvier N+1 (ex. 2026) : on lit donc aussi les années voisines.
+  useEffect(() => {
+    void loadYearFromCloud(YEAR - 1);
+    void loadYearFromCloud(YEAR + 1);
+  }, [YEAR, loadYearFromCloud]);
+  const weeks = useMemo(() => {
+    const count = getISOWeekAndYear(new Date(YEAR, 11, 28)).week;
+    return Array.from({ length: count }, (_, i) => `S${i + 1}`);
+  }, [YEAR]);
   const hoursCols = personnelSchema === 'global' ? HOURS_COLS_GLOBAL : HOURS_COLS_CUISINE_SALLE;
   // Libellés des catégories tirés des colonnes du tableau de bord (jamais en dur).
   const hoursLabels = useMemo(() => {
@@ -60,28 +71,46 @@ export default function Reporting({ onBack, hideHeader = false }: ReportingProps
   const { monthlyTotals, weeklyTotals } = useMemo(() => {
     const monthly: DayTotals[] = Array.from({ length: 12 }, zeroTotals);
     const weekly: DayTotals[] = Array.from({ length: 54 }, zeroTotals);
+    const groupByCategory = personnelSchema === 'global';
 
-    for (let m = 0; m < 12; m++) {
-      const computed = computeMonthDashboard(data[m], m, YEAR, hasLimonade);
-      if (Object.keys(computed).length === 0) continue;
-      const indices = getDashboardRowIndices(m, YEAR);
-      const numDays = new Date(YEAR, m + 1, 0).getDate();
+    // Mois calendaires de l'année + décembre N-1 et janvier N+1 (pour les semaines ISO à cheval).
+    const sources: Array<{ y: number; m: number }> = [
+      { y: YEAR - 1, m: 11 },
+      ...Array.from({ length: 12 }, (_, m) => ({ y: YEAR, m })),
+      { y: YEAR + 1, m: 0 },
+    ];
+    sources.forEach(({ y, m }) => {
+      const monthData = y === YEAR ? data[m] : allData[y]?.[m];
+      const computed = computeMonthDashboard(monthData, m, y, hasLimonade);
+      if (Object.keys(computed).length === 0) return;
+      const monthIsCuisineSalle = resolvePersonnelSchema(monthData) === 'cuisine_salle';
+      const indices = getDashboardRowIndices(m, y);
+      const numDays = new Date(y, m + 1, 0).getDate();
 
       for (let d = 1; d <= numDays; d++) {
         const rIdx = indices[d];
         if (rIdx === undefined) continue;
-        const isoWeek = getISOWeek(new Date(YEAR, m, d));
+        const iso = getISOWeekAndYear(new Date(y, m, d));
+        const inYear = y === YEAR;
+        const inIsoYear = iso.year === YEAR;
+        if (!inYear && !inIsoYear) continue;
+        const add = (col: number, val: number) => {
+          if (inYear) monthly[m][col] += val;
+          if (inIsoYear) weekly[iso.week][col] += val;
+        };
         REPORTING_COLS.forEach(col => {
           const raw = computed[`${rIdx}-${col}`] ?? '';
           const val = isHoursCol(col) ? parsePayrollHourForCalculation(raw) : parseMoneyValue(raw);
           if (!Number.isFinite(val) || val === 0) return;
-          monthly[m][col] += val;
-          if (isoWeek >= 1 && isoWeek <= 52) weekly[isoWeek][col] += val;
+          add(col, val);
+          // Mois cuisine/salle affiché en global : heures cuisine + salle regroupées dans la catégorie.
+          const csIdx = HOURS_COLS_CUISINE_SALLE.indexOf(col);
+          if (groupByCategory && monthIsCuisineSalle && csIdx >= 0) add(HOURS_COLS_GLOBAL[Math.floor(csIdx / 2)], val);
         });
       }
-    }
+    });
     return { monthlyTotals: monthly, weeklyTotals: weekly };
-  }, [data, YEAR, hasLimonade]);
+  }, [data, allData, YEAR, hasLimonade, personnelSchema]);
 
   const thBase: React.CSSProperties = {
     position: 'sticky',
@@ -218,7 +247,7 @@ export default function Reporting({ onBack, hideHeader = false }: ReportingProps
         </tr>
       </thead>
       <tbody>
-        {WEEKS.map((w, i) => {
+        {weeks.map((w, i) => {
           const weekNum = i + 1;
           const dt = weeklyTotals[weekNum];
           return (
@@ -270,7 +299,7 @@ export default function Reporting({ onBack, hideHeader = false }: ReportingProps
         </tr>
       </thead>
       <tbody>
-        {WEEKS.map((w, i) => {
+        {weeks.map((w, i) => {
           const weekNum = i + 1;
           const dt = weeklyTotals[weekNum];
           const cumulCA = cumulTo(weeklyTotals, 21, 1, weekNum);

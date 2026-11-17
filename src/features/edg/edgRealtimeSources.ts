@@ -1,4 +1,5 @@
 import { getDashboardRowIndices } from '@/lib/utils';
+import { resolvePersonnelSchema } from '@/features/dashboard/personnelSchema';
 import { parseMoneyValue } from '@/lib/money';
 import type { FixedMonthlyCost, MonthData } from '@/types/dataTypes';
 import { DEFAULT_FIXED_COST_EDG_KEY, FG_CATEGORIES, resolveEdgFgMapping, type EdgAutoContext } from '@/features/edg/edgFgMapping';
@@ -30,7 +31,7 @@ export const computeMonthDashboard = (
     rows,
     dynamicColumns,
     monthData?.salariesConfig?.categories,
-    monthData?.personnelSchema ?? 'global',
+    resolvePersonnelSchema(monthData),
     undefined,
     monthData?.salariesConfig?.tauxCibles,
     hasLimonade,

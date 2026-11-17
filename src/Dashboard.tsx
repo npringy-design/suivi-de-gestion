@@ -1,4 +1,5 @@
 import React, { useMemo, useEffect, useRef } from 'react';
+import { resolvePersonnelSchema } from '@/features/dashboard/personnelSchema';
 import DashboardAnalysisView from '@/pages/DashboardAnalysisView';
 
 import { useData, type SalarieRow } from '@/contexts/DataContext';
@@ -35,6 +36,7 @@ import { useDashboardUiState } from '@/features/dashboard/hooks/useDashboardUiSt
 import { useDashboardImportHandlers } from '@/features/dashboard/hooks/useDashboardImportHandlers';
 import { useDashboardDailyRecapHandlers } from '@/features/dashboard/hooks/useDashboardDailyRecapHandlers';
 import {
+  buildNMinus1Data,
   computeDashboardData,
   formatPayrollHourVisualValue,
   formatValue,
@@ -320,47 +322,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   };
 
   // Calculate totals
+  // Schéma du personnel du mois : même résolution que l'EDG, le Récap et le Reporting.
+  const personnelSchema = useMemo(() => resolvePersonnelSchema(globalData[month]), [globalData, month]);
+
   const calculatedData = useMemo(() => {
-    const nMinus1MonthData = allData[year - 1]?.[month];
-    // Données du mois suivant en N-1 pour les jours de débordement (ex: sam 31 jan 2026 → sam 1er fév 2025)
-    const overflowYear = month === 11 ? year : year - 1;
-    const overflowMonth = month === 11 ? 0 : month + 1;
-    const nMinus1OverflowMonthData = allData[overflowYear]?.[overflowMonth];
-    let nMinus1Data: { cellData: Record<string, string>; rows: DashboardRow[] } | undefined;
-    if (nMinus1MonthData?.dashboard) {
-      const numDaysN1 = new Date(year - 1, month + 1, 0).getDate();
-      const n1Rows: DashboardRow[] = [];
-      let weekCountN1 = 1;
-      for (let i = 1; i <= numDaysN1; i++) {
-        const date = new Date(year - 1, month, i);
-        n1Rows.push({ type: 'day', label: '', dateObj: date, dayIndex: i, weekIndex: weekCountN1 });
-        if (date.getDay() === 0) { n1Rows.push({ type: 'total', label: '', weekIndex: weekCountN1 }); weekCountN1++; }
-      }
-      if (new Date(year - 1, month, numDaysN1).getDay() !== 0) n1Rows.push({ type: 'total', label: '', weekIndex: weekCountN1 });
-      // Fusionner les 6 premiers jours du mois overflow N-1 pour gérer le débordement de fin de mois
-      const mergedCellData: Record<string, string> = { ...nMinus1MonthData.dashboard };
-      if (nMinus1OverflowMonthData?.dashboard) {
-        for (let i = 1; i <= 6; i++) {
-          const date = new Date(overflowYear, overflowMonth, i);
-          // Calculer le srcRIdx dans le dashboard du mois overflow (compte les totaux de semaine avant le jour i)
-          let srcRIdx = i - 1;
-          for (let d = 1; d < i; d++) {
-            if (new Date(overflowYear, overflowMonth, d).getDay() === 0) srcRIdx++;
-          }
-          const combinedRIdx = n1Rows.length;
-          n1Rows.push({ type: 'day', label: '', dateObj: date, dayIndex: i, weekIndex: weekCountN1 });
-          [6, 7, 8, 9, 17, 18, 19, 25, 27].forEach(col => {
-            const v = nMinus1OverflowMonthData?.dashboard?.[`${srcRIdx}-${col}`];
-            if (v !== undefined) mergedCellData[`${combinedRIdx}-${col}`] = v;
-          });
-        }
-      }
-      n1Rows.push({ type: 'fg_box4_total', label: '' });
-      n1Rows.push({ type: 'month_total', label: '' });
-      nMinus1Data = { cellData: mergedCellData, rows: n1Rows };
-    }
-    return computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, globalData[month]?.personnelSchema, nMinus1Data, globalData[month]?.salariesConfig?.tauxCibles, hasLimonade);
-  }, [hasLimonade, cellData, globalData[month]?.salariesConfig, globalData[month]?.personnelSchema, allData[year - 1]?.[month], allData[month === 11 ? year : year - 1]?.[month === 11 ? 0 : month + 1]]);
+    // N-1 : mois N-1 plus les jours voisins nécessaires à l'appairage par semaine ISO.
+    const nMinus1Data = buildNMinus1Data(allData, year, month);
+    return computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, personnelSchema, nMinus1Data, globalData[month]?.salariesConfig?.tauxCibles, hasLimonade);
+  }, [hasLimonade, cellData, globalData[month]?.salariesConfig, personnelSchema, allData, year, month]);
 
   const todayMarker = useMemo(() => {
     const now = new Date();
@@ -415,7 +384,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const thilloisNoLimonadeColumns = new Set([2, 14, 15, 16, 20, 34, 35, 36, 110, 111, 112, 113, 114, 115]);
     // Au Bureau : pas de limonade midi/soir (comme dans l'Excel), les totaux 20/34 font foi.
     const limonadeMidiSoirColumns = new Set([110, 111, 112, 113, 114, 115]);
-    const isGlobalPersonnelSchema = globalData[month]?.personnelSchema === 'global';
+    const isGlobalPersonnelSchema = personnelSchema === 'global';
     const cuisineSalleColumns = new Set([62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]);
     const globalPersonnelColumns = new Set([130, 131, 132, 133, 134, 135, 136, 137, 138, 139]);
     const visibleColumnsWithoutLimonade = baseVisibleColumns.filter(col => {
@@ -521,7 +490,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       buildColumn(123, 'COUVERTS', 'ECART VS N-1', 'VALEUR', 'bg-white'),
       buildColumn(124, 'COUVERTS', 'ECART VS N-1', '%', 'bg-white'),
     ].filter(Boolean) as VisibleDashboardColumn[];
-  }, [activeTab, tableViewMode, dynamicColumns, hasLimonade]);
+  }, [activeTab, tableViewMode, dynamicColumns, hasLimonade, personnelSchema]);
 
   const groups: Array<{ name: string; colspan: number; bg: string }> = [];
   let currentGroup: { name: string; colspan: number; bg: string } | null = null;
