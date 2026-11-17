@@ -1,5 +1,5 @@
 import type { SiteId } from '@/lib/sites';
-import { threeWayMerge } from '@/lib/threeWayMerge';
+import { applyLocalPaths, threeWayMerge } from '@/lib/threeWayMerge';
 import { getValidAccessToken } from '@/services/supabaseAuth';
 
 export type CloudAppState = {
@@ -16,6 +16,10 @@ export type CloudSaveOptions = {
   // Seuls ces snapshots mensuels sont poussés : un mois jamais resynchronisé
   // depuis le cloud ne doit pas écraser la version d'un autre poste.
   dirtyMonths?: ReadonlySet<string>;
+  // Chemins (« enregistrement.clé ») modifiés localement par mois « annee:mois » depuis le dernier push.
+  // Sert quand la base de fusion est inconnue (mois jamais lu dans la session) : on part alors de la
+  // version distante et on n'y reporte que ces chemins. Mois absent : comportement par défaut (local gagne).
+  dirtyPaths?: ReadonlyMap<string, ReadonlySet<string>>;
   dirtySegments?: {
     config2025?: boolean;
     customEvents?: boolean;
@@ -416,9 +420,15 @@ const mergeAndWriteRecord = async (
   key: string,
   local: unknown,
   label: string,
+  dirtyPaths?: ReadonlySet<string>,
 ): Promise<{ merged: unknown; conflicts: string[] }> => {
   const remote = await readRemoteValue(siteId, key);
-  const { merged, conflicts } = threeWayMerge<unknown>(baseValueOf(siteId, key), local, remote);
+  const base = baseValueOf(siteId, key);
+  // Base inconnue et version distante existante : la version distante fait foi, sauf les chemins réellement
+  // modifiés dans la session (sinon des cellules périmées du stockage local écraseraient celles des autres postes).
+  const { merged, conflicts } = base === undefined && remote !== undefined && dirtyPaths
+    ? { merged: applyLocalPaths<unknown>(remote, local, dirtyPaths), conflicts: [] as string[] }
+    : threeWayMerge<unknown>(base, local, remote);
   if (remote === undefined || JSON.stringify(merged) !== JSON.stringify(remote)) {
     await writeStateRecord(siteId, key, merged);
   }
@@ -465,7 +475,13 @@ const saveCloudAppStateMerged = async (
 
   await Promise.all([
     ...monthEntries.map(async item => {
-      const result = await mergeAndWriteRecord(siteId, monthSegmentKey(item.year, item.month), item.value, `${item.year}:${item.month}`);
+      const result = await mergeAndWriteRecord(
+        siteId,
+        monthSegmentKey(item.year, item.month),
+        item.value,
+        `${item.year}:${item.month}`,
+        options.dirtyPaths?.get(`${item.year}:${item.month}`),
+      );
       merged.months[`${item.year}:${item.month}`] = result.merged;
       conflicts.push(...result.conflicts);
     }),

@@ -66,3 +66,33 @@ export function threeWayMerge<T>(base: T | undefined, local: T, remote: T | unde
   );
   return { merged: (result.present ? result.value : local) as T, conflicts };
 }
+
+// Base inconnue : part de la version distante et n'y reporte que les chemins modifiés localement.
+// Un chemin est « enregistrement.clé » (premier point) ou « enregistrement » seul ; une valeur absente en
+// local supprime la clé. Valeurs non objets : la version locale est retenue.
+export function applyLocalPaths<T>(remote: T, local: T, paths: ReadonlySet<string>): T {
+  if (!isPlainObject(remote) || !isPlainObject(local)) return local;
+  const result = JSON.parse(JSON.stringify(remote)) as JsonObject;
+
+  paths.forEach(path => {
+    const dot = path.indexOf('.');
+    if (dot < 0) {
+      if (local[path] === undefined) delete result[path];
+      else result[path] = local[path];
+      return;
+    }
+    const record = path.slice(0, dot);
+    const cell = path.slice(dot + 1);
+    const localRecord = local[record];
+    const localValue = isPlainObject(localRecord) ? localRecord[cell] : undefined;
+    let remoteRecord = result[record];
+    if (!isPlainObject(remoteRecord)) {
+      if (localValue === undefined) return;
+      remoteRecord = {};
+      result[record] = remoteRecord;
+    }
+    if (localValue === undefined) delete (remoteRecord as JsonObject)[cell];
+    else (remoteRecord as JsonObject)[cell] = localValue;
+  });
+  return result as T;
+}

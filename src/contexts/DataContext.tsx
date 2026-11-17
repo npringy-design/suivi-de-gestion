@@ -6,6 +6,7 @@ import { fetchCloudAppBootstrap, fetchCloudMonth, fetchCloudYearMonths, isCloudS
 import { mergeDashboardCellsData, mergeEdgMensuelBudgetData, mergeEdgMensuelRealiseData, normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
 import { parseMoneyValue } from '@/lib/money';
 import { createDefaultEdgChargesConfig } from '@/features/edg/edgChargesConfigDefaults';
+import { threeWayMerge } from '@/lib/threeWayMerge';
 import { getDefaultCompanySettings, migrateAuBureauPurchaseSections, DEFAULT_CAISSE_SYSTEMS } from '@/features/parametres/companySettingsDefaults';
 import { normalizePayrollCosts } from '@/features/masseSalariale/payrollDefaults';
 
@@ -205,6 +206,22 @@ type CloudSnapshot = {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+// Chemins (« enregistrement.clé ») modifiés par mois « annee:mois » depuis le dernier push ; null = écriture
+// non suivie (chemins inconnus : la sauvegarde garde alors le comportement par défaut pour ce mois).
+type DirtyPaths = Map<string, Set<string> | null>;
+
+const trackDirtyPaths = (tracked: DirtyPaths, monthKey: string, paths: readonly string[] | null) => {
+  if (paths === null) {
+    tracked.set(monthKey, null);
+    return;
+  }
+  const current = tracked.get(monthKey);
+  if (current === null) return;
+  const set = current ?? new Set<string>();
+  paths.forEach(path => set.add(path));
+  tracked.set(monthKey, set);
+};
+
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   // Site actif : résolu une fois par AuthGate (switch de site = rechargement complet de page,
   // donc cette valeur est stable pendant toute la vie du DataProvider).
@@ -245,10 +262,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   // pour ne jamais écraser avec des données localStorage périmées les saisies d'un autre poste.
   const dirtyMonthKeysRef = useRef<Set<string>>(new Set());
   const dirtySegmentsRef = useRef({ config2025: false, customEvents: false, edgChargesConfig: false, companySettings: false, payrollCosts: false });
+  const dirtyPathsRef = useRef<DirtyPaths>(new Map());
   const latestSnapshotRef = useRef<CloudSnapshot>({ allData, config2025, customEvents, edgChargesConfig, companySettings, payrollCosts });
 
-  const updateDataForYear = useCallback((month: number, updater: (prevYearData: Record<number, MonthData>) => Record<number, MonthData>) => {
+  // paths : chemins « enregistrement.clé » modifiés par cette écriture ; sans paths, le mois est marqué « non suivi ».
+  const updateDataForYear = useCallback((month: number, updater: (prevYearData: Record<number, MonthData>) => Record<number, MonthData>, paths?: readonly string[]) => {
     dirtyMonthKeysRef.current.add(selectedYear + ':' + month);
+    trackDirtyPaths(dirtyPathsRef.current, selectedYear + ':' + month, paths ?? null);
     setAllData(prev => ({
       ...prev,
       [selectedYear]: updater(prev[selectedYear] || {}),
@@ -475,47 +495,83 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     if (dirtyMonths.size === 0 && !hasDirtySegment) return 0;
 
     const snapshot = latestSnapshotRef.current;
-    const result = await saveCloudAppState(activeSiteId, snapshot, { dirtyMonths, dirtySegments });
+    // Chemins modifiés connus par mois (un mois « non suivi » en est absent : comportement par défaut).
+    const dirtyPaths = new Map<string, ReadonlySet<string>>();
+    dirtyMonths.forEach(key => {
+      const paths = dirtyPathsRef.current.get(key);
+      if (paths) dirtyPaths.set(key, new Set(paths));
+    });
+    const result = await saveCloudAppState(activeSiteId, snapshot, { dirtyMonths, dirtySegments, dirtyPaths });
 
-    dirtyMonths.forEach(key => dirtyMonthKeysRef.current.delete(key));
+    // Éléments modifiés pendant la sauvegarde : ils restent « sales » (repoussés à la prochaine sauvegarde)
+    // et reçoivent le fusionné par-dessus leur état courant, sans passer par cloudApplyingRef.
+    const latest = latestSnapshotRef.current;
+    const monthRef = (key: string): [number, number] => {
+      const [year, month] = key.split(':').map(Number);
+      return [year, month];
+    };
+    const monthChanged = (key: string): boolean => {
+      const [year, month] = monthRef(key);
+      return latest.allData[year]?.[month] !== snapshot.allData[year]?.[month];
+    };
+    dirtyMonths.forEach(key => {
+      if (monthChanged(key)) return;
+      dirtyMonthKeysRef.current.delete(key);
+      dirtyPathsRef.current.delete(key);
+    });
+    const segmentChanged = {
+      config2025: latest.config2025 !== snapshot.config2025,
+      customEvents: latest.customEvents !== snapshot.customEvents,
+      edgChargesConfig: latest.edgChargesConfig !== snapshot.edgChargesConfig,
+      companySettings: latest.companySettings !== snapshot.companySettings,
+      payrollCosts: latest.payrollCosts !== snapshot.payrollCosts,
+    };
     (['config2025', 'customEvents', 'edgChargesConfig', 'companySettings', 'payrollCosts'] as const).forEach(segment => {
-      if (dirtySegments[segment]) dirtySegmentsRef.current[segment] = false;
+      if (dirtySegments[segment] && !segmentChanged[segment]) dirtySegmentsRef.current[segment] = false;
     });
 
     // La sauvegarde fusionne avec la version du cloud : on réapplique le résultat fusionné pour que ce poste
-    // voie les saisies des autres postes. Sans re-marquer dirty (cloudApplyingRef) et sans écraser une
-    // saisie faite pendant la sauvegarde (la valeur de l'état doit être celle qui vient d'être envoyée).
+    // voie les saisies des autres postes.
     const merged = result?.merged;
     if (merged) {
-      const latest = latestSnapshotRef.current;
       const differs = (sent: unknown, mergedValue: unknown) => mergedValue !== undefined && JSON.stringify(mergedValue) !== JSON.stringify(sent);
       Object.entries(merged.months).forEach(([key, mergedValue]) => {
-        const [year, month] = key.split(':').map(Number);
+        const [year, month] = monthRef(key);
         const sent = snapshot.allData[year]?.[month];
-        if (latest.allData[year]?.[month] !== sent || !differs(sent, mergedValue)) return;
-        applyCloudMonth(year, month, mergedValue);
+        if (monthChanged(key)) {
+          // Saisie en cours : fusionné (autres postes) + état courant (saisie en cours), la sauvegarde suivante est programmée.
+          setAllData(prev => ({
+            ...prev,
+            [year]: {
+              ...(prev[year] || {}),
+              [month]: threeWayMerge<unknown>(sent, prev[year]?.[month], mergedValue).merged as MonthData,
+            },
+          }));
+        } else if (differs(sent, mergedValue)) {
+          applyCloudMonth(year, month, mergedValue);
+        }
       });
+
       const seg = merged.segments;
-      if (latest.config2025 === snapshot.config2025 && differs(snapshot.config2025, seg.config2025)) {
-        cloudApplyingRef.current = true;
-        setConfig2025(seg.config2025 as Config2025Data);
-      }
-      if (latest.customEvents === snapshot.customEvents && Array.isArray(seg.customEvents) && differs(snapshot.customEvents, seg.customEvents)) {
-        cloudApplyingRef.current = true;
-        setCustomEvents(seg.customEvents as CustomEvent[]);
-      }
-      if (latest.edgChargesConfig === snapshot.edgChargesConfig && differs(snapshot.edgChargesConfig, seg.edgChargesConfig)) {
-        cloudApplyingRef.current = true;
-        setEdgChargesConfig(seg.edgChargesConfig as EdgChargesConfig);
-      }
-      if (latest.companySettings === snapshot.companySettings && differs(snapshot.companySettings, seg.companySettings)) {
-        cloudApplyingRef.current = true;
-        setCompanySettings(seg.companySettings as CompanySettings);
-      }
-      if (latest.payrollCosts === snapshot.payrollCosts && differs(snapshot.payrollCosts, seg.payrollCosts)) {
-        cloudApplyingRef.current = true;
-        setPayrollCosts(normalizePayrollCosts(seg.payrollCosts as Partial<PayrollCostsData>));
-      }
+      const applySegment = <T,>(changed: boolean, sent: unknown, mergedValue: unknown, set: (update: (current: T) => T) => void) => {
+        if (!differs(sent, mergedValue)) return;
+        if (changed) {
+          set(current => threeWayMerge<unknown>(sent, current, mergedValue).merged as T);
+        } else {
+          cloudApplyingRef.current = true;
+          set(() => mergedValue as T);
+        }
+      };
+      applySegment<Config2025Data>(segmentChanged.config2025, snapshot.config2025, seg.config2025, setConfig2025);
+      applySegment<CustomEvent[]>(segmentChanged.customEvents, snapshot.customEvents, Array.isArray(seg.customEvents) ? seg.customEvents : undefined, setCustomEvents);
+      applySegment<EdgChargesConfig>(segmentChanged.edgChargesConfig, snapshot.edgChargesConfig, seg.edgChargesConfig, setEdgChargesConfig);
+      applySegment<CompanySettings>(segmentChanged.companySettings, snapshot.companySettings, seg.companySettings, setCompanySettings);
+      applySegment<PayrollCostsData>(
+        segmentChanged.payrollCosts,
+        snapshot.payrollCosts,
+        seg.payrollCosts,
+        update => setPayrollCosts(current => normalizePayrollCosts(update(current) as Partial<PayrollCostsData>)),
+      );
     }
 
     const conflictCount = result?.conflicts?.length ?? 0;
@@ -758,6 +814,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     config: MonthDataSalariesConfig | ((current: MonthDataSalariesConfig | undefined) => MonthDataSalariesConfig),
   ) => {
     dirtyMonthKeysRef.current.add(cloudMonthKey(year, month));
+    trackDirtyPaths(dirtyPathsRef.current, cloudMonthKey(year, month), ['salariesConfig']);
     setAllData(prev => {
       const monthData = normalizeMonthData(prev[year]?.[month]);
       const salariesConfig = typeof config === 'function' ? config(monthData.salariesConfig) : config;
@@ -785,7 +842,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           personnelSchema: schema,
         },
       };
-    });
+    }, ['personnelSchema']);
   }, [updateDataForYear]);
 
   const markMonthsAsLoaded = useCallback((targetYear: number, months: number[]) => {
@@ -917,19 +974,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [updateDataForYear]);
 
   const updateDashboard = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'dashboard', cellKey, value));
+    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'dashboard', cellKey, value), [`dashboard.${cellKey}`]);
   }, [updateDataForYear]);
 
   const updateCaisseDynamique = useCallback((month: number, systemId: string, day: number, field: 'montant' | 'commentaire', value: string) => {
-    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'caisseDynamique', `${systemId}:${day}:${field}`, value));
+    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'caisseDynamique', `${systemId}:${day}:${field}`, value), [`caisseDynamique.${systemId}:${day}:${field}`]);
   }, [updateDataForYear]);
 
   const updateEdgMensuel = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'edgMensuel', cellKey, value));
+    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'edgMensuel', cellKey, value), [`edgMensuel.${cellKey}`]);
   }, [updateDataForYear]);
 
   const updateEdgMensuelRealise = useCallback((month: number, cellKey: string, value: string) => {
-    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'edgMensuelRealise', cellKey, value));
+    updateDataForYear(month, prev => updateMonthlyStringRecordData(prev, month, 'edgMensuelRealise', cellKey, value), [`edgMensuelRealise.${cellKey}`]);
   }, [updateDataForYear]);
 
   // Import en lot du budget EDG (une valeur par mois et par clé) : une seule mise à jour
@@ -937,7 +994,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const importEdgBudget = useCallback((valuesByMonth: Record<number, Record<string, string>>) => {
     const months = Object.keys(valuesByMonth);
     if (months.length === 0) return;
-    months.forEach(month => dirtyMonthKeysRef.current.add(selectedYear + ':' + month));
+    months.forEach(month => {
+      dirtyMonthKeysRef.current.add(selectedYear + ':' + month);
+      trackDirtyPaths(dirtyPathsRef.current, selectedYear + ':' + month, Object.keys(valuesByMonth[Number(month)] ?? {}).map(key => `edgMensuel.${key}`));
+    });
     setAllData(prev => ({
       ...prev,
       [selectedYear]: mergeEdgMensuelBudgetData(prev[selectedYear] || {}, valuesByMonth),
@@ -949,7 +1009,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const importBudgetPlan = useCallback((year: number, valuesByMonth: Record<number, Record<string, string>>) => {
     const months = Object.keys(valuesByMonth);
     if (months.length === 0) return;
-    months.forEach(month => dirtyMonthKeysRef.current.add(year + ':' + month));
+    months.forEach(month => {
+      dirtyMonthKeysRef.current.add(year + ':' + month);
+      trackDirtyPaths(dirtyPathsRef.current, year + ':' + month, Object.keys(valuesByMonth[Number(month)] ?? {}).map(key => `dashboard.${key}`));
+    });
     setAllData(prev => ({
       ...prev,
       [year]: mergeDashboardCellsData(prev[year] || {}, valuesByMonth),
@@ -960,7 +1023,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const importEdgRealise = useCallback((valuesByMonth: Record<number, Record<string, string>>) => {
     const months = Object.keys(valuesByMonth);
     if (months.length === 0) return;
-    months.forEach(month => dirtyMonthKeysRef.current.add(selectedYear + ':' + month));
+    months.forEach(month => {
+      dirtyMonthKeysRef.current.add(selectedYear + ':' + month);
+      trackDirtyPaths(dirtyPathsRef.current, selectedYear + ':' + month, Object.keys(valuesByMonth[Number(month)] ?? {}).map(key => `edgMensuelRealise.${key}`));
+    });
     setAllData(prev => ({
       ...prev,
       [selectedYear]: mergeEdgMensuelRealiseData(prev[selectedYear] || {}, valuesByMonth),
@@ -1039,6 +1105,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // sauvegarde automatique n'écrase pas les données Supabase avec du vide.
     // Recharger la page restaure les données depuis le cloud.
     dirtyMonthKeysRef.current.clear();
+    dirtyPathsRef.current.clear();
     dirtySegmentsRef.current = { config2025: false, customEvents: false, edgChargesConfig: false, companySettings: false, payrollCosts: false };
     setAllData({});
     setConfig2025({ mensuel: {}, hebdo: {} });
