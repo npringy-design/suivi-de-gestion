@@ -467,19 +467,63 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   // Ne pousse vers Supabase que les snapshots (mois/segments) réellement modifiés
   // dans cette session, puis les retire de la liste des éléments à sauvegarder.
-  const performCloudSave = useCallback(async () => {
+  // Retourne le nombre de cellules en conflit avec un autre poste (la saisie locale est conservée).
+  const performCloudSave = useCallback(async (): Promise<number> => {
     const dirtyMonths = new Set(dirtyMonthKeysRef.current);
     const dirtySegments = { ...dirtySegmentsRef.current };
     const hasDirtySegment = dirtySegments.config2025 || dirtySegments.customEvents || dirtySegments.edgChargesConfig || dirtySegments.companySettings || dirtySegments.payrollCosts;
-    if (dirtyMonths.size === 0 && !hasDirtySegment) return;
+    if (dirtyMonths.size === 0 && !hasDirtySegment) return 0;
 
-    await saveCloudAppState(activeSiteId, latestSnapshotRef.current, { dirtyMonths, dirtySegments });
+    const snapshot = latestSnapshotRef.current;
+    const result = await saveCloudAppState(activeSiteId, snapshot, { dirtyMonths, dirtySegments });
 
     dirtyMonths.forEach(key => dirtyMonthKeysRef.current.delete(key));
     (['config2025', 'customEvents', 'edgChargesConfig', 'companySettings', 'payrollCosts'] as const).forEach(segment => {
       if (dirtySegments[segment]) dirtySegmentsRef.current[segment] = false;
     });
-  }, [activeSiteId]);
+
+    // La sauvegarde fusionne avec la version du cloud : on réapplique le résultat fusionné pour que ce poste
+    // voie les saisies des autres postes. Sans re-marquer dirty (cloudApplyingRef) et sans écraser une
+    // saisie faite pendant la sauvegarde (la valeur de l'état doit être celle qui vient d'être envoyée).
+    const merged = result?.merged;
+    if (merged) {
+      const latest = latestSnapshotRef.current;
+      const differs = (sent: unknown, mergedValue: unknown) => mergedValue !== undefined && JSON.stringify(mergedValue) !== JSON.stringify(sent);
+      Object.entries(merged.months).forEach(([key, mergedValue]) => {
+        const [year, month] = key.split(':').map(Number);
+        const sent = snapshot.allData[year]?.[month];
+        if (latest.allData[year]?.[month] !== sent || !differs(sent, mergedValue)) return;
+        applyCloudMonth(year, month, mergedValue);
+      });
+      const seg = merged.segments;
+      if (latest.config2025 === snapshot.config2025 && differs(snapshot.config2025, seg.config2025)) {
+        cloudApplyingRef.current = true;
+        setConfig2025(seg.config2025 as Config2025Data);
+      }
+      if (latest.customEvents === snapshot.customEvents && Array.isArray(seg.customEvents) && differs(snapshot.customEvents, seg.customEvents)) {
+        cloudApplyingRef.current = true;
+        setCustomEvents(seg.customEvents as CustomEvent[]);
+      }
+      if (latest.edgChargesConfig === snapshot.edgChargesConfig && differs(snapshot.edgChargesConfig, seg.edgChargesConfig)) {
+        cloudApplyingRef.current = true;
+        setEdgChargesConfig(seg.edgChargesConfig as EdgChargesConfig);
+      }
+      if (latest.companySettings === snapshot.companySettings && differs(snapshot.companySettings, seg.companySettings)) {
+        cloudApplyingRef.current = true;
+        setCompanySettings(seg.companySettings as CompanySettings);
+      }
+      if (latest.payrollCosts === snapshot.payrollCosts && differs(snapshot.payrollCosts, seg.payrollCosts)) {
+        cloudApplyingRef.current = true;
+        setPayrollCosts(normalizePayrollCosts(seg.payrollCosts as Partial<PayrollCostsData>));
+      }
+    }
+
+    const conflictCount = result?.conflicts?.length ?? 0;
+    if (conflictCount > 0) {
+      showCloudWarning(`${conflictCount} cellule(s) modifiée(s) en même temps sur un autre poste : votre saisie a été conservée.`);
+    }
+    return conflictCount;
+  }, [activeSiteId, applyCloudMonth, showCloudWarning]);
 
   useEffect(() => {
     latestSnapshotRef.current = { allData, config2025, customEvents, edgChargesConfig, companySettings, payrollCosts };
@@ -496,8 +540,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     cloudSaveTimerRef.current = window.setTimeout(async () => {
       try {
-        await performCloudSave();
-        hideCloudWarning();
+        if ((await performCloudSave()) === 0) hideCloudWarning();
       } catch (error) {
         console.warn('Sauvegarde Supabase indisponible :', error);
         showCloudWarning(cloudErrorMessage('Sauvegarde Supabase echouee', error));
@@ -760,7 +803,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       .some(m => !loadedCloudMonthKeysRef.current.has(cloudMonthKey(year, m)));
     if (!anyMissing) return loaded;
     try {
-      const months = await fetchCloudYearMonths(activeSiteId, year);
+      // Les mois modifiés localement et non poussés ne deviennent pas la base de fusion de la prochaine sauvegarde.
+      const months = await fetchCloudYearMonths(activeSiteId, year, dirtyMonthKeysRef.current);
       months
         // Un mois modifié localement et pas encore poussé ne doit pas être écrasé par la version cloud.
         .filter(({ month }) => !dirtyMonthKeysRef.current.has(cloudMonthKey(year, month)))
@@ -795,8 +839,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       cloudSaveTimerRef.current = null;
     }
     try {
-      await performCloudSave();
-      hideCloudWarning();
+      if ((await performCloudSave()) === 0) hideCloudWarning();
     } catch (error) {
       showCloudWarning(cloudErrorMessage('Sauvegarde Supabase echouee', error));
     }

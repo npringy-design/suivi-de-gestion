@@ -1,4 +1,5 @@
 import type { SiteId } from '@/lib/sites';
+import { threeWayMerge } from '@/lib/threeWayMerge';
 import { getValidAccessToken } from '@/services/supabaseAuth';
 
 export type CloudAppState = {
@@ -27,6 +28,20 @@ export type CloudSaveOptions = {
 export type CloudAppStateRecord = {
   value: CloudAppState;
   updated_at: string | null;
+};
+
+export type CloudSegmentName = 'config2025' | 'customEvents' | 'edgChargesConfig' | 'companySettings' | 'payrollCosts';
+
+// Valeurs réellement écrites dans le cloud après fusion avec la version distante (sauvegarde partielle
+// seulement) : le poste les réapplique pour voir les saisies des autres postes.
+export type CloudSaveMerged = {
+  months: Record<string, unknown>; // clé « annee:mois »
+  segments: Partial<Record<CloudSegmentName, unknown>>;
+};
+
+export type CloudSaveResult = CloudAppStateRecord & {
+  merged?: CloudSaveMerged;
+  conflicts?: string[];
 };
 
 type CloudSegmentRecord<T = unknown> = {
@@ -161,7 +176,9 @@ const mergeMonthRefs = (
   });
 };
 
-const fetchStateRecord = async <T = unknown>(siteId: SiteId, key: string): Promise<CloudSegmentRecord<T> | null> => {
+// updateBase : mémorise la valeur lue comme « dernière valeur connue » de ce poste (base de la fusion à
+// trois voies). À désactiver pour une lecture dont le résultat n'est pas appliqué à l'état local.
+const fetchStateRecord = async <T = unknown>(siteId: SiteId, key: string, updateBase = true): Promise<CloudSegmentRecord<T> | null> => {
   const url = `${appStateUrl()}?site_id=eq.${encodeURIComponent(siteId)}&key=eq.${encodeURIComponent(key)}&select=value,updated_at&limit=1`;
   const response = await fetch(url, { headers: await buildHeaders() });
 
@@ -171,7 +188,7 @@ const fetchStateRecord = async <T = unknown>(siteId: SiteId, key: string): Promi
 
   const rows = await response.json() as Array<CloudSegmentRecord<T>>;
   const row = rows[0] || null;
-  if (row) cacheSegment(siteId, key, row.value);
+  if (row && updateBase) cacheSegment(siteId, key, row.value);
   return row;
 };
 
@@ -301,6 +318,8 @@ export const fetchCloudMonth = async (
 export const fetchCloudYearMonths = async (
   siteId: SiteId,
   year: string | number,
+  // Mois « annee:mois » modifiés localement et non poussés : leur lecture ne doit pas devenir la base de fusion.
+  keepBaseFor?: ReadonlySet<string>,
 ): Promise<Array<{ month: number; value: unknown }>> => {
   assertConfigured();
   const manifest = await fetchSegmentManifest(siteId);
@@ -312,7 +331,7 @@ export const fetchCloudYearMonths = async (
 
   const rows = await Promise.all(
     monthRefs.map(async ({ month }) => {
-      const row = await fetchStateRecord(siteId, monthSegmentKey(yearStr, month));
+      const row = await fetchStateRecord(siteId, monthSegmentKey(yearStr, month), !keepBaseFor?.has(`${yearStr}:${month}`));
       return row?.value != null ? { month: Number(month), value: row.value } : null;
     }),
   );
@@ -355,23 +374,156 @@ const saveStateRecord = async (siteId: SiteId, key: string, value: unknown): Pro
   return rows[0] || null;
 };
 
+// ─── Sauvegarde partielle avec fusion à trois voies ────────────────────────────
+
+// Lecture directe de la ligne, sans toucher au cache ni à la base de fusion.
+const readRemoteValue = async (siteId: SiteId, key: string): Promise<unknown> => {
+  const row = await fetchStateRecord(siteId, key, false);
+  return row?.value ?? undefined;
+};
+
+const writeStateRecord = async (siteId: SiteId, key: string, value: unknown): Promise<void> => {
+  const response = await fetch(`${appStateUrl()}?on_conflict=site_id,key&select=value,updated_at`, {
+    method: 'POST',
+    headers: {
+      ...(await buildHeaders()),
+      Prefer: 'resolution=merge-duplicates,return=representation',
+    },
+    body: JSON.stringify({ site_id: siteId, key, value }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Sauvegarde Supabase impossible (${response.status})${await readError(response)}`);
+  }
+};
+
+// Dernière valeur lue ou écrite par ce poste pour cette clé (cache savedSegmentCache), undefined si inconnue.
+const baseValueOf = (siteId: SiteId, key: string): unknown => {
+  const raw = segmentCacheFor(siteId).get(key);
+  if (raw === undefined) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return parsed === null ? undefined : parsed;
+  } catch {
+    return undefined;
+  }
+};
+
+// Relit la ligne sans cache, fusionne (base, local, distant), écrit le résultat si le cloud doit changer,
+// puis mémorise la valeur fusionnée comme nouvelle base.
+const mergeAndWriteRecord = async (
+  siteId: SiteId,
+  key: string,
+  local: unknown,
+  label: string,
+): Promise<{ merged: unknown; conflicts: string[] }> => {
+  const remote = await readRemoteValue(siteId, key);
+  const { merged, conflicts } = threeWayMerge<unknown>(baseValueOf(siteId, key), local, remote);
+  if (remote === undefined || JSON.stringify(merged) !== JSON.stringify(remote)) {
+    await writeStateRecord(siteId, key, merged);
+  }
+  cacheSegment(siteId, key, merged);
+  return { merged, conflicts: conflicts.map(path => `${label} > ${path}`) };
+};
+
+const saveCloudAppStateMerged = async (
+  siteId: SiteId,
+  value: CloudAppState,
+  options: CloudSaveOptions,
+): Promise<CloudSaveResult> => {
+  const allData = value.allData && typeof value.allData === 'object'
+    ? value.allData as Record<string, Record<string, unknown>>
+    : {};
+
+  const monthEntries = Object.entries(allData).flatMap(([year, months]) => {
+    if (!months || typeof months !== 'object') return [];
+    return Object.entries(months as Record<string, unknown>)
+      .filter(([, monthValue]) => monthValue && typeof monthValue === 'object')
+      .map(([month, monthValue]) => ({ year: String(year), month: String(month), value: monthValue }))
+      .filter(item => !options.dirtyMonths || options.dirtyMonths.has(`${item.year}:${item.month}`));
+  });
+
+  const segmentValues: Record<CloudSegmentName, unknown> = {
+    config2025: value.config2025 && typeof value.config2025 === 'object' ? value.config2025 : {},
+    customEvents: Array.isArray(value.customEvents) ? value.customEvents : [],
+    edgChargesConfig: value.edgChargesConfig && typeof value.edgChargesConfig === 'object' ? value.edgChargesConfig : {},
+    companySettings: value.companySettings && typeof value.companySettings === 'object' ? value.companySettings : null,
+    payrollCosts: value.payrollCosts && typeof value.payrollCosts === 'object' ? value.payrollCosts : null,
+  };
+  const segmentKeys: Record<CloudSegmentName, string> = {
+    config2025: configSegmentKey,
+    customEvents: customEventsSegmentKey,
+    edgChargesConfig: edgChargesConfigSegmentKey,
+    companySettings: companySettingsSegmentKey,
+    payrollCosts: payrollCostsSegmentKey,
+  };
+  const segmentNames = (Object.keys(segmentKeys) as CloudSegmentName[])
+    .filter(name => (!options.dirtySegments || options.dirtySegments[name] === true) && segmentValues[name] !== null);
+
+  const merged: CloudSaveMerged = { months: {}, segments: {} };
+  const conflicts: string[] = [];
+
+  await Promise.all([
+    ...monthEntries.map(async item => {
+      const result = await mergeAndWriteRecord(siteId, monthSegmentKey(item.year, item.month), item.value, `${item.year}:${item.month}`);
+      merged.months[`${item.year}:${item.month}`] = result.merged;
+      conflicts.push(...result.conflicts);
+    }),
+    ...segmentNames.map(async name => {
+      const result = await mergeAndWriteRecord(siteId, segmentKeys[name], segmentValues[name], name);
+      merged.segments[name] = result.merged;
+      conflicts.push(...result.conflicts);
+    }),
+  ]);
+
+  // Manifeste : relu sans cache juste avant l'écriture, union des mois (jamais de retrait), pour ne pas
+  // rendre invisibles les mois créés entre-temps par un autre poste.
+  const remoteManifestValue = await readRemoteValue(siteId, manifestKey);
+  const remoteManifest = isSegmentManifest(remoteManifestValue) ? remoteManifestValue : null;
+  const cachedManifest = manifestCache.get(siteId) ?? null;
+  const manifestMonths = mergeMonthRefs(
+    mergeMonthRefs(remoteManifest?.months || [], cachedManifest?.months || []),
+    monthEntries.map(({ year, month }) => ({ year, month })),
+  );
+  const manifest: CloudSegmentManifest = {
+    version: 2,
+    mode: 'monthly_segments',
+    months: manifestMonths,
+    segments: {
+      config2025: true,
+      customEvents: true,
+      edgChargesConfig: true,
+      companySettings: segmentValues.companySettings != null || remoteManifest?.segments?.companySettings === true,
+      payrollCosts: segmentValues.payrollCosts != null || remoteManifest?.segments?.payrollCosts === true,
+    },
+    savedAt: remoteManifest?.savedAt || cachedManifest?.savedAt || new Date().toISOString(),
+  };
+  if (!remoteManifest || JSON.stringify(manifest) !== JSON.stringify(remoteManifest)) {
+    await writeStateRecord(siteId, manifestKey, manifest);
+  }
+  cacheSegment(siteId, manifestKey, manifest);
+  manifestCache.set(siteId, manifest);
+
+  return { value, updated_at: null, merged, conflicts };
+};
+
 export const saveCloudAppState = async (
   siteId: SiteId,
   value: CloudAppState,
   options?: CloudSaveOptions,
-): Promise<CloudAppStateRecord | null> => {
+): Promise<CloudSaveResult | null> => {
   assertConfigured();
+
+  // Sauvegarde partielle (snapshots modifiés) : fusion à trois voies avec la version distante.
+  if (options) return saveCloudAppStateMerged(siteId, value, options);
 
   const allData = value.allData && typeof value.allData === 'object'
     ? value.allData as Record<string, Record<string, unknown>>
     : {};
 
-  // Sans options : sauvegarde complète (amorçage initial du cloud).
-  // Avec options : seuls les snapshots marqués modifiés sont poussés.
-  const shouldSaveMonth = (year: string, month: string) =>
-    !options?.dirtyMonths || options.dirtyMonths.has(`${year}:${month}`);
-  const shouldSaveSegment = (segment: 'config2025' | 'customEvents' | 'edgChargesConfig') =>
-    !options?.dirtySegments || options.dirtySegments[segment] === true;
+  // Sans options : sauvegarde complète (amorçage initial du cloud), tout est poussé.
+  const shouldSaveMonth = (_year: string, _month: string) => true;
+  const shouldSaveSegment = (_segment: string) => true;
 
   const monthEntries = Object.entries(allData).flatMap(([year, months]) => {
     if (!months || typeof months !== 'object') return [];
@@ -398,10 +550,10 @@ export const saveCloudAppState = async (
     shouldSaveSegment('config2025') ? saveStateRecord(siteId, configSegmentKey, config2025) : Promise.resolve(null),
     shouldSaveSegment('customEvents') ? saveStateRecord(siteId, customEventsSegmentKey, customEvents) : Promise.resolve(null),
     shouldSaveSegment('edgChargesConfig') ? saveStateRecord(siteId, edgChargesConfigSegmentKey, edgChargesConfig) : Promise.resolve(null),
-    (shouldSaveSegment as (s: string) => boolean)('companySettings') && companySettings
+    shouldSaveSegment('companySettings') && companySettings
       ? saveStateRecord(siteId, companySettingsSegmentKey, companySettings)
       : Promise.resolve(null),
-    (shouldSaveSegment as (s: string) => boolean)('payrollCosts') && payrollCosts
+    shouldSaveSegment('payrollCosts') && payrollCosts
       ? saveStateRecord(siteId, payrollCostsSegmentKey, payrollCosts)
       : Promise.resolve(null),
   ]);
