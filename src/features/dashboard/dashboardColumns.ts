@@ -156,8 +156,20 @@ export const dashboardColumns: DashboardColumn[] = [
 export function buildDynamicColumns(
   salariesConfig: Record<string, SalarieRow[]> | undefined,
   purchaseSupplierNames: Record<number, string>,
+  targets: { productiviteCible?: number; objectifFraisPersonnel?: number } = {},
 ): DashboardColumn[] {
   const cols = [...dashboardColumns];
+  // En-têtes des objectifs : valeurs des Paramètres du site, libellé sans chiffre si absentes.
+  const fmtTarget = (value: number | undefined, suffix: string) =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0 ? `\n${value.toFixed(2).replace('.', ',')}${suffix}` : '';
+  [73, 88].forEach(idx => {
+    cols[idx] = [...cols[idx]];
+    cols[idx][1] = `PRODUCTIVITE\nCIBLE${fmtTarget(targets.productiviteCible, '')}`;
+  });
+  [74, 89].forEach(idx => {
+    cols[idx] = [...cols[idx]];
+    cols[idx][1] = `BUDGET FRAIS\nPERSONNEL${fmtTarget(targets.objectifFraisPersonnel, '%')}`;
+  });
   if (salariesConfig) {
     // Update FRAIS DE PERSONNEL PROJECTION headers
     const updateHeader = (idx: number, category: string, label: string, department?: 'cuisine' | 'salle') => {

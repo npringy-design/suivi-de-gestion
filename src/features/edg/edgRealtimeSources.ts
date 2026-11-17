@@ -50,24 +50,25 @@ const hasDayColumnValue = (monthData: DashboardData, month: number, year: number
   return Object.values(indices).some(rIdx => (monthData[`${rIdx}-${col}`] ?? '').trim() !== '');
 };
 
-// Les blocs Frais Généraux ne sont pas indexés par jour : on additionne toutes les cellules
-// du mois portant ce numéro de colonne, quel que soit le rIdx.
-const sumAnyRowColumn = (monthData: DashboardData, col: number): number => {
+// Colonnes saisies hors grille jour (contrats mensualisés, anciennes cellules Frais Généraux) : on
+// additionne les cellules de ce numéro de colonne sur toutes les lignes de saisie, en excluant les lignes
+// de totaux (semaine, box FG, mois) que computeDashboardData remplit avec la somme des autres lignes.
+const totalRowIndices = (month: number, year: number): Set<number> =>
+  new Set(buildMonthRows(year, month).flatMap((row, idx) => (row.type === 'day' ? [] : [idx])));
+
+const anyRowColumnEntries = (monthData: DashboardData, month: number, year: number, col: number): string[] => {
+  const excluded = totalRowIndices(month, year);
   const suffix = `-${col}`;
-  let total = 0;
-  Object.entries(monthData).forEach(([key, value]) => {
-    if (key.endsWith(suffix) && /^\d+-\d+$/.test(key)) {
-      total += parseMoneyValue(value);
-    }
-  });
-  return total;
+  return Object.entries(monthData)
+    .filter(([key]) => key.endsWith(suffix) && /^\d+-\d+$/.test(key) && !excluded.has(Number(key.split('-')[0])))
+    .map(([, value]) => value ?? '');
 };
 
-const hasAnyRowColumnValue = (monthData: DashboardData, col: number): boolean => {
-  const suffix = `-${col}`;
-  return Object.entries(monthData).some(([key, value]) =>
-    key.endsWith(suffix) && /^\d+-\d+$/.test(key) && (value ?? '').trim() !== '');
-};
+const sumAnyRowColumn = (monthData: DashboardData, month: number, year: number, col: number): number =>
+  anyRowColumnEntries(monthData, month, year, col).reduce((total, value) => total + parseMoneyValue(value), 0);
+
+const hasAnyRowColumnValue = (monthData: DashboardData, month: number, year: number, col: number): boolean =>
+  anyRowColumnEntries(monthData, month, year, col).some(value => value.trim() !== '');
 
 export const getCaRealiseMonth = (monthData: DashboardData, month: number, year: number): number =>
   sumDayColumn(monthData, month, year, 21);
@@ -109,17 +110,17 @@ export const getAutoRealiseValues = (
   if (hasDayColumnValue(monthData, month, year, 87)) {
     values.cout_salaires = -sumDayColumn(monthData, month, year, 87);
   }
-  if (hasAnyRowColumnValue(monthData, 97)) {
-    values.entretien_locaux = -sumAnyRowColumn(monthData, 97);
+  if (hasAnyRowColumnValue(monthData, month, year, 97)) {
+    values.entretien_locaux = -sumAnyRowColumn(monthData, month, year, 97);
   }
-  if (hasAnyRowColumnValue(monthData, 101)) {
-    values.produits_entretien = -sumAnyRowColumn(monthData, 101);
+  if (hasAnyRowColumnValue(monthData, month, year, 101)) {
+    values.produits_entretien = -sumAnyRowColumn(monthData, month, year, 101);
   }
-  if (hasAnyRowColumnValue(monthData, 105)) {
-    values.pub_locale = -sumAnyRowColumn(monthData, 105);
+  if (hasAnyRowColumnValue(monthData, month, year, 105)) {
+    values.pub_locale = -sumAnyRowColumn(monthData, month, year, 105);
   }
-  if (hasAnyRowColumnValue(monthData, 107)) {
-    values.contrats_maintenance = -sumAnyRowColumn(monthData, 107);
+  if (hasAnyRowColumnValue(monthData, month, year, 107)) {
+    values.contrats_maintenance = -sumAnyRowColumn(monthData, month, year, 107);
   }
 
   return values;

@@ -22,7 +22,9 @@ interface ConfigurationChiffre2025Props {
 }
 
 export default function ConfigurationChiffre2025({ onBack, hideHeader = false }: ConfigurationChiffre2025Props) {
-  const { config2025, updateConfig2025 } = useData();
+  const { config2025, updateConfig2025, companySettings } = useData();
+  const targetLabel = (value: number | undefined, suffix: string) =>
+    typeof value === 'number' && value > 0 ? ` (${value.toFixed(2).replace('.', ',')}${suffix})` : '';
   const [activeTab, setActiveTab] = useState<'mensuel' | 'hebdo_ca' | 'hebdo_rh'>('mensuel');
 
   const handleMensuelChange = (monthIndex: number, field: string, value: string) => {
@@ -249,8 +251,8 @@ export default function ConfigurationChiffre2025({ onBack, hideHeader = false }:
           <th style={{ ...thBase, background: '#fff7ed' }}>APPRENTI<br/>SALLE<br/>(8,39 €)</th>
           
           <th style={{ ...thBase, background: '#ffedd5' }}>COUT<br/>GLOBAL</th>
-          <th style={{ ...thBase, background: '#ffedd5' }}>PRODUCTIVITE<br/>CIBLE<br/>(50,00)</th>
-          <th style={{ ...thBase, background: '#ffedd5' }}>FRAIS DE PERSONNEL<br/>REEL<br/>(35,00%)</th>
+          <th style={{ ...thBase, background: '#ffedd5' }}>PRODUCTIVITE<br/>CIBLE<br/>{targetLabel(companySettings.productiviteCible, '')}</th>
+          <th style={{ ...thBase, background: '#ffedd5' }}>FRAIS DE PERSONNEL<br/>REEL<br/>{targetLabel(companySettings.objectifFraisPersonnel, '%')}</th>
           <th style={{ ...thBase, background: '#ffedd5' }}>RATIO<br/>A DATE</th>
           <th style={{ ...thBase, background: '#ffedd5' }}>RATIO<br/>ANNUEL %</th>
         </tr>

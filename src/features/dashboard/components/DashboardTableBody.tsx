@@ -28,6 +28,7 @@ type DashboardTableBodyProps = {
   month: number;
   updateDashboard: (month: number, key: string, value: string) => void;
   fgBoxNames: string[][];
+  monthlyResults: Record<string, string>;
   accent: string;
   ACCENT_GOLD: string;
   HEADER_BG: string;
@@ -52,6 +53,7 @@ export default function DashboardTableBody({
   month,
   updateDashboard,
   fgBoxNames,
+  monthlyResults,
   accent,
   ACCENT_GOLD,
   HEADER_BG,
@@ -369,73 +371,8 @@ export default function DashboardTableBody({
               return <td key={`c-${rIdx}-${cIdx}`} className={`border-b border-b-slate-100 bg-[#fffdf5] ${rightBorder}`} />;
             }
 
-            // Calculs
-            const mtIdx = rows.findIndex(r => r.type === 'month_total');
-            const CA_BUDGET = 107967;
-            const CA_N1 = 159802;
-            const fg = (b: number, g: number) => parseMoneyValue(calculatedData[`fg-total-${b}-${g}`]);
-            const caR  = parseMoneyValue(calculatedData[`${mtIdx}-24`]);
-            const cvtsMidi = parseMoneyValue(calculatedData[`${mtIdx}-6`]);
-            const cvtsSoir = parseMoneyValue(calculatedData[`${mtIdx}-8`]);
-            const cvtsResto = cvtsMidi + cvtsSoir;
-            const cvtsLimo  = parseMoneyValue(calculatedData[`${mtIdx}-14`]);
-            const caLimo    = parseMoneyValue(calculatedData[`${mtIdx}-2`]);
-            const wDays = rows.filter(r => r.type === 'day' && !r.isWeekend).length;
-            const stockInit  = parseMoneyValue(cellData['rm_stock_init']);
-            const stockFinal = parseMoneyValue(cellData['rm_stock_final']);
-            const varStock   = stockFinal - stockInit;
-            const achatHM    = parseMoneyValue(cellData['rm_achat_hm']);
-            const achatTotal = parseMoneyValue(cellData['rm_achat_total']);
-            const ratioObj   = 24.50;
-            const consoObj   = caR * (ratioObj / 100);
-            const consoReel  = achatTotal + varStock;
-            const ratioReel  = caR > 0 ? (consoReel / caR) * 100 : 0;
-            const margeReel  = caR - consoReel;
-            const nbHBudget  = parseMoneyValue(calculatedData[`${mtIdx}-61`]);
-            const coutProj   = parseMoneyValue(calculatedData[`${mtIdx}-72`]);
-            const nbHReel    = parseMoneyValue(calculatedData[`${mtIdx}-76`]);
-            const coutReel   = parseMoneyValue(calculatedData[`${mtIdx}-87`]);
-
-            const f = (n: number, dec = 2) => n.toFixed(dec).replace('.', ',');
-            const eur = (n: number) => f(n) + ' €';
-
-            const rmValues: Record<string, string> = {
-              ca_realise:    eur(caR),
-              ca_budget:     eur(CA_BUDGET),
-              var_n1:        CA_N1 > 0 ? f((caR/CA_N1 - 1)*100) + '%' : '',
-              diff_n1:       eur(caR - CA_N1),
-              diff_budget:   eur(caR - CA_BUDGET),
-              cvts_resto:    cvtsResto.toFixed(0),
-              moy_cvts_resto:wDays > 0 ? (cvtsResto/wDays).toFixed(0) : '0',
-              tm_resto:      cvtsResto > 0 ? eur(caR / cvtsResto) : '',
-              cvts_limo:     cvtsLimo.toFixed(0),
-              moy_cvts_limo: wDays > 0 ? (cvtsLimo/wDays).toFixed(0) : '0',
-              tm_limo:       cvtsLimo > 0 ? eur(caLimo / cvtsLimo) : '',
-              rm_stock_init: stockInit ? eur(stockInit) : '0,00 €',
-              rm_stock_final:stockFinal ? eur(stockFinal) : '',
-              var_stock:     f(varStock, 0),
-              rm_achat_hm:   achatHM  ? eur(achatHM)  : '0,00 €',
-              rm_achat_total:achatTotal ? eur(achatTotal) : '0,00 €',
-              ratio_obj:     ratioObj.toFixed(2) + '%',
-              conso_obj:     eur(consoObj),
-              ratio_reel:    f(ratioReel) + '%',
-              marge_reel:    eur(margeReel),
-              conso_reel:    eur(consoReel),
-              ecart_ratio:   f(ratioReel - ratioObj),
-              ecart_conso:   f(consoReel - consoObj, 0),
-              nb_h_budget:   nbHBudget ? f(nbHBudget) : '',
-              sc_obj:        caR > 0 ? f((coutProj/caR)*100) + '%' : '',
-              prod_budget:   nbHBudget > 0 ? f(caR/nbHBudget) : '',
-              nb_h_reel:     nbHReel ? f(nbHReel) : '',
-              ecart_h:       f(nbHReel - nbHBudget),
-              sc_reel:       caR > 0 ? f((coutReel/caR)*100) + '%' : '',
-              ecart_sc:      caR > 0 ? f(((coutReel-coutProj)/caR)*100) + '%' : '',
-              prod_reel:     nbHReel > 0 ? f(caR/nbHReel) : '',
-              fg_0:  eur(fg(0,0)), fg_1: eur(fg(1,0)),  fg_2: eur(fg(2,0)),
-              fg_3:  eur(fg(3,0)), fg_4: eur(fg(0,1)),  fg_5: eur(fg(0,2)),
-              fg_6:  eur(fg(1,1)), fg_7: eur(fg(2,1)),  fg_8: eur(fg(2,2)),
-              fg_9:  eur(fg(3,1)), fg_10: eur(fg(1,2)), fg_11: eur(fg(3,2)),
-            };
+            const rmValues = monthlyResults;
+            const eur = (n: number) => n.toFixed(2).replace('.', ',') + ' €';
 
             const isRed = rmRow.style === 'red';
             const dispVal = rmRow.key ? (rmValues[rmRow.key] || '') : '';

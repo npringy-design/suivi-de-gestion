@@ -47,12 +47,16 @@ describe('edgRealtimeSources', () => {
     expect(auto.cout_salaires).toBe(-1200);
   });
 
-  it('somme les colonnes Frais Généraux (97/101/105/107) sur toutes les lignes, pas seulement les jours', () => {
+  it('somme les colonnes 97/101/105/107 sur les lignes de saisie, sans les lignes de totaux', () => {
+    // Janvier 2026 : lignes 12 et 20 = totaux semaine, 37 = total mois (remplies par computeDashboardData).
     const md: Record<string, string> = {
-      '12-97': '150',
+      '11-97': '150',
       '13-97': '50',
+      '12-97': '200',
+      '19-101': '80',
       '20-101': '80',
       '31-105': '300',
+      '37-105': '300',
       '9-107': '900',
     };
 

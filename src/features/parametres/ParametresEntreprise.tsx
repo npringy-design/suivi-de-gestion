@@ -12,6 +12,8 @@ import { useData } from '@/contexts/DataContext';
 import type { CompanySettings, PurchaseSection, PurchaseSupplier } from '@/contexts/DataContext';
 import type { CaisseSysteme, CaisseColumn } from '@/types/dataTypes';
 import { MONTH_NAMES_FULL, withAuBureauSuppliers } from '@/features/parametres/companySettingsDefaults';
+import { BTN_TEAL, CARD, CARD_HEADER, CARD_TITLE, INPUT, LABEL } from '@/features/parametres/parametresStyles';
+import SectionObjectifs from '@/features/parametres/components/SectionObjectifs';
 import { getSiteBrand } from '@/lib/sites';
 import { SCHOOL_ZONES, resolveSchoolZone } from '@/lib/schoolHolidays';
 
@@ -19,20 +21,6 @@ type Props = { onBack: () => void };
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const CARD = 'overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm';
-const CARD_HEADER = 'flex items-center gap-3 border-b border-slate-100 px-5 py-4 bg-gradient-to-r from-[#0f4c5c] to-[#0c3d4a]';
-const CARD_TITLE = 'text-base font-black text-white';
-const LABEL = 'text-[10px] font-black uppercase tracking-[0.18em] text-slate-500';
-const INPUT = [
-  'w-full rounded-lg border border-slate-200 bg-white',
-  'px-3 py-2 text-sm font-semibold text-slate-800',
-  'outline-none transition focus:border-teal-500 focus:ring-1 focus:ring-teal-500/20 placeholder:text-slate-400',
-].join(' ');
-const BTN_TEAL = [
-  'flex items-center gap-1.5 rounded-lg px-3 py-1.5',
-  'bg-gradient-to-r from-[#0d9488] to-[#0f766e]',
-  'text-xs font-black text-white shadow-sm transition hover:brightness-110',
-].join(' ');
 
 // ─── Icônes ───────────────────────────────────────────────────────────────────
 
@@ -862,7 +850,7 @@ export default function ParametresEntreprise({ onBack }: Props) {
               <div className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/60">Paramétrage</div>
               <h1 className="mt-1 text-3xl font-black tracking-tight text-amber-50">Paramètres Entreprise</h1>
               <p className="mt-2 text-sm font-medium text-cyan-50/70">
-                Identité du site, sections d'achats, systèmes d'encaissement — utilisés par le Suivi Quotidien V2.
+                Identité du site, objectifs, sections d'achats, systèmes d'encaissement — utilisés par le Suivi Quotidien V2.
               </p>
             </div>
             <button
@@ -880,6 +868,7 @@ export default function ParametresEntreprise({ onBack }: Props) {
         </header>
 
         <SectionIdentite settings={local} onChange={setLocal} />
+        <SectionObjectifs settings={local} onChange={setLocal} />
         <SectionAchats settings={local} onChange={setLocal} />
         <SectionSystemesEncaissement settings={local} onChange={setLocal} />
 

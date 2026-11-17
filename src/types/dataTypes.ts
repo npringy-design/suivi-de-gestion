@@ -397,6 +397,8 @@ export type CompanySettings = {
   splitCuisineSalle: boolean;
   // Objectif frais de personnel en %.
   objectifFraisPersonnel: number;
+  // Objectif de coût matière (food cost) en % du CA HT total ; absent = non renseigné.
+  objectifFoodCost?: number;
   // Productivité cible (CA HT / h travaillée).
   productiviteCible: number;
   // Coordonnées géographiques pour la météo.

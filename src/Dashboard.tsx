@@ -65,6 +65,7 @@ import DashboardDailyRecapModal from '@/features/dashboard/components/DashboardD
 import DashboardImportModal from '@/features/dashboard/components/DashboardImportModal';
 import DashboardTableHeader from '@/features/dashboard/components/DashboardTableHeader';
 import DashboardTableBody from '@/features/dashboard/components/DashboardTableBody';
+import { computeMonthlyResults } from '@/features/dashboard/monthlyResults';
 // ─────────────────────────────────────────────────────────────────────────────
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import jsPDF from 'jspdf';
@@ -227,8 +228,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     [companySettings.purchaseSections],
   );
   const dynamicColumns = useMemo(
-    () => buildDynamicColumns(globalData[month]?.salariesConfig?.categories, { ...defaultPurchaseNames, ...purchaseSupplierNames }),
-    [C, globalData, month, purchaseSupplierNames, defaultPurchaseNames],
+    () => buildDynamicColumns(globalData[month]?.salariesConfig?.categories, { ...defaultPurchaseNames, ...purchaseSupplierNames }, companySettings),
+    [C, globalData, month, purchaseSupplierNames, defaultPurchaseNames, companySettings],
   );
 
   useEffect(() => {
@@ -585,6 +586,19 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const total = getCaRealiseMonth(computeMonthDashboard(previousMonthData, month, year - 1, hasLimonade), month, year - 1);
     return total > 0 ? total : null;
   }, [allData[year - 1]?.[month], month, year, hasLimonade]);
+  const previousStockFinal = month === 0
+    ? allData[year - 1]?.[11]?.dashboard?.rm_stock_final
+    : allData[year]?.[month - 1]?.dashboard?.rm_stock_final;
+  const monthlyResults = useMemo(() => computeMonthlyResults({
+    calculatedData,
+    cellData,
+    rows,
+    dynamicColumns,
+    caN1: caN1Month,
+    previousStockFinal,
+    objectifFoodCost: companySettings.objectifFoodCost,
+    hasLimonade,
+  }), [calculatedData, cellData, rows, dynamicColumns, caN1Month, previousStockFinal, companySettings.objectifFoodCost, hasLimonade]);
 
   const selectedMonthLabel = `${monthNames[month]} ${year}`;
   const monthSelectOptions = monthNames.map((label, value) => ({ label, value }));
@@ -1155,6 +1169,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   month={month}
                   updateDashboard={updateDashboard}
                   fgBoxNames={fgBoxNames}
+                  monthlyResults={monthlyResults}
                   accent={completAccent}
                   ACCENT_GOLD={ACCENT_GOLD}
                   HEADER_BG={HEADER_BG}

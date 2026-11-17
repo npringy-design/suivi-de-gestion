@@ -262,6 +262,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   const dataN1 = allData[YEAR - 1] ?? {};
   const {
     getVal: getValN1,
+    getFgTotal: getFgTotalN1,
     caByMonth: caByMonthN1,
   } = useRecapAnnuelData(dataN1, YEAR - 1);
 
@@ -545,7 +546,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const varRatioFPN1   = ratioFPN1 > 0 ? fp(ratioFP - ratioFPN1) : '—';
         // Frais Généraux
         const fgt         = getFgTotal(mi);
-        const fgtN1       = getValN1(mi, 0); // pas de col FG N-1 directe — on garde ratio seul
+        const fgtN1       = getFgTotalN1(mi);
         const ratioFG     = ca > 0 ? (fgt / ca) * 100 : 0;
         const ratioFGN1   = caN1 > 0 && fgtN1 > 0 ? (fgtN1 / caN1) * 100 : 0;
         const varRatioFG  = ratioFGN1 > 0 ? fp(ratioFG - ratioFGN1) : '—';
