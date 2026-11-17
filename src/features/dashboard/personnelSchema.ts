@@ -1,10 +1,13 @@
 import type { MonthData, PersonnelSchema } from '@/types/dataTypes';
+import {
+  HOURS_PROJECTION_CUISINE_SALLE,
+  HOURS_PROJECTION_GLOBAL,
+  HOURS_REALISE_CUISINE_SALLE,
+  HOURS_REALISE_GLOBAL,
+} from '@/features/dashboard/dashboardColumnIndex';
 
-const GLOBAL_HOUR_COLS = new Set([130, 131, 132, 133, 134, 135, 136, 137, 138, 139]);
-const CUISINE_SALLE_HOUR_COLS = new Set([
-  62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-  77, 78, 79, 80, 81, 82, 83, 84, 85, 86,
-]);
+const GLOBAL_HOUR_COLS = new Set<number>([...HOURS_PROJECTION_GLOBAL, ...HOURS_REALISE_GLOBAL]);
+const CUISINE_SALLE_HOUR_COLS = new Set<number>([...HOURS_PROJECTION_CUISINE_SALLE, ...HOURS_REALISE_CUISINE_SALLE]);
 
 const hasHoursIn = (cells: Record<string, string>, cols: ReadonlySet<number>): boolean =>
   Object.entries(cells).some(([key, value]) => {

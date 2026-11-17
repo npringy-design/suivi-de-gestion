@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Lot 6 — Colonnes nommées et test de cohérence entre pages)
+
+- `features/dashboard/dashboardColumnIndex.ts` : index nommés des colonnes du Suivi quotidien (`COL.REALISE_CA_JOUR`, `COL.ACHAT_TOTAL`, `COL.COUT_REALISE`, heures par catégorie…). Utilisés par les calculs partagés entre pages : edgRealtimeSources.ts, monthlyResults.ts, personnelSchema.ts, Reporting.tsx, appairage N-1 de dashboardCalculations.ts. `dashboardColumnIndex.test.ts` vérifie chaque nom contre les en-têtes de dashboardColumns.ts : une colonne insérée ou déplacée casse le test au lieu de fausser un calcul. Règle : toute nouvelle lecture de colonne passe par `COL` ; les index en chiffres restants (dashboardCalculations.ts, composants du Suivi) se convertissent quand on les touche.
+- `features/dashboard/crossPageConsistency.test.ts` : un même mois (Hippo et Au Bureau) donne le même CA, CA budget, couverts, achats, masse salariale (mois sans schéma enregistré), frais généraux et contrats sur le chemin Suivi quotidien / Accueil, EDG / Récap / Reporting et Résultats mensuels.
+- tsc OK, build OK.
+
 ## 17/11/2026 (Lot 5 — Isolement entre sites : réglages, imports, droits Supabase)
 
 - Noms de fournisseurs renommés dans l'en-tête du Suivi quotidien : stockés dans `companySettings.purchaseColumnNames` (propre au site, synchronisé) au lieu d'une clé locale commune à tous les sites et jamais envoyée au cloud (`useDashboardPurchaseSuppliers`, ancienne clé supprimée).

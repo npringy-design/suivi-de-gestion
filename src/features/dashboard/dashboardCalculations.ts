@@ -3,6 +3,7 @@ import { getDashboardRowIndices, getISOWeekAndYear, parseHourInputToDecimal } fr
 import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import type { SalarieRow, PersonnelSchema } from '@/contexts/DataContext';
 import type { DashboardColumn, DashboardRow } from './dashboardTypes';
+import { COL } from './dashboardColumnIndex';
 
 
 export type FgBoxLayout =
@@ -144,7 +145,12 @@ export const getN1TargetDate = (currentDate: Date): Date => {
 
 // Cellules N-1 utiles à l'appairage d'un mois : mois N-1, plus les 7 derniers jours du mois précédent et
 // les 7 premiers du mois suivant (l'appairage ISO décale de -7 à +2 jours, ex. toute l'année 2027).
-const N1_PAIRING_COLS = [6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27];
+const N1_PAIRING_COLS = [
+  COL.BUDGET_CVTS_MIDI, COL.BUDGET_TM_MIDI, COL.BUDGET_CVTS_SOIR, COL.BUDGET_TM_SOIR,
+  COL.BUDGET_CVTS_LIMONADE, COL.BUDGET_TM_LIMONADE,
+  COL.REALISE_CA_VAE, COL.REALISE_CA_MIDI, COL.REALISE_CA_SOIR, COL.REALISE_CA_LIMONADE,
+  COL.REALISE_CVTS_MIDI, COL.REALISE_CVTS_SOIR,
+];
 export function buildNMinus1Data(
   allData: Record<number, Record<number, { dashboard?: Record<string, string> }>>,
   year: number,

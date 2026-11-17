@@ -1,4 +1,5 @@
 import { getDashboardRowIndices } from '@/lib/utils';
+import { COL } from '@/features/dashboard/dashboardColumnIndex';
 import { resolvePersonnelSchema } from '@/features/dashboard/personnelSchema';
 import { parseMoneyValue } from '@/lib/money';
 import type { FixedMonthlyCost, MonthData } from '@/types/dataTypes';
@@ -73,10 +74,10 @@ const hasAnyRowColumnValue = (monthData: DashboardData, month: number, year: num
   anyRowColumnEntries(monthData, month, year, col).some(value => value.trim() !== '');
 
 export const getCaRealiseMonth = (monthData: DashboardData, month: number, year: number): number =>
-  sumDayColumn(monthData, month, year, 21);
+  sumDayColumn(monthData, month, year, COL.REALISE_CA_JOUR);
 
 export const getCaBudgetMonth = (monthData: DashboardData, month: number, year: number): number =>
-  sumDayColumn(monthData, month, year, 3);
+  sumDayColumn(monthData, month, year, COL.BUDGET_CA_JOUR);
 
 export const getMonthProgress = (monthData: DashboardData, month: number, year: number): number => {
   const indices = getDashboardRowIndices(month, year);
@@ -84,13 +85,13 @@ export const getMonthProgress = (monthData: DashboardData, month: number, year: 
   const numDays = dayNumbers.length;
   if (numDays === 0) return 0;
 
-  const filledDayNumbers = dayNumbers.filter(day => (monthData[`${indices[day]}-21`] ?? '').trim() !== '');
+  const filledDayNumbers = dayNumbers.filter(day => (monthData[`${indices[day]}-${COL.REALISE_CA_JOUR}`] ?? '').trim() !== '');
   if (filledDayNumbers.length === 0) return 0;
 
-  const budgetCaMonth = sumDayColumn(monthData, month, year, 3);
+  const budgetCaMonth = sumDayColumn(monthData, month, year, COL.BUDGET_CA_JOUR);
   if (budgetCaMonth > 0) {
     const filledBudgetCa = filledDayNumbers.reduce(
-      (sum, day) => sum + parseMoneyValue(monthData[`${indices[day]}-3`]),
+      (sum, day) => sum + parseMoneyValue(monthData[`${indices[day]}-${COL.BUDGET_CA_JOUR}`]),
       0,
     );
     return Math.min(1, Math.max(0, filledBudgetCa / budgetCaMonth));
@@ -108,8 +109,8 @@ export const getMonthFixedCosts = (
   year: number,
   fixedMonthlyCosts: readonly FixedMonthlyCost[] | undefined,
 ): { byKey: Record<string, number>; total: number } => {
-  if (hasAnyRowColumnValue(monthData, month, year, 107)) {
-    const total = sumAnyRowColumn(monthData, month, year, 107);
+  if (hasAnyRowColumnValue(monthData, month, year, COL.CONTRAT_MONTANT)) {
+    const total = sumAnyRowColumn(monthData, month, year, COL.CONTRAT_MONTANT);
     return { byKey: { [DEFAULT_FIXED_COST_EDG_KEY]: total }, total };
   }
   const byKey: Record<string, number> = {};
@@ -140,11 +141,11 @@ export const getAutoRealiseValues = (
     values[key] = (values[key] ?? 0) - amount;
   };
 
-  if (hasDayColumnValue(monthData, month, year, 58)) {
-    values.achats_food = -sumDayColumn(monthData, month, year, 58);
+  if (hasDayColumnValue(monthData, month, year, COL.ACHAT_TOTAL)) {
+    values.achats_food = -sumDayColumn(monthData, month, year, COL.ACHAT_TOTAL);
   }
-  if (hasDayColumnValue(monthData, month, year, 87)) {
-    values.cout_salaires = -sumDayColumn(monthData, month, year, 87);
+  if (hasDayColumnValue(monthData, month, year, COL.COUT_REALISE)) {
+    values.cout_salaires = -sumDayColumn(monthData, month, year, COL.COUT_REALISE);
   }
 
   const fgMapping = resolveEdgFgMapping(context.edgFgMapping);
@@ -183,8 +184,8 @@ export const EMPTY_LIMONADE_STATS: LimonadeStats = {
 export const getLimonadeMonthStats = (monthData: DashboardData, month: number, year: number): LimonadeStats => {
   if (!monthData || Object.keys(monthData).length === 0) return EMPTY_LIMONADE_STATS;
   return {
-    budget: { ca: sumDayColumn(monthData, month, year, 2), cvts: sumDayColumn(monthData, month, year, 14) },
-    realise: { ca: sumDayColumn(monthData, month, year, 20), cvts: sumDayColumn(monthData, month, year, 34) },
+    budget: { ca: sumDayColumn(monthData, month, year, COL.BUDGET_CA_LIMONADE), cvts: sumDayColumn(monthData, month, year, COL.BUDGET_CVTS_LIMONADE) },
+    realise: { ca: sumDayColumn(monthData, month, year, COL.REALISE_CA_LIMONADE), cvts: sumDayColumn(monthData, month, year, COL.REALISE_CVTS_LIMONADE) },
   };
 };
 

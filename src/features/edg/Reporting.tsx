@@ -5,6 +5,7 @@ import { parseMoneyValue } from '@/lib/money';
 
 import { getDashboardRowIndices, getISOWeekAndYear } from '@/lib/utils';
 import { resolvePersonnelSchema } from '@/features/dashboard/personnelSchema';
+import { HOURS_REALISE_CUISINE_SALLE, HOURS_REALISE_GLOBAL } from '@/features/dashboard/dashboardColumnIndex';
 import { formatDecimal, formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 import { useHasLimonade } from '@/lib/useHasLimonade';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
@@ -20,8 +21,8 @@ const GREEN = '#10b981';
 // Colonnes du Suivi quotidien sommées par le Reporting : 17 VAE, 18/19 CA midi/soir, 20 CA limonade,
 // 21 CA jour, 25/27/29 couverts midi/soir/jour, 34 couverts limonade, 76 total heures, 87 coût global.
 type DayTotals = Record<number, number>;
-const HOURS_COLS_CUISINE_SALLE = [77, 78, 79, 80, 81, 82, 83, 84, 85, 86];
-const HOURS_COLS_GLOBAL = [135, 136, 137, 138, 139];
+const HOURS_COLS_CUISINE_SALLE: readonly number[] = HOURS_REALISE_CUISINE_SALLE;
+const HOURS_COLS_GLOBAL: readonly number[] = HOURS_REALISE_GLOBAL;
 const REPORTING_COLS = [17, 18, 19, 20, 21, 25, 27, 29, 34, 76, 87, ...HOURS_COLS_CUISINE_SALLE, ...HOURS_COLS_GLOBAL];
 const isHoursCol = (col: number): boolean => HOURS_COLS_CUISINE_SALLE.includes(col) || HOURS_COLS_GLOBAL.includes(col);
 const zeroTotals = (): DayTotals => Object.fromEntries(REPORTING_COLS.map(col => [col, 0]));

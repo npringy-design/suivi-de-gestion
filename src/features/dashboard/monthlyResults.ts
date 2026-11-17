@@ -1,4 +1,5 @@
 import { parseMoneyValue } from '@/lib/money';
+import { COL } from '@/features/dashboard/dashboardColumnIndex';
 import type { DashboardColumn, DashboardRow } from '@/features/dashboard/dashboardTypes';
 
 // Bloc « Résultats mensuels » du Suivi quotidien : lit uniquement les colonnes déjà calculées par
@@ -27,14 +28,14 @@ export function computeMonthlyResults({
   const daysWith = (col: number) => dayIdx.filter(i => parseMoneyValue(calculatedData[`${i}-${col}`]) > 0).length;
   const fg = (b: number, g: number) => parseMoneyValue(calculatedData[`fg-total-${b}-${g}`]);
 
-  const caR = mt(21);
-  const caBudget = mt(3);
-  const cvtsResto = mt(29);
-  const caResto = mt(18) + mt(19);
-  const cvtsLimo = mt(34);
-  const caLimo = mt(20);
-  const joursResto = daysWith(29);
-  const joursLimo = daysWith(34);
+  const caR = mt(COL.REALISE_CA_JOUR);
+  const caBudget = mt(COL.BUDGET_CA_JOUR);
+  const cvtsResto = mt(COL.REALISE_CVTS_JOUR);
+  const caResto = mt(COL.REALISE_CA_MIDI) + mt(COL.REALISE_CA_SOIR);
+  const cvtsLimo = mt(COL.REALISE_CVTS_LIMONADE);
+  const caLimo = mt(COL.REALISE_CA_LIMONADE);
+  const joursResto = daysWith(COL.REALISE_CVTS_JOUR);
+  const joursLimo = daysWith(COL.REALISE_CVTS_LIMONADE);
 
   const hasStockInit = previousStockFinal !== undefined && previousStockFinal.trim() !== '';
   const stockInit = hasStockInit ? parseMoneyValue(previousStockFinal) : 0;
@@ -42,8 +43,8 @@ export function computeMonthlyResults({
   const stockFinal = parseMoneyValue(cellData['rm_stock_final']);
   const varStock = stockFinal - stockInit;
 
-  const achatTotal = mt(58);
-  const metroCol = dynamicColumns.findIndex((c, i) => i >= 45 && i <= 57 && String(c[2] ?? '').toUpperCase().includes('METRO'));
+  const achatTotal = mt(COL.ACHAT_TOTAL);
+  const metroCol = dynamicColumns.findIndex((c, i) => i >= COL.ACHAT_PREMIER && i <= COL.ACHAT_DERNIER && String(c[2] ?? '').toUpperCase().includes('METRO'));
   const achatHorsMetro = metroCol >= 0 ? achatTotal - mt(metroCol) : null;
 
   const consoReel = stockInit + achatTotal - stockFinal;
@@ -51,10 +52,10 @@ export function computeMonthlyResults({
   const hasObjectif = typeof objectifFoodCost === 'number' && Number.isFinite(objectifFoodCost) && objectifFoodCost > 0;
   const consoObj = hasObjectif ? caR * (objectifFoodCost / 100) : 0;
 
-  const nbHBudget = mt(61);
-  const coutProj = mt(72);
-  const nbHReel = mt(76);
-  const coutReel = mt(87);
+  const nbHBudget = mt(COL.HEURES_PROJECTION);
+  const coutProj = mt(COL.COUT_PROJECTION);
+  const nbHReel = mt(COL.HEURES_REALISE);
+  const coutReel = mt(COL.COUT_REALISE);
 
   return {
     ca_realise: eur(caR),
