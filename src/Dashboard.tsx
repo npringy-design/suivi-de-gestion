@@ -4,6 +4,7 @@ import DashboardAnalysisView from '@/pages/DashboardAnalysisView';
 import { useData, type SalarieRow } from '@/contexts/DataContext';
 import { useSiteBrandTheme } from '@/lib/siteBrandTheme';
 import { useHasLimonade } from '@/lib/useHasLimonade';
+import { computeMonthDashboard, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
 import { getPurchaseLabelOverrides } from '@/features/parametres/purchaseLabels';
 import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import { parseMoneyValue } from '@/lib/money';
@@ -574,6 +575,17 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     month: 'long',
     year: 'numeric',
   }) || selectedDayRow?.label || '';
+  // CA réalisé total (col 21) du même mois calendaire de l'année N-1 ; l'année N-1 est chargée au besoin.
+  useEffect(() => {
+    void loadYearFromCloud(year - 1);
+  }, [year, loadYearFromCloud]);
+  const caN1Month = useMemo(() => {
+    const previousMonthData = allData[year - 1]?.[month];
+    if (!previousMonthData) return null;
+    const total = getCaRealiseMonth(computeMonthDashboard(previousMonthData, month, year - 1, hasLimonade), month, year - 1);
+    return total > 0 ? total : null;
+  }, [allData[year - 1]?.[month], month, year, hasLimonade]);
+
   const selectedMonthLabel = `${monthNames[month]} ${year}`;
   const monthSelectOptions = monthNames.map((label, value) => ({ label, value }));
   const yearSelectOptions = [year - 1, year, year + 1];
@@ -1121,6 +1133,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
                   otherGroups={otherGroups}
                   updatePurchaseSupplierName={updatePurchaseSupplierName}
                   companyLabel={companySettings.companyName}
+                  caN1={caN1Month}
+                  caN1Period={`${monthNames[month]} ${year - 1}`}
                 />
                 <DashboardTableBody
                   rows={rows}

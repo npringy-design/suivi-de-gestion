@@ -1,6 +1,7 @@
 import React from 'react';
 
 import type { VisibleDashboardColumn } from '@/features/dashboard/dashboardTypes';
+import { formatEuro } from '@/lib/formatters';
 import { accentForGroup, sectionChrome, tint } from '@/lib/tableChrome';
 
 type GroupItem = { name: string; colspan: number; bg: string };
@@ -24,6 +25,9 @@ type DashboardTableHeaderProps = {
   // Nom affiché en en-tête de colonne Date (companySettings.companyName, par site) — plus de
   // nom codé en dur, le même tableau doit afficher le bon nom sur chaque site.
   companyLabel: string;
+  // CA réalisé total du même mois de l'année N-1 (null : aucun jour réalisé) et sa période, pour l'infobulle.
+  caN1: number | null;
+  caN1Period: string;
 };
 
 export default function DashboardTableHeader({
@@ -42,6 +46,8 @@ export default function DashboardTableHeader({
   otherGroups,
   updatePurchaseSupplierName,
   companyLabel,
+  caN1,
+  caN1Period,
 }: DashboardTableHeaderProps) {
   const chrome = sectionChrome(accent);
   const previsionsChrome = sectionChrome('#d97706');
@@ -56,7 +62,7 @@ export default function DashboardTableHeader({
             <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '0.15em', color: chrome.subHeaderColor }}>DATE</span>
             <div style={{ background: tint(accent, 0.12), border: `1px solid ${tint(accent, 0.3)}`, borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '100%', boxSizing: 'border-box' }}>
               <span style={{ fontSize: 10, color: '#78716c', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{companyLabel}</span>
-              <span style={{ fontSize: 12, color: accent, fontWeight: 800, whiteSpace: 'nowrap' }}>CA N-1 : 159 802 €</span>
+              <span title={`CA réalisé de ${caN1Period}`} style={{ fontSize: 12, color: accent, fontWeight: 800, whiteSpace: 'nowrap' }}>CA N-1 : {caN1 === null ? '—' : `${formatEuro(caN1)} €`}</span>
             </div>
           </div>
         </th>

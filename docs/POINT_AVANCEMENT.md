@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Suivi quotidien : case « CA N-1 » reliée aux données)
+
+- Suivi quotidien, « CA N-1 » : `DashboardTableHeader` n'affiche plus « 159 802 € » en dur ; `Dashboard.tsx` calcule `caN1Month` = col 21 du même mois calendaire de l'année N-1 (`computeMonthDashboard` + `getCaRealiseMonth`, `hasLimonade` du site, `null` sans jour réalisé) et charge N-1 par `loadYearFromCloud(year - 1)` ; props `caN1` et `caN1Period` (infobulle « CA réalisé de <mois> <année N-1> », la période est passée en plus de `caN1` pour construire le libellé) ; « CA N-1 : — » si null. Vérifié sur BURO CORM V25 : octobre 2025 = 132 535,05 € (127 008,44 € sans la limonade, d'où `hasLimonade`). Non vérifié : captures d'écran (connexion Supabase requise), Hippo à l'écran. tsc OK, build OK.
+
 ## 17/11/2026 (Planification budgétaire : limonade, sites Au Bureau)
 
 - Planification limonade, plancher de TM N-1 : `limonadeTmFloors` (`planningTargets.ts`, modèle de `tmFloors` : plancher du mois et de l'année = plus haut du TM réalisé sur les jours avec CA et couverts > 0 et du TM budget sur les jours avec couverts budget > 0 ; mois partiel exclu) et `enforceLimonadeTmFloors` appliqué en sortie de `planLimonadeDays` (TM relevé mois par mois puis sur l'année, couverts réduits avec report d'arrondi, CA du mois conservé à quelques TM près) ; version restaurant et plan restaurant non touchés (test). Vérifié sur BURO CORM (V25 + V26, cible 2027) : TM limonade de chacun des 12 mois ≥ plancher 2026 du même mois (ex. janvier 9,76 €, avril 8,85 €), CA des mois conservés, janvier saisi à 1 000 € : TM 9,79 € au plancher et 103 couverts. tsc OK.
