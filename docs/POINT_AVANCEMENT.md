@@ -5,6 +5,14 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Import Excel : lecture rapide + contrôle limonade V25)
+
+- jszip : `jszip` `^3.10.1` déclaré dans `dependencies` (déjà présent en transitif via exceljs, même version, `package-lock.json` mis à jour à la main pour l'entrée racine) ; chargé uniquement par `await import('jszip')` (chunk séparé). Aucun parsing modifié. build OK.
+- Filtrage des onglets : `importHelpers/excelSheetFilter.ts` (`keepOnlyImportSheets`, `isImportSheetName`, `BUDGET_SHEET_TOKENS`, `normalizeExcelSheetName`) retire du zip les onglets inutiles (workbook.xml, rels, feuilles, calcChain, definedNames, Content_Types) ; garde les onglets mensuels, `ANNUEL BUDGET` et `01`–`12` ; `findBudgetSheetName` utilise la même source (`isImportSheetName`). Repli sur le classeur complet avec message dans le statut si le filtrage échoue. 4 tests (classeur synthétique). tsc OK.
+- Imports V26 et V25 : `loadImportWorkbook` (statuts « Préparation du fichier (N onglets utiles sur M)… » puis « Lecture des onglets… »), retour au navigateur entre chaque mois (`setTimeout 0`). Mesuré sur BURO CORM V26 (250 onglets → 25) : 2,5 s au total (filtre 0,5 s + chargement 2 s) contre 44,6 s, mêmes valeurs (oct. 2026 : CA limonade 8 751,42 €, 1 073 couverts, budget 715). V25 : 1,5 s. tsc OK.
+- Contrôle limonade V25 : `components/ImportLimonadePreview.tsx` (`ImportLimonadeRow`, `ImportLimonadeTotals`) utilisé par les deux aperçus de `DashboardImportModal.tsx` : ligne « Limonade : cts · TM · CA · réalisé » sous chaque jour et total limonade (budget CA / couverts, réalisé CA / couverts) dans l'en-tête ; rien pour Hippo. Vérifié sur le V25 réel : 01/10/2025 = cts 20 · TM 8,50 € · CA 170,00 € (réalisé 237,83 €, 23 couverts). build OK.
+- Non vérifié : captures d'écran, temps dans le navigateur (mesures faites en Node : pas de fenêtre « attendre / quitter » observée), import d'un fichier Hippo V26 (même chemin de code, filtrage seul modifié).
+
 ## 17/11/2026 (Au Bureau : corrections limonade + fournisseurs V25/V26)
 
 - Écart couverts : `dashboardCalculations.ts` n'écrase plus la col 33 (reste `29 − 10`, couverts restaurant) ; cols 120/121/122 inchangées. Test ajouté. tsc OK.

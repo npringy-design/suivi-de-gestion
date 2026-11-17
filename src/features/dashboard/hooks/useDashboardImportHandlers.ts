@@ -70,6 +70,12 @@ import {
 import { parseEdgBudgetSheet } from '@/features/dashboard/importHelpers/edgBudgetImport';
 import { parseEdgMonthlySheets } from '@/features/dashboard/importHelpers/edgMonthlySheetsImport';
 import { useHasLimonade } from '@/lib/useHasLimonade';
+import {
+  BUDGET_SHEET_TOKENS,
+  isImportSheetName,
+  keepOnlyImportSheets,
+  normalizeExcelSheetName,
+} from '@/features/dashboard/importHelpers/excelSheetFilter';
 
 type DayRowEntry = { row: DashboardRow; index: number };
 type ImportPreviewItem = { label: string; value: string };
@@ -276,53 +282,52 @@ export function useDashboardImportHandlers({
     return -1;
   };
   
-  const budgetSheetTokens = [
-    ['JANV', 'JANVIER'],
-    ['FEV', 'FEVR', 'FEVRIER', 'FÉV', 'FÉVR', 'FÉVRIER'],
-    ['MARS'],
-    ['AVRIL', 'AVR'],
-    ['MAI'],
-    ['JUIN'],
-    ['JUIL', 'JUILLET'],
-    ['AOUT', 'AOÛT'],
-    ['SEPT', 'SEPTEMBRE'],
-    ['OCT', 'OCTOBRE'],
-    ['NOV', 'NOVEMBRE'],
-    ['DEC', 'DÉC', 'DECEMBRE', 'DÉCEMBRE'],
-  ];
-  
-  const normalizeExcelSheetName = (value: string) => value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^A-Z0-9]+/gi, ' ')
-    .trim()
-    .toUpperCase();
-  
   const findBudgetSheetName = (workbook: WorkbookType, targetMonth: number, targetYear: number) => {
     const yearShort = String(targetYear).slice(-2);
     const yearFull = String(targetYear);
-    const tokens = budgetSheetTokens[targetMonth] || [];
+    const tokens = BUDGET_SHEET_TOKENS[targetMonth] || [];
     return workbook.worksheets.find(ws => {
       const normalized = normalizeExcelSheetName(ws.name);
-      if (/BILAN|SAISIE|REPORTING|ANNUEL|REALISE/.test(normalized)) return false;
+      if (!isImportSheetName(ws.name)) return false;
       const hasMonth = tokens.some(token => normalized.includes(normalizeExcelSheetName(token)));
       const parts = normalized.split(/s+/);
       const hasYear = normalized.includes(yearFull) || parts.includes(yearShort) || normalized.endsWith(yearShort);
       return hasMonth && hasYear;
     })?.name || '';
   };
+
+  const yieldToBrowser = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+
+  // Charge le classeur en ne gardant que les onglets utiles ; repli sur le fichier complet si le filtrage échoue.
+  const loadImportWorkbook = async (file: File, setStatus: (status: string) => void, label: string) => {
+    const original = await file.arrayBuffer();
+    let source = original;
+    let warning = '';
+    try {
+      source = await keepOnlyImportSheets(original, isImportSheetName, ({ kept, total }) => {
+        setStatus(`Préparation du fichier (${kept} onglets utiles sur ${total})…`);
+      });
+    } catch (error) {
+      warning = ` Filtrage des onglets impossible (${error instanceof Error ? error.message : 'erreur inconnue'}) : classeur complet lu, plus lent.`;
+    }
+    setStatus(`${label} — Lecture des onglets…${warning}`);
+    await yieldToBrowser();
+    const workbook = new Workbook();
+    await workbook.xlsx.load(source);
+    return { workbook, warning };
+  };
   
   const handleHistoricalBudgetExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setHistoricalBudgetStatus('Lecture locale du budget historique Excel — tous les mois du classeur...');
+    setHistoricalBudgetStatus('Préparation du fichier…');
   
     try {
-      const workbook = new Workbook();
-      await workbook.xlsx.load(await file.arrayBuffer());
+      const { workbook, warning: filterWarning } = await loadImportWorkbook(file, setHistoricalBudgetStatus, 'Budget');
       const allDemarques: typeof pendingDemarquesRef.current = [];
       pendingFgRef.current = [];
       for (let mi = 0; mi < 12; mi++) {
+        await yieldToBrowser();
         const sheetNameDem = findBudgetSheetName(workbook, mi, year);
         if (!sheetNameDem) continue;
         const sheetDem = workbook.getWorksheet(sheetNameDem);
@@ -335,6 +340,7 @@ export function useDashboardImportHandlers({
       const unrecognizedSuppliers = new Set<string>();
   
       for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+        await yieldToBrowser();
         const sheetName = findBudgetSheetName(workbook, monthIndex, year);
         if (!sheetName) continue;
         matchedSheets.push(sheetName);
@@ -414,9 +420,9 @@ export function useDashboardImportHandlers({
       setImportPreview([]);
       setCaisseImportPreviews([]);
       setInvoiceImportPreviews([]);
-      setHistoricalBudgetStatus(previews.length > 0
+      setHistoricalBudgetStatus((previews.length > 0
         ? `${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.${formatSupplierWarnings(unrecognizedSuppliers)}`
-        : `Aucune prévision trouvée. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`);
+        : `Aucune prévision trouvée. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`) + filterWarning);
 
       // Budget EDG annuel : feuille "ANNUEL BUDGET" indépendante du Suivi Quotidien,
       // importée directement (pas de preview/validation, contrairement aux jours ci-dessus).
@@ -532,16 +538,15 @@ export function useDashboardImportHandlers({
   const handleHistoricalV25ExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setHistoricalV25Status('Lecture locale du budget historique Excel V25 — tous les mois du classeur...');
+    setHistoricalV25Status('Préparation du fichier…');
 
     try {
-      const { Workbook } = await import('exceljs');
-      const workbook = new Workbook();
-      await workbook.xlsx.load(await file.arrayBuffer());
+      const { workbook, warning: filterWarning } = await loadImportWorkbook(file, setHistoricalV25Status, 'Budget V25');
 
       const allDemarques: typeof pendingV25DemarquesRef.current = [];
       pendingV25FgRef.current = [];
       for (let mi = 0; mi < 12; mi++) {
+        await yieldToBrowser();
         const sheetNameDem = findBudgetSheetName(workbook, mi, year);
         if (!sheetNameDem) continue;
         const sheetDem = workbook.getWorksheet(sheetNameDem);
@@ -555,6 +560,7 @@ export function useDashboardImportHandlers({
       const unrecognizedSuppliers = new Set<string>();
 
       for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+        await yieldToBrowser();
         const sheetName = findBudgetSheetName(workbook, monthIndex, year);
         if (!sheetName) continue;
         matchedSheets.push(sheetName);
@@ -641,7 +647,7 @@ export function useDashboardImportHandlers({
       setHistoricalV25Status((previews.length > 0
         ? `Budget V25 — ${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.${formatSupplierWarnings(unrecognizedSuppliers)}`
         : `Budget V25 — Aucun réalisé trouvé. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`)
-        + (edgMonthsImported > 0 ? ` EDG mensuel : ${edgMonthsImported} mois importés.` : ''));
+        + (edgMonthsImported > 0 ? ` EDG mensuel : ${edgMonthsImported} mois importés.` : '') + filterWarning);
     } catch (error) {
       setHistoricalV25Status('Erreur import budget V25 : ' + (error instanceof Error ? error.message : 'lecture impossible'));
     } finally {

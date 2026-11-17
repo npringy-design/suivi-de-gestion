@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileSpreadsheet, FileText, Receipt, Upload, Users, X } from 'lucide-react';
-import { useHasLimonade } from '@/lib/useHasLimonade';
+import { ImportLimonadeRow, ImportLimonadeTotals } from './ImportLimonadePreview';
 
 import type {
   CaisseImportPreview,
@@ -149,7 +149,6 @@ export default function DashboardImportModal({
   importStatus,
   importPreview,
 }: DashboardImportModalProps) {
-  const hasLimonade = useHasLimonade();
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 10 : 18 }}>
       <div style={{ background: '#fff', borderRadius: 16, width: salaryImportPreviews.length > 0 ? 'min(1040px, 100%)' : 'min(680px, 100%)', maxWidth: 'calc(100vw - 36px)', maxHeight: 'calc(100vh - 36px)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -264,6 +263,7 @@ export default function DashboardImportModal({
                   <div style={{ fontSize: 12, fontWeight: 950, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.04em' }}>Prévisualisation budget historique</div>
                   <div style={{ marginTop: 3, fontSize: 12, color: '#64748b', fontWeight: 700 }}>
                     {historicalBudgetPreviews.length} jours · CA recalculé estimé {formatImportedCurrencyLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.caTotal, 0))} · Couverts {formatImportedIntegerLabel(historicalBudgetPreviews.reduce((sum, item) => sum + item.couvertsTotal, 0))}
+                    <ImportLimonadeTotals items={historicalBudgetPreviews} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -280,7 +280,7 @@ export default function DashboardImportModal({
                     <div style={{ fontSize: 11, fontWeight: 800 }}>TM midi {formatImportedCurrencyLabel(item.tmMidi)}</div>
                     <div style={{ fontSize: 11, fontWeight: 800 }}>Cts soir {formatImportedIntegerLabel(item.couvertsSoir)}</div>
                     <div style={{ fontSize: 11, fontWeight: 800 }}>TM soir {formatImportedCurrencyLabel(item.tmSoir)}</div>
-                    {hasLimonade && <div style={{ gridColumn: '1 / -1', fontSize: 11, fontWeight: 800, color: '#0e7490' }}>Limonade : cts {formatImportedIntegerLabel(item.couvertsLimo)} · TM {formatImportedCurrencyLabel(item.tmLimo)} · CA {formatImportedCurrencyLabel(item.caLimo)}</div>}
+                    <ImportLimonadeRow item={item} color="#0e7490" />
                   </div>
                 ))}
                 {historicalBudgetPreviews.length > 40 && <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>+ {historicalBudgetPreviews.length - 40} lignes non affichees dans l'aperçu</div>}
@@ -301,6 +301,7 @@ export default function DashboardImportModal({
                   <div style={{ fontSize: 12, fontWeight: 950, color: '#5b21b6', textTransform: 'uppercase', letterSpacing: '.04em' }}>Prévisualisation historique V25</div>
                   <div style={{ marginTop: 3, fontSize: 12, color: '#64748b', fontWeight: 700 }}>
                     {historicalV25Previews.length} jours · CA total {formatImportedCurrencyLabel(historicalV25Previews.reduce((sum, item) => sum + item.caTotal, 0))} · Couverts {formatImportedIntegerLabel(historicalV25Previews.reduce((sum, item) => sum + item.couvertsTotal, 0))}
+                    <ImportLimonadeTotals items={historicalV25Previews} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -317,6 +318,7 @@ export default function DashboardImportModal({
                     <div style={{ fontSize: 11, fontWeight: 800 }}>CA soir {formatImportedCurrencyLabel(item.realiseSoir)}</div>
                     <div style={{ fontSize: 11, fontWeight: 800 }}>Cts midi {formatImportedIntegerLabel(item.realiseCouvertsMidi)}</div>
                     <div style={{ fontSize: 11, fontWeight: 800 }}>Cts soir {formatImportedIntegerLabel(item.realiseCouvertsSoir)}</div>
+                    <ImportLimonadeRow item={item} color="#5b21b6" />
                   </div>
                 ))}
                 {historicalV25Previews.length > 40 && <div style={{ fontSize: 12, fontWeight: 800, color: '#5b21b6' }}>+ {historicalV25Previews.length - 40} lignes non affichees dans l'aperçu</div>}
