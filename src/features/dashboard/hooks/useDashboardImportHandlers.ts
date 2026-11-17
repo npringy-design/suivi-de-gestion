@@ -81,6 +81,7 @@ import {
   isImportSheetName,
   keepOnlyImportSheets,
   normalizeExcelSheetName,
+  detectWorkbookYear,
 } from '@/features/dashboard/importHelpers/excelSheetFilter';
 
 type DayRowEntry = { row: DashboardRow; index: number };
@@ -143,9 +144,9 @@ type UseDashboardImportHandlersParams = {
   ) => void;
   loadYearFromCloud: (year: number) => Promise<Record<number, MonthData>>;
   setSelectedYear: (year: number) => void;
-  updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
-  importEdgBudget: (valuesByMonth: Record<number, Record<string, string>>) => void;
-  importEdgRealise: (valuesByMonth: Record<number, Record<string, string>>) => void;
+  updatePersonnelSchema: (month: number, schema: PersonnelSchema, targetYear?: number) => void;
+  importEdgBudget: (valuesByMonth: Record<number, Record<string, string>>, targetYear?: number) => void;
+  importEdgRealise: (valuesByMonth: Record<number, Record<string, string>>, targetYear?: number) => void;
   markMonthsAsLoaded: (year: number, months: number[]) => void;
   saveNow: () => Promise<void>;
   // Tous les mois chargés : le dernier import où figure un nom donne sa catégorie et son service.
@@ -201,6 +202,14 @@ export function useDashboardImportHandlers({
   const { companySettings, updateCompanySettings } = useData();
   // Noms des fournisseurs lus dans l'en-tête de l'Excel (sites Hippo), appliqués aux réglages à la validation.
   const pendingSupplierNamesRef = React.useRef<Record<number, string>>({});
+  // Année des fichiers en cours d'import (lue dans les onglets du classeur), indépendante de l'année affichée.
+  const budgetImportYearRef = React.useRef<number>(year);
+  const v25ImportYearRef = React.useRef<number>(year);
+  const detectImportYear = async (workbook: WorkbookType): Promise<number> => {
+    const fileYear = detectWorkbookYear(workbook.worksheets.map(ws => ws.name)) ?? year;
+    if (fileYear !== year) await loadYearFromCloud(fileYear);
+    return fileYear;
+  };
   // Fichier qui semble appartenir à un autre restaurant (nom du fichier ou texte du PDF) : confirmation.
   const confirmImportForActiveSite = (sources: string[]): boolean => {
     const warnings = sources.map(source => foreignSiteWarning(source, activeSiteId)).filter((w): w is string => w !== null);
@@ -235,9 +244,9 @@ export function useDashboardImportHandlers({
         }
       }
     }
-    for (let i = 0; i < 25; i++) {
-      const rowIndex = dayRows[i]?.index;
-      if (rowIndex === undefined) continue;
+    // Toutes les lignes du mois (au plus 31 jours + 6 totaux) : efface aussi des contrats écrits par erreur
+    // sur des lignes de total par les anciens imports.
+    for (let rowIndex = 0; rowIndex < 40; rowIndex++) {
       // Contrats mensualisés : nom (106) et montant (107). 112/113 (limonade midi) : anciennes valeurs écrites à tort.
       writeCell(monthIndex, `${rowIndex}-106`, '');
       writeCell(monthIndex, `${rowIndex}-107`, '');
@@ -326,7 +335,7 @@ export function useDashboardImportHandlers({
       const normalized = normalizeExcelSheetName(ws.name);
       if (!isImportSheetName(ws.name)) return false;
       const hasMonth = tokens.some(token => normalized.includes(normalizeExcelSheetName(token)));
-      const parts = normalized.split(/s+/);
+      const parts = normalized.split(/\s+/);
       const hasYear = normalized.includes(yearFull) || parts.includes(yearShort) || normalized.endsWith(yearShort);
       return hasMonth && hasYear;
     })?.name || '';
@@ -365,12 +374,14 @@ export function useDashboardImportHandlers({
   
     try {
       const { workbook, warning: filterWarning } = await loadImportWorkbook(file, setHistoricalBudgetStatus, 'Budget');
+      const importYear = await detectImportYear(workbook);
+      budgetImportYearRef.current = importYear;
       const allDemarques: typeof pendingDemarquesRef.current = [];
       pendingFgRef.current = [];
       pendingSupplierNamesRef.current = {};
       for (let mi = 0; mi < 12; mi++) {
         await yieldToBrowser();
-        const sheetNameDem = findBudgetSheetName(workbook, mi, year);
+        const sheetNameDem = findBudgetSheetName(workbook, mi, importYear);
         if (!sheetNameDem) continue;
         const sheetDem = workbook.getWorksheet(sheetNameDem);
         if (sheetDem) allDemarques.push(...extractHistoricalDemarques(sheetDem));
@@ -383,7 +394,7 @@ export function useDashboardImportHandlers({
   
       for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
         await yieldToBrowser();
-        const sheetName = findBudgetSheetName(workbook, monthIndex, year);
+        const sheetName = findBudgetSheetName(workbook, monthIndex, importYear);
         if (!sheetName) continue;
         matchedSheets.push(sheetName);
         const sheet = workbook.getWorksheet(sheetName);
@@ -403,9 +414,9 @@ export function useDashboardImportHandlers({
           const parsedDate = parseHistoricalBudgetCellDate(dateCell);
           if (!parsedDate) continue;
           scannedDateRows += 1;
-          if (parsedDate.getFullYear() !== year || parsedDate.getMonth() !== monthIndex) continue;
+          if (parsedDate.getFullYear() !== importYear || parsedDate.getMonth() !== monthIndex) continue;
           const day = parsedDate.getDate();
-          const rowIndex = getDashboardRowIndexForDay(year, monthIndex, day);
+          const rowIndex = getDashboardRowIndexForDay(importYear, monthIndex, day);
           if (rowIndex < 0) continue;
 
           const values = getHistoricalBudgetRowValues(sheet, rowNumber, budgetColMap);
@@ -465,13 +476,13 @@ export function useDashboardImportHandlers({
       setCaisseImportPreviews([]);
       setInvoiceImportPreviews([]);
       setHistoricalBudgetStatus((previews.length > 0
-        ? `${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.${formatSupplierWarnings(unrecognizedSuppliers)}`
+        ? `Fichier ${importYear} — ${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.${formatSupplierWarnings(unrecognizedSuppliers)}`
         : `Aucune prévision trouvée. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`) + filterWarning);
 
       // Budget EDG annuel : feuille "ANNUEL BUDGET" indépendante du Suivi Quotidien,
       // importée directement (pas de preview/validation, contrairement aux jours ci-dessus).
       const edgBudgetValues = parseEdgBudgetSheet(workbook);
-      if (edgBudgetValues) importEdgBudget(edgBudgetValues);
+      if (edgBudgetValues) importEdgBudget(edgBudgetValues, importYear);
     } catch (error) {
       setHistoricalBudgetStatus('Erreur import budget Excel : ' + (error instanceof Error ? error.message : 'lecture impossible'));
     } finally {
@@ -482,10 +493,10 @@ export function useDashboardImportHandlers({
   // Purge les colonnes personnel de TOUS les jours des mois importés, y compris ceux absents
   // des previews (jours sans donnée source) : un import précédent a pu y laisser des valeurs
   // dupliquées, et le reset par ligne importée ne les atteint jamais.
-  const resetHistoricalPayrollForMonths = (months: number[], writeCell: CellWriter) => {
+  const resetHistoricalPayrollForMonths = (months: number[], writeCell: CellWriter, targetYear: number) => {
     months.forEach(monthIndex => {
       for (let day = 1; day <= 31; day += 1) {
-        const rowIndex = getDashboardRowIndexForDay(year, monthIndex, day);
+        const rowIndex = getDashboardRowIndexForDay(targetYear, monthIndex, day);
         if (rowIndex < 0) continue;
         [...historicalPayrollAllCols, ...historicalPayrollAllGlobalCols].forEach(col => {
           writeCell(monthIndex, rowIndex + '-' + col, '');
@@ -496,6 +507,7 @@ export function useDashboardImportHandlers({
 
   const applyHistoricalBudgetExcelImport = async () => {
     const { patch, writeCell } = createCellPatch();
+    const importYear = budgetImportYearRef.current;
     const usedColsByMonth = new Map<number, Set<number>>();
     historicalBudgetPreviews.forEach(item => {
       if (!usedColsByMonth.has(item.month)) usedColsByMonth.set(item.month, new Set());
@@ -503,9 +515,9 @@ export function useDashboardImportHandlers({
     });
     usedColsByMonth.forEach((cols, monthIdx) => {
       const usesGlobal = historicalPayrollAllGlobalCols.some(col => cols.has(col));
-      updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle');
+      updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle', importYear);
     });
-    resetHistoricalPayrollForMonths([...new Set(historicalBudgetPreviews.map(item => item.month))], writeCell);
+    resetHistoricalPayrollForMonths([...new Set(historicalBudgetPreviews.map(item => item.month))], writeCell, importYear);
     historicalBudgetPreviews.forEach(item => {
       writeCell(item.month, item.rowIndex + '-0', item.caMidi > 0 ? formatImportedNumber(item.caMidi) : '');
       writeCell(item.month, item.rowIndex + '-1', item.caSoir > 0 ? formatImportedNumber(item.caSoir) : '');
@@ -552,7 +564,7 @@ export function useDashboardImportHandlers({
       });
       contrats.forEach(contrat => {
         // Une ligne jour du mois importé par contrat (jours 1, 2, 3…), jamais une ligne de total de semaine.
-        const rowIndex = getDashboardRowIndexForDay(year, monthIndex, contrat.dIdx + 1);
+        const rowIndex = getDashboardRowIndexForDay(importYear, monthIndex, contrat.dIdx + 1);
         if (rowIndex < 0) return;
         writeCell(monthIndex, `${rowIndex}-106`, contrat.nom);
         writeCell(monthIndex, `${rowIndex}-107`, contrat.montant.toFixed(2));
@@ -563,9 +575,9 @@ export function useDashboardImportHandlers({
     // Import démarques
     pendingDemarquesRef.current.forEach(dem => {
       const [demYear, demMonth, demDay] = dem.date.split('-').map(Number);
-      if (demYear !== year) return;
+      if (demYear !== importYear) return;
       const demMonthIndex = demMonth - 1;
-      const rowIndex = getDashboardRowIndexForDay(year, demMonthIndex, demDay);
+      const rowIndex = getDashboardRowIndexForDay(importYear, demMonthIndex, demDay);
       if (rowIndex < 0) return;
       if (dem.personnel > 0) writeCell(demMonthIndex, `${rowIndex}-39`, dem.personnel.toFixed(2));
       if (dem.operationnel > 0) writeCell(demMonthIndex, `${rowIndex}-41`, dem.operationnel.toFixed(2));
@@ -575,7 +587,7 @@ export function useDashboardImportHandlers({
     // Liste des fournisseurs du site recréée avec les noms de l'Excel (import de l'année en cours, sites Hippo).
     const importedSupplierNames = pendingSupplierNamesRef.current;
     pendingSupplierNamesRef.current = {};
-    if (!hasLimonade && year >= new Date().getFullYear() && Object.keys(importedSupplierNames).length > 0) {
+    if (!hasLimonade && importYear >= new Date().getFullYear() && Object.keys(importedSupplierNames).length > 0) {
       const keptColumnNames = Object.fromEntries(Object.entries(companySettings.purchaseColumnNames ?? {})
         .filter(([col]) => Number(col) < 45 || Number(col) > 57));
       updateCompanySettings({
@@ -584,11 +596,11 @@ export function useDashboardImportHandlers({
         purchaseColumnNames: keptColumnNames,
       });
     }
-    importBudgetPlan(year, patch);
+    importBudgetPlan(importYear, patch);
     const importedMonths = [...new Set(historicalBudgetPreviews.map(item => item.month))];
-    markMonthsAsLoaded(year, importedMonths);
+    markMonthsAsLoaded(importYear, importedMonths);
     await saveNow();
-    setHistoricalBudgetStatus(historicalBudgetPreviews.length + ' jour(s) prévision couverts/TM importés dans ' + monthNames[month] + ' ' + year + '. Les CA seront recalculés automatiquement.');
+    setHistoricalBudgetStatus(historicalBudgetPreviews.length + ' jour(s) prévision couverts/TM importés dans ' + importYear + '. Les CA seront recalculés automatiquement.');
     setHistoricalBudgetPreviews([]);
   };
 
@@ -606,12 +618,14 @@ export function useDashboardImportHandlers({
 
     try {
       const { workbook, warning: filterWarning } = await loadImportWorkbook(file, setHistoricalV25Status, 'Budget V25');
+      const importYear = await detectImportYear(workbook);
+      v25ImportYearRef.current = importYear;
 
       const allDemarques: typeof pendingV25DemarquesRef.current = [];
       pendingV25FgRef.current = [];
       for (let mi = 0; mi < 12; mi++) {
         await yieldToBrowser();
-        const sheetNameDem = findBudgetSheetName(workbook, mi, year);
+        const sheetNameDem = findBudgetSheetName(workbook, mi, importYear);
         if (!sheetNameDem) continue;
         const sheetDem = workbook.getWorksheet(sheetNameDem);
         if (sheetDem) allDemarques.push(...extractHistoricalV25Demarques(sheetDem));
@@ -625,7 +639,7 @@ export function useDashboardImportHandlers({
 
       for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
         await yieldToBrowser();
-        const sheetName = findBudgetSheetName(workbook, monthIndex, year);
+        const sheetName = findBudgetSheetName(workbook, monthIndex, importYear);
         if (!sheetName) continue;
         matchedSheets.push(sheetName);
         const sheet = workbook.getWorksheet(sheetName);
@@ -641,9 +655,9 @@ export function useDashboardImportHandlers({
           const parsedDate = parseHistoricalBudgetCellDate(dateCell);
           if (!parsedDate) continue;
           scannedDateRows += 1;
-          if (parsedDate.getFullYear() !== year || parsedDate.getMonth() !== monthIndex) continue;
+          if (parsedDate.getFullYear() !== importYear || parsedDate.getMonth() !== monthIndex) continue;
           const day = parsedDate.getDate();
-          const rowIndex = getDashboardRowIndexForDay(year, monthIndex, day);
+          const rowIndex = getDashboardRowIndexForDay(importYear, monthIndex, day);
           if (rowIndex < 0) continue;
 
           const v25Values = getHistoricalV25RowValues(sheet, rowNumber, payrollColumnMaps, v25SupplierMapResult?.map);
@@ -702,8 +716,8 @@ export function useDashboardImportHandlers({
       // le Budget EDG V26 ci-dessus).
       const edgMonthlyValues = parseEdgMonthlySheets(workbook);
       if (edgMonthlyValues) {
-        importEdgBudget(edgMonthlyValues.budget);
-        importEdgRealise(edgMonthlyValues.realise);
+        importEdgBudget(edgMonthlyValues.budget, importYear);
+        importEdgRealise(edgMonthlyValues.realise, importYear);
       }
       const edgMonthsImported = edgMonthlyValues
         ? new Set([...Object.keys(edgMonthlyValues.budget), ...Object.keys(edgMonthlyValues.realise)]).size
@@ -722,6 +736,7 @@ export function useDashboardImportHandlers({
 
   const applyHistoricalV25ExcelImport = async () => {
     const { patch, writeCell } = createCellPatch();
+    const importYear = v25ImportYearRef.current;
     const usedColsByMonth = new Map<number, Set<number>>();
     historicalV25Previews.forEach(item => {
       if (!usedColsByMonth.has(item.month)) usedColsByMonth.set(item.month, new Set());
@@ -729,10 +744,10 @@ export function useDashboardImportHandlers({
     });
     usedColsByMonth.forEach((cols, monthIdx) => {
       const usesGlobal = historicalPayrollAllGlobalCols.some(col => cols.has(col));
-      updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle');
+      updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle', importYear);
     });
 
-    resetHistoricalPayrollForMonths([...new Set(historicalV25Previews.map(item => item.month))], writeCell);
+    resetHistoricalPayrollForMonths([...new Set(historicalV25Previews.map(item => item.month))], writeCell, importYear);
 
     // Reset complet de toutes les colonnes V25 pour chaque ligne importée (garantit l'idempotence)
     const V25_REALISE_COLS = [6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34];
@@ -800,7 +815,7 @@ export function useDashboardImportHandlers({
       });
       contrats.forEach(contrat => {
         // Une ligne jour du mois importé par contrat (jours 1, 2, 3…), jamais une ligne de total de semaine.
-        const rowIndex = getDashboardRowIndexForDay(year, monthIndex, contrat.dIdx + 1);
+        const rowIndex = getDashboardRowIndexForDay(importYear, monthIndex, contrat.dIdx + 1);
         if (rowIndex < 0) return;
         writeCell(monthIndex, `${rowIndex}-106`, contrat.nom);
         writeCell(monthIndex, `${rowIndex}-107`, contrat.montant.toFixed(2));
@@ -811,9 +826,9 @@ export function useDashboardImportHandlers({
     // Démarques
     pendingV25DemarquesRef.current.forEach(dem => {
       const [demYear, demMonth, demDay] = dem.date.split('-').map(Number);
-      if (demYear !== year) return;
+      if (demYear !== importYear) return;
       const demMonthIndex = demMonth - 1;
-      const rowIndex = getDashboardRowIndexForDay(year, demMonthIndex, demDay);
+      const rowIndex = getDashboardRowIndexForDay(importYear, demMonthIndex, demDay);
       if (rowIndex < 0) return;
       if (dem.personnel > 0) writeCell(demMonthIndex, `${rowIndex}-39`, dem.personnel.toFixed(2));
       if (dem.operationnel > 0) writeCell(demMonthIndex, `${rowIndex}-41`, dem.operationnel.toFixed(2));
@@ -821,11 +836,11 @@ export function useDashboardImportHandlers({
     });
     pendingV25DemarquesRef.current = [];
 
-    importBudgetPlan(year, patch);
+    importBudgetPlan(importYear, patch);
     const importedMonths = [...new Set(historicalV25Previews.map(item => item.month))];
-    markMonthsAsLoaded(year, importedMonths);
+    markMonthsAsLoaded(importYear, importedMonths);
     await saveNow();
-    setHistoricalV25Status(historicalV25Previews.length + ' jour(s) V25 importés dans ' + year + '. Les CA seront recalculés automatiquement.');
+    setHistoricalV25Status(historicalV25Previews.length + ' jour(s) V25 importés dans ' + importYear + '. Les CA seront recalculés automatiquement.');
     setHistoricalV25Previews([]);
   };
 

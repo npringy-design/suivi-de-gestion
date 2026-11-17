@@ -5,6 +5,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 18/11/2026 (Imports Excel : année lue dans le fichier, quelle que soit l'année affichée)
+
+- Imports Excel budget/réalisé et V25 : l'année est lue dans les onglets mensuels du classeur (`detectWorkbookYear`, excelSheetFilter.ts : « JANV 26 » → 2026, année la plus fréquente ; repli sur l'année affichée), l'année cible est chargée depuis le cloud si besoin, puis toutes les écritures visent cette année : jours, démarques, contrats, schéma du personnel (`updatePersonnelSchema(month, schema, year)`), EDG budget et réalisé (`importEdgBudget` / `importEdgRealise(values, year)`), `importBudgetPlan`, mois marqués chargés. Le message d'état indique l'année du fichier. Reset des contrats sur toutes les lignes du mois (efface aussi les contrats écrits par erreur sur des lignes de total). Fix `findBudgetSheetName` : découpage du nom d'onglet sur les espaces (`/\s+/` au lieu de `/s+/`). tsc OK, build OK.
+
 ## 17/11/2026 (Fournisseurs Hippo : liste reprise des noms de l'Excel à l'import)
 
 - Import Excel budget/réalisé de l'année en cours, sites Hippo : `getHistoricalCostMatterSupplierNames` (historicalBudgetImport.ts) lit les noms de fournisseurs de l'en-tête Excel par colonne de l'appli (plusieurs colonnes Excel rangées ensemble : « TERRE AZUR / POMONA F&L ») ; à la validation, `applyImportedSupplierNames` (purchaseLabels.ts) recrée les sections achats liquides (45–48) et solides (49–57) des réglages du site avec ces noms sur les colonnes où l'import écrit les montants (colonnes non utilisées : « Libre ») et retire les renommages d'en-tête 45–57. Avant : les fournisseurs des réglages pouvaient être rangés sur d'autres colonnes que l'import (Thillois : « Episaveurs 5,5 % » en 52 alors que l'import l'écrit en 53, d'où « Mammafiore » resté en 53). Récap annuel : renommages d'en-tête du Suivi pris en compte.

@@ -110,9 +110,9 @@ type DataContextType = {
   updateCaisseDynamique: (month: number, systemId: string, day: number, field: 'montant' | 'commentaire', value: string) => void;
   updateEdgMensuel: (month: number, cellKey: string, value: string) => void;
   updateEdgMensuelRealise: (month: number, cellKey: string, value: string) => void;
-  importEdgBudget: (valuesByMonth: Record<number, Record<string, string>>) => void;
+  importEdgBudget: (valuesByMonth: Record<number, Record<string, string>>, targetYear?: number) => void;
   importBudgetPlan: (year: number, valuesByMonth: Record<number, Record<string, string>>) => void;
-  importEdgRealise: (valuesByMonth: Record<number, Record<string, string>>) => void;
+  importEdgRealise: (valuesByMonth: Record<number, Record<string, string>>, targetYear?: number) => void;
   updateMiseEnPaiement: (month: number, period: 'period1' | 'period2', index: number, field: keyof VirementEntry, value: string | number | boolean) => void;
   updateSalariesConfig: (month: number, data: MonthDataSalariesConfig) => void;
   // Écrit sur une année précise (import PDF d'une autre année que celle affichée) ; accepte un updater qui relit la config existante.
@@ -121,7 +121,7 @@ type DataContextType = {
     month: number,
     config: MonthDataSalariesConfig | ((current: MonthDataSalariesConfig | undefined) => MonthDataSalariesConfig),
   ) => void;
-  updatePersonnelSchema: (month: number, schema: PersonnelSchema) => void;
+  updatePersonnelSchema: (month: number, schema: PersonnelSchema, targetYear?: number) => void;
   markMonthsAsLoaded: (year: number, months: number[]) => void;
   // Retourne les mois qui viennent d'être chargés depuis le cloud (hors mois modifiés localement).
   loadYearFromCloud: (year: number) => Promise<Record<number, MonthData>>;
@@ -832,18 +832,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     updateSalariesConfigForYear(selectedYear, month, configData);
   }, [selectedYear, updateSalariesConfigForYear]);
 
-  const updatePersonnelSchema = useCallback((month: number, schema: PersonnelSchema) => {
-    updateDataForYear(month, prev => {
-      const monthData = normalizeMonthData(prev[month]);
-      return {
-        ...prev,
-        [month]: {
-          ...monthData,
-          personnelSchema: schema,
-        },
-      };
-    }, ['personnelSchema']);
-  }, [updateDataForYear]);
+  const updatePersonnelSchema = useCallback((month: number, schema: PersonnelSchema, targetYear?: number) => {
+    const year = targetYear ?? selectedYear;
+    dirtyMonthKeysRef.current.add(cloudMonthKey(year, month));
+    trackDirtyPaths(dirtyPathsRef.current, cloudMonthKey(year, month), ['personnelSchema']);
+    setAllData(prev => ({
+      ...prev,
+      [year]: {
+        ...(prev[year] || {}),
+        [month]: { ...normalizeMonthData(prev[year]?.[month]), personnelSchema: schema },
+      },
+    }));
+  }, [selectedYear, cloudMonthKey]);
 
   const markMonthsAsLoaded = useCallback((targetYear: number, months: number[]) => {
     months.forEach(m => loadedCloudMonthKeysRef.current.add(cloudMonthKey(targetYear, m)));
@@ -991,16 +991,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   // Import en lot du budget EDG (une valeur par mois et par clé) : une seule mise à jour
   // d'état au lieu d'une boucle sur updateEdgMensuel (jusqu'à 12 mois x ~50 clés).
-  const importEdgBudget = useCallback((valuesByMonth: Record<number, Record<string, string>>) => {
+  const importEdgBudget = useCallback((valuesByMonth: Record<number, Record<string, string>>, targetYear?: number) => {
     const months = Object.keys(valuesByMonth);
     if (months.length === 0) return;
+    const year = targetYear ?? selectedYear;
     months.forEach(month => {
-      dirtyMonthKeysRef.current.add(selectedYear + ':' + month);
-      trackDirtyPaths(dirtyPathsRef.current, selectedYear + ':' + month, Object.keys(valuesByMonth[Number(month)] ?? {}).map(key => `edgMensuel.${key}`));
+      dirtyMonthKeysRef.current.add(year + ':' + month);
+      trackDirtyPaths(dirtyPathsRef.current, year + ':' + month, Object.keys(valuesByMonth[Number(month)] ?? {}).map(key => `edgMensuel.${key}`));
     });
     setAllData(prev => ({
       ...prev,
-      [selectedYear]: mergeEdgMensuelBudgetData(prev[selectedYear] || {}, valuesByMonth),
+      [year]: mergeEdgMensuelBudgetData(prev[year] || {}, valuesByMonth),
     }));
   }, [selectedYear]);
 
@@ -1020,16 +1021,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Import en lot du Réalisé EDG (même mécanisme qu'importEdgBudget, cible edgMensuelRealise).
-  const importEdgRealise = useCallback((valuesByMonth: Record<number, Record<string, string>>) => {
+  const importEdgRealise = useCallback((valuesByMonth: Record<number, Record<string, string>>, targetYear?: number) => {
     const months = Object.keys(valuesByMonth);
     if (months.length === 0) return;
+    const year = targetYear ?? selectedYear;
     months.forEach(month => {
-      dirtyMonthKeysRef.current.add(selectedYear + ':' + month);
-      trackDirtyPaths(dirtyPathsRef.current, selectedYear + ':' + month, Object.keys(valuesByMonth[Number(month)] ?? {}).map(key => `edgMensuelRealise.${key}`));
+      dirtyMonthKeysRef.current.add(year + ':' + month);
+      trackDirtyPaths(dirtyPathsRef.current, year + ':' + month, Object.keys(valuesByMonth[Number(month)] ?? {}).map(key => `edgMensuelRealise.${key}`));
     });
     setAllData(prev => ({
       ...prev,
-      [selectedYear]: mergeEdgMensuelRealiseData(prev[selectedYear] || {}, valuesByMonth),
+      [year]: mergeEdgMensuelRealiseData(prev[year] || {}, valuesByMonth),
     }));
   }, [selectedYear]);
 

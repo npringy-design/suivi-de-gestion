@@ -34,6 +34,23 @@ const isMonthSheetName = (normalized: string): boolean =>
   && MONTH_TOKENS_NORMALIZED.some(token => normalized.includes(token))
   && /\d{2}/.test(normalized);
 
+// Année d'un classeur de suivi, lue dans le nom de ses onglets mensuels (« JANV 26 », « MARS 2025 ») :
+// l'année la plus fréquente. null si aucun onglet mensuel n'en porte.
+export const detectWorkbookYear = (sheetNames: readonly string[]): number | null => {
+  const counts = new Map<number, number>();
+  sheetNames.forEach(name => {
+    const normalized = normalizeExcelSheetName(name);
+    if (!isMonthSheetName(normalized)) return;
+    const match = /(?:^|\s)(20\d{2}|\d{2})$/.exec(normalized);
+    if (!match) return;
+    const year = match[1].length === 2 ? 2000 + Number(match[1]) : Number(match[1]);
+    counts.set(year, (counts.get(year) ?? 0) + 1);
+  });
+  let best: number | null = null;
+  counts.forEach((count, year) => { if (best === null || count > (counts.get(best) ?? 0)) best = year; });
+  return best;
+};
+
 // Onglets utiles aux imports : mensuels, « ANNUEL BUDGET », et « 01 » à « 12 » (EDG mensuel V25).
 export const isImportSheetName = (name: string): boolean => {
   const normalized = normalizeExcelSheetName(name);
