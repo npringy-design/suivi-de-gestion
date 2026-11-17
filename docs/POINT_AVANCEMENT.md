@@ -10,7 +10,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - Noms de fournisseurs renommés dans l'en-tête du Suivi quotidien : stockés dans `companySettings.purchaseColumnNames` (propre au site, synchronisé) au lieu d'une clé locale commune à tous les sites et jamais envoyée au cloud (`useDashboardPurchaseSuppliers`, ancienne clé supprimée).
 - Paramétrage comptable : `companySettings.accountingMappings` (propre au site, synchronisé), lu par ParametrageComptable et ExportComptable ; l'ancien réglage local unique sert une fois de point de départ puis est supprimé ; sauvegarde seulement sur modification (jamais au montage).
 - Imports : `lib/siteFileMatch.ts` (`foreignSiteWarning`) reconnaît un autre restaurant dans le nom du fichier ou le texte du PDF (« HIP THILL », « BURO CORM », nom de ville, enseigne) et demande confirmation avant d'importer : Excel budget/réalisé, Excel V25, feuilles de caisse, PDF salaires (`useDashboardImportHandlers`).
-- `supabase/APP_STATE_SITE_RLS.sql` (à exécuter dans Supabase) : policies de suivi_gestion_app_state limitées par site (fonction `suivi_gestion_can_access_site` : super_admin et global_admin tous sites, utilisateur limité à suivi_gestion_user_site_access). Non exécuté : accès à la base non disponible ici.
+- Droits Supabase par site : déjà en place en base (projet « Application commande Test ») : policies de suivi_gestion_app_state limitées par `suivi_gestion_user_access.access_scope = 'all'` ou par suivi_gestion_user_site_access ; script APP_STATE_SITE_RLS.sql retiré (redondant, basé sur le rôle au lieu d'access_scope). Les policies réelles diffèrent de APP_STATE_SETUP.sql du dépôt.
 - tsc OK, build OK.
 
 ## 17/11/2026 (Lot 4 — Écarts N-1 « à date », couverts, TM de la Synthèse)
