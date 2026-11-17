@@ -14,18 +14,20 @@ type PlanSettingsPanelProps = {
   sampleCount: number;
   annualProposal: number;
   vaeProposal: number;
+  // Limonade (sites Au Bureau) : champ affiché seulement si la proposition est fournie.
+  limonadeProposal?: number;
   onChange: (patch: Partial<PlanSettings>) => void;
   onMonthGrowth: (key: 'cvGrowthByMonth' | 'tmIncreaseEurByMonth', month: number, value: number | null) => void;
 };
 
 export default function PlanSettingsPanel({
-  settings, targetYearOptions, baseYears, holidayZone, sampleCount, annualProposal, vaeProposal, onChange, onMonthGrowth,
+  settings, targetYearOptions, baseYears, holidayZone, sampleCount, annualProposal, vaeProposal, limonadeProposal, onChange, onMonthGrowth,
 }: PlanSettingsPanelProps) {
   const [olderYear, recentYear] = baseYears;
   const hasCaTarget = settings.targetAnnualCA !== null || Object.values(settings.targetMonthlyCA).some(v => typeof v === 'number');
   return (
     <section className={`${analyseGlass} grid gap-4 p-4`}>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className={`grid gap-4 sm:grid-cols-2 ${limonadeProposal !== undefined ? 'lg:grid-cols-6' : 'lg:grid-cols-5'}`}>
         <label className="grid gap-1">
           <span className={analyseLabel}>Année cible</span>
           <select
@@ -52,6 +54,16 @@ export default function PlanSettingsPanel({
           proposal={vaeProposal}
           onApply={value => onChange(value === null ? { targetAnnualVAE: null, targetMonthlyVAE: {} } : { targetAnnualVAE: value })}
         />
+
+        {limonadeProposal !== undefined && (
+          <PlanAnnualCaField
+            label="CA limonade annuel"
+            year={settings.targetYear}
+            value={settings.targetAnnualLimonade}
+            proposal={limonadeProposal}
+            onApply={value => onChange(value === null ? { targetAnnualLimonade: null, targetMonthlyLimonade: {} } : { targetAnnualLimonade: value })}
+          />
+        )}
 
         <div className="grid gap-1">
           <span className={analyseLabel}>Croissance couverts (%)</span>

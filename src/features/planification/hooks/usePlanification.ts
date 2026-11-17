@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 import { MONTH_NAMES } from '@/lib/constants';
 import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
 import type { PlanManualOverride, PlanService, PlanSettings, PlanWriteMode } from '@/types/dataTypes';
@@ -12,13 +13,20 @@ import {
   DEFAULT_PLAN_SETTINGS,
   detectExistingBudget,
   generatePlan,
+  planHasLimonade,
+  planLimonadeDays,
+  planMonthlyLimonade,
   planMonthlyVae,
   planRows,
   planToCsv,
   PLAN_ROW_HEADER,
+  PLAN_ROW_HEADER_LIMONADE,
   proposeAnnualCA,
+  proposeAnnualLimonade,
   proposeAnnualVAE,
   summarizeByMonth,
+  summarizeLimonade,
+  withLimonadeDays,
   withoutGrowth,
 } from '../planningEngine';
 
@@ -40,6 +48,7 @@ const downloadCsv = (fileName: string, content: string) => {
 // Tout le calcul est une simulation en mémoire : rien n'est écrit dans allData avant confirmWrite.
 export function usePlanification() {
   const { allData, loadYearFromCloud, importBudgetPlan, saveNow, companySettings } = useData();
+  const hasLimonade = useHasLimonade();
   const [settings, setSettings] = useState<PlanSettings>(() => DEFAULT_PLAN_SETTINGS(new Date().getFullYear() + 1));
   const [overrides, setOverrides] = useState<Record<string, PlanManualOverride>>({});
   const [loadedYears, setLoadedYears] = useState<number[]>([]);
@@ -67,11 +76,24 @@ export function usePlanification() {
     const months = baseYears.flatMap(year => ALL_MONTHS.map(month => ({ year, month })));
     // budgetFallback : un mois d'historique (ex. nov./déc. de l'année en cours) sans réalisé
     // encore saisi utilise le budget de la même période plutôt que d'être ignoré.
-    return collectDailySamples(allData, months, '0000-01-01', '9999-12-31', todayIso, true);
-  }, [allData, baseYears]);
+    return collectDailySamples(allData, months, '0000-01-01', '9999-12-31', todayIso, true, hasLimonade);
+  }, [allData, baseYears, hasLimonade]);
 
   const basePlan = useMemo(() => generatePlan(samples, holidayCalendar, settings), [samples, holidayCalendar, settings]);
-  const plan = useMemo(() => applyOverrides(basePlan, overrides), [basePlan, overrides]);
+  const limonadeProposal = useMemo(() => proposeAnnualLimonade(samples), [samples]);
+  const limonadeByMonth = useMemo(
+    () => planMonthlyLimonade(samples, settings.targetAnnualLimonade, settings.targetMonthlyLimonade),
+    [samples, settings.targetAnnualLimonade, settings.targetMonthlyLimonade],
+  );
+  // La limonade est répartie au jour à part : elle n'entre jamais dans le plan restaurant.
+  const limonadeDays = useMemo(
+    () => (hasLimonade ? planLimonadeDays(samples, holidayCalendar, targetYear, limonadeByMonth) : {}),
+    [hasLimonade, samples, holidayCalendar, targetYear, limonadeByMonth],
+  );
+  const plan = useMemo(() => {
+    const restaurantPlan = applyOverrides(basePlan, overrides);
+    return hasLimonade ? withLimonadeDays(restaurantPlan, limonadeDays) : restaurantPlan;
+  }, [basePlan, overrides, hasLimonade, limonadeDays]);
   const annualProposal = useMemo(() => proposeAnnualCA(samples), [samples]);
   const vaeProposal = useMemo(() => proposeAnnualVAE(samples), [samples]);
   const vaeByMonth = useMemo(
@@ -79,6 +101,7 @@ export function usePlanification() {
     [samples, settings.targetAnnualVAE, settings.targetMonthlyVAE],
   );
   const monthSummaries = useMemo(() => summarizeByMonth(plan), [plan]);
+  const limonadeSummary = useMemo(() => summarizeLimonade(plan), [plan]);
   // CA restaurant de chaque mois avant croissance : base du CA cible saisi dans le tableau mensuel.
   const baseCaByMonth = useMemo(() => Object.fromEntries(
     summarizeByMonth(generatePlan(samples, holidayCalendar, withoutGrowth(settings))).map(s => [s.month, s.caMidi + s.caSoir]),
@@ -93,7 +116,7 @@ export function usePlanification() {
     setSettings(current => ({ ...current, ...patch }));
     if (patch.targetYear !== undefined) {
       setOverrides({});
-      setSettings(current => ({ ...current, targetAnnualCA: null, targetMonthlyCA: {}, targetAnnualVAE: null, targetMonthlyVAE: {} }));
+      setSettings(current => ({ ...current, targetAnnualCA: null, targetMonthlyCA: {}, targetAnnualVAE: null, targetMonthlyVAE: {}, targetAnnualLimonade: null, targetMonthlyLimonade: {} }));
     }
   }, []);
 
@@ -111,6 +134,14 @@ export function usePlanification() {
       const next = { ...current.targetMonthlyVAE };
       if (value === null) delete next[month]; else next[month] = value;
       return { ...current, targetMonthlyVAE: next };
+    });
+  }, []);
+
+  const setMonthLimonade = useCallback((month: number, value: number | null) => {
+    setSettings(current => {
+      const next = { ...current.targetMonthlyLimonade };
+      if (value === null) delete next[month]; else next[month] = value;
+      return { ...current, targetMonthlyLimonade: next };
     });
   }, []);
 
@@ -152,9 +183,11 @@ export function usePlanification() {
     const workbook = new Workbook();
 
     const monthly = workbook.addWorksheet('Résumé mensuel');
+    const withLimonade = planHasLimonade(plan);
     monthly.addRow([
       'Mois', 'Couverts midi', 'Couverts soir', 'CA midi', 'CA soir', 'CA cible avant croissance',
       'CA restaurant prévu', 'TM restaurant', 'VAE', 'TM avec VAE', 'Jours critiques', 'Jours faibles', 'Jours modifiés', 'Prévisions existantes',
+      ...(withLimonade ? ['CA limonade', 'CA total prévu'] : []),
     ]).font = { bold: true };
     monthSummaries.forEach(s => {
       const vae = vaeByMonth[s.month] ?? 0;
@@ -165,21 +198,25 @@ export function usePlanification() {
         settings.targetMonthlyCA[s.month] ?? Math.round(baseCaByMonth[s.month] ?? ca),
         ca, s.tm, vae, cv > 0 ? (ca + vae) / cv : null,
         s.daysCritique, s.daysFaible, s.daysManual, existingByMonth[s.month] ?? 0,
+        ...(withLimonade ? [limonadeByMonth[s.month] ?? 0, ca + vae + (limonadeByMonth[s.month] ?? 0)] : []),
       ]);
     });
     ['D', 'E', 'F', 'G', 'H', 'I', 'J'].forEach(col => { monthly.getColumn(col).numFmt = '#,##0.00 €'; });
+    if (withLimonade) ['O', 'P'].forEach(col => { monthly.getColumn(col).numFmt = '#,##0.00 €'; });
 
     const daily = workbook.addWorksheet('Jour par jour');
-    daily.addRow([...PLAN_ROW_HEADER]).font = { bold: true };
+    daily.addRow([...(withLimonade ? PLAN_ROW_HEADER_LIMONADE : PLAN_ROW_HEADER)]).font = { bold: true };
     planRows(plan).forEach(r => daily.addRow([
       r.date, r.weekday, r.status, r.service, r.cv, r.tm, r.ca, r.confidence, r.n, r.source, r.estimator, r.manual,
+      ...(withLimonade ? [r.limonade?.cv ?? null, r.limonade?.tm ?? null, r.limonade?.ca ?? null] : []),
     ]));
     daily.getColumn('F').numFmt = '#,##0.00 €';
     daily.getColumn('G').numFmt = '#,##0.00 €';
+    if (withLimonade) ['N', 'O'].forEach(col => { daily.getColumn(col).numFmt = '#,##0.00 €'; });
 
     const buffer = await workbook.xlsx.writeBuffer();
     downloadBlob(`planification-${targetYear}.xlsx`, new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-  }, [plan, targetYear, monthSummaries, vaeByMonth, settings.targetMonthlyCA, baseCaByMonth, existingByMonth]);
+  }, [plan, targetYear, monthSummaries, vaeByMonth, limonadeByMonth, settings.targetMonthlyCA, baseCaByMonth, existingByMonth]);
 
   const confirmWrite = useCallback(async (mode: PlanWriteMode) => {
     const dashboards = Object.fromEntries(ALL_MONTHS.map(month => [month, allData[targetYear]?.[month]?.dashboard]));
@@ -193,6 +230,7 @@ export function usePlanification() {
 
   return {
     settings, updateSettings, setMonthGrowth, setMonthTarget, annualProposal, baseCaByMonth, vaeProposal, vaeByMonth, setMonthVae,
+    limonadeProposal, limonadeByMonth, limonadeSummary, setMonthLimonade, hasLimonade,
     plan, monthSummaries, overrides, editService, clearOverride,
     existingByMonth, isLoading, status,
     exportCsv, exportXlsx, confirmWrite,

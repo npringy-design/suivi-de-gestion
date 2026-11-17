@@ -551,7 +551,13 @@ export type PlanSettings = {
   // VAE : CA à part, jamais divisé par les couverts (n'entre pas dans le TM restaurant).
   targetAnnualVAE: number | null; // null = VAE mensuel historique moyen
   targetMonthlyVAE: Record<number, number | null>;
+  // Limonade (sites Au Bureau) : CA à part, réparti en couverts × TM limonade, hors du plan restaurant.
+  targetAnnualLimonade: number | null; // null = CA limonade mensuel historique moyen
+  targetMonthlyLimonade: Record<number, number | null>;
 };
+
+// Prévision limonade d'un jour (sites Au Bureau) : écrite en cols 14/15, le CA (col 2) est recalculé.
+export type PlanLimonadeDay = { cv: number; tm: number; ca: number };
 
 export type PlanServiceProposal = {
   cv: number;
@@ -573,6 +579,7 @@ export type PlanDay = {
   holiday: string | null; // nom du jour férié, sinon null
   midi: PlanServiceProposal;
   soir: PlanServiceProposal;
+  limonade?: PlanLimonadeDay; // rempli seulement pour un site avec limonade
 };
 
 export type PlanManualOverride = Partial<Record<PlanService, { cv: number; tm: number }>>;

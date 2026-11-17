@@ -4,7 +4,7 @@ import { MONTH_NAMES } from '@/lib/constants';
 import type { PlanDay, PlanWriteMode } from '@/types/dataTypes';
 
 import { analyseLabel } from '../../analyse/components/analyseStyles';
-import { dayConfidence } from '../planningEngine';
+import { dayConfidence, planHasLimonade } from '../planningEngine';
 
 type PlanWriteModalProps = {
   year: number;
@@ -31,7 +31,7 @@ export default function PlanWriteModal({ year, plan, existingByMonth, onCancel, 
       <div className="grid w-full max-w-lg gap-4 rounded-2xl border border-amber-200/30 bg-[#0a2430] p-5 shadow-2xl">
         <div className="text-base font-black uppercase tracking-[0.12em] text-amber-50">Écrire dans les Prévisions {year}</div>
         <p className="text-sm font-semibold text-cyan-50/80">
-          Vous allez écrire couverts et ticket moyen (midi et soir) pour {plan.length} jours de {year}. Le CA budgété est recalculé automatiquement (couverts × TM).
+          Vous allez écrire couverts et ticket moyen (midi et soir{planHasLimonade(plan) ? ' + couverts et TM limonade' : ''}) pour {plan.length} jours de {year}. Le CA budgété est recalculé automatiquement (couverts × TM).
           {critical > 0 && <span className="mt-1 block text-rose-300">{critical} jour(s) sont en confiance critique (repli ou n &lt; 3).</span>}
         </p>
 

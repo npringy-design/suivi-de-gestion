@@ -20,6 +20,7 @@ type CaPicker = (sample: AnalyseDaySample) => number;
 
 const restaurantCa: CaPicker = sample => sample.reel.caMidi + sample.reel.caSoir;
 const vaeCa: CaPicker = sample => sample.reel.vae;
+const limoCa: CaPicker = sample => sample.reel.caLimo;
 
 // CA (restaurant ou VAE) par mois de l'historique, hors mois partiel. Sans aucun mois complet,
 // tous les mois sont conservés.
@@ -74,14 +75,16 @@ export function proposeAnnualVAE(samples: AnalyseDaySample[]): number {
   return Math.round(averageMonthlyCa(samples, vaeCa).reduce((acc, v) => acc + v, 0));
 }
 
-// VAE de chaque mois (0-11) : VAE mensuel saisi, sinon VAE annuel × poids historique du mois, sinon
-// (sans objectif annuel) VAE historique moyen du mois. Sans historique, répartition égale.
-export function planMonthlyVae(
+// CA à part (VAE, limonade) de chaque mois (0-11) : CA mensuel saisi, sinon CA annuel × poids
+// historique du mois, sinon (sans objectif annuel) CA historique moyen du mois. Sans historique,
+// répartition égale.
+function planMonthlySeparate(
   samples: AnalyseDaySample[],
+  pick: CaPicker,
   annual: number | null,
   monthly: Record<number, number | null>,
 ): Record<number, number> {
-  const averages = averageMonthlyCa(samples, vaeCa);
+  const averages = averageMonthlyCa(samples, pick);
   const total = averages.reduce((acc, v) => acc + v, 0);
   return Object.fromEntries(averages.map((average, month) => {
     const override = monthly[month];
@@ -90,6 +93,24 @@ export function planMonthlyVae(
     return [month, round2(annual * (total > 0 ? average / total : 1 / 12))];
   }));
 }
+
+export const planMonthlyVae = (
+  samples: AnalyseDaySample[],
+  annual: number | null,
+  monthly: Record<number, number | null>,
+): Record<number, number> => planMonthlySeparate(samples, vaeCa, annual, monthly);
+
+// --- Limonade (sites Au Bureau) : même logique que la VAE, sur le CA limonade des échantillons ---
+
+export function proposeAnnualLimonade(samples: AnalyseDaySample[]): number {
+  return Math.round(averageMonthlyCa(samples, limoCa).reduce((acc, v) => acc + v, 0));
+}
+
+export const planMonthlyLimonade = (
+  samples: AnalyseDaySample[],
+  annual: number | null,
+  monthly: Record<number, number | null>,
+): Record<number, number> => planMonthlySeparate(samples, limoCa, annual, monthly);
 
 // Poids de chaque jour du mois dans le CA du mois (somme = 1) : CA historique moyen de son groupe
 // (jour de semaine × vacances / férié), c'est-à-dire la proposition de CA du jour hors croissance.

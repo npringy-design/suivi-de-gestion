@@ -38,6 +38,9 @@ export default function PlanDayTable({
 }: PlanDayTableProps) {
   const monthDays = plan.filter(day => day.month === month);
   const rows = onlyToCheck ? monthDays.filter(day => dayConfidence(day) !== 'fiable') : monthDays;
+  // Colonnes limonade (lecture seule) : seulement pour un site avec limonade.
+  const withLimonade = plan.some(day => day.limonade !== undefined);
+  const euro = (value: number): string => `${value.toFixed(2)} €`;
 
   const renderService = (day: PlanDay, service: PlanService) => {
     const p = day[service];
@@ -80,11 +83,12 @@ export default function PlanDayTable({
               <th className={th} rowSpan={2}>Statut</th>
               <th className={`${th} text-center`} colSpan={4}>Midi</th>
               <th className={`${th} text-center`} colSpan={4}>Soir</th>
+              {withLimonade && <th className={`${th} text-center`} colSpan={3}>Limonade</th>}
               <th className={th} rowSpan={2}>CA jour</th>
               <th className={th} rowSpan={2} />
             </tr>
             <tr className="border-b border-white/10">
-              {['Couverts', 'TM', 'CA', 'Confiance', 'Couverts', 'TM', 'CA', 'Confiance'].map((label, i) => (
+              {['Couverts', 'TM', 'CA', 'Confiance', 'Couverts', 'TM', 'CA', 'Confiance', ...(withLimonade ? ['Cvts limo', 'TM limo', 'CA limo'] : [])].map((label, i) => (
                 <th key={`${label}-${i}`} className={`${th} ${label === 'Confiance' ? 'text-center' : ''}`}>{label}</th>
               ))}
             </tr>
@@ -101,6 +105,13 @@ export default function PlanDayTable({
                 </td>
                 {renderService(day, 'midi')}
                 {renderService(day, 'soir')}
+                {withLimonade && (
+                  <>
+                    <td className="whitespace-nowrap px-2 py-1 text-right text-xs font-semibold tabular-nums text-cyan-50">{day.limonade?.cv ?? 0}</td>
+                    <td className="whitespace-nowrap px-2 py-1 text-right text-xs font-semibold tabular-nums text-cyan-50">{euro(day.limonade?.tm ?? 0)}</td>
+                    <td className="whitespace-nowrap px-2 py-1 text-right text-xs font-semibold tabular-nums text-cyan-50">{euro(day.limonade?.ca ?? 0)}</td>
+                  </>
+                )}
                 <td className="whitespace-nowrap px-2 py-1 text-right text-xs font-black tabular-nums text-white">
                   {(day.midi.ca + day.soir.ca).toFixed(2)} €
                 </td>
@@ -114,7 +125,7 @@ export default function PlanDayTable({
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={12} className="px-3 py-6 text-center text-xs font-semibold text-cyan-50/50">Aucun jour à vérifier ce mois-ci.</td></tr>
+              <tr><td colSpan={withLimonade ? 15 : 12} className="px-3 py-6 text-center text-xs font-semibold text-cyan-50/50">Aucun jour à vérifier ce mois-ci.</td></tr>
             )}
           </tbody>
         </table>

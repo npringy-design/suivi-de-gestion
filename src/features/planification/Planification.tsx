@@ -76,6 +76,7 @@ export default function Planification({ onBack }: PlanificationProps) {
           sampleCount={planning.sampleCount}
           annualProposal={planning.annualProposal}
           vaeProposal={planning.vaeProposal}
+          limonadeProposal={planning.hasLimonade ? planning.limonadeProposal : undefined}
           onChange={planning.updateSettings}
           onMonthGrowth={planning.setMonthGrowth}
         />
@@ -99,7 +100,7 @@ export default function Planification({ onBack }: PlanificationProps) {
         </div>
 
         {view === 'mois' ? (
-          <PlanMonthTable summaries={planning.monthSummaries} existingByMonth={planning.existingByMonth} monthTargets={settings.targetMonthlyCA} baseCaByMonth={planning.baseCaByMonth} onMonthTarget={planning.setMonthTarget} vaeByMonth={planning.vaeByMonth} vaeTargets={settings.targetMonthlyVAE} onMonthVae={planning.setMonthVae} onOpenMonth={openMonth} />
+          <PlanMonthTable summaries={planning.monthSummaries} existingByMonth={planning.existingByMonth} monthTargets={settings.targetMonthlyCA} baseCaByMonth={planning.baseCaByMonth} onMonthTarget={planning.setMonthTarget} vaeByMonth={planning.vaeByMonth} vaeTargets={settings.targetMonthlyVAE} onMonthVae={planning.setMonthVae} limonade={planning.hasLimonade ? { byMonth: planning.limonadeByMonth, targets: settings.targetMonthlyLimonade, summary: planning.limonadeSummary, onMonthLimonade: planning.setMonthLimonade } : undefined} onOpenMonth={openMonth} />
         ) : (
           <PlanDayTable
             plan={plan}

@@ -6,6 +6,7 @@ import type {
   PlanConfidence,
   PlanDay,
   PlanEstimator,
+  PlanLimonadeDay,
   PlanManualOverride,
   PlanService,
   PlanServiceProposal,
@@ -19,7 +20,8 @@ import type {
 import { toIsoDate } from '../analyse/ecartsAnalysis';
 
 import {
-  applyMonthTarget, enforceTmFloors, monthlyWeights, normalizedDayWeights, planMonthlyVae, proposeAnnualCA, proposeAnnualVAE, tmFloors,
+  applyMonthTarget, enforceTmFloors, monthlyWeights, normalizedDayWeights, planMonthlyLimonade, planMonthlyVae, proposeAnnualCA, proposeAnnualLimonade,
+  proposeAnnualVAE, tmFloors,
   type TmFloors,
 } from './planningTargets';
 
@@ -52,6 +54,8 @@ export const DEFAULT_PLAN_SETTINGS = (targetYear: number): PlanSettings => ({
   targetMonthlyCA: {},
   targetAnnualVAE: null,
   targetMonthlyVAE: {},
+  targetAnnualLimonade: null,
+  targetMonthlyLimonade: {},
 });
 
 // Statut scolaire seul (sans tenir compte des jours fériés).
@@ -325,7 +329,7 @@ function buildMonthDays(
 
 // --- Pilotage par CA annuel / mensuel (calculs purs dans planningTargets.ts) ---
 
-export { monthlyWeights, planMonthlyVae, proposeAnnualCA, proposeAnnualVAE };
+export { monthlyWeights, planMonthlyLimonade, planMonthlyVae, proposeAnnualCA, proposeAnnualLimonade, proposeAnnualVAE };
 
 export function dailyWeights(
   samples: AnalyseDaySample[],
@@ -447,6 +451,113 @@ export function summarizeByMonth(plan: PlanDay[]): MonthPlanSummary[] {
   });
 }
 
+// --- Limonade (sites Au Bureau) : CA limonade réparti au jour, hors plan restaurant ---
+// La limonade n'entre jamais dans generatePlan (ni poids, ni planchers de TM, ni croissances).
+
+type LimonadeGroup = { ca: number; cv: number; days: number };
+
+const limonadeKey = (weekday: number, status: PlanVacationStatus | 'any') => `${weekday}|${status}`;
+
+// Mêmes groupes que le restaurant (jour de semaine × vacances / férié, plus « tous statuts » hors férié),
+// calculés sur le CA et les couverts limonade des échantillons.
+function buildLimonadeGroups(samples: AnalyseDaySample[], calendar: SchoolHolidayCalendar): Map<string, LimonadeGroup> {
+  const groups = new Map<string, LimonadeGroup>();
+  const add = (key: string, sample: AnalyseDaySample) => {
+    const group = groups.get(key) ?? { ca: 0, cv: 0, days: 0 };
+    group.ca += sample.reel.caLimo;
+    group.cv += sample.reel.cvLimo;
+    group.days += 1;
+    groups.set(key, group);
+  };
+  samples.forEach(sample => {
+    const status = vacationStatusOf(sample.date, calendar);
+    add(limonadeKey(sample.weekday, status), sample);
+    if (status !== 'ferie') add(limonadeKey(sample.weekday, 'any'), sample);
+  });
+  return groups;
+}
+
+const tmOfSamples = (samples: AnalyseDaySample[]): number => {
+  const cv = samples.reduce((acc, sample) => acc + sample.reel.cvLimo, 0);
+  return cv > 0 ? samples.reduce((acc, sample) => acc + sample.reel.caLimo, 0) / cv : 0;
+};
+
+// CA limonade de chaque jour de l'année cible : CA limonade du mois × poids du jour (CA limonade moyen
+// de son groupe / somme des jours du mois), TM = TM limonade moyen du groupe (repli : TM du mois, puis
+// de l'année), couverts = CA / TM arrondis avec report d'un jour à l'autre (le total du mois reste à
+// moins d'un demi-TM de la cible). Jour fermé côté restaurant ou CA limonade nul : 0.
+export function planLimonadeDays(
+  samples: AnalyseDaySample[],
+  calendar: SchoolHolidayCalendar,
+  targetYear: number,
+  monthlyLimo: Record<number, number>,
+): Record<string, PlanLimonadeDay> {
+  const result: Record<string, PlanLimonadeDay> = {};
+  const limoGroups = buildLimonadeGroups(samples, calendar);
+  const restaurantGroups = buildGroups(samples, calendar);
+  const yearTm = tmOfSamples(samples);
+
+  const chainOf = (weekday: number, status: PlanVacationStatus, baseStatus: SchoolStatus): LimonadeGroup[] => {
+    const keys = status === 'ferie'
+      ? [limonadeKey(weekday, 'ferie'), limonadeKey(weekday, baseStatus), limonadeKey(weekday, 'any')]
+      : [limonadeKey(weekday, status), limonadeKey(weekday, 'any')];
+    return keys.flatMap(key => {
+      const group = limoGroups.get(key);
+      return group && group.days > 0 ? [group] : [];
+    });
+  };
+
+  for (let month = 0; month < 12; month++) {
+    const target = monthlyLimo[month] ?? 0;
+    const monthTm = tmOfSamples(samples.filter(sample => Number(sample.date.slice(5, 7)) - 1 === month));
+    const numDays = new Date(targetYear, month + 1, 0).getDate();
+    const days = Array.from({ length: numDays }, (_, index) => {
+      const day = index + 1;
+      const date = toIsoDate(targetYear, month, day);
+      const weekday = new Date(targetYear, month, day).getDay();
+      const status = vacationStatusOf(date, calendar);
+      const baseStatus = schoolStatusOf(date, calendar);
+      const closed = PLAN_SERVICES.every(service => rawProposal(restaurantGroups, weekday, baseStatus, service).source === 'ferme');
+      const chain = chainOf(weekday, status, baseStatus);
+      const average = chain.length > 0 && !closed ? chain[0].ca / chain[0].days : 0;
+      const groupTm = chain.map(group => (group.cv > 0 ? group.ca / group.cv : 0)).find(tm => tm > 0) ?? 0;
+      return { date, closed, weight: Math.max(0, average), tm: round2(groupTm || monthTm || yearTm) };
+    });
+
+    const openDays = days.filter(day => !day.closed);
+    const totalWeight = days.reduce((acc, day) => acc + day.weight, 0);
+    let carry = 0;
+    days.forEach(day => {
+      const share = totalWeight > 0 ? day.weight / totalWeight : (day.closed || openDays.length === 0 ? 0 : 1 / openDays.length);
+      const wanted = target * share + carry;
+      if (share <= 0 || target <= 0 || day.tm <= 0) {
+        result[day.date] = { cv: 0, tm: 0, ca: 0 };
+        return;
+      }
+      const cv = Math.max(0, Math.round(wanted / day.tm));
+      const ca = round2(cv * day.tm);
+      carry = wanted - ca;
+      result[day.date] = { cv, tm: day.tm, ca };
+    });
+  }
+  return result;
+}
+
+// Ajoute la prévision limonade à chaque jour du plan (sites avec limonade uniquement).
+export const withLimonadeDays = (plan: PlanDay[], limonadeByDate: Record<string, PlanLimonadeDay>): PlanDay[] =>
+  plan.map(day => ({ ...day, limonade: limonadeByDate[day.date] ?? { cv: 0, tm: 0, ca: 0 } }));
+
+// Couverts et CA limonade de chaque mois (0-11), somme des jours du plan.
+export function summarizeLimonade(plan: PlanDay[]): Record<number, { cv: number; ca: number }> {
+  return Object.fromEntries(Array.from({ length: 12 }, (_, month) => {
+    const days = plan.filter(day => day.month === month);
+    return [month, {
+      cv: days.reduce((acc, day) => acc + (day.limonade?.cv ?? 0), 0),
+      ca: days.reduce((acc, day) => acc + (day.limonade?.ca ?? 0), 0),
+    }];
+  }));
+}
+
 // --- Écriture dans les Prévisions (cellules dashboard cols 6 à 9) ---
 
 type DashboardByMonth = Record<number, Record<string, string> | undefined>;
@@ -500,6 +611,12 @@ export function buildBudgetWrites(
     cells[`${rIdx}-7`] = tmCell(day.midi.tm);
     cells[`${rIdx}-8`] = cvCell(day.soir.cv);
     cells[`${rIdx}-9`] = tmCell(day.soir.tm);
+    // Limonade (sites Au Bureau) : couverts et TM en cols 14/15, le CA (col 2) est recalculé comme 0/1.
+    // Un jour sans limonade écrit des cellules vides (effacement en mode « écraser »).
+    if (day.limonade) {
+      cells[`${rIdx}-14`] = cvCell(day.limonade.cv);
+      cells[`${rIdx}-15`] = tmCell(day.limonade.tm);
+    }
     writes.daysWritten += 1;
     if (already) writes.daysOverwritten += 1;
   });
@@ -509,11 +626,17 @@ export function buildBudgetWrites(
 // --- Export CSV / Excel (relecture) ---
 
 export const PLAN_ROW_HEADER = ['Date', 'Jour', 'Statut', 'Service', 'Couverts', 'TM', 'CA', 'Confiance', 'Échantillons', 'Source', 'Estimateur', 'Modifié'] as const;
+export const PLAN_ROW_HEADER_LIMONADE = [...PLAN_ROW_HEADER, 'Cvts limo', 'TM limo', 'CA limo'] as const;
+
+// Le plan contient-il une prévision limonade (site avec limonade) ? Sinon exports inchangés.
+export const planHasLimonade = (plan: PlanDay[]): boolean => plan.some(day => day.limonade !== undefined);
 
 export type PlanRow = {
   date: string; weekday: string; status: string; service: PlanService;
   cv: number; tm: number; ca: number;
   confidence: string; n: number; source: PlanSource; estimator: PlanEstimator; manual: string;
+  // Limonade du jour, portée par la ligne du midi seulement (une valeur par jour, jamais comptée deux fois).
+  limonade?: PlanLimonadeDay;
 };
 
 const CONFIDENCE_LABEL: Record<PlanConfidence, string> = { fiable: 'fiable', faible: 'faible', critique: 'critique' };
@@ -528,6 +651,7 @@ export function planRows(plan: PlanDay[]): PlanRow[] {
       date: day.date, weekday: WEEKDAY_LABEL[day.weekday], status: STATUS_LABEL[day.status], service,
       cv: p.cv, tm: p.tm, ca: p.ca,
       confidence: CONFIDENCE_LABEL[p.confidence], n: p.n, source: p.source, estimator: p.estimator, manual: p.manual ? 'oui' : 'non',
+      ...(service === 'midi' && day.limonade ? { limonade: day.limonade } : {}),
     };
   }));
 }
@@ -535,12 +659,14 @@ export function planRows(plan: PlanDay[]): PlanRow[] {
 const csvNumber = (value: number): string => String(value).replace('.', ',');
 
 export function planToCsv(plan: PlanDay[]): string {
-  const lines = [PLAN_ROW_HEADER.join(';')];
+  const withLimonade = planHasLimonade(plan);
+  const lines = [(withLimonade ? PLAN_ROW_HEADER_LIMONADE : PLAN_ROW_HEADER).join(';')];
   planRows(plan).forEach(r => {
     lines.push([
       r.date, r.weekday, r.status, r.service,
       r.cv, csvNumber(r.tm), csvNumber(r.ca),
       r.confidence, r.n, r.source, r.estimator, r.manual,
+      ...(withLimonade ? [r.limonade?.cv ?? '', r.limonade ? csvNumber(r.limonade.tm) : '', r.limonade ? csvNumber(r.limonade.ca) : ''] : []),
     ].join(';'));
   });
   return '﻿' + lines.join('\r\n');

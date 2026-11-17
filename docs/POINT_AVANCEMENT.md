@@ -5,6 +5,15 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Planification budgétaire : limonade, sites Au Bureau)
+
+- Historique sans limonade (bug) : `usePlanification` passe `useHasLimonade()` à `collectDailySamples` (et aux dépendances du `useMemo`) ; avant, `computeMonthDashboard` effaçait les colonnes limonade et `caLimo` / `cvLimo` valaient 0 dans tous les échantillons (vérifié : 0 sans le paramètre). La règle « jour sans réalisé → budget du même jour » s'applique donc aussi à la limonade. tsc OK.
+- Objectifs limonade : `proposeAnnualLimonade` et `planMonthlyLimonade` (`planningTargets.ts`, logique de la VAE factorisée dans `planMonthlySeparate`, comportement VAE inchangé) ; `PlanSettings.targetAnnualLimonade` / `targetMonthlyLimonade` (défauts null et {}, remis à zéro au changement d'année cible) ; setter `setMonthLimonade`. tsc OK.
+- Répartition au jour : `planLimonadeDays` (`planningEngine.ts`) : groupes jour de semaine × statut (férié → statut scolaire → tous statuts), poids = CA limonade moyen du groupe, TM = TM limonade du groupe (repli TM du mois puis de l'année), couverts = CA / TM arrondis avec report (total du mois à moins d'un demi-TM), jour fermé côté restaurant ou CA nul = 0 ; résultat dans `PlanDay.limonade?`. La limonade n'entre jamais dans `generatePlan` (plan restaurant identique avec et sans limonade, testé). tsc OK.
+- Écran : champ « CA limonade annuel » (`PlanAnnualCaField`) à côté de « VAE annuel » ; tableau mensuel avec « CA limonade (modifiable) », « Cvts limo », « TM limo », « CA total prévu » et lignes Limonade / Total prévu au pied ; tableau jour avec « Cvts limo », « TM limo », « CA limo » en lecture seule ; tout conditionné à la limonade, Hippo identique. tsc OK.
+- Écriture et exports : `buildBudgetWrites` écrit `-14` / `-15` (jamais `-2`, recalculé ; cellules vides en mode « écraser » pour un jour sans limonade) ; `PlanWriteModal` mentionne « + couverts et TM limonade » ; CSV et Excel : colonnes « Cvts limo » / « TM limo » / « CA limo » (portées par la ligne du midi, une valeur par jour) et « CA limonade » / « CA total prévu » au récap mensuel ; exports Hippo inchangés. 7 tests (`planningLimonade.test.ts`). tsc OK, build OK.
+- Vérifié sur BURO CORM V25 (2025) + V26 (2026), cible 2027 : proposition 92 458 € ; novembre 6 180,71 € / 7 313,60 €, décembre 7 319,64 € / 5 925,50 € ; mars saisi à 8 000 € : somme des jours 7 999,94 €, les autres mois inchangés ; écriture du 5 mars (cols 14 = 36, 15 = 8,12 €, col 2 non écrite). Non vérifié : captures d'écran (connexion Supabase requise), Hippo à l'écran.
+
 ## 17/11/2026 (Limonade intégrée aux tableaux principaux + Reporting remappé)
 
 - Blocs séparés supprimés : `<LimonadeSection>` retiré de toutes les pages, `LimonadeSection.tsx` et `limonadeRows.ts` supprimés (test des lignes retiré) ; `getLimonadeMonthStats` / `getLimonadeTm` conservés dans `edgRealtimeSources.ts`. tsc OK.

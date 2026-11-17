@@ -15,6 +15,13 @@ type PlanMonthTableProps = {
   vaeByMonth: Record<number, number>;
   vaeTargets: Record<number, number | null>;
   onMonthVae: (month: number, value: number | null) => void;
+  // Limonade (sites Au Bureau) : absent pour Hippo, la table reste alors identique.
+  limonade?: {
+    byMonth: Record<number, number>;
+    targets: Record<number, number | null>;
+    summary: Record<number, { cv: number; ca: number }>;
+    onMonthLimonade: (month: number, value: number | null) => void;
+  };
   onOpenMonth: (month: number) => void;
 };
 
@@ -27,8 +34,15 @@ const footLabel = `${td} text-left font-black text-amber-50`;
 const tmWithVae = (ca: number, vae: number, cv: number): string => (cv > 0 ? formatEuroSymbol((ca + vae) / cv) : '—');
 
 export default function PlanMonthTable({
-  summaries, existingByMonth, monthTargets, baseCaByMonth, onMonthTarget, vaeByMonth, vaeTargets, onMonthVae, onOpenMonth,
+  summaries, existingByMonth, monthTargets, baseCaByMonth, onMonthTarget, vaeByMonth, vaeTargets, onMonthVae, limonade, onOpenMonth,
 }: PlanMonthTableProps) {
+  // 4 colonnes en plus avec limonade : CA limonade (modifiable), Cvts limo, TM limo, CA total prévu.
+  const extra = limonade ? 4 : 0;
+  const limoTotal = summaries.reduce((acc, s) => ({
+    cv: acc.cv + (limonade?.summary[s.month]?.cv ?? 0),
+    ca: acc.ca + (limonade?.byMonth[s.month] ?? 0),
+    planned: acc.planned + (limonade?.summary[s.month]?.ca ?? 0),
+  }), { cv: 0, ca: 0, planned: 0 });
   const total = summaries.reduce((acc, s) => ({
     cv: acc.cv + s.cvMidi + s.cvSoir,
     ca: acc.ca + s.caMidi + s.caSoir,
@@ -37,7 +51,7 @@ export default function PlanMonthTable({
 
   return (
     <div className={`${analyseGlass} overflow-x-auto`}>
-      <table className="w-full min-w-[1080px] border-collapse">
+      <table className={`w-full border-collapse ${limonade ? 'min-w-[1400px]' : 'min-w-[1080px]'}`}>
         <thead>
           <tr className="border-b border-white/10">
             <th className={`${th} text-left`}>Mois</th>
@@ -50,6 +64,14 @@ export default function PlanMonthTable({
             <th className={th}>TM restaurant</th>
             <th className={th}>VAE (modifiable)</th>
             <th className={th}>TM avec VAE</th>
+            {limonade && (
+              <>
+                <th className={th}>CA limonade (modifiable)</th>
+                <th className={th}>Cvts limo</th>
+                <th className={th}>TM limo</th>
+                <th className={th}>CA total prévu</th>
+              </>
+            )}
             <th className={th}>Jours à vérifier</th>
             <th className={th}>Prévisions existantes</th>
           </tr>
@@ -87,6 +109,23 @@ export default function PlanMonthTable({
                   />
                 </td>
                 <td className={td}>{tmWithVae(s.caMidi + s.caSoir, vae, s.cvMidi + s.cvSoir)}</td>
+                {limonade && (
+                  <>
+                    <td className={td} onClick={event => event.stopPropagation()}>
+                      <PlanNumberInput
+                        ariaLabel={`CA limonade ${MONTH_NAMES[s.month]}`}
+                        value={limonade.targets[s.month] ?? Math.round(limonade.byMonth[s.month] ?? 0)}
+                        step={100}
+                        allowEmpty
+                        highlight={typeof limonade.targets[s.month] === 'number'}
+                        onCommit={value => limonade.onMonthLimonade(s.month, value === null || value < 0 ? null : value)}
+                      />
+                    </td>
+                    <td className={td}>{limonade.summary[s.month]?.cv ?? 0}</td>
+                    <td className={td}>{(limonade.summary[s.month]?.cv ?? 0) > 0 ? formatEuroSymbol((limonade.summary[s.month]?.ca ?? 0) / limonade.summary[s.month].cv) : '—'}</td>
+                    <td className={`${td} font-black text-white`}>{formatEuroSymbol(s.caMidi + s.caSoir + vae + (limonade.summary[s.month]?.ca ?? 0))}</td>
+                  </>
+                )}
                 <td className={td}>
                   {s.daysCritique > 0 && <span className="mr-1 rounded-full bg-rose-500/25 px-2 py-0.5 text-[10px] font-black text-rose-200">{s.daysCritique} critique(s)</span>}
                   {s.daysFaible > 0 && <span className="mr-1 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-black text-amber-200">{s.daysFaible} faible(s)</span>}
@@ -105,22 +144,40 @@ export default function PlanMonthTable({
             <td className={td} colSpan={2}>{total.cv} couverts</td>
             <td className={`${td} font-black text-white`} colSpan={4}>{formatEuroSymbol(total.ca)}</td>
             <td className={`${td} font-black text-white`}>{total.cv > 0 ? formatEuroSymbol(total.ca / total.cv) : '—'}</td>
-            <td className={td} colSpan={4} />
+            <td className={td} colSpan={4 + extra} />
           </tr>
           <tr>
             <td className={footLabel}>VAE</td>
             <td className={td} colSpan={7} />
             <td className={`${td} font-black text-white`}>{formatEuroSymbol(total.vae)}</td>
-            <td className={td} colSpan={3} />
+            <td className={td} colSpan={3 + extra} />
           </tr>
+          {limonade && (
+            <tr>
+              <td className={footLabel}>Limonade</td>
+              <td className={td} colSpan={9} />
+              <td className={`${td} font-black text-white`}>{formatEuroSymbol(limoTotal.ca)}</td>
+              <td className={td}>{limoTotal.cv} cvts</td>
+              <td className={`${td} font-black text-white`}>{limoTotal.cv > 0 ? formatEuroSymbol(limoTotal.planned / limoTotal.cv) : '—'}</td>
+              <td className={td} colSpan={3} />
+            </tr>
+          )}
           <tr className="border-t border-white/10">
             <td className={footLabel}>Total avec VAE</td>
             <td className={td} colSpan={2} />
             <td className={`${td} font-black text-white`} colSpan={4}>{formatEuroSymbol(total.ca + total.vae)}</td>
             <td className={td} colSpan={2} />
             <td className={`${td} font-black text-white`}>{tmWithVae(total.ca, total.vae, total.cv)}</td>
-            <td className={td} colSpan={2} />
+            <td className={td} colSpan={2 + extra} />
           </tr>
+          {limonade && (
+            <tr>
+              <td className={footLabel}>Total prévu (restaurant + VAE + limonade)</td>
+              <td className={td} colSpan={12} />
+              <td className={`${td} font-black text-white`}>{formatEuroSymbol(total.ca + total.vae + limoTotal.planned)}</td>
+              <td className={td} colSpan={2} />
+            </tr>
+          )}
         </tfoot>
       </table>
     </div>
