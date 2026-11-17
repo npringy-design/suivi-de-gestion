@@ -5,6 +5,16 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Au Bureau : validation d'import fluide, colonnes limonade Excel, fournisseurs, contrats)
+
+- Validation d'import en une écriture : `applyHistoricalBudgetExcelImport` et `applyHistoricalV25ExcelImport` accumulent toutes les cellules (resets, jours, FG, contrats, démarques ; la dernière écriture gagne) dans un patch `Record<mois, Record<cellKey, string>>` appliqué par un seul `importBudgetPlan(year, patch)` (`mergeDashboardCellsData` conserve bien les `''`, test ajouté), puis `markMonthsAsLoaded` et `saveNow`. tsc OK.
+- Lignes au-dessus de l'en-tête : `findHistoricalDataStartRow` (ligne dont la colonne A vaut « DATE », sinon 0) utilisé par les boucles jour V25 et V26 ; la date en A5 ne crée plus de ligne « 1er du mois » (vérifié sur BURO CORM V26 et V25). tsc OK.
+- Colonnes limonade Réalisé Au Bureau : en Réalisé COMPLET et SAISIE, plus de colonnes 110–115 ; CA HT = col 20 + écart budget (col 144 = 20 − 2) ; couverts = 34 / 35 / 36 + écarts couverts (145 = 34 − 14) et TM (146 = 35 − 15), ajoutés en fin de `dashboardColumns` (calculés, ni saisis ni stockés, écarts seulement si le budget existe) ; `computeDashboardData` ne remplace plus 20/34 par le détail midi/soir quand `hasLimonade`. Hippo inchangé. Vérifié sur BURO CORM V26 (01/11/2026) : CA limonade 563,34 €, écart 248,34 €, 59 couverts, TM 9,55 €, cumul 59, écart couverts 24. tsc OK.
+- Import PDF caisse : pour un site avec limonade, les colonnes 20, 34, 110–115 ne sont pas écrites (tous les parseurs caisse, dont l'ancien qui écrivait 0), statut « Limonade non importée depuis la caisse pour ce site (Excel ou saisie manuelle) ». Hippo inchangé. tsc OK.
+- Fournisseurs Au Bureau : `migrateAuBureauPurchaseSections` (liquides/solides strictement identiques à ceux de Hippo → `AU_BUREAU_PURCHASE_SECTIONS`, segment `companySettings` marqué modifié ; rien si personnalisés ; frais généraux intacts), appliquée à la fusion des réglages cloud ; bouton « Rétablir les fournisseurs Au Bureau » (confirmation, puis « Enregistrer ») dans Paramètres entreprise, sites Au Bureau seulement. 7 tests. tsc OK.
+- Contrats mensualisés : les imports V26 et V25 écrivent le nom et le montant en 106/107 (au lieu de 112/113, colonnes limonade midi) ; la remise à zéro du mois efface 106/107 et aussi 112/113 (anciennes valeurs). `caisseRecapPeriodeParser.ts` non touché. Concerne tous les sites. Un import V25 remet à zéro les contrats des mois importés (le V25 n'en importe aucun). tsc OK.
+- Non vérifié : captures d'écran et temps de validation dans le navigateur (connexion Supabase requise) ; import d'un fichier Hippo.
+
 ## 17/11/2026 (Import Excel : lecture rapide + contrôle limonade V25)
 
 - jszip : `jszip` `^3.10.1` déclaré dans `dependencies` (déjà présent en transitif via exceljs, même version, `package-lock.json` mis à jour à la main pour l'entrée racine) ; chargé uniquement par `await import('jszip')` (chunk séparé). Aucun parsing modifié. build OK.

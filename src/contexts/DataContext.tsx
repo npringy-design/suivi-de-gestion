@@ -6,7 +6,7 @@ import { fetchCloudAppBootstrap, fetchCloudMonth, fetchCloudYearMonths, isCloudS
 import { mergeDashboardCellsData, mergeEdgMensuelBudgetData, mergeEdgMensuelRealiseData, normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
 import { parseMoneyValue } from '@/lib/money';
 import { createDefaultEdgChargesConfig } from '@/features/edg/edgChargesConfigDefaults';
-import { getDefaultCompanySettings, DEFAULT_CAISSE_SYSTEMS } from '@/features/parametres/companySettingsDefaults';
+import { getDefaultCompanySettings, migrateAuBureauPurchaseSections, DEFAULT_CAISSE_SYSTEMS } from '@/features/parametres/companySettingsDefaults';
 import { normalizePayrollCosts } from '@/features/masseSalariale/payrollDefaults';
 
 export type {
@@ -334,6 +334,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const merged = { ...getDefaultCompanySettings(getSiteBrand(activeSiteId)), ...prev, ...(cloudState.companySettings as CompanySettings) };
         if (!merged.caisseSystemes?.length) {
           merged.caisseSystemes = DEFAULT_CAISSE_SYSTEMS;
+        }
+        // Site Au Bureau dont les fournisseurs n'ont jamais été personnalisés (ceux de Hippo) : on passe à ceux d'Au Bureau.
+        const migrated = getSiteBrand(activeSiteId) === 'au_bureau' ? migrateAuBureauPurchaseSections(merged) : null;
+        if (migrated) {
+          dirtySegmentsRef.current.companySettings = true;
+          return migrated;
         }
         return merged;
       });

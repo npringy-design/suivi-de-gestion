@@ -543,3 +543,20 @@ export const buildSupplierColumnMapFromSettings = (
   }
   return result;
 };
+
+// Première ligne de données (0-based) : celle qui suit la ligne d'en-tête dont la colonne A vaut « DATE ».
+// Une date placée au-dessus (ex. « 2026-01-01 » en A5) n'est pas un jour. Ligne « DATE » introuvable : 0.
+const HEADER_SEARCH_MAX_ROW = 30;
+
+export const findHistoricalDataStartRow = (sheet: Worksheet): number => {
+  const lastRow = Math.min(sheet.rowCount, HEADER_SEARCH_MAX_ROW);
+  for (let rowIndex = 0; rowIndex < lastRow; rowIndex += 1) {
+    try {
+      const text = String(getHistoricalBudgetCell(sheet, rowIndex, 0)?.text ?? '').trim().toUpperCase();
+      if (text === 'DATE') return rowIndex + 1;
+    } catch {
+      // cellule illisible : on continue la recherche
+    }
+  }
+  return 0;
+};

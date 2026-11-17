@@ -45,6 +45,7 @@ import {
   getHistoricalLimonadeBudgetValues,
   getHistoricalCostMatterColumnMap,
   buildSupplierColumnMapFromSettings,
+  findHistoricalDataStartRow,
   getHistoricalCostMatterValues,
   getHistoricalRealiseRowValues,
   historicalCostMatterSupplierCols,
@@ -80,6 +81,21 @@ import {
 type DayRowEntry = { row: DashboardRow; index: number };
 type ImportPreviewItem = { label: string; value: string };
 type SetState<T> = React.Dispatch<React.SetStateAction<T>>;
+// Colonnes limonade (CA, couverts, détail midi/soir) ignorées par l'import caisse des sites avec limonade.
+const CAISSE_LIMONADE_COLS: ReadonlySet<number> = new Set([20, 34, 110, 111, 112, 113, 114, 115]);
+
+type CellWriter = (month: number, cellKey: string, value: string) => void;
+
+// Accumule les écritures de cellules (la dernière gagne) pour les appliquer en une seule mise à jour.
+const createCellPatch = () => {
+  const patch: Record<number, Record<string, string>> = {};
+  const writeCell: CellWriter = (month, cellKey, value) => {
+    const monthPatch = patch[month] ?? {};
+    monthPatch[cellKey] = value;
+    patch[month] = monthPatch;
+  };
+  return { patch, writeCell };
+};
 
 type UseDashboardImportHandlersParams = {
   month: number;
@@ -94,6 +110,7 @@ type UseDashboardImportHandlersParams = {
   setMonth: (month: number) => void;
   setSelectedMonth: (month: number) => void;
   globalData: Record<number, MonthData>;
+  importBudgetPlan: (year: number, valuesByMonth: Record<number, Record<string, string>>) => void;
   purchaseSections: PurchaseSection[];
   monthNames: string[];
   historicalBudgetPreviews: HistoricalBudgetPreview[];
@@ -144,6 +161,7 @@ export function useDashboardImportHandlers({
   setSelectedMonth,
   globalData,
   purchaseSections,
+  importBudgetPlan,
   monthNames,
   historicalBudgetPreviews,
   historicalV25Previews,
@@ -190,23 +208,26 @@ export function useDashboardImportHandlers({
     entries: HistoricalFgEntry[];
     contrats: HistoricalContratEntry[];
   }[]>([]);
-  const resetFgDataForMonth = (monthIndex: number) => {
+  const resetFgDataForMonth = (monthIndex: number, writeCell: CellWriter) => {
     for (let box = 0; box <= 3; box++) {
       for (let colGroup = 0; colGroup <= 2; colGroup++) {
         for (let dIdx = 0; dIdx < 10; dIdx++) {
           const key = `fg-data-${box}-${colGroup}-${dIdx}`;
-          updateDashboard(monthIndex, `${key}-0`, '');
-          updateDashboard(monthIndex, `${key}-1`, '');
-          updateDashboard(monthIndex, `${key}-2`, '');
-          updateDashboard(monthIndex, `${key}-3`, '');
+          writeCell(monthIndex, `${key}-0`, '');
+          writeCell(monthIndex, `${key}-1`, '');
+          writeCell(monthIndex, `${key}-2`, '');
+          writeCell(monthIndex, `${key}-3`, '');
         }
       }
     }
     for (let i = 0; i < 25; i++) {
       const rowIndex = dayRows[i]?.index;
       if (rowIndex === undefined) continue;
-      updateDashboard(monthIndex, `${rowIndex}-112`, '');
-      updateDashboard(monthIndex, `${rowIndex}-113`, '');
+      // Contrats mensualisés : nom (106) et montant (107). 112/113 (limonade midi) : anciennes valeurs écrites à tort.
+      writeCell(monthIndex, `${rowIndex}-106`, '');
+      writeCell(monthIndex, `${rowIndex}-107`, '');
+      writeCell(monthIndex, `${rowIndex}-112`, '');
+      writeCell(monthIndex, `${rowIndex}-113`, '');
     }
   };
   const formatSupplierWarnings = (names: ReadonlySet<string>) =>
@@ -354,7 +375,8 @@ export function useDashboardImportHandlers({
         const budgetColMap = detectBudgetColumnMap(sheet);
         const limonadeColMap = hasLimonade ? detectLimonadeBudgetColumns(sheet) : null;
 
-        for (let rowNumber = 0; rowNumber <= range.rowCount - 1; rowNumber += 1) {
+        const dataStartRow = findHistoricalDataStartRow(sheet);
+        for (let rowNumber = dataStartRow; rowNumber <= range.rowCount - 1; rowNumber += 1) {
           const dateCell = getHistoricalBudgetCell(sheet, rowNumber, 0);
           const parsedDate = parseHistoricalBudgetCellDate(dateCell);
           if (!parsedDate) continue;
@@ -438,19 +460,20 @@ export function useDashboardImportHandlers({
   // Purge les colonnes personnel de TOUS les jours des mois importés, y compris ceux absents
   // des previews (jours sans donnée source) : un import précédent a pu y laisser des valeurs
   // dupliquées, et le reset par ligne importée ne les atteint jamais.
-  const resetHistoricalPayrollForMonths = (months: number[]) => {
+  const resetHistoricalPayrollForMonths = (months: number[], writeCell: CellWriter) => {
     months.forEach(monthIndex => {
       for (let day = 1; day <= 31; day += 1) {
         const rowIndex = getDashboardRowIndexForDay(year, monthIndex, day);
         if (rowIndex < 0) continue;
         [...historicalPayrollAllCols, ...historicalPayrollAllGlobalCols].forEach(col => {
-          updateDashboard(monthIndex, rowIndex + '-' + col, '');
+          writeCell(monthIndex, rowIndex + '-' + col, '');
         });
       }
     });
   };
 
   const applyHistoricalBudgetExcelImport = async () => {
+    const { patch, writeCell } = createCellPatch();
     const usedColsByMonth = new Map<number, Set<number>>();
     historicalBudgetPreviews.forEach(item => {
       if (!usedColsByMonth.has(item.month)) usedColsByMonth.set(item.month, new Set());
@@ -460,56 +483,56 @@ export function useDashboardImportHandlers({
       const usesGlobal = historicalPayrollAllGlobalCols.some(col => cols.has(col));
       updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle');
     });
-    resetHistoricalPayrollForMonths([...new Set(historicalBudgetPreviews.map(item => item.month))]);
+    resetHistoricalPayrollForMonths([...new Set(historicalBudgetPreviews.map(item => item.month))], writeCell);
     historicalBudgetPreviews.forEach(item => {
-      updateDashboard(item.month, item.rowIndex + '-0', item.caMidi > 0 ? formatImportedNumber(item.caMidi) : '');
-      updateDashboard(item.month, item.rowIndex + '-1', item.caSoir > 0 ? formatImportedNumber(item.caSoir) : '');
-      updateDashboard(item.month, item.rowIndex + '-2', '');
-      updateDashboard(item.month, item.rowIndex + '-6', formatImportedNumber(item.couvertsMidi, 0));
-      updateDashboard(item.month, item.rowIndex + '-7', formatImportedNumber(item.tmMidi));
-      updateDashboard(item.month, item.rowIndex + '-8', formatImportedNumber(item.couvertsSoir, 0));
-      updateDashboard(item.month, item.rowIndex + '-9', formatImportedNumber(item.tmSoir));
-      updateDashboard(item.month, item.rowIndex + '-14', hasLimonade ? formatImportedNumber(item.couvertsLimo, 0) : '');
-      updateDashboard(item.month, item.rowIndex + '-15', hasLimonade ? formatImportedNumber(item.tmLimo) : '');
-      updateDashboard(item.month, item.rowIndex + '-17', formatImportedNumber(item.realiseVae));
-      updateDashboard(item.month, item.rowIndex + '-18', formatImportedNumber(item.realiseMidi));
-      updateDashboard(item.month, item.rowIndex + '-19', formatImportedNumber(item.realiseSoir));
-      updateDashboard(item.month, item.rowIndex + '-20', formatImportedNumber(item.realiseLimo));
-      updateDashboard(item.month, item.rowIndex + '-25', formatImportedNumber(item.realiseCouvertsMidi, 0));
-      updateDashboard(item.month, item.rowIndex + '-27', formatImportedNumber(item.realiseCouvertsSoir, 0));
-      updateDashboard(item.month, item.rowIndex + '-34', hasLimonade ? formatImportedNumber(item.realiseCouvertsLimo, 0) : '');
+      writeCell(item.month, item.rowIndex + '-0', item.caMidi > 0 ? formatImportedNumber(item.caMidi) : '');
+      writeCell(item.month, item.rowIndex + '-1', item.caSoir > 0 ? formatImportedNumber(item.caSoir) : '');
+      writeCell(item.month, item.rowIndex + '-2', '');
+      writeCell(item.month, item.rowIndex + '-6', formatImportedNumber(item.couvertsMidi, 0));
+      writeCell(item.month, item.rowIndex + '-7', formatImportedNumber(item.tmMidi));
+      writeCell(item.month, item.rowIndex + '-8', formatImportedNumber(item.couvertsSoir, 0));
+      writeCell(item.month, item.rowIndex + '-9', formatImportedNumber(item.tmSoir));
+      writeCell(item.month, item.rowIndex + '-14', hasLimonade ? formatImportedNumber(item.couvertsLimo, 0) : '');
+      writeCell(item.month, item.rowIndex + '-15', hasLimonade ? formatImportedNumber(item.tmLimo) : '');
+      writeCell(item.month, item.rowIndex + '-17', formatImportedNumber(item.realiseVae));
+      writeCell(item.month, item.rowIndex + '-18', formatImportedNumber(item.realiseMidi));
+      writeCell(item.month, item.rowIndex + '-19', formatImportedNumber(item.realiseSoir));
+      writeCell(item.month, item.rowIndex + '-20', formatImportedNumber(item.realiseLimo));
+      writeCell(item.month, item.rowIndex + '-25', formatImportedNumber(item.realiseCouvertsMidi, 0));
+      writeCell(item.month, item.rowIndex + '-27', formatImportedNumber(item.realiseCouvertsSoir, 0));
+      writeCell(item.month, item.rowIndex + '-34', hasLimonade ? formatImportedNumber(item.realiseCouvertsLimo, 0) : '');
       historicalCostMatterSupplierCols.forEach(targetCol => {
-        updateDashboard(item.month, item.rowIndex + '-' + targetCol, '');
+        writeCell(item.month, item.rowIndex + '-' + targetCol, '');
       });
       Object.entries(item.costMatterValues || {}).forEach(([targetCol, amount]) => {
-        updateDashboard(item.month, item.rowIndex + '-' + targetCol, formatImportedNumber(amount));
+        writeCell(item.month, item.rowIndex + '-' + targetCol, formatImportedNumber(amount));
       });
       [...historicalPayrollAllCols, ...historicalPayrollAllGlobalCols].forEach(targetCol => {
-        updateDashboard(item.month, item.rowIndex + '-' + targetCol, '');
+        writeCell(item.month, item.rowIndex + '-' + targetCol, '');
       });
       Object.entries(item.payrollValues || {}).forEach(([targetCol, hourValue]) => {
-        updateDashboard(item.month, item.rowIndex + '-' + targetCol, String(hourValue));
+        writeCell(item.month, item.rowIndex + '-' + targetCol, String(hourValue));
       });
     });
     // Reset + écriture des FG (atomique avec saveNow)
     const fgMonthsDone = new Set<number>();
     pendingFgRef.current.forEach(({ monthIndex, entries, contrats }) => {
       if (!fgMonthsDone.has(monthIndex)) {
-        resetFgDataForMonth(monthIndex);
+        resetFgDataForMonth(monthIndex, writeCell);
         fgMonthsDone.add(monthIndex);
       }
       entries.forEach(entry => {
         const key = `fg-data-${entry.box}-${entry.colGroup}-${entry.dIdx}`;
-        updateDashboard(monthIndex, `${key}-0`, entry.date);
-        updateDashboard(monthIndex, `${key}-1`, entry.fournisseur);
-        updateDashboard(monthIndex, `${key}-2`, entry.motif);
-        updateDashboard(monthIndex, `${key}-3`, entry.montant.toFixed(2));
+        writeCell(monthIndex, `${key}-0`, entry.date);
+        writeCell(monthIndex, `${key}-1`, entry.fournisseur);
+        writeCell(monthIndex, `${key}-2`, entry.motif);
+        writeCell(monthIndex, `${key}-3`, entry.montant.toFixed(2));
       });
       contrats.forEach(contrat => {
         const rowIndex = dayRows[contrat.dIdx]?.index;
         if (rowIndex === undefined) return;
-        updateDashboard(monthIndex, `${rowIndex}-112`, contrat.nom);
-        updateDashboard(monthIndex, `${rowIndex}-113`, contrat.montant.toFixed(2));
+        writeCell(monthIndex, `${rowIndex}-106`, contrat.nom);
+        writeCell(monthIndex, `${rowIndex}-107`, contrat.montant.toFixed(2));
       });
     });
     pendingFgRef.current = [];
@@ -521,11 +544,12 @@ export function useDashboardImportHandlers({
       const demMonthIndex = demMonth - 1;
       const rowIndex = getDashboardRowIndexForDay(year, demMonthIndex, demDay);
       if (rowIndex < 0) return;
-      if (dem.personnel > 0) updateDashboard(demMonthIndex, `${rowIndex}-39`, dem.personnel.toFixed(2));
-      if (dem.operationnel > 0) updateDashboard(demMonthIndex, `${rowIndex}-41`, dem.operationnel.toFixed(2));
-      if (dem.explication) updateDashboard(demMonthIndex, `${rowIndex}-44`, dem.explication);
+      if (dem.personnel > 0) writeCell(demMonthIndex, `${rowIndex}-39`, dem.personnel.toFixed(2));
+      if (dem.operationnel > 0) writeCell(demMonthIndex, `${rowIndex}-41`, dem.operationnel.toFixed(2));
+      if (dem.explication) writeCell(demMonthIndex, `${rowIndex}-44`, dem.explication);
     });
     pendingDemarquesRef.current = [];
+    importBudgetPlan(year, patch);
     const importedMonths = [...new Set(historicalBudgetPreviews.map(item => item.month))];
     markMonthsAsLoaded(year, importedMonths);
     await saveNow();
@@ -571,7 +595,8 @@ export function useDashboardImportHandlers({
         const v25SupplierMapResult = hasLimonade ? buildSupplierColumnMapFromSettings(sheet, range, purchaseSections) : null;
         v25SupplierMapResult?.unrecognized.forEach(name => unrecognizedSuppliers.add(name));
 
-        for (let rowNumber = 0; rowNumber <= range.rowCount - 1; rowNumber += 1) {
+        const dataStartRow = findHistoricalDataStartRow(sheet);
+        for (let rowNumber = dataStartRow; rowNumber <= range.rowCount - 1; rowNumber += 1) {
           const dateCell = getHistoricalBudgetCell(sheet, rowNumber, 0);
           const parsedDate = parseHistoricalBudgetCellDate(dateCell);
           if (!parsedDate) continue;
@@ -656,6 +681,7 @@ export function useDashboardImportHandlers({
   };
 
   const applyHistoricalV25ExcelImport = async () => {
+    const { patch, writeCell } = createCellPatch();
     const usedColsByMonth = new Map<number, Set<number>>();
     historicalV25Previews.forEach(item => {
       if (!usedColsByMonth.has(item.month)) usedColsByMonth.set(item.month, new Set());
@@ -666,55 +692,55 @@ export function useDashboardImportHandlers({
       updatePersonnelSchema(monthIdx, usesGlobal ? 'global' : 'cuisine_salle');
     });
 
-    resetHistoricalPayrollForMonths([...new Set(historicalV25Previews.map(item => item.month))]);
+    resetHistoricalPayrollForMonths([...new Set(historicalV25Previews.map(item => item.month))], writeCell);
 
     // Reset complet de toutes les colonnes V25 pour chaque ligne importée (garantit l'idempotence)
     const V25_REALISE_COLS = [6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34];
     const V25_DEMARQUE_COLS = [39, 41, 44];
     historicalV25Previews.forEach(item => {
       V25_REALISE_COLS.forEach(col => {
-        updateDashboard(item.month, item.rowIndex + '-' + col, '');
+        writeCell(item.month, item.rowIndex + '-' + col, '');
       });
       V25_DEMARQUE_COLS.forEach(col => {
-        updateDashboard(item.month, item.rowIndex + '-' + col, '');
+        writeCell(item.month, item.rowIndex + '-' + col, '');
       });
       historicalCostMatterSupplierCols.forEach(col => {
-        updateDashboard(item.month, item.rowIndex + '-' + col, '');
+        writeCell(item.month, item.rowIndex + '-' + col, '');
       });
       [...historicalPayrollAllCols, ...historicalPayrollAllGlobalCols].forEach(col => {
-        updateDashboard(item.month, item.rowIndex + '-' + col, '');
+        writeCell(item.month, item.rowIndex + '-' + col, '');
       });
     });
 
     historicalV25Previews.forEach(item => {
       // Budget couverts / TM
-      updateDashboard(item.month, item.rowIndex + '-6',  formatImportedNumber(item.couvertsMidi, 0));
-      updateDashboard(item.month, item.rowIndex + '-7',  formatImportedNumber(item.tmMidi));
-      updateDashboard(item.month, item.rowIndex + '-8',  formatImportedNumber(item.couvertsSoir, 0));
-      updateDashboard(item.month, item.rowIndex + '-9',  formatImportedNumber(item.tmSoir));
-      updateDashboard(item.month, item.rowIndex + '-14', hasLimonade ? formatImportedNumber(item.couvertsLimo, 0) : '');
-      updateDashboard(item.month, item.rowIndex + '-15', hasLimonade ? formatImportedNumber(item.tmLimo) : '');
+      writeCell(item.month, item.rowIndex + '-6',  formatImportedNumber(item.couvertsMidi, 0));
+      writeCell(item.month, item.rowIndex + '-7',  formatImportedNumber(item.tmMidi));
+      writeCell(item.month, item.rowIndex + '-8',  formatImportedNumber(item.couvertsSoir, 0));
+      writeCell(item.month, item.rowIndex + '-9',  formatImportedNumber(item.tmSoir));
+      writeCell(item.month, item.rowIndex + '-14', hasLimonade ? formatImportedNumber(item.couvertsLimo, 0) : '');
+      writeCell(item.month, item.rowIndex + '-15', hasLimonade ? formatImportedNumber(item.tmLimo) : '');
       // Réalisé CA
-      updateDashboard(item.month, item.rowIndex + '-17', formatImportedNumber(item.realiseVae));
-      updateDashboard(item.month, item.rowIndex + '-18', formatImportedNumber(item.realiseMidi));
-      updateDashboard(item.month, item.rowIndex + '-19', formatImportedNumber(item.realiseSoir));
-      updateDashboard(item.month, item.rowIndex + '-20', formatImportedNumber(item.realiseLimo));
-      updateDashboard(item.month, item.rowIndex + '-25', formatImportedNumber(item.realiseCouvertsMidi, 0));
-      updateDashboard(item.month, item.rowIndex + '-27', formatImportedNumber(item.realiseCouvertsSoir, 0));
-      updateDashboard(item.month, item.rowIndex + '-34', hasLimonade ? formatImportedNumber(item.realiseCouvertsLimo, 0) : '');
+      writeCell(item.month, item.rowIndex + '-17', formatImportedNumber(item.realiseVae));
+      writeCell(item.month, item.rowIndex + '-18', formatImportedNumber(item.realiseMidi));
+      writeCell(item.month, item.rowIndex + '-19', formatImportedNumber(item.realiseSoir));
+      writeCell(item.month, item.rowIndex + '-20', formatImportedNumber(item.realiseLimo));
+      writeCell(item.month, item.rowIndex + '-25', formatImportedNumber(item.realiseCouvertsMidi, 0));
+      writeCell(item.month, item.rowIndex + '-27', formatImportedNumber(item.realiseCouvertsSoir, 0));
+      writeCell(item.month, item.rowIndex + '-34', hasLimonade ? formatImportedNumber(item.realiseCouvertsLimo, 0) : '');
       // Coût matière
       historicalCostMatterSupplierCols.forEach(targetCol => {
-        updateDashboard(item.month, item.rowIndex + '-' + targetCol, '');
+        writeCell(item.month, item.rowIndex + '-' + targetCol, '');
       });
       Object.entries(item.costMatterValues || {}).forEach(([targetCol, amount]) => {
-        updateDashboard(item.month, item.rowIndex + '-' + targetCol, formatImportedNumber(amount));
+        writeCell(item.month, item.rowIndex + '-' + targetCol, formatImportedNumber(amount));
       });
       // Personnel
       [...historicalPayrollAllCols, ...historicalPayrollAllGlobalCols].forEach(targetCol => {
-        updateDashboard(item.month, item.rowIndex + '-' + targetCol, '');
+        writeCell(item.month, item.rowIndex + '-' + targetCol, '');
       });
       Object.entries(item.payrollValues || {}).forEach(([targetCol, hourValue]) => {
-        updateDashboard(item.month, item.rowIndex + '-' + targetCol, String(hourValue));
+        writeCell(item.month, item.rowIndex + '-' + targetCol, String(hourValue));
       });
     });
 
@@ -722,21 +748,21 @@ export function useDashboardImportHandlers({
     const fgV25MonthsDone = new Set<number>();
     pendingV25FgRef.current.forEach(({ monthIndex, entries, contrats }) => {
       if (!fgV25MonthsDone.has(monthIndex)) {
-        resetFgDataForMonth(monthIndex);
+        resetFgDataForMonth(monthIndex, writeCell);
         fgV25MonthsDone.add(monthIndex);
       }
       entries.forEach(entry => {
         const key = `fg-data-${entry.box}-${entry.colGroup}-${entry.dIdx}`;
-        updateDashboard(monthIndex, `${key}-0`, entry.date);
-        updateDashboard(monthIndex, `${key}-1`, entry.fournisseur);
-        updateDashboard(monthIndex, `${key}-2`, entry.motif);
-        updateDashboard(monthIndex, `${key}-3`, entry.montant.toFixed(2));
+        writeCell(monthIndex, `${key}-0`, entry.date);
+        writeCell(monthIndex, `${key}-1`, entry.fournisseur);
+        writeCell(monthIndex, `${key}-2`, entry.motif);
+        writeCell(monthIndex, `${key}-3`, entry.montant.toFixed(2));
       });
       contrats.forEach(contrat => {
         const rowIndex = dayRows[contrat.dIdx]?.index;
         if (rowIndex === undefined) return;
-        updateDashboard(monthIndex, `${rowIndex}-112`, contrat.nom);
-        updateDashboard(monthIndex, `${rowIndex}-113`, contrat.montant.toFixed(2));
+        writeCell(monthIndex, `${rowIndex}-106`, contrat.nom);
+        writeCell(monthIndex, `${rowIndex}-107`, contrat.montant.toFixed(2));
       });
     });
     pendingV25FgRef.current = [];
@@ -748,12 +774,13 @@ export function useDashboardImportHandlers({
       const demMonthIndex = demMonth - 1;
       const rowIndex = getDashboardRowIndexForDay(year, demMonthIndex, demDay);
       if (rowIndex < 0) return;
-      if (dem.personnel > 0) updateDashboard(demMonthIndex, `${rowIndex}-39`, dem.personnel.toFixed(2));
-      if (dem.operationnel > 0) updateDashboard(demMonthIndex, `${rowIndex}-41`, dem.operationnel.toFixed(2));
-      if (dem.explication) updateDashboard(demMonthIndex, `${rowIndex}-44`, dem.explication);
+      if (dem.personnel > 0) writeCell(demMonthIndex, `${rowIndex}-39`, dem.personnel.toFixed(2));
+      if (dem.operationnel > 0) writeCell(demMonthIndex, `${rowIndex}-41`, dem.operationnel.toFixed(2));
+      if (dem.explication) writeCell(demMonthIndex, `${rowIndex}-44`, dem.explication);
     });
     pendingV25DemarquesRef.current = [];
 
+    importBudgetPlan(year, patch);
     const importedMonths = [...new Set(historicalV25Previews.map(item => item.month))];
     markMonthsAsLoaded(year, importedMonths);
     await saveNow();
@@ -1406,6 +1433,8 @@ export function useDashboardImportHandlers({
   
     const parsed = caisseImportPreview.parsed;
     Object.entries(parsed.values).forEach(([col, value]) => {
+      // Au Bureau : la limonade ne vient pas de la caisse (Excel ou saisie manuelle), on n'y touche pas.
+      if (hasLimonade && CAISSE_LIMONADE_COLS.has(Number(col))) return;
       const formattedValue = formatImportedNumber(value, Number(col) === 25 || Number(col) === 27 || Number(col) === 34 ? 0 : 2);
       if (targetMonth === month) {
         handleCellChange(targetRowIndex, Number(col), formattedValue);
@@ -1440,7 +1469,7 @@ export function useDashboardImportHandlers({
     const targetLabel = usePdfDate
       ? `${String(targetDay).padStart(2, '0')}/${String(targetMonth + 1).padStart(2, '0')}/${year}`
       : targetDayEntry?.row.label || selectedDayLabel;
-    setImportStatus(`Import realise sur le ${targetLabel}.`);
+    setImportStatus(`Import realise sur le ${targetLabel}.${hasLimonade ? ' Limonade non importée depuis la caisse pour ce site (Excel ou saisie manuelle).' : ''}`);
     setCaisseImportPreviews(prev => prev.filter(item => item.id !== caisseImportPreview.id));
   };
   

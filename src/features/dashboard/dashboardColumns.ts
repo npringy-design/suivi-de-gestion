@@ -147,6 +147,10 @@ export const dashboardColumns: DashboardColumn[] = [
   ['REALISE', 'CA HT', 'Tendance\nvs Budget %', 'bg-white'],
   ['REALISE', 'CA HT', 'Tendance\nvs N-1 %', 'bg-white'],
   ['REALISE', 'COUVERTS', 'ECART BUDGET\nCUMUL NB', 'bg-[#fce4d6]'],
+  // Au Bureau : écarts limonade vs budget (index 144 à 146, calculés : ni saisis ni stockés).
+  ['REALISE', 'CA HT LIMONADE', 'ECART AU BUDGET', 'bg-white'],
+  ['REALISE', 'COUVERTS\nLIMONADE', 'Ecart au Budget Couverts', 'bg-white'],
+  ['REALISE', 'COUVERTS\nLIMONADE', 'Ecart au Budget Moy CVTS', 'bg-white'],
 ];
 
 export function buildDynamicColumns(

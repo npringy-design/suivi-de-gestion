@@ -261,7 +261,8 @@ export function computeDashboardData(
         const realiseSoir = parseMoneyValue(data[`${rIdx}-19`]);
         const realiseLimoMidiDetail = parseMoneyValue(data[`${rIdx}-110`]);
         const realiseLimoSoirDetail = parseMoneyValue(data[`${rIdx}-111`]);
-        const realiseLimoDetailTotal = realiseLimoMidiDetail + realiseLimoSoirDetail;
+        // Au Bureau : les totaux 20/34 font foi (pas de détail midi/soir), comme dans l'Excel.
+        const realiseLimoDetailTotal = hasLimonade ? 0 : realiseLimoMidiDetail + realiseLimoSoirDetail;
         const realiseLimo = realiseLimoDetailTotal > 0 ? realiseLimoDetailTotal : parseMoneyValue(data[`${rIdx}-20`]);
         if (realiseLimoDetailTotal > 0) data[`${rIdx}-20`] = realiseLimoDetailTotal.toFixed(2);
         const realiseRestaurantTotal = realiseMidi + realiseSoir;
@@ -301,15 +302,23 @@ export function computeDashboardData(
         // COUVERTS LIMONADE — detail midi/soir + total historique
         const nbCvtsLimoMidiDetail = parseMoneyValue(data[`${rIdx}-112`]);
         const nbCvtsLimoSoirDetail = parseMoneyValue(data[`${rIdx}-114`]);
-        const nbCvtsLimoDetailTotal = nbCvtsLimoMidiDetail + nbCvtsLimoSoirDetail;
+        const nbCvtsLimoDetailTotal = hasLimonade ? 0 : nbCvtsLimoMidiDetail + nbCvtsLimoSoirDetail;
         const nbCvtsLimo = nbCvtsLimoDetailTotal > 0 ? nbCvtsLimoDetailTotal : parseMoneyValue(data[`${rIdx}-34`]);
         if (nbCvtsLimoDetailTotal > 0) data[`${rIdx}-34`] = nbCvtsLimoDetailTotal.toFixed(0);
-        if (nbCvtsLimoMidiDetail > 0 && realiseLimoMidiDetail > 0) data[`${rIdx}-113`] = (realiseLimoMidiDetail / nbCvtsLimoMidiDetail).toFixed(2);
-        if (nbCvtsLimoSoirDetail > 0 && realiseLimoSoirDetail > 0) data[`${rIdx}-115`] = (realiseLimoSoirDetail / nbCvtsLimoSoirDetail).toFixed(2);
+        if (!hasLimonade && nbCvtsLimoMidiDetail > 0 && realiseLimoMidiDetail > 0) data[`${rIdx}-113`] = (realiseLimoMidiDetail / nbCvtsLimoMidiDetail).toFixed(2);
+        if (!hasLimonade && nbCvtsLimoSoirDetail > 0 && realiseLimoSoirDetail > 0) data[`${rIdx}-115`] = (realiseLimoSoirDetail / nbCvtsLimoSoirDetail).toFixed(2);
         if (nbCvtsLimo > 0 && realiseLimo > 0) data[`${rIdx}-35`] = (realiseLimo / nbCvtsLimo).toFixed(2);
         if (nbCvtsLimo > 0) {
           cumulCvtsLimo = (cumulCvtsLimo || 0) + nbCvtsLimo;
           data[`${rIdx}-36`] = cumulCvtsLimo.toFixed(0);
+        }
+        // Au Bureau : écarts limonade vs budget (CA 144, couverts 145, TM 146), seulement si le budget existe.
+        if (hasLimonade) {
+          const budgetCvtsLimo = parseMoneyValue(data[`${rIdx}-14`]);
+          const budgetTmLimo = parseMoneyValue(data[`${rIdx}-15`]);
+          if (budgetLimo > 0 && realiseLimo > 0) data[`${rIdx}-144`] = (realiseLimo - budgetLimo).toFixed(2);
+          if (budgetCvtsLimo > 0 && nbCvtsLimo > 0) data[`${rIdx}-145`] = (nbCvtsLimo - budgetCvtsLimo).toFixed(0);
+          if (budgetTmLimo > 0 && nbCvtsLimo > 0 && realiseLimo > 0) data[`${rIdx}-146`] = (realiseLimo / nbCvtsLimo - budgetTmLimo).toFixed(2);
         }
         const totalCvtsJourComplet = totalCvtsJour + nbCvtsLimo;
         if (totalCvtsJourComplet > 0) {
@@ -543,7 +552,7 @@ export function computeDashboardData(
         dynamicColumns.forEach((_, cIdx) => {
           // Skip hatched columns or text columns or averages or cumul columns
           const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 140, 141, 142, 143].includes(cIdx)) return;
+          if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 140, 141, 142, 143, 146].includes(cIdx)) return;
 
           let colSum = 0;
           let hasData = false;
@@ -731,7 +740,7 @@ export function computeDashboardData(
 
       dynamicColumns.forEach((_, cIdx) => {
         const colName = dynamicColumns[cIdx][2] || dynamicColumns[cIdx][1];
-        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 140, 141, 142, 143].includes(cIdx)) return;
+        if (dynamicColumns[cIdx][3] === 'bg-hatched' || ['DATE', 'FOURNISSEUR', 'FOURNISSEURS', 'MOTIF ACHAT', 'Nom'].includes(colName) || [7, 9, 11, 15, 4, 12, 22, 23, 26, 28, 30, 31, 32, 35, 36, 40, 42, 59, 60, 61, 73, 74, 75, 76, 88, 89, 90, 91, 92, 117, 118, 119, 121, 122, 123, 124, 127, 128, 129, 140, 141, 142, 143, 146].includes(cIdx)) return;
 
         let colSum = 0;
         let hasData = false;

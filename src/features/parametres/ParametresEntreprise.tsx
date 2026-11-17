@@ -7,10 +7,12 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import { useAuthSession } from '@/AuthGate';
 import { useData } from '@/contexts/DataContext';
 import type { CompanySettings, PurchaseSection, PurchaseSupplier } from '@/contexts/DataContext';
 import type { CaisseSysteme, CaisseColumn } from '@/types/dataTypes';
-import { MONTH_NAMES_FULL } from '@/features/parametres/companySettingsDefaults';
+import { MONTH_NAMES_FULL, withAuBureauSuppliers } from '@/features/parametres/companySettingsDefaults';
+import { getSiteBrand } from '@/lib/sites';
 import { SCHOOL_ZONES, resolveSchoolZone } from '@/lib/schoolHolidays';
 
 type Props = { onBack: () => void };
@@ -656,6 +658,8 @@ function SectionAchats({ settings, onChange }: {
   settings: CompanySettings;
   onChange: (s: CompanySettings) => void;
 }) {
+  const { activeSiteId } = useAuthSession();
+  const isAuBureau = getSiteBrand(activeSiteId) === 'au_bureau';
   const addSection = () => {
     onChange({ ...settings, purchaseSections: [...settings.purchaseSections, { id: 'sec_' + Date.now(), name: 'Nouvelle section', suppliers: [] }] });
   };
@@ -666,6 +670,12 @@ function SectionAchats({ settings, onChange }: {
 
   const deleteSection = (idx: number) => {
     onChange({ ...settings, purchaseSections: settings.purchaseSections.filter((_, i) => i !== idx) });
+  };
+
+  const restoreAuBureauSuppliers = () => {
+    if (window.confirm('Rétablir les fournisseurs Au Bureau ? Les sections liquides et solides seront remplacées (vos modifications sur ces deux sections seront perdues). Les frais généraux ne changent pas.')) {
+      onChange(withAuBureauSuppliers(settings));
+    }
   };
 
   const moveSection = (idx: number, dir: -1 | 1) => {
@@ -698,6 +708,11 @@ function SectionAchats({ settings, onChange }: {
         <button onClick={addSection} className={BTN_TEAL}>
           <Plus className="h-3.5 w-3.5" /> Ajouter une section
         </button>
+        {isAuBureau && (
+          <button onClick={restoreAuBureauSuppliers} className={BTN_TEAL}>
+            Rétablir les fournisseurs Au Bureau
+          </button>
+        )}
       </div>
     </div>
   );

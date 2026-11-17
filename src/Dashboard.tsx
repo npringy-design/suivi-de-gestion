@@ -105,6 +105,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     importEdgBudget,
     importEdgRealise,
     markMonthsAsLoaded,
+    importBudgetPlan,
     saveNow,
     resetLocalData,
   } = useData();
@@ -410,12 +411,15 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     });
 
     const thilloisNoLimonadeColumns = new Set([2, 14, 15, 16, 20, 34, 35, 36, 110, 111, 112, 113, 114, 115]);
+    // Au Bureau : pas de limonade midi/soir (comme dans l'Excel), les totaux 20/34 font foi.
+    const limonadeMidiSoirColumns = new Set([110, 111, 112, 113, 114, 115]);
     const isGlobalPersonnelSchema = globalData[month]?.personnelSchema === 'global';
     const cuisineSalleColumns = new Set([62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]);
     const globalPersonnelColumns = new Set([130, 131, 132, 133, 134, 135, 136, 137, 138, 139]);
     const visibleColumnsWithoutLimonade = baseVisibleColumns.filter(col => {
       const text = [col[0], col[1], col[2]].join(' ').toUpperCase();
       if (!hasLimonade && (thilloisNoLimonadeColumns.has(col.originalIndex) || text.includes('LIMONADE'))) return false;
+      if (hasLimonade && limonadeMidiSoirColumns.has(col.originalIndex)) return false;
       if (isGlobalPersonnelSchema && cuisineSalleColumns.has(col.originalIndex)) return false;
       if (!isGlobalPersonnelSchema && globalPersonnelColumns.has(col.originalIndex)) return false;
       return true;
@@ -459,14 +463,39 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
 
     if (activeTab !== 'REALISE' || tableViewMode !== 'COMPLET') return visibleColumnsWithoutLimonade;
 
+    const limonadeCaColumns = hasLimonade
+      ? [
+        buildColumn(20, 'CA HT', 'CA HT LIMONADE', 'LIMONADE'),
+        buildColumn(144, 'CA HT', 'CA HT LIMONADE', 'ECART AU BUDGET', 'bg-white'),
+      ]
+      : [
+        buildColumn(110, 'CA HT', 'CA HT LIMONADE', 'MIDI'),
+        buildColumn(111, 'CA HT', 'CA HT LIMONADE', 'SOIR'),
+        buildColumn(20, 'CA HT', 'CA HT LIMONADE', 'TOTAL'),
+      ];
+    const limonadeCouvertsColumns = hasLimonade
+      ? [
+        buildColumn(34, 'COUVERTS', 'COUVERTS LIMONADE', 'NB CVTS'),
+        buildColumn(35, 'COUVERTS', 'COUVERTS LIMONADE', 'CVTS MOY'),
+        buildColumn(36, 'COUVERTS', 'COUVERTS LIMONADE', 'CVTS CUMUL'),
+        buildColumn(145, 'COUVERTS', 'COUVERTS LIMONADE', 'Ecart au Budget Couverts', 'bg-white'),
+        buildColumn(146, 'COUVERTS', 'COUVERTS LIMONADE', 'Ecart au Budget Moy CVTS', 'bg-white'),
+      ]
+      : [
+        buildColumn(112, 'COUVERTS', 'COUVERTS LIMONADE', 'MIDI'),
+        buildColumn(113, 'COUVERTS', 'COUVERTS LIMONADE', 'TM MIDI'),
+        buildColumn(114, 'COUVERTS', 'COUVERTS LIMONADE', 'SOIR'),
+        buildColumn(115, 'COUVERTS', 'COUVERTS LIMONADE', 'TM SOIR'),
+        buildColumn(34, 'COUVERTS', 'COUVERTS LIMONADE', 'TOTAL'),
+        buildColumn(35, 'COUVERTS', 'COUVERTS LIMONADE', 'TM TOTAL'),
+      ];
+
     return [
       buildColumn(17, 'CA HT', '', 'VAE'),
       buildColumn(18, 'CA HT', 'CA HT RESTAURANT', 'MIDI'),
       buildColumn(19, 'CA HT', 'CA HT RESTAURANT', 'SOIR'),
       buildColumn(116, 'CA HT', 'CA HT RESTAURANT', 'TOTAL'),
-      buildColumn(110, 'CA HT', 'CA HT LIMONADE', 'MIDI'),
-      buildColumn(111, 'CA HT', 'CA HT LIMONADE', 'SOIR'),
-      buildColumn(20, 'CA HT', 'CA HT LIMONADE', 'TOTAL'),
+      ...limonadeCaColumns,
       buildColumn(21, 'CA HT', '', 'TOTAL JOUR'),
       buildColumn(23, 'CA HT', '', 'CUMUL MOIS'),
       buildColumn(22, 'CA HT', 'ECART BUDGET', 'VALEUR', 'bg-white'),
@@ -482,12 +511,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       buildColumn(28, 'COUVERTS', 'COUVERTS RESTAURANT', 'TM SOIR'),
       buildColumn(29, 'COUVERTS', 'COUVERTS RESTAURANT', 'TOTAL'),
       buildColumn(30, 'COUVERTS', 'COUVERTS RESTAURANT', 'TM TOTAL'),
-      buildColumn(112, 'COUVERTS', 'COUVERTS LIMONADE', 'MIDI'),
-      buildColumn(113, 'COUVERTS', 'COUVERTS LIMONADE', 'TM MIDI'),
-      buildColumn(114, 'COUVERTS', 'COUVERTS LIMONADE', 'SOIR'),
-      buildColumn(115, 'COUVERTS', 'COUVERTS LIMONADE', 'TM SOIR'),
-      buildColumn(34, 'COUVERTS', 'COUVERTS LIMONADE', 'TOTAL'),
-      buildColumn(35, 'COUVERTS', 'COUVERTS LIMONADE', 'TM TOTAL'),
+      ...limonadeCouvertsColumns,
       buildColumn(120, 'COUVERTS', '', 'TOTAL JOUR'),
       buildColumn(121, 'COUVERTS', '', 'CUMUL MOIS'),
       buildColumn(33, 'COUVERTS', 'ECART BUDGET', 'VALEUR', 'bg-white'),
@@ -592,6 +616,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setSelectedMonth,
     globalData,
     purchaseSections: companySettings.purchaseSections,
+    importBudgetPlan,
     monthNames,
     historicalBudgetPreviews,
     historicalV25Previews,

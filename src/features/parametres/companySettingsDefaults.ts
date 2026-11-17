@@ -133,3 +133,32 @@ export const getDefaultCompanySettings = (brand: SiteBrand): CompanySettings =>
   brand === 'au_bureau'
     ? { ...DEFAULT_COMPANY_SETTINGS, companyName: 'Au Bureau', purchaseSections: AU_BUREAU_PURCHASE_SECTIONS }
     : DEFAULT_COMPANY_SETTINGS;
+
+const SUPPLIER_SECTION_IDS: readonly string[] = ['liquides', 'solides'];
+
+// Remplace les sections liquides/solides par celles d'Au Bureau ; Frais généraux et sections ajoutées intacts.
+export const withAuBureauSuppliers = (settings: CompanySettings): CompanySettings => {
+  const kept = settings.purchaseSections.filter(section => !SUPPLIER_SECTION_IDS.includes(section.id));
+  const auBureau = AU_BUREAU_PURCHASE_SECTIONS.filter(section => SUPPLIER_SECTION_IDS.includes(section.id));
+  return { ...settings, purchaseSections: [...auBureau, ...kept] };
+};
+
+const isDefaultSupplierSection = (current: PurchaseSection | undefined, reference: PurchaseSection | undefined): boolean =>
+  current !== undefined
+  && reference !== undefined
+  && current.name === reference.name
+  && current.suppliers.length === reference.suppliers.length
+  && current.suppliers.every((supplier, i) => {
+    const expected = reference.suppliers[i];
+    return supplier.id === expected.id && supplier.name === expected.name && supplier.storeColumn === expected.storeColumn;
+  });
+
+// Site Au Bureau dont les sections liquides/solides sont strictement celles de Hippo (jamais
+// personnalisées) : renvoie les réglages avec les fournisseurs Au Bureau, sinon null (rien à faire).
+export const migrateAuBureauPurchaseSections = (settings: CompanySettings): CompanySettings | null => {
+  const untouched = SUPPLIER_SECTION_IDS.every(id => isDefaultSupplierSection(
+    settings.purchaseSections.find(section => section.id === id),
+    DEFAULT_COMPANY_SETTINGS.purchaseSections.find(section => section.id === id),
+  ));
+  return untouched ? withAuBureauSuppliers(settings) : null;
+};
