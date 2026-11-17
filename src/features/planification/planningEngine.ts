@@ -454,7 +454,11 @@ export function summarizeByMonth(plan: PlanDay[]): MonthPlanSummary[] {
 // --- Limonade (sites Au Bureau) : CA limonade réparti au jour, hors plan restaurant ---
 // La limonade n'entre jamais dans generatePlan (ni poids, ni planchers de TM, ni croissances).
 
-type LimonadeGroup = { ca: number; cv: number; days: number };
+// ca / days : tous les échantillons (poids du jour). tmCa / tmCv : seulement ceux qui ont à la fois du CA
+// et des couverts limonade (TM), sinon un jour sans couverts gonfle le TM.
+type LimonadeGroup = { ca: number; days: number; tmCa: number; tmCv: number };
+
+const hasLimonadeCovers = (sample: AnalyseDaySample): boolean => sample.reel.caLimo > 0 && sample.reel.cvLimo > 0;
 
 const limonadeKey = (weekday: number, status: PlanVacationStatus | 'any') => `${weekday}|${status}`;
 
@@ -463,10 +467,13 @@ const limonadeKey = (weekday: number, status: PlanVacationStatus | 'any') => `${
 function buildLimonadeGroups(samples: AnalyseDaySample[], calendar: SchoolHolidayCalendar): Map<string, LimonadeGroup> {
   const groups = new Map<string, LimonadeGroup>();
   const add = (key: string, sample: AnalyseDaySample) => {
-    const group = groups.get(key) ?? { ca: 0, cv: 0, days: 0 };
+    const group = groups.get(key) ?? { ca: 0, days: 0, tmCa: 0, tmCv: 0 };
     group.ca += sample.reel.caLimo;
-    group.cv += sample.reel.cvLimo;
     group.days += 1;
+    if (hasLimonadeCovers(sample)) {
+      group.tmCa += sample.reel.caLimo;
+      group.tmCv += sample.reel.cvLimo;
+    }
     groups.set(key, group);
   };
   samples.forEach(sample => {
@@ -478,8 +485,9 @@ function buildLimonadeGroups(samples: AnalyseDaySample[], calendar: SchoolHolida
 }
 
 const tmOfSamples = (samples: AnalyseDaySample[]): number => {
-  const cv = samples.reduce((acc, sample) => acc + sample.reel.cvLimo, 0);
-  return cv > 0 ? samples.reduce((acc, sample) => acc + sample.reel.caLimo, 0) / cv : 0;
+  const usable = samples.filter(hasLimonadeCovers);
+  const cv = usable.reduce((acc, sample) => acc + sample.reel.cvLimo, 0);
+  return cv > 0 ? usable.reduce((acc, sample) => acc + sample.reel.caLimo, 0) / cv : 0;
 };
 
 // CA limonade de chaque jour de l'année cible : CA limonade du mois × poids du jour (CA limonade moyen
@@ -520,7 +528,7 @@ export function planLimonadeDays(
       const closed = PLAN_SERVICES.every(service => rawProposal(restaurantGroups, weekday, baseStatus, service).source === 'ferme');
       const chain = chainOf(weekday, status, baseStatus);
       const average = chain.length > 0 && !closed ? chain[0].ca / chain[0].days : 0;
-      const groupTm = chain.map(group => (group.cv > 0 ? group.ca / group.cv : 0)).find(tm => tm > 0) ?? 0;
+      const groupTm = chain.map(group => (group.tmCv > 0 ? group.tmCa / group.tmCv : 0)).find(tm => tm > 0) ?? 0;
       return { date, closed, weight: Math.max(0, average), tm: round2(groupTm || monthTm || yearTm) };
     });
 

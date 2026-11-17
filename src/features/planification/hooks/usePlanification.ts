@@ -80,6 +80,18 @@ export function usePlanification() {
   }, [allData, baseYears, hasLimonade]);
 
   const basePlan = useMemo(() => generatePlan(samples, holidayCalendar, settings), [samples, holidayCalendar, settings]);
+  // Jours de l'historique avec CA limonade mais sans couverts (par année) : exclus du TM limonade.
+  const limonadeWithoutCovers = useMemo(() => {
+    if (!hasLimonade) return [];
+    const byYear = new Map<number, number>();
+    samples.forEach(sample => {
+      if (sample.reel.caLimo > 0 && sample.reel.cvLimo === 0) {
+        const year = Number(sample.date.slice(0, 4));
+        byYear.set(year, (byYear.get(year) ?? 0) + 1);
+      }
+    });
+    return [...byYear.entries()].sort((a, b) => a[0] - b[0]).map(([year, days]) => ({ year, days }));
+  }, [hasLimonade, samples]);
   const limonadeProposal = useMemo(() => proposeAnnualLimonade(samples), [samples]);
   const limonadeByMonth = useMemo(
     () => planMonthlyLimonade(samples, settings.targetAnnualLimonade, settings.targetMonthlyLimonade),
@@ -230,7 +242,7 @@ export function usePlanification() {
 
   return {
     settings, updateSettings, setMonthGrowth, setMonthTarget, annualProposal, baseCaByMonth, vaeProposal, vaeByMonth, setMonthVae,
-    limonadeProposal, limonadeByMonth, limonadeSummary, setMonthLimonade, hasLimonade,
+    limonadeProposal, limonadeByMonth, limonadeSummary, limonadeWithoutCovers, setMonthLimonade, hasLimonade,
     plan, monthSummaries, overrides, editService, clearOverride,
     existingByMonth, isLoading, status,
     exportCsv, exportXlsx, confirmWrite,

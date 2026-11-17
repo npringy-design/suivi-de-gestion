@@ -120,3 +120,19 @@ describe('écriture et exports limonade', () => {
     expect(planToCsv(withLimo).split('\r\n')[0]).toContain(';Cvts limo;TM limo;CA limo');
   });
 });
+
+describe('TM limonade : jours sans couverts exclus', () => {
+  it('ignore dans le TM les jours avec CA limonade mais sans couverts', () => {
+    // 2025 importé sans couverts limonade : le CA est là, les couverts valent 0.
+    const samples = buildSamples(true).map(sample => (
+      sample.date.startsWith('2025') ? { ...sample, reel: { ...sample.reel, cvLimo: 0 } } : sample
+    ));
+    const days = planLimonadeDays(samples, noHolidays, 2027, { 0: 8000 });
+    // TM du vendredi (8 €) et du lundi (10 €) calculés sur 2026 seulement, jamais gonflés par 2025.
+    expect(days['2027-01-08'].tm).toBe(8);
+    expect(days['2027-01-04'].tm).toBe(10);
+    const january = monthSum(days, '2027-01');
+    expect(Math.abs(january.ca - 8000)).toBeLessThan(5);
+    expect(january.cv).toBeGreaterThan(800);
+  });
+});
