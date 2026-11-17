@@ -77,12 +77,13 @@ export function collectDailySamples(
   endIso: string,
   todayIso: string,
   budgetFallback = false,
+  hasLimonade = false,
 ): AnalyseDaySample[] {
   const samples: AnalyseDaySample[] = [];
 
   months.forEach(({ year, month }) => {
     const monthData = allData[year]?.[month];
-    const computed = computeMonthDashboard(monthData, month, year);
+    const computed = computeMonthDashboard(monthData, month, year, hasLimonade);
     if (Object.keys(computed).length === 0) return;
 
     const indices = getDashboardRowIndices(month, year);
@@ -217,7 +218,7 @@ export function aggregateService(samples: AnalyseDaySample[], service: AnalyseSe
 export function aggregateDetail(samples: AnalyseDaySample[]): AnalyseDetail {
   const n = samples.length;
   if (n === 0) {
-    return { n: 0, restaurantCaReel: 0, restaurantCaBudget: 0, limoCaReel: 0, limoCaBudget: 0, limoCvReel: 0, vaeReel: 0, caJourAvecVae: 0 };
+    return { n: 0, restaurantCaReel: 0, restaurantCaBudget: 0, limoCaReel: 0, limoCaBudget: 0, limoCvReel: 0, limoCvBudget: 0, vaeReel: 0, caJourAvecVae: 0 };
   }
   const sum = (pick: (s: AnalyseDaySample) => number) => samples.reduce((acc, s) => acc + pick(s), 0) / n;
   const restaurantCaReel = sum(s => s.reel.caMidi + s.reel.caSoir);
@@ -230,6 +231,7 @@ export function aggregateDetail(samples: AnalyseDaySample[]): AnalyseDetail {
     limoCaReel,
     limoCaBudget: sum(s => s.budget.caLimo),
     limoCvReel: sum(s => s.reel.cvLimo),
+    limoCvBudget: sum(s => s.budget.cvLimo),
     vaeReel,
     caJourAvecVae: restaurantCaReel + limoCaReel + vaeReel,
   };

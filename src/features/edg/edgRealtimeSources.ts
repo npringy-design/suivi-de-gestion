@@ -16,6 +16,7 @@ export const computeMonthDashboard = (
   monthData: MonthData | undefined,
   month: number,
   year: number,
+  hasLimonade = false,
 ): DashboardData => {
   const cellData = monthData?.dashboard;
   if (!cellData || Object.keys(cellData).length === 0) return {};
@@ -31,6 +32,7 @@ export const computeMonthDashboard = (
     monthData?.personnelSchema ?? 'global',
     undefined,
     monthData?.salariesConfig?.tauxCibles,
+    hasLimonade,
   );
 };
 
@@ -122,3 +124,31 @@ export const getAutoRealiseValues = (
 
   return values;
 };
+
+// ─── Limonade (sites Au Bureau) ──────────────────────────────────────────────
+// Budget : CA col 2 (= cvts col 14 × TM col 15), couverts col 14.
+// Réalisé : CA col 20, couverts col 34. Aucune formule nouvelle : sommes de colonnes existantes.
+export type LimonadeFigures = { ca: number; cvts: number };
+export type LimonadeStats = { budget: LimonadeFigures; realise: LimonadeFigures };
+
+export const EMPTY_LIMONADE_STATS: LimonadeStats = {
+  budget: { ca: 0, cvts: 0 },
+  realise: { ca: 0, cvts: 0 },
+};
+
+export const getLimonadeMonthStats = (monthData: DashboardData, month: number, year: number): LimonadeStats => {
+  if (!monthData || Object.keys(monthData).length === 0) return EMPTY_LIMONADE_STATS;
+  return {
+    budget: { ca: sumDayColumn(monthData, month, year, 2), cvts: sumDayColumn(monthData, month, year, 14) },
+    realise: { ca: sumDayColumn(monthData, month, year, 20), cvts: sumDayColumn(monthData, month, year, 34) },
+  };
+};
+
+export const sumLimonadeStats = (list: readonly LimonadeStats[]): LimonadeStats =>
+  list.reduce<LimonadeStats>((acc, s) => ({
+    budget: { ca: acc.budget.ca + s.budget.ca, cvts: acc.budget.cvts + s.budget.cvts },
+    realise: { ca: acc.realise.ca + s.realise.ca, cvts: acc.realise.cvts + s.realise.cvts },
+  }), EMPTY_LIMONADE_STATS);
+
+// TM limonade = CA / couverts (0 si aucun couvert).
+export const getLimonadeTm = (figures: LimonadeFigures): number => (figures.cvts > 0 ? figures.ca / figures.cvts : 0);

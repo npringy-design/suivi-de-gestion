@@ -1,10 +1,13 @@
 import React, { useMemo } from 'react';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
-import { computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
+import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
+import LimonadeSection from '@/features/edg/LimonadeSection';
+import { buildLimonadeRows } from '@/features/edg/limonadeRows';
 
 interface VsBudgetProps {
   onBack: () => void;
@@ -15,6 +18,7 @@ interface VsBudgetProps {
 
 export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) {
   const { data, selectedYear } = useData();
+  const hasLimonade = useHasLimonade();
   const YEAR = selectedYear;
   const MONTHS_SHORT = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'].map(m => `${m}-${YEAR.toString().slice(-2)}`);
 
@@ -27,8 +31,8 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
     YEAR < today.getFullYear() || (YEAR === today.getFullYear() && m < today.getMonth());
 
   const computedMonths = useMemo(
-    () => Array.from({ length: 12 }, (_, i) => computeMonthDashboard(data[i], i, YEAR)),
-    [data, YEAR],
+    () => Array.from({ length: 12 }, (_, i) => computeMonthDashboard(data[i], i, YEAR, hasLimonade)),
+    [data, YEAR, hasLimonade],
   );
   const autoRealiseByMonth = useMemo(
     () => computedMonths.map((cm, i) => getAutoRealiseValues(cm, i, YEAR)),
@@ -36,6 +40,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
   );
 
   const getCaMonth = (m: number) => getCaRealiseMonth(computedMonths[m], m, YEAR);
+  const limonade = buildLimonadeRows({ statsByMonth: computedMonths.map((cm, i) => getLimonadeMonthStats(cm, i, YEAR)), monthLabels: MONTHS_SHORT, mode: 'vsBudget', isMonthComplete });
 
   const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [computedMonths]);
   const caTotal = caMonths.reduce((sum, v, i) => (isMonthComplete(i) ? sum + v : sum), 0);
@@ -493,6 +498,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
                 {renderCalcRow('Cash Flow avant IS', 'cashFlow', 'total')}
               </tbody>
             </table>
+            <LimonadeSection rows={limonade.rows} total={limonade.total} refLabel="Budget" actualLabel="Réalisé" />
             </div>
           </div>
         </div>

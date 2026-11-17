@@ -404,3 +404,61 @@ export function extractHistoricalFraisGeneraux(sheet: Worksheet): {
 
   return { entries, contrats };
 }
+
+// ─── Budget limonade (sites Au Bureau) ───────────────────────────────────────
+
+export type LimonadeBudgetColumnMap = { couvertsLimo: number; tmLimo: number };
+
+// Repli : NB CVTS = colonne AA (26), CVTS MOY HT = colonne AB (27).
+export const DEFAULT_LIMONADE_BUDGET_COLS: LimonadeBudgetColumnMap = { couvertsLimo: 26, tmLimo: 27 };
+
+const normalizeHeaderText = (cell: Cell | undefined): string => String(cell?.text || cell?.value || '')
+  .normalize('NFD')
+  .replace(/[̀-ͯ]/g, '')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .toUpperCase();
+
+const LIMONADE_HEADER_MAX_ROW = 12;
+const LIMONADE_GROUP_MAX_WIDTH = 14;
+
+// Cherche l'en-tête de groupe LIMONADE (ligne 5), puis, à sa droite, les sous-colonnes
+// NB CVTS et CVTS MOY HT (en-têtes en ligne 9). Repli sur les colonnes 26/27 si introuvables.
+export const detectLimonadeBudgetColumns = (sheet: Worksheet): LimonadeBudgetColumnMap => {
+  const maxCol = Math.min(sheet.columnCount, 120);
+  let groupCol = -1;
+  for (let row = 0; row <= 6 && groupCol < 0; row += 1) {
+    for (let col = 0; col < maxCol; col += 1) {
+      if (normalizeHeaderText(getHistoricalBudgetCell(sheet, row, col)) === 'LIMONADE') { groupCol = col; break; }
+    }
+  }
+  if (groupCol < 0) return DEFAULT_LIMONADE_BUDGET_COLS;
+
+  let couvertsLimo = -1;
+  let tmLimo = -1;
+  const lastCol = Math.min(groupCol + LIMONADE_GROUP_MAX_WIDTH, maxCol - 1);
+  for (let row = 0; row <= LIMONADE_HEADER_MAX_ROW; row += 1) {
+    for (let col = groupCol; col <= lastCol; col += 1) {
+      const text = normalizeHeaderText(getHistoricalBudgetCell(sheet, row, col));
+      if (couvertsLimo < 0 && /^NB (CVTS|COUVERTS)/.test(text)) couvertsLimo = col;
+      if (tmLimo < 0 && /(CVTS|COUVERTS) MOY/.test(text) && text.includes('HT')) tmLimo = col;
+    }
+    if (couvertsLimo >= 0 && tmLimo >= 0) break;
+  }
+  return {
+    couvertsLimo: couvertsLimo >= 0 ? couvertsLimo : DEFAULT_LIMONADE_BUDGET_COLS.couvertsLimo,
+    tmLimo: tmLimo >= 0 ? tmLimo : DEFAULT_LIMONADE_BUDGET_COLS.tmLimo,
+  };
+};
+
+export const getHistoricalLimonadeBudgetValues = (
+  sheet: Worksheet,
+  rowNumber: number,
+  colMap: LimonadeBudgetColumnMap,
+) => {
+  if (rowNumber < 0 || isHistoricalBudgetTotalRow(sheet, rowNumber)) return { couvertsLimo: 0, tmLimo: 0 };
+  return {
+    couvertsLimo: parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, colMap.couvertsLimo)),
+    tmLimo: parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, colMap.tmLimo)),
+  };
+};

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 import { ArrowLeft, Users, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
@@ -227,6 +228,7 @@ function TabFrais({ computed }: { computed: Record<string, string> }) {
 
 export default function SuiviQuotidienV2({ month, year: _year, onBack }: Props) {
   const { data, allData, updateDashboard, companySettings, selectedYear } = useData();
+  const hasLimonade = useHasLimonade();
   const [activeMonth, setActiveMonth] = useState(month);
   const [activeTab, setActiveTab] = useState<ActiveTab>('ca');
   const YEAR = selectedYear;
@@ -240,14 +242,14 @@ export default function SuiviQuotidienV2({ month, year: _year, onBack }: Props) 
   const rawDashboard = monthData?.dashboard ?? {};
 
   const computed = useMemo(
-    () => computeMonthDashboard(monthData, activeMonth, YEAR),
-    [monthData, activeMonth, YEAR],
+    () => computeMonthDashboard(monthData, activeMonth, YEAR, hasLimonade),
+    [monthData, activeMonth, YEAR, hasLimonade],
   );
 
   const lastYearMonthData = allData[YEAR - 1]?.[activeMonth];
   const computedN1 = useMemo(
-    () => computeMonthDashboard(lastYearMonthData, activeMonth, YEAR - 1),
-    [lastYearMonthData, activeMonth, YEAR],
+    () => computeMonthDashboard(lastYearMonthData, activeMonth, YEAR - 1, hasLimonade),
+    [lastYearMonthData, activeMonth, YEAR, hasLimonade],
   );
 
   const indices = useMemo(() => getDashboardRowIndices(activeMonth, YEAR), [activeMonth, YEAR]);
@@ -354,7 +356,7 @@ export default function SuiviQuotidienV2({ month, year: _year, onBack }: Props) 
           </div>
 
           {activeTab === 'ca' && (
-            <TabCA month={activeMonth} year={YEAR} computed={computed} rawDashboard={rawDashboard} computedN1={computedN1} updateDashboard={updateDashboard} schoolHolidays={schoolHolidays} publicHolidays={publicHolidays} />
+            <TabCA month={activeMonth} year={YEAR} computed={computed} rawDashboard={rawDashboard} computedN1={computedN1} updateDashboard={updateDashboard} schoolHolidays={schoolHolidays} publicHolidays={publicHolidays} hasLimonade={hasLimonade} />
           )}
           {activeTab === 'achats' && (
             <TabAchats month={activeMonth} year={YEAR} rawDashboard={rawDashboard} updateDashboard={updateDashboard} />

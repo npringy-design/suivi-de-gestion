@@ -1,4 +1,5 @@
 import domtoimage from 'dom-to-image-more';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 
 import type { DashboardColumn } from '@/features/dashboard/dashboardTypes';
 import {
@@ -38,6 +39,7 @@ export function useDashboardDailyRecapHandlers(params: {
     setDailyRecapStatus,
     setIsDailyRecapModalOpen,
   } = params;
+  const hasLimonade = useHasLimonade();
 
   const getDailyCellValue = (col: number) => selectedDayRowIndex >= 0 ? calculatedData[`${selectedDayRowIndex}-${col}`] || '' : '';
   const getDailyDisplayValue = (col: number) => {
@@ -150,6 +152,7 @@ export function useDashboardDailyRecapHandlers(params: {
     const limonade = parseDashboardNumber(getDailyCellValue(20));
     const limonadeCovers = parseDashboardNumber(getDailyCellValue(34));
     const limonadeTm = parseDashboardNumber(getDailyCellValue(35));
+    const budgetLimonade = hasLimonade ? parseDashboardNumber(getDailyCellValue(2)) : 0;
     const eventRestaurant = String(getDailyCellValue(37) || '').trim();
     const eventNational = String(getDailyCellValue(38) || '').trim();
     const midi = getDailyRecapService('Midi', 18, 25, 26, 0, 6, 7);
@@ -162,6 +165,7 @@ export function useDashboardDailyRecapHandlers(params: {
       budgetCa > 0 ? dailyRecapTextLine('CA', `${formatDailyRecapDelta(totalCa - budgetCa)} €${formatDailyRecapPercent(totalCa - budgetCa, budgetCa)}`) : '',
       budgetCovers > 0 ? dailyRecapTextLine('Couverts', `${formatDailyRecapDelta(totalCovers - budgetCovers, 0)}${formatDailyRecapPercent(totalCovers - budgetCovers, budgetCovers)}`) : '',
       budgetTicketMoyen > 0 ? dailyRecapTextLine('Ticket moyen', `${formatDailyRecapDelta(ticketMoyen - budgetTicketMoyen)} €${formatDailyRecapPercent(ticketMoyen - budgetTicketMoyen, budgetTicketMoyen)}`) : '',
+      budgetLimonade > 0 ? dailyRecapTextLine('Limonade', `${formatDailyRecapDelta(limonade - budgetLimonade)} €${formatDailyRecapPercent(limonade - budgetLimonade, budgetLimonade)}`) : '',
     ].filter(Boolean);
     const jourText = [
       '----- JOURNÉE -----',
@@ -203,6 +207,7 @@ export function useDashboardDailyRecapHandlers(params: {
       budgetCa > 0 ? dailyRecapBudgetHtml('CA', totalCa - budgetCa, ' €', formatDailyRecapPercent(totalCa - budgetCa, budgetCa)) : '',
       budgetCovers > 0 ? dailyRecapBudgetHtml('Couverts', totalCovers - budgetCovers, '', formatDailyRecapPercent(totalCovers - budgetCovers, budgetCovers)) : '',
       budgetTicketMoyen > 0 ? dailyRecapBudgetHtml('Ticket moyen', ticketMoyen - budgetTicketMoyen, ' €', formatDailyRecapPercent(ticketMoyen - budgetTicketMoyen, budgetTicketMoyen)) : '',
+      budgetLimonade > 0 ? dailyRecapBudgetHtml('Limonade', limonade - budgetLimonade, ' €', formatDailyRecapPercent(limonade - budgetLimonade, budgetLimonade)) : '',
     ].filter(Boolean).join('');
     const optionalHtml = [
       eventRestaurant || eventNational ? `<section style="margin:18px 0;padding:14px 16px;border:1px solid #fde68a;border-left:5px solid #f59e0b;border-radius:10px;background:#fffbeb"><h3 style="margin:0 0 10px;font-size:16px;color:#92400e;text-transform:uppercase">Événements</h3>${eventRestaurant ? `<p style="margin:2px 0"><strong>Restaurant :</strong> ${escapeDailyRecapHtml(eventRestaurant)}</p>` : ''}${eventNational ? `<p style="margin:2px 0"><strong>National :</strong> ${escapeDailyRecapHtml(eventNational)}</p>` : ''}</section>` : '',
@@ -294,6 +299,7 @@ export function useDashboardDailyRecapHandlers(params: {
     const budgetTicketMoyen = parseDashboardNumber(getDailyCellValue(11));
     const vae = parseDashboardNumber(getDailyCellValue(17));
     const limonade = parseDashboardNumber(getDailyCellValue(20));
+    const budgetLimonade = hasLimonade ? parseDashboardNumber(getDailyCellValue(2)) : 0;
     const midi = getDailyRecapService('Midi', 18, 25, 26, 0, 6, 7);
     const soir = getDailyRecapService('Soir', 19, 27, 28, 1, 8, 9);
     const googleRatings = [5, 4, 3, 2, 1]
@@ -332,10 +338,11 @@ export function useDashboardDailyRecapHandlers(params: {
     );
     if (vae > 0) rows.push({ label: 'VAE', value: formatDailyRecapCurrency(vae) });
     if (limonade > 0) rows.push({ label: 'Limonade', value: formatDailyRecapCurrency(limonade) });
-    if (budgetCa > 0 || budgetCovers > 0 || budgetTicketMoyen > 0) rows.push({ label: 'Écart vs budget', value: '', header: true });
+    if (budgetCa > 0 || budgetCovers > 0 || budgetTicketMoyen > 0 || budgetLimonade > 0) rows.push({ label: 'Écart vs budget', value: '', header: true });
     if (budgetCa > 0) rows.push({ label: 'CA', value: deltaText(totalCa - budgetCa, ' €', budgetCa), color: deltaColor(totalCa - budgetCa) });
     if (budgetCovers > 0) rows.push({ label: 'Couverts', value: deltaText(totalCovers - budgetCovers, '', budgetCovers, 0), color: deltaColor(totalCovers - budgetCovers) });
     if (budgetTicketMoyen > 0) rows.push({ label: 'Ticket moyen', value: deltaText(ticketMoyen - budgetTicketMoyen, ' €', budgetTicketMoyen), color: deltaColor(ticketMoyen - budgetTicketMoyen) });
+    if (budgetLimonade > 0) rows.push({ label: 'Limonade', value: deltaText(limonade - budgetLimonade, ' €', budgetLimonade), color: deltaColor(limonade - budgetLimonade) });
     sections.push({ title: 'Journée', accent: '#2563eb', rows });
     if (googleRatings.length > 0) {
       sections.push({

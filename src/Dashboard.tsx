@@ -3,6 +3,7 @@ import DashboardAnalysisView from '@/pages/DashboardAnalysisView';
 
 import { useData, type SalarieRow } from '@/contexts/DataContext';
 import { useSiteBrandTheme } from '@/lib/siteBrandTheme';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import { parseMoneyValue } from '@/lib/money';
 import { tint } from '@/lib/tableChrome';
@@ -75,6 +76,7 @@ interface DashboardProps {
 
 export default function Dashboard({ initialMonth, year, onBack }: DashboardProps) {
   const siteBrandTheme = useSiteBrandTheme();
+  const hasLimonade = useHasLimonade();
   const {
     data: globalData,
     allData,
@@ -348,8 +350,8 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       n1Rows.push({ type: 'month_total', label: '' });
       nMinus1Data = { cellData: mergedCellData, rows: n1Rows };
     }
-    return computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, globalData[month]?.personnelSchema, nMinus1Data, globalData[month]?.salariesConfig?.tauxCibles);
-  }, [cellData, globalData[month]?.salariesConfig, globalData[month]?.personnelSchema, allData[year - 1]?.[month], allData[month === 11 ? year : year - 1]?.[month === 11 ? 0 : month + 1]]);
+    return computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, globalData[month]?.personnelSchema, nMinus1Data, globalData[month]?.salariesConfig?.tauxCibles, hasLimonade);
+  }, [hasLimonade, cellData, globalData[month]?.salariesConfig, globalData[month]?.personnelSchema, allData[year - 1]?.[month], allData[month === 11 ? year : year - 1]?.[month === 11 ? 0 : month + 1]]);
 
   const todayMarker = useMemo(() => {
     const now = new Date();
@@ -407,7 +409,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     const globalPersonnelColumns = new Set([130, 131, 132, 133, 134, 135, 136, 137, 138, 139]);
     const visibleColumnsWithoutLimonade = baseVisibleColumns.filter(col => {
       const text = [col[0], col[1], col[2]].join(' ').toUpperCase();
-      if (thilloisNoLimonadeColumns.has(col.originalIndex) || text.includes('LIMONADE')) return false;
+      if (!hasLimonade && (thilloisNoLimonadeColumns.has(col.originalIndex) || text.includes('LIMONADE'))) return false;
       if (isGlobalPersonnelSchema && cuisineSalleColumns.has(col.originalIndex)) return false;
       if (!isGlobalPersonnelSchema && globalPersonnelColumns.has(col.originalIndex)) return false;
       return true;
@@ -487,7 +489,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       buildColumn(123, 'COUVERTS', 'ECART VS N-1', 'VALEUR', 'bg-white'),
       buildColumn(124, 'COUVERTS', 'ECART VS N-1', '%', 'bg-white'),
     ].filter(Boolean) as VisibleDashboardColumn[];
-  }, [activeTab, tableViewMode, dynamicColumns]);
+  }, [activeTab, tableViewMode, dynamicColumns, hasLimonade]);
 
   const groups: Array<{ name: string; colspan: number; bg: string }> = [];
   let currentGroup: { name: string; colspan: number; bg: string } | null = null;

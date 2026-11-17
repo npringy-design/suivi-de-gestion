@@ -5,6 +5,15 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Limonade : budget + réalisé, sites Au Bureau uniquement)
+
+- Limonade, règle d'activation : `siteHasLimonade(siteId)` dans `@/lib/sites` (`getSiteBrand === 'au_bureau'`), seule source de vérité ; hook `useHasLimonade()` (`@/lib/useHasLimonade`) pour les composants. Aucun site Hippo modifié. tsc OK.
+- Limonade, calculs : `computeDashboardData(..., hasLimonade = false)` et `computeMonthDashboard(..., hasLimonade = false)` ; le vidage des colonnes limonade [2, 14, 15, 16, 20, 34, 35, 36, 110–115] n'a lieu que si `!hasLimonade`. Tous les appelants passent le site actif (Dashboard, Home, `useRecapAnnuelData`, EDG, Suivi V2 y compris N-1, Analyse des écarts). Formules inchangées. tsc OK.
+- Limonade, Suivi quotidien : le filtre des colonnes limonade du Dashboard ne s'applique que sans limonade (Prévisions et Réalisé, SAISIE et COMPLET ; colonnes 14/15 déjà saisissables) ; colonne Limo de `SuiviV2TabCA` visible seulement avec limonade. tsc OK.
+- Limonade, import budget Excel : `detectLimonadeBudgetColumns` (en-tête de groupe `LIMONADE`, sous-colonnes `NB CVTS` / `CVTS MOY HT`, repli colonnes 26/27), `couvertsLimo` / `tmLimo` / `caLimo` dans `HistoricalBudgetPreview` ; à la validation, `-14` / `-15` écrits pour un site avec limonade, `''` pour Hippo (`-2` reste vide, recalculé) ; aperçu avec ligne Limonade (couverts / TM / CA) seulement avec limonade. Le réalisé limonade (cols 20 / 34) n'est plus effacé pour Au Bureau. tsc OK.
+- Limonade, section dans le suivi (composant `features/edg/LimonadeSection.tsx`, lignes `limonadeRows.ts`, sommes `getLimonadeMonthStats` dans `edgRealtimeSources.ts` ; rien pour Hippo ; totaux « à date » = mois clos) : pages modifiées = Récap Annuel (`RecapAnnuel.tsx`, `useRecapAnnuelData.ts`), EDG Mensuel, Budget EDG annuel, Réalisé EDG année fiscale, VsBudget, VsN1 (référence N-1), Reporting (onglet mensuel), Analyse des écarts (bloc Limonade masqué sans limonade, couverts et TM budget/réel), récap quotidien email (écart limonade vs budget), Accueil (section du mois). « Synthèse CA » (navigation caisse) n'affiche ni CA ni couverts : non modifiée. TM restaurant inchangés (sans limonade). 5 tests (`limonade.test.ts`). tsc OK, build OK.
+- Limonade, non vérifié : captures d'écran réelles (Suivi quotidien Au Bureau / Hippo Thillois, Récap Annuel) non faites, connexion Supabase requise ; import budget non testé sur un vrai classeur Au Bureau (détection par en-têtes à confirmer sur `JANV 26`). 3 tests `shiftCalculations.test.ts` échouent (avant ce chantier, hors périmètre).
+
 ## 13/11/2026 (Planning shifts, étape 1/3)
 
 - Planning shifts (étape 1/3) : page super_admin Thillois (`#/planning-shifts`, `features/shiftPlanning/`, aucun lien de menu, `canAccessShiftPlanning`), paramètres, rôles, saisie shifts, KPI productivité/MS, alertes légales, table `suivi_gestion_shift_planning` (`supabase/SHIFT_PLANNING_SETUP.sql`, SQL à exécuter ; service `supabaseShiftPlanning.ts`, hors DataContext). tsc OK.

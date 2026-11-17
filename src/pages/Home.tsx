@@ -46,8 +46,12 @@ import { useSiteBrandTheme } from '@/lib/siteBrandTheme';
 import { parseMoneyValue } from '@/lib/money';
 import { getValidAccessToken } from '@/services/supabaseAuth';
 import { useAuthSession } from '@/AuthGate';
+import { siteHasLimonade } from '@/lib/sites';
 import { canAccessShiftPlanning, canCreateSites } from '@/lib/suiviPermissions';
 import { getDashboardRowIndices } from '@/lib/utils';
+import { computeMonthDashboard, getLimonadeMonthStats } from '@/features/edg/edgRealtimeSources';
+import LimonadeSection from '@/features/edg/LimonadeSection';
+import { MONTH_NAMES } from '@/lib/constants';
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
 import { computeDashboardData } from '@/features/dashboard/dashboardCalculations';
@@ -573,6 +577,12 @@ export default function Home() {
 
   const { moisIndex, jourIndex } = indices;
 
+  // Section Limonade (sites Au Bureau) : budget vs réalisé du mois affiché ; rendue nulle pour Hippo.
+  const limonadeMonthStats = useMemo(
+    () => getLimonadeMonthStats(computeMonthDashboard(data?.[month], month, year, siteHasLimonade(activeSiteId)), month, year),
+    [data, month, year, activeSiteId],
+  );
+
   const kpis = useMemo(() => {
     const monthData = data?.[month];
     const dashboard = monthData?.dashboard || {};
@@ -682,6 +692,7 @@ export default function Home() {
       monthData?.personnelSchema,
       undefined,
       monthData?.salariesConfig?.tauxCibles,
+      siteHasLimonade(activeSiteId),
     );
 
     const dayStats = (day: number) => {
@@ -750,7 +761,7 @@ export default function Home() {
       previousWeeks,
       weekRows,
     };
-  }, [data, month, year, dashboardRowIndices]);
+  }, [data, month, year, dashboardRowIndices, activeSiteId]);
 
   const chartDataCA = useMemo(() => {
     const monthData = data?.[month];
@@ -1213,6 +1224,7 @@ export default function Home() {
                 />
               </div>
             </section>
+            <div className="shrink-0 empty:hidden"><LimonadeSection rows={[{ label: `${MONTH_NAMES[month]} ${year}`, ref: limonadeMonthStats.budget, actual: limonadeMonthStats.realise }]} /></div>
 
             <section className="shrink-0">
               <div

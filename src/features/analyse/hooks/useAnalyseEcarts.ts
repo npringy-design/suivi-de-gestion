@@ -1,3 +1,4 @@
+import { useHasLimonade } from '@/lib/useHasLimonade';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
@@ -54,6 +55,7 @@ export type AnalyseEcartsResults = {
 
 export function useAnalyseEcarts() {
   const { allData, loadYearFromCloud, companySettings } = useData();
+  const hasLimonade = useHasLimonade();
   const holidayCalendar = useMemo(() => getSchoolHolidayCalendar(companySettings.schoolZone), [companySettings.schoolZone]);
   const [filters, setFilters] = useState<AnalyseFilters>(defaultFilters);
   const [thresholds, setThresholdsState] = useState<AnalyseThresholds>(loadThresholds);
@@ -83,7 +85,7 @@ export function useAnalyseEcarts() {
   const results = useMemo<AnalyseEcartsResults>(() => {
     const now = new Date();
     const todayIso = toIsoDate(now.getFullYear(), now.getMonth(), now.getDate());
-    const samples = collectDailySamples(allData, period.months, period.startIso, period.endIso, todayIso);
+    const samples = collectDailySamples(allData, period.months, period.startIso, period.endIso, todayIso, false, hasLimonade);
     const filtered = filterSamples(samples, filters, holidayCalendar);
     return {
       summary: aggregateService(filtered, filters.service),
@@ -91,7 +93,7 @@ export function useAnalyseEcarts() {
       weekdayRows: aggregateByWeekday(filtered, filters.weekdays),
       sampleCount: filtered.length,
     };
-  }, [allData, period, filters, holidayCalendar]);
+  }, [allData, period, filters, holidayCalendar, hasLimonade]);
 
   const availableYears = useMemo(() => {
     const currentYear = new Date().getFullYear();

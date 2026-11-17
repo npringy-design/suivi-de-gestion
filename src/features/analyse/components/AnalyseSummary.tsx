@@ -1,6 +1,8 @@
 import { formatDecimal, formatDecimalSigned, formatEuroSigned, formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 import type { AnalyseAggregate, AnalyseAlertLevel, AnalyseDetail, AnalyseService, AnalyseThresholds } from '@/types/dataTypes';
 
+import { useHasLimonade } from '@/lib/useHasLimonade';
+
 import { alertLevel } from '../ecartsAnalysis';
 
 import { alertCell, alertText, analyseGlass, analyseLabel } from './analyseStyles';
@@ -39,6 +41,7 @@ const pctLabel = (value: number | null) => (value === null ? '—' : formatPerce
 const euroOrDash = (value: number | null) => (value === null ? '—' : formatEuroSymbol(value));
 
 export default function AnalyseSummary({ service, summary, detail, thresholds }: Props) {
+  const hasLimonade = useHasLimonade();
   if (summary.n === 0) {
     return (
       <div className={`${analyseGlass} p-6 text-sm font-semibold text-cyan-50/70`}>
@@ -97,13 +100,16 @@ export default function AnalyseSummary({ service, summary, detail, thresholds }:
             <Line label="CA budget moyen" value={formatEuroSymbol(detail.restaurantCaBudget)} />
             <Line label="Écart" value={formatEuroSigned(restaurantEcart)} className={ecartColor(restaurantEcart, 'none')} />
           </div>
-          <div className="grid gap-1">
-            <div className="text-[11px] font-black uppercase tracking-wider text-amber-200/80">Limonade</div>
-            <Line label="CA réel moyen" value={formatEuroSymbol(detail.limoCaReel)} />
-            <Line label="CA budget moyen" value={formatEuroSymbol(detail.limoCaBudget)} />
-            <Line label="Écart CA" value={formatEuroSigned(limoEcart)} className={ecartColor(limoEcart, 'none')} />
-            <Line label="Couverts réel moyen" value={formatDecimal(detail.limoCvReel, 0)} />
-          </div>
+          {hasLimonade && (
+            <div className="grid gap-1">
+              <div className="text-[11px] font-black uppercase tracking-wider text-amber-200/80">Limonade</div>
+              <Line label="CA réel moyen" value={formatEuroSymbol(detail.limoCaReel)} />
+              <Line label="CA budget moyen" value={formatEuroSymbol(detail.limoCaBudget)} />
+              <Line label="Écart CA" value={formatEuroSigned(limoEcart)} className={ecartColor(limoEcart, 'none')} />
+              <Line label="Couverts réel / budget moyen" value={`${formatDecimal(detail.limoCvReel, 0)} / ${formatDecimal(detail.limoCvBudget, 0)}`} />
+              <Line label="TM réel / budget" value={`${euroOrDash(detail.limoCvReel > 0 ? detail.limoCaReel / detail.limoCvReel : null)} / ${euroOrDash(detail.limoCvBudget > 0 ? detail.limoCaBudget / detail.limoCvBudget : null)}`} />
+            </div>
+          )}
           <div className="grid gap-1">
             <div className="text-[11px] font-black uppercase tracking-wider text-amber-200/80">VAE (vente à emporter)</div>
             <Line label="CA réel moyen" value={formatEuroSymbol(detail.vaeReel)} />

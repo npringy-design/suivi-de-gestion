@@ -4,6 +4,8 @@ import { useData } from '@/contexts/DataContext';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 import { sectionChrome, tint } from '@/lib/tableChrome';
 import { useRecapAnnuelData } from './useRecapAnnuelData';
+import LimonadeSection from '@/features/edg/LimonadeSection';
+import { buildLimonadeRows } from '@/features/edg/limonadeRows';
 
 const MONTHS_FULL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const MONTHS_SHORT_LABELS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -235,7 +237,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     sumCol, sumHoursCol,
     getFgCategoryTotal, sumFgCategory,
     sumDayEcart,
-    caByMonth, totalCA,
+    caByMonth, totalCA, limonadeByMonth,
   } = useRecapAnnuelData(data, YEAR);
 
   // Données N-1 pour les frais personnel
@@ -247,6 +249,13 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   // CA et couverts réalisés N-1 du restaurant actif (données de l'année YEAR - 1)
   const CA_N1_BY_MONTH = caByMonthN1;
+  const todayRef = new Date();
+  const limonade = buildLimonadeRows({
+    statsByMonth: limonadeByMonth,
+    monthLabels: MONTHS_SHORT,
+    mode: 'vsBudget',
+    isMonthComplete: m => YEAR < todayRef.getFullYear() || (YEAR === todayRef.getFullYear() && m < todayRef.getMonth()),
+  });
   const CA_N1 = CA_N1_BY_MONTH.reduce((a, b) => a + b, 0);
   const CVTS_N1_BY_MONTH = Array.from({ length: 12 }, (_, mi) => Math.round(getValN1(mi, 29)));
   const CVTS_N1 = CVTS_N1_BY_MONTH.reduce((a, b) => a + b, 0);
@@ -999,6 +1008,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
             getTotalValues(activeSection.key),
           );
         })()}
+        <LimonadeSection rows={limonade.rows} total={limonade.total} />
       </div>
 
       <footer style={{ padding: '10px 24px', borderTop: '1px solid #E7E5E4', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>

@@ -49,6 +49,9 @@ export const getSiteLabel = (siteId: SiteId): string => registry.get(siteId)?.la
 // Enseigne inconnue ou absente : repli explicite sur 'hippo' (jamais d'état indéfini).
 export const getSiteBrand = (siteId: SiteId): SiteBrand => registry.get(siteId)?.brand ?? FALLBACK_BRAND;
 
+// Source unique de l'activité limonade : seuls les sites Au Bureau en ont une.
+export const siteHasLimonade = (siteId: SiteId): boolean => getSiteBrand(siteId) === 'au_bureau';
+
 // Dédoublonne et ne garde que les identifiants de site connus, dans l'ordre du registre.
 export const normalizeSiteIds = (value: unknown): SiteId[] => {
   const raw = Array.isArray(value) ? value : [];

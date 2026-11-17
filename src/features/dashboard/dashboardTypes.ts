@@ -84,6 +84,9 @@ export type HistoricalBudgetPreview = {
   couvertsSoir: number;
   tmSoir: number;
   couvertsTotal: number;
+  couvertsLimo: number;
+  tmLimo: number;
+  caLimo: number;
   realiseVae: number;
   realiseMidi: number;
   realiseSoir: number;

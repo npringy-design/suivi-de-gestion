@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo } from 'react';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 import { MONTH_NAMES_SHORT } from '@/lib/constants';
 
-import { computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
+import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
+import LimonadeSection from '@/features/edg/LimonadeSection';
+import { buildLimonadeRows } from '@/features/edg/limonadeRows';
 
 interface VsN1Props {
   onBack: () => void;
@@ -16,6 +19,7 @@ interface VsN1Props {
 
 export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   const { data, allData, selectedYear, loadYearFromCloud } = useData();
+  const hasLimonade = useHasLimonade();
   const YEAR = selectedYear;
 
   // Charge les mois N-1 depuis Supabase si l'année précédente n'est pas encore en local
@@ -35,8 +39,8 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
     YEAR < today.getFullYear() || (YEAR === today.getFullYear() && m < today.getMonth());
 
   const computedMonths = useMemo(
-    () => Array.from({ length: 12 }, (_, i) => computeMonthDashboard(data[i], i, YEAR)),
-    [data, YEAR],
+    () => Array.from({ length: 12 }, (_, i) => computeMonthDashboard(data[i], i, YEAR, hasLimonade)),
+    [data, YEAR, hasLimonade],
   );
   const autoRealiseByMonth = useMemo(
     () => computedMonths.map((cm, i) => getAutoRealiseValues(cm, i, YEAR)),
@@ -44,8 +48,8 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   );
 
   const computedMonthsN1 = useMemo(
-    () => Array.from({ length: 12 }, (_, i) => computeMonthDashboard(dataN1[i], i, YEAR - 1)),
-    [dataN1, YEAR],
+    () => Array.from({ length: 12 }, (_, i) => computeMonthDashboard(dataN1[i], i, YEAR - 1, hasLimonade)),
+    [dataN1, YEAR, hasLimonade],
   );
   const autoRealiseByMonthN1 = useMemo(
     () => computedMonthsN1.map((cm, i) => getAutoRealiseValues(cm, i, YEAR - 1)),
@@ -53,6 +57,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   );
 
   const getCaMonth = (m: number) => getCaRealiseMonth(computedMonths[m], m, YEAR);
+  const limonade = buildLimonadeRows({ statsByMonth: computedMonths.map((cm, i) => getLimonadeMonthStats(cm, i, YEAR)), statsN1ByMonth: computedMonthsN1.map((cm, i) => getLimonadeMonthStats(cm, i, YEAR - 1)), monthLabels: MONTH_NAMES_SHORT, mode: 'vsN1', isMonthComplete });
   const getCaN1Month = (m: number) => getCaRealiseMonth(computedMonthsN1[m], m, YEAR - 1);
 
   const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [computedMonths]);
@@ -553,6 +558,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
                 {renderCalcRow('Cash Flow avant IS', 'cashFlow', 'total')}
               </tbody>
             </table>
+            <LimonadeSection rows={limonade.rows} total={limonade.total} refLabel="N-1" actualLabel="Réalisé" />
             </div>
           </div>
         </div>

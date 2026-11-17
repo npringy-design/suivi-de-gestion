@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 import { Menu, X, ChevronLeft } from 'lucide-react';
 
 import { useData } from '@/contexts/DataContext';
@@ -6,7 +7,8 @@ import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 import { MONTH_NAMES, MONTH_NAMES_SHORT } from '@/lib/constants';
 
-import { computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth, getMonthProgress } from '@/features/edg/edgRealtimeSources';
+import LimonadeSection from '@/features/edg/LimonadeSection';
+import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth, getMonthProgress } from '@/features/edg/edgRealtimeSources';
 
 interface EdgMensuelProps {
   month: number;
@@ -19,6 +21,7 @@ interface EdgMensuelProps {
 
 export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false }: EdgMensuelProps) {
   const { data, updateEdgMensuel, updateEdgMensuelRealise, selectedYear, edgChargesConfig } = useData();
+  const hasLimonade = useHasLimonade();
   const YEAR = selectedYear;
   const MONTHS_SHORT = MONTH_NAMES_SHORT.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
@@ -37,8 +40,8 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
   const edgData = data[month]?.edgMensuel || {};
   const edgRealiseData = data[month]?.edgMensuelRealise || {};
   const dashboardData = useMemo(
-    () => computeMonthDashboard(data[month], month, YEAR),
-    [data, month, YEAR],
+    () => computeMonthDashboard(data[month], month, YEAR, hasLimonade),
+    [data, month, YEAR, hasLimonade],
   );
 
   // Calculate CA TOTAL HT from dashboard for REALISE
@@ -471,6 +474,8 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
     </tr>
   );
 
+  const limonadeStats = getLimonadeMonthStats(dashboardData, month, YEAR);
+  const limonadeSection = <LimonadeSection rows={[{ label: `${MONTH_NAMES[month]} ${YEAR}`, ref: limonadeStats.budget, actual: limonadeStats.realise }]} />;
   const edgTable = (
     <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
       <thead>
@@ -778,6 +783,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           <div style={{ height: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
               {edgTable}
+              {limonadeSection}
             </div>
           </div>
         </div>
@@ -822,6 +828,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
             <div style={{ height: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
               <div style={{ flex: 1, overflow: 'auto' }}>
                 {edgTable}
+                {limonadeSection}
               </div>
             </div>
           </div>

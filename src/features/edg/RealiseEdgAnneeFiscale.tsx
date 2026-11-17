@@ -1,10 +1,13 @@
 import React, { useMemo } from 'react';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 
 import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
-import { computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
+import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
+import LimonadeSection from '@/features/edg/LimonadeSection';
+import { buildLimonadeRows } from '@/features/edg/limonadeRows';
 
 const MONTH_INDICES = [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5];
 
@@ -17,6 +20,7 @@ interface RealiseEdgAnneeFiscaleProps {
 
 export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: RealiseEdgAnneeFiscaleProps) {
   const { allData, selectedYear } = useData();
+  const hasLimonade = useHasLimonade();
   const YEAR = selectedYear;
   const MONTHS_SHORT = ['juil', 'août', 'sept', 'oct', 'nov', 'déc', 'janv', 'févr', 'mars', 'avr', 'mai', 'juin'].map((m, i) => `${m}-${(i < 6 ? YEAR - 1 : YEAR).toString().slice(-2)}`);
 
@@ -26,10 +30,10 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
     const map: Record<number, Record<string, string>> = {};
     MONTH_INDICES.forEach(m => {
       const year = getYearForMonth(m);
-      map[m] = computeMonthDashboard(allData[year]?.[m], m, year);
+      map[m] = computeMonthDashboard(allData[year]?.[m], m, year, hasLimonade);
     });
     return map;
-  }, [allData, YEAR]);
+  }, [allData, YEAR, hasLimonade]);
 
   const autoRealiseByMonth = useMemo(() => {
     const map: Record<number, Record<string, number>> = {};
@@ -40,6 +44,7 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
     return map;
   }, [computedByMonth, YEAR]);
 
+  const limonade = buildLimonadeRows({ statsByMonth: MONTH_INDICES.map(m => getLimonadeMonthStats(computedByMonth[m], m, getYearForMonth(m))), monthLabels: MONTHS_SHORT, mode: 'realise' });
   const getCaMonth = (m: number) => {
     const year = getYearForMonth(m);
     return getCaRealiseMonth(computedByMonth[m], m, year);
@@ -389,6 +394,7 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
                 {renderCalcRow('Cash Flow avant IS', 'cashFlow', 'total')}
               </tbody>
             </table>
+            <LimonadeSection rows={limonade.rows} total={limonade.total} refLabel="Réalisé" actualLabel="Réalisé" />
             </div>
           </div>
         </div>

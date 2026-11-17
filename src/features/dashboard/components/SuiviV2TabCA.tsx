@@ -60,9 +60,11 @@ export default function TabCA({
   updateDashboard,
   schoolHolidays,
   publicHolidays,
+  hasLimonade,
 }: {
   schoolHolidays: HolidayRange[];
   publicHolidays: string[];
+  hasLimonade: boolean;
   month: number;
   year: number;
   computed: Record<string, string>;
@@ -127,7 +129,7 @@ export default function TabCA({
   }, [indices, computed]);
 
   // CA: réduit=2 cols (Midi+Soir), développé=7 cols (Midi/Soir/Limo/VAE/Total/Cumul/Écart€)
-  const caColCount = prefs.ca ? 7 : 2;
+  const caColCount = prefs.ca ? (hasLimonade ? 7 : 6) : 2;
   // Couverts: réduit=2 cols (Total+MoyHT), développé=7 cols
   const cvtsColCount = prefs.couverts ? 7 : 2;
 
@@ -147,7 +149,7 @@ export default function TabCA({
               <>
                 <th className={TH_CLS}>Midi</th>
                 <th className={TH_CLS}>Soir</th>
-                <th className={TH_CLS}>Limo</th>
+                {hasLimonade && <th className={TH_CLS}>Limo</th>}
                 <th className={TH_CLS}>VAE</th>
                 <th className={TH_CLS}>Total HT</th>
                 <th className={TH_CLS}>Cumul</th>
@@ -193,7 +195,7 @@ export default function TabCA({
                     <>
                       <td className={WEEK_CLS}>{w.caMidi > 0 ? formatEuroDecimal(w.caMidi) : '—'}</td>
                       <td className={WEEK_CLS}>{w.caSoir > 0 ? formatEuroDecimal(w.caSoir) : '—'}</td>
-                      <td className={WEEK_CLS}>{w.caLimo > 0 ? formatEuroDecimal(w.caLimo) : '—'}</td>
+                      {hasLimonade && <td className={WEEK_CLS}>{w.caLimo > 0 ? formatEuroDecimal(w.caLimo) : '—'}</td>}
                       <td className={WEEK_CLS}>{w.vae > 0 ? formatEuroDecimal(w.vae) : '—'}</td>
                       <td className={WEEK_CLS}>{w.caTotal > 0 ? formatEuroDecimal(w.caTotal) : '—'}</td>
                       <td className={WEEK_CLS}>—</td>
@@ -277,7 +279,7 @@ export default function TabCA({
                   <>
                     <td className={cellCls}><EditCell value={rawMidi} cellKey={`${rIdx}-18`} month={month} decimals onUpdate={updateDashboard} /></td>
                     <td className={cellCls}><EditCell value={rawSoir} cellKey={`${rIdx}-19`} month={month} decimals onUpdate={updateDashboard} /></td>
-                    <td className={cellCls}><EditCell value={rawLimo} cellKey={`${rIdx}-20`} month={month} decimals onUpdate={updateDashboard} /></td>
+                    {hasLimonade && <td className={cellCls}><EditCell value={rawLimo} cellKey={`${rIdx}-20`} month={month} decimals onUpdate={updateDashboard} /></td>}
                     <td className={cellCls}><EditCell value={rawVae} cellKey={`${rIdx}-17`} month={month} decimals onUpdate={updateDashboard} /></td>
                     <td className={cellCls + ' font-black text-slate-900'}>{caTotal > 0 ? formatEuroDecimal(caTotal) : <span className="text-slate-300">—</span>}</td>
                     <td className={cellCls}>{cumul > 0 ? formatEuroDecimal(cumul) : '—'}</td>
@@ -330,7 +332,7 @@ export default function TabCA({
               <>
                 <td className={TD_WEEK}>{monthTotal.caMidi > 0 ? formatEuroDecimal(monthTotal.caMidi) : '—'}</td>
                 <td className={TD_WEEK}>{monthTotal.caSoir > 0 ? formatEuroDecimal(monthTotal.caSoir) : '—'}</td>
-                <td className={TD_WEEK}>{monthTotal.caLimo > 0 ? formatEuroDecimal(monthTotal.caLimo) : '—'}</td>
+                {hasLimonade && <td className={TD_WEEK}>{monthTotal.caLimo > 0 ? formatEuroDecimal(monthTotal.caLimo) : '—'}</td>}
                 <td className={TD_WEEK}>{monthTotal.vae > 0 ? formatEuroDecimal(monthTotal.vae) : '—'}</td>
                 <td className={TD_WEEK + ' font-black text-slate-900'}>{monthTotal.caTotal > 0 ? formatEuroDecimal(monthTotal.caTotal) : '—'}</td>
                 <td className={TD_WEEK}>{monthTotal.cumul > 0 ? formatEuroDecimal(monthTotal.cumul) : '—'}</td>

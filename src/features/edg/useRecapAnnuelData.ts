@@ -5,6 +5,8 @@ import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
 import { computeDashboardData, parsePayrollHourForCalculation } from '@/features/dashboard/dashboardCalculations';
 import { parseMoneyValue } from '@/lib/money';
+import { getLimonadeMonthStats } from '@/features/edg/edgRealtimeSources';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 
 // Colonnes par niveau (index 0-4 = Cadre, Maîtrise, NIV I-II, NIV III, Apprenti)
 // Mode global : une colonne par niveau (135-139 pour réel, 130-134 pour proj)
@@ -15,6 +17,7 @@ const PROJ_COLS_GLOBAL  = [[130], [131], [132], [133], [134]];
 const PROJ_COLS_CS      = [[62, 63], [64, 65], [66, 67], [68, 69], [70, 71]];
 
 export function useRecapAnnuelData(data: Record<number, MonthData>, year: number) {
+  const hasLimonade = useHasLimonade();
   return useMemo(() => {
     const monthCalcData: Record<string, string>[] = [];
     const monthTotalIndices: number[] = [];
@@ -40,6 +43,7 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
         schema,
         undefined,
         monthData?.salariesConfig?.tauxCibles,
+        hasLimonade,
       );
       monthCalcData.push(calculatedData);
       monthTotalIndices.push(rows.findIndex(r => r.type === 'month_total'));
@@ -163,6 +167,7 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       Array.from({ length: 12 }, (_, mi) => getFgCategoryTotal(mi, box, colGroup)).reduce((a, b) => a + b, 0);
 
     const caByMonth = Array.from({ length: 12 }, (_, mi) => getVal(mi, 21));
+    const limonadeByMonth = monthCalcData.map((md, mi) => getLimonadeMonthStats(md, mi, year));
     const totalCA = caByMonth.reduce((s, v) => s + v, 0);
 
     return {
@@ -173,7 +178,7 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       sumCol, sumHoursCol,
       getFgCategoryTotal, sumFgCategory,
       sumDayEcart,
-      caByMonth, totalCA,
+      caByMonth, totalCA, limonadeByMonth,
     };
-  }, [data, year]);
+  }, [data, year, hasLimonade]);
 }

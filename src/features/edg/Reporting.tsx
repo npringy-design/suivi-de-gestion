@@ -5,6 +5,10 @@ import { parseMoneyValue } from '@/lib/money';
 
 import { getDashboardRowIndices, getISOWeek } from '@/lib/utils';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
+import { useHasLimonade } from '@/lib/useHasLimonade';
+import { computeMonthDashboard, getLimonadeMonthStats } from '@/features/edg/edgRealtimeSources';
+import LimonadeSection from '@/features/edg/LimonadeSection';
+import { buildLimonadeRows } from '@/features/edg/limonadeRows';
 
 const NAV = '#1e293b';
 const AMBER = '#f59e0b';
@@ -24,9 +28,15 @@ interface ReportingProps {
 export default function Reporting({ onBack, hideHeader = false }: ReportingProps) {
   const { data, selectedYear } = useData();
   const YEAR = selectedYear;
+  const hasLimonade = useHasLimonade();
   const MONTHS_SHORT = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'].map(m => `${m}-${YEAR.toString().slice(-2)}`);
   
   const [activeTab, setActiveTab] = useState<'mensuel' | 'hebdo_ca' | 'hebdo_rh'>('mensuel');
+  const limonade = useMemo(() => buildLimonadeRows({
+    statsByMonth: Array.from({ length: 12 }, (_, m) => getLimonadeMonthStats(computeMonthDashboard(data[m], m, YEAR, hasLimonade), m, YEAR)),
+    monthLabels: MONTHS_SHORT,
+    mode: 'vsBudget',
+  }), [data, YEAR, hasLimonade, MONTHS_SHORT]);
 
   const { monthlyTotals, weeklyTotals } = useMemo(() => {
     const monthly: Record<number, Record<number, number>> = {};
@@ -379,7 +389,7 @@ export default function Reporting({ onBack, hideHeader = false }: ReportingProps
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
-        {activeTab === 'mensuel' && renderMensuel()}
+        {activeTab === 'mensuel' && (<>{renderMensuel()}<LimonadeSection rows={limonade.rows} total={limonade.total} /></>)}
         {activeTab === 'hebdo_ca' && renderHebdoCA()}
         {activeTab === 'hebdo_rh' && renderHebdoRH()}
       </div>

@@ -41,6 +41,8 @@ import {
   getHistoricalBudgetCell,
   getHistoricalBudgetRowValues,
   detectBudgetColumnMap,
+  detectLimonadeBudgetColumns,
+  getHistoricalLimonadeBudgetValues,
   getHistoricalCostMatterColumnMap,
   getHistoricalCostMatterValues,
   getHistoricalRealiseRowValues,
@@ -66,6 +68,7 @@ import {
 } from '@/features/dashboard/importHelpers/historicalV25Import';
 import { parseEdgBudgetSheet } from '@/features/dashboard/importHelpers/edgBudgetImport';
 import { parseEdgMonthlySheets } from '@/features/dashboard/importHelpers/edgMonthlySheetsImport';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 
 type DayRowEntry = { row: DashboardRow; index: number };
 type ImportPreviewItem = { label: string; value: string };
@@ -161,6 +164,7 @@ export function useDashboardImportHandlers({
   saveNow,
   allData,
 }: UseDashboardImportHandlersParams) {
+  const hasLimonade = useHasLimonade();
   const pendingDemarquesRef = React.useRef<Array<{
     date: string; personnel: number; operationnel: number; explication: string;
   }>>([]);
@@ -334,6 +338,7 @@ export function useDashboardImportHandlers({
         const costMatterColumnMap = getHistoricalCostMatterColumnMap(sheet, range);
         const payrollColumnMaps = getHistoricalPayrollColumnMaps(sheet, range);
         const budgetColMap = detectBudgetColumnMap(sheet);
+        const limonadeColMap = hasLimonade ? detectLimonadeBudgetColumns(sheet) : null;
 
         for (let rowNumber = 0; rowNumber <= range.rowCount - 1; rowNumber += 1) {
           const dateCell = getHistoricalBudgetCell(sheet, rowNumber, 0);
@@ -352,6 +357,8 @@ export function useDashboardImportHandlers({
           const couvertsSoir = values.couvertsSoir;
           const tmSoir = values.tmSoir;
           const couvertsTotal = couvertsMidi + couvertsSoir;
+          const { couvertsLimo, tmLimo } = limonadeColMap ? getHistoricalLimonadeBudgetValues(sheet, rowNumber, limonadeColMap) : { couvertsLimo: 0, tmLimo: 0 };
+          const caLimo = couvertsLimo * tmLimo;
           const realiseSourceRow = rowNumber;
           const realiseValues = getHistoricalRealiseRowValues(sheet, realiseSourceRow);
           const costMatterValues = getHistoricalCostMatterValues(sheet, rowNumber, costMatterColumnMap);
@@ -362,7 +369,7 @@ export function useDashboardImportHandlers({
           const caSoir = couvertsSoir * tmSoir;
           const caTotal = caMidi + caSoir;
   
-          if (couvertsTotal <= 0 && tmMidi <= 0 && tmSoir <= 0 && !rowHasHistoricalRealiseValues(realiseValues) && costMatterTotal === 0 && payrollTotalHours === 0) continue;
+          if (couvertsTotal <= 0 && couvertsLimo <= 0 && tmMidi <= 0 && tmSoir <= 0 && !rowHasHistoricalRealiseValues(realiseValues) && costMatterTotal === 0 && payrollTotalHours === 0) continue;
   
           previews.push({
             id: sheetName + '-' + rowNumber + '-' + day,
@@ -378,6 +385,9 @@ export function useDashboardImportHandlers({
             couvertsSoir,
             tmSoir,
             couvertsTotal,
+            couvertsLimo,
+            tmLimo,
+            caLimo,
             ...realiseValues,
             costMatterValues,
             costMatterTotal,
@@ -445,8 +455,8 @@ export function useDashboardImportHandlers({
       updateDashboard(item.month, item.rowIndex + '-7', formatImportedNumber(item.tmMidi));
       updateDashboard(item.month, item.rowIndex + '-8', formatImportedNumber(item.couvertsSoir, 0));
       updateDashboard(item.month, item.rowIndex + '-9', formatImportedNumber(item.tmSoir));
-      updateDashboard(item.month, item.rowIndex + '-14', '');
-      updateDashboard(item.month, item.rowIndex + '-15', '');
+      updateDashboard(item.month, item.rowIndex + '-14', hasLimonade ? formatImportedNumber(item.couvertsLimo, 0) : '');
+      updateDashboard(item.month, item.rowIndex + '-15', hasLimonade ? formatImportedNumber(item.tmLimo) : '');
       updateDashboard(item.month, item.rowIndex + '-17', formatImportedNumber(item.realiseVae));
       updateDashboard(item.month, item.rowIndex + '-18', formatImportedNumber(item.realiseMidi));
       updateDashboard(item.month, item.rowIndex + '-19', formatImportedNumber(item.realiseSoir));
@@ -574,6 +584,9 @@ export function useDashboardImportHandlers({
             couvertsSoir: v25Values.couvertsSoir,
             tmSoir: v25Values.tmSoir,
             couvertsTotal: v25Values.couvertsMidi + v25Values.couvertsSoir,
+            couvertsLimo: 0,
+            tmLimo: 0,
+            caLimo: 0,
             realiseVae: v25Values.realiseVae,
             realiseMidi: v25Values.realiseMidi,
             realiseSoir: v25Values.realiseSoir,

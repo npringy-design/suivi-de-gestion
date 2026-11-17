@@ -511,7 +511,8 @@ export type AnalyseDetail = {
   restaurantCaBudget: number;
   limoCaReel: number;
   limoCaBudget: number;
-  limoCvReel: number; // réalisé seul, pas de budget de couverts comparé
+  limoCvReel: number;
+  limoCvBudget: number;
   vaeReel: number; // réalisé seul, pas de budget VAE
   caJourAvecVae: number; // moyenne réalisée journée + VAE, sans budget
 };

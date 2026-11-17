@@ -139,6 +139,7 @@ export function computeDashboardData(
   personnelSchema?: PersonnelSchema,
   nMinus1Data?: { cellData: Record<string, string>; rows: DashboardRow[] },
   tauxCibles?: Record<string, number>,
+  hasLimonade = false,
 ): Record<string, string> {
     const data: Record<string, string> = { ...cellData };
     const isGlobalSchema = personnelSchema === 'global';
@@ -199,10 +200,12 @@ export function computeDashboardData(
     // First pass: Calculate row totals (TOTAL JOUR) and CUMUL
     rows.forEach((row, rIdx) => {
       if (row.type === 'day') {
-        // Hippo Thillois : pas d'activite limonade. Les valeurs restent ignorees meme si une ancienne donnee existe.
-        [2, 14, 15, 16, 20, 34, 35, 36, 110, 111, 112, 113, 114, 115].forEach(col => {
-          data[`${rIdx}-${col}`] = '';
-        });
+        // Sites sans limonade (Hippo) : les valeurs restent ignorees meme si une ancienne donnee existe.
+        if (!hasLimonade) {
+          [2, 14, 15, 16, 20, 34, 35, 36, 110, 111, 112, 113, 114, 115].forEach(col => {
+            data[`${rIdx}-${col}`] = '';
+          });
+        }
 
         // Read inputs
         const cvtsMidi = parseMoneyValue(data[`${rIdx}-6`]);

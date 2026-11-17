@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileSpreadsheet, FileText, Receipt, Upload, Users, X } from 'lucide-react';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 
 import type {
   CaisseImportPreview,
@@ -148,6 +149,7 @@ export default function DashboardImportModal({
   importStatus,
   importPreview,
 }: DashboardImportModalProps) {
+  const hasLimonade = useHasLimonade();
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 10 : 18 }}>
       <div style={{ background: '#fff', borderRadius: 16, width: salaryImportPreviews.length > 0 ? 'min(1040px, 100%)' : 'min(680px, 100%)', maxWidth: 'calc(100vw - 36px)', maxHeight: 'calc(100vh - 36px)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -278,6 +280,7 @@ export default function DashboardImportModal({
                     <div style={{ fontSize: 11, fontWeight: 800 }}>TM midi {formatImportedCurrencyLabel(item.tmMidi)}</div>
                     <div style={{ fontSize: 11, fontWeight: 800 }}>Cts soir {formatImportedIntegerLabel(item.couvertsSoir)}</div>
                     <div style={{ fontSize: 11, fontWeight: 800 }}>TM soir {formatImportedCurrencyLabel(item.tmSoir)}</div>
+                    {hasLimonade && <div style={{ gridColumn: '1 / -1', fontSize: 11, fontWeight: 800, color: '#0e7490' }}>Limonade : cts {formatImportedIntegerLabel(item.couvertsLimo)} · TM {formatImportedCurrencyLabel(item.tmLimo)} · CA {formatImportedCurrencyLabel(item.caLimo)}</div>}
                   </div>
                 ))}
                 {historicalBudgetPreviews.length > 40 && <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>+ {historicalBudgetPreviews.length - 40} lignes non affichees dans l'aperçu</div>}
