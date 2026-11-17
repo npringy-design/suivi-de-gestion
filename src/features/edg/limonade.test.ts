@@ -5,7 +5,6 @@ import { registerSite, setSitesRegistry, siteHasLimonade } from '@/lib/sites';
 import type { MonthData } from '@/types/dataTypes';
 
 import { computeMonthDashboard, getLimonadeMonthStats, getLimonadeTm, sumLimonadeStats } from './edgRealtimeSources';
-import { buildLimonadeRows } from './limonadeRows';
 
 const YEAR = 2026;
 const MONTH = 0;
@@ -60,17 +59,6 @@ describe('agrégation limonade', () => {
     expect(getLimonadeTm({ ca: 10, cvts: 0 })).toBe(0);
   });
 
-  it('ne cumule que les mois clos dans le total à date', () => {
-    const { rows, total } = buildLimonadeRows({
-      statsByMonth: [stats(100, 10, 90, 9), stats(200, 20, 999, 99)],
-      monthLabels: ['janv', 'févr'],
-      mode: 'vsBudget',
-      isMonthComplete: m => m === 0,
-    });
-    expect(rows).toHaveLength(2);
-    expect(total.ref).toEqual({ ca: 100, cvts: 10 });
-    expect(total.actual).toEqual({ ca: 90, cvts: 9 });
-  });
 });
 
 describe('écart couverts (col 33)', () => {

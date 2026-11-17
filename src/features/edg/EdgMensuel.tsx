@@ -7,7 +7,6 @@ import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 import { MONTH_NAMES, MONTH_NAMES_SHORT } from '@/lib/constants';
 
-import LimonadeSection from '@/features/edg/LimonadeSection';
 import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth, getMonthProgress } from '@/features/edg/edgRealtimeSources';
 
 interface EdgMensuelProps {
@@ -401,7 +400,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
     );
   };
 
-  const renderSubTotal =(label: string, bVal: number, rVal: number) => {
+  const renderSubTotal =(label: string, bVal: number, rVal: number, isSub = false) => {
     const eVal = monthHasRealiseData ? ecart(rVal, bVal) : null;
     return (
       <tr style={{ borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
@@ -417,7 +416,8 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           borderRight: '1px solid #cbd5e1', 
           borderBottom: '1px solid #cbd5e1', 
           borderTop: '1px solid #e2e8f0',
-          minWidth: isMobile ? 140 : 200
+          minWidth: isMobile ? 140 : 200,
+          ...(isSub ? { paddingLeft: isMobile ? 20 : 28, fontWeight: 400, fontStyle: 'italic', color: '#64748b' } : {}),
         }}>
           {label}
         </td>
@@ -443,10 +443,10 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
         {/* ECART */}
         <td style={{ width: 10, background: '#fff', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}></td>
         <td style={{ width: isMobile ? 80 : 112, padding: isMobile ? '5px 8px' : '5px 12px', textAlign: 'right', fontWeight: 600, background: '#f8fafc', color: ecartColor(eVal), fontSize: isMobile ? 11 : 13, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
-          {ecartText(eVal, true)}
+          {ecartText(eVal, !isSub)}
         </td>
         <td style={{ width: isMobile ? 56 : 72, background: '#e2e8f0', textAlign: 'right', padding: isMobile ? '5px 8px' : '5px 12px', fontSize: isMobile ? 10 : 12, fontWeight: 500, color: ecartColor(eVal), borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', borderTop: '1px solid #e2e8f0' }}>
-          {ecartRatioText(eVal, bVal, true)}
+          {ecartRatioText(eVal, bVal, !isSub)}
         </td>
       </tr>
     );
@@ -474,8 +474,6 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
     </tr>
   );
 
-  const limonadeStats = getLimonadeMonthStats(dashboardData, month, YEAR);
-  const limonadeSection = <LimonadeSection rows={[{ label: `${MONTH_NAMES[month]} ${YEAR}`, ref: limonadeStats.budget, actual: limonadeStats.realise }]} />;
   const edgTable = (
     <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
       <thead>
@@ -509,6 +507,7 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
     </thead>
     <tbody style={{ borderTop: '1px solid #cbd5e1' }}>
     {renderHeader('C.A. TOTAL HT', caTotalHtBudget, caTotalHtRealise, true)}
+    {hasLimonade && renderSubTotal('dont CA limonade', getLimonadeMonthStats(dashboardData, month, YEAR).budget.ca, getLimonadeMonthStats(dashboardData, month, YEAR).realise.ca, true)}
     {renderSectionBanner('🍽️', 'Coût Matière')}
     {renderRow('Achats Food', 'achats_food', true)}
     {renderRow('Consommables liés à la vente (Paper; Flyer;jouets;CO2)', 'consommables')}
@@ -783,7 +782,6 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
           <div style={{ height: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
               {edgTable}
-              {limonadeSection}
             </div>
           </div>
         </div>
@@ -828,7 +826,6 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
             <div style={{ height: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
               <div style={{ flex: 1, overflow: 'auto' }}>
                 {edgTable}
-                {limonadeSection}
               </div>
             </div>
           </div>

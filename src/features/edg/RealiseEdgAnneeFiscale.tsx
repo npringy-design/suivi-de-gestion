@@ -6,8 +6,6 @@ import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
 import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
-import LimonadeSection from '@/features/edg/LimonadeSection';
-import { buildLimonadeRows } from '@/features/edg/limonadeRows';
 
 const MONTH_INDICES = [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5];
 
@@ -44,7 +42,6 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
     return map;
   }, [computedByMonth, YEAR]);
 
-  const limonade = buildLimonadeRows({ statsByMonth: MONTH_INDICES.map(m => getLimonadeMonthStats(computedByMonth[m], m, getYearForMonth(m))), monthLabels: MONTHS_SHORT, mode: 'realise' });
   const getCaMonth = (m: number) => {
     const year = getYearForMonth(m);
     return getCaRealiseMonth(computedByMonth[m], m, year);
@@ -53,8 +50,11 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
   const caMonths = useMemo(() => MONTH_INDICES.map(m => getCaMonth(m)), [computedByMonth]);
   const caTotal = caMonths.reduce((a, b) => a + b, 0);
 
+  // Ligne « dont CA limonade » : réalisé = Σ col 20 (lecture seule, hors totaux EDG).
+  const LIMONADE_KEY = 'ca_limonade';
   const getValR = (m: number, key: string) => {
     const year = getYearForMonth(m);
+    if (key === LIMONADE_KEY) return getLimonadeMonthStats(computedByMonth[m], m, year).realise.ca;
     const override = allData[year]?.[m]?.edgMensuelRealise?.[key];
     if (override !== undefined && override !== '') return parseMoneyValue(override);
     return autoRealiseByMonth[m]?.[key] ?? 0;
@@ -119,13 +119,13 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
     { label: 'E.B.E.', key: 'ebe' },
   ];
 
-  const renderDataRow = (label: string, key: string, isBlue = false) => {
+  const renderDataRow = (label: string, key: string, isBlue = false, isSub = false) => {
     const rowData = getRowData(key);
     const ratioRTotal = caTotal ? (rowData.totalR / caTotal) * 100 : 0;
     
     return (
       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-        <td style={{ padding: '8px 12px', fontSize: 12, background: '#fff', color: '#334155', position: 'sticky', transform: 'translateZ(0)', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', minWidth: 250 }}>{label}</td>
+        <td style={{ padding: '8px 12px', fontSize: 12, background: '#fff', color: '#334155', position: 'sticky', transform: 'translateZ(0)', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', minWidth: 250, ...(isSub ? { paddingLeft: 28, fontWeight: 400, fontStyle: 'italic', color: '#64748b' } : {}) }}>{label}</td>
         {MONTH_INDICES.map((m, i) => {
           const rVal = rowData.monthsR[i];
           const caR = caMonths[i];
@@ -305,6 +305,7 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
               </thead>
               <tbody>
                 {renderCalcRow('C.A. TOTAL ht', 'ca', 'header', true)}
+                {hasLimonade && renderDataRow('dont CA limonade', LIMONADE_KEY, false, true)}
                 {renderSectionBanner('🍽️', 'Coût Matière')}
                 {renderDataRow('Achats Food', 'achats_food', true)}
                 {renderDataRow('Consommables liés à la vente (Paper; Flyer;jouets;CO2)', 'consommables')}
@@ -394,7 +395,6 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
                 {renderCalcRow('Cash Flow avant IS', 'cashFlow', 'total')}
               </tbody>
             </table>
-            <LimonadeSection rows={limonade.rows} total={limonade.total} refLabel="Réalisé" actualLabel="Réalisé" />
             </div>
           </div>
         </div>

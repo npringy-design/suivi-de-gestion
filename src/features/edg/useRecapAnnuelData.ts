@@ -5,7 +5,6 @@ import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
 import { computeDashboardData, parsePayrollHourForCalculation } from '@/features/dashboard/dashboardCalculations';
 import { parseMoneyValue } from '@/lib/money';
-import { getLimonadeMonthStats } from '@/features/edg/edgRealtimeSources';
 import { useHasLimonade } from '@/lib/useHasLimonade';
 
 // Colonnes par niveau (index 0-4 = Cadre, Maîtrise, NIV I-II, NIV III, Apprenti)
@@ -167,7 +166,6 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       Array.from({ length: 12 }, (_, mi) => getFgCategoryTotal(mi, box, colGroup)).reduce((a, b) => a + b, 0);
 
     const caByMonth = Array.from({ length: 12 }, (_, mi) => getVal(mi, 21));
-    const limonadeByMonth = monthCalcData.map((md, mi) => getLimonadeMonthStats(md, mi, year));
     const totalCA = caByMonth.reduce((s, v) => s + v, 0);
 
     return {
@@ -178,7 +176,7 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       sumCol, sumHoursCol,
       getFgCategoryTotal, sumFgCategory,
       sumDayEcart,
-      caByMonth, totalCA, limonadeByMonth,
+      caByMonth, totalCA,
     };
   }, [data, year, hasLimonade]);
 }

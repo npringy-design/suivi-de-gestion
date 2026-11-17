@@ -7,8 +7,6 @@ import { formatEuro, formatPercent } from '@/lib/formatters';
 import { MONTH_NAMES_SHORT } from '@/lib/constants';
 
 import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
-import LimonadeSection from '@/features/edg/LimonadeSection';
-import { buildLimonadeRows } from '@/features/edg/limonadeRows';
 
 interface VsN1Props {
   onBack: () => void;
@@ -57,19 +55,22 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   );
 
   const getCaMonth = (m: number) => getCaRealiseMonth(computedMonths[m], m, YEAR);
-  const limonade = buildLimonadeRows({ statsByMonth: computedMonths.map((cm, i) => getLimonadeMonthStats(cm, i, YEAR)), statsN1ByMonth: computedMonthsN1.map((cm, i) => getLimonadeMonthStats(cm, i, YEAR - 1)), monthLabels: MONTH_NAMES_SHORT, mode: 'vsN1', isMonthComplete });
   const getCaN1Month = (m: number) => getCaRealiseMonth(computedMonthsN1[m], m, YEAR - 1);
 
   const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [computedMonths]);
   const caN1Months = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaN1Month(i)), [computedMonthsN1]);
   const caTotal = caMonths.reduce((sum, v, i) => (isMonthComplete(i) ? sum + v : sum), 0);
 
+  // Ligne « dont CA limonade » : N-1 = Σ col 20 de N-1, réalisé = Σ col 20 (lecture seule, hors totaux EDG).
+  const LIMONADE_KEY = 'ca_limonade';
   const getValN1 = (m: number, key: string) => {
+    if (key === LIMONADE_KEY) return getLimonadeMonthStats(computedMonthsN1[m], m, YEAR - 1).realise.ca;
     const override = dataN1[m]?.edgMensuelRealise?.[key];
     if (override !== undefined && override !== '') return parseMoneyValue(override);
     return autoRealiseByMonthN1[m]?.[key] ?? 0;
   };
   const getValR = (m: number, key: string) => {
+    if (key === LIMONADE_KEY) return getLimonadeMonthStats(computedMonths[m], m, YEAR).realise.ca;
     const override = data[m]?.edgMensuelRealise?.[key];
     if (override !== undefined && override !== '') return parseMoneyValue(override);
     return autoRealiseByMonth[m]?.[key] ?? 0;
@@ -143,7 +144,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
   // charges pour lire "+" un dépassement et "-" une économie.
   const RED = '#b91c1c';
   const GREEN = '#166534';
-  const REVENUE_LIKE_KEYS = new Set(['refacturation', 'aides_subventions', 'retraitement_daa']);
+  const REVENUE_LIKE_KEYS = new Set(['refacturation', 'aides_subventions', 'retraitement_daa', 'ca_limonade']);
   const ecartColor = (eVal: number): string => (eVal < 0 ? RED : GREEN);
   const ecartText = (eVal: number, invert: boolean): string => {
     const display = invert ? -eVal : eVal;
@@ -170,7 +171,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
     { label: 'E.B.E.', key: 'ebe', invert: false },
   ];
 
-  const renderDataRow = (label: string, key: string, isBlue = false) => {
+  const renderDataRow = (label: string, key: string, isBlue = false, isSub = false) => {
     const rowData = getRowData(key);
     const invert = !REVENUE_LIKE_KEYS.has(key);
     const eValTotal = ecart(rowData.totalR, rowData.totalN1);
@@ -183,7 +184,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
 
     return (
       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-        <td style={{ padding: '8px 12px', fontSize: 12, background: '#fff', color: '#334155', position: 'sticky', transform: 'translateZ(0)', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', minWidth: 250 }}>{label}</td>
+        <td style={{ padding: '8px 12px', fontSize: 12, background: '#fff', color: '#334155', position: 'sticky', transform: 'translateZ(0)', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', minWidth: 250, ...(isSub ? { paddingLeft: 28, fontWeight: 400, fontStyle: 'italic', color: '#64748b' } : {}) }}>{label}</td>
         {Array.from({ length: 12 }).map((_, m) => {
           const n1Val = rowData.monthsN1[m];
           const rVal = rowData.monthsR[m];
@@ -469,6 +470,7 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
               </thead>
               <tbody>
                 {renderCalcRow('C.A. TOTAL HT', 'ca', 'header', true)}
+                {hasLimonade && renderDataRow('dont CA limonade', LIMONADE_KEY, false, true)}
                 {renderSectionBanner('🍽️', 'Coût Matière')}
                 {renderDataRow('Achats Food', 'achats_food', true)}
                 {renderDataRow('Consommables liés à la vente (Paper; Flyer;jouets;CO2)', 'consommables')}
@@ -558,7 +560,6 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
                 {renderCalcRow('Cash Flow avant IS', 'cashFlow', 'total')}
               </tbody>
             </table>
-            <LimonadeSection rows={limonade.rows} total={limonade.total} refLabel="N-1" actualLabel="Réalisé" />
             </div>
           </div>
         </div>

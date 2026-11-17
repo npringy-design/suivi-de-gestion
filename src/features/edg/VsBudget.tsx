@@ -6,8 +6,6 @@ import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
 import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
-import LimonadeSection from '@/features/edg/LimonadeSection';
-import { buildLimonadeRows } from '@/features/edg/limonadeRows';
 
 interface VsBudgetProps {
   onBack: () => void;
@@ -40,13 +38,18 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
   );
 
   const getCaMonth = (m: number) => getCaRealiseMonth(computedMonths[m], m, YEAR);
-  const limonade = buildLimonadeRows({ statsByMonth: computedMonths.map((cm, i) => getLimonadeMonthStats(cm, i, YEAR)), monthLabels: MONTHS_SHORT, mode: 'vsBudget', isMonthComplete });
 
   const caMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => getCaMonth(i)), [computedMonths]);
   const caTotal = caMonths.reduce((sum, v, i) => (isMonthComplete(i) ? sum + v : sum), 0);
 
-  const getValB = (m: number, key: string) => parseMoneyValue(data[m]?.edgMensuel?.[key]);
+  // Ligne « dont CA limonade » : budget = Σ col 2, réalisé = Σ col 20 (lecture seule, hors totaux EDG).
+  const LIMONADE_KEY = 'ca_limonade';
+  const getValB = (m: number, key: string) => {
+    if (key === LIMONADE_KEY) return getLimonadeMonthStats(computedMonths[m], m, YEAR).budget.ca;
+    return parseMoneyValue(data[m]?.edgMensuel?.[key]);
+  };
   const getValR = (m: number, key: string) => {
+    if (key === LIMONADE_KEY) return getLimonadeMonthStats(computedMonths[m], m, YEAR).realise.ca;
     const override = data[m]?.edgMensuelRealise?.[key];
     if (override !== undefined && override !== '') return parseMoneyValue(override);
     return autoRealiseByMonth[m]?.[key] ?? 0;
@@ -120,7 +123,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
   // charges pour lire "+" un dépassement et "-" une économie.
   const RED = '#b91c1c';
   const GREEN = '#166534';
-  const REVENUE_LIKE_KEYS = new Set(['refacturation', 'aides_subventions', 'retraitement_daa']);
+  const REVENUE_LIKE_KEYS = new Set(['refacturation', 'aides_subventions', 'retraitement_daa', 'ca_limonade']);
   const ecartColor = (eVal: number): string => (eVal < 0 ? RED : GREEN);
   const ecartText = (eVal: number, invert: boolean): string => {
     const display = invert ? -eVal : eVal;
@@ -147,7 +150,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
     { label: 'E.B.E.', key: 'ebe', invert: false },
   ];
 
-  const renderDataRow = (label: string, key: string, isBlue = false) => {
+  const renderDataRow = (label: string, key: string, isBlue = false, isSub = false) => {
     const rowData = getRowData(key);
     const invert = !REVENUE_LIKE_KEYS.has(key);
     const eValTotal = ecart(rowData.totalR, rowData.totalB);
@@ -157,7 +160,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
 
     return (
       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-        <td style={{ padding: '8px 12px', fontSize: 12, background: '#fff', color: '#334155', position: 'sticky', transform: 'translateZ(0)', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', minWidth: 250 }}>{label}</td>
+        <td style={{ padding: '8px 12px', fontSize: 12, background: '#fff', color: '#334155', position: 'sticky', transform: 'translateZ(0)', left: 0, zIndex: 10, borderRight: '2px solid #cbd5e1', minWidth: 250, ...(isSub ? { paddingLeft: 28, fontWeight: 400, fontStyle: 'italic', color: '#64748b' } : {}) }}>{label}</td>
         {Array.from({ length: 12 }).map((_, m) => {
           const bVal = rowData.monthsB[m];
           const rVal = rowData.monthsR[m];
@@ -409,6 +412,7 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
               </thead>
               <tbody>
                 {renderCalcRow('C.A. TOTAL HT', 'ca', 'header', true)}
+                {hasLimonade && renderDataRow('dont CA limonade', LIMONADE_KEY, false, true)}
                 {renderSectionBanner('🍽️', 'Coût Matière')}
                 {renderDataRow('Achats Food', 'achats_food', true)}
                 {renderDataRow('Consommables liés à la vente (Paper; Flyer;jouets;CO2)', 'consommables')}
@@ -498,7 +502,6 @@ export default function VsBudget({ onBack, hideHeader = false }: VsBudgetProps) 
                 {renderCalcRow('Cash Flow avant IS', 'cashFlow', 'total')}
               </tbody>
             </table>
-            <LimonadeSection rows={limonade.rows} total={limonade.total} refLabel="Budget" actualLabel="Réalisé" />
             </div>
           </div>
         </div>

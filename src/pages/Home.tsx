@@ -49,8 +49,6 @@ import { useAuthSession } from '@/AuthGate';
 import { siteHasLimonade } from '@/lib/sites';
 import { canAccessShiftPlanning, canCreateSites } from '@/lib/suiviPermissions';
 import { getDashboardRowIndices } from '@/lib/utils';
-import { computeMonthDashboard, getLimonadeMonthStats } from '@/features/edg/edgRealtimeSources';
-import LimonadeSection from '@/features/edg/LimonadeSection';
 import { MONTH_NAMES } from '@/lib/constants';
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
@@ -123,9 +121,11 @@ type SummaryCardProps = {
   // from/to en hex, jamais une classe Tailwind cyan/teal codée en dur.
   accentGradient: [string, string];
   trend?: { value: number; label: string };
+  // Ligne secondaire sous la valeur (ex. « dont limonade » pour les sites Au Bureau).
+  secondary?: string;
 };
 
-export function SummaryCard({ label, value, description, icon: Icon, accentGradient, trend }: SummaryCardProps) {
+export function SummaryCard({ label, value, description, icon: Icon, accentGradient, trend, secondary }: SummaryCardProps) {
   const theme = useSiteBrandTheme();
   return (
     <div
@@ -148,6 +148,11 @@ export function SummaryCard({ label, value, description, icon: Icon, accentGradi
           <div className="home-summary-value text-[clamp(1.85rem,2.15vw,2.5rem)] font-black leading-none tracking-tight text-amber-50 drop-shadow-sm">
             {value}
           </div>
+          {secondary && (
+            <div className="mt-[clamp(0.35rem,0.6vh,0.6rem)] text-[clamp(0.65rem,0.8vw,0.75rem)] font-semibold" style={{ color: theme.cardLabelText }}>
+              {secondary}
+            </div>
+          )}
         </div>
         <div
           className="home-summary-icon flex h-[clamp(2.35rem,3vw,3rem)] w-[clamp(2.35rem,3vw,3rem)] items-center justify-center rounded-xl text-white shadow-lg ring-1 ring-white/20 transition-all duration-500 group-hover:rotate-6 group-hover:scale-110"
@@ -577,12 +582,6 @@ export default function Home() {
 
   const { moisIndex, jourIndex } = indices;
 
-  // Section Limonade (sites Au Bureau) : budget vs réalisé du mois affiché ; rendue nulle pour Hippo.
-  const limonadeMonthStats = useMemo(
-    () => getLimonadeMonthStats(computeMonthDashboard(data?.[month], month, year, siteHasLimonade(activeSiteId)), month, year),
-    [data, month, year, activeSiteId],
-  );
-
   const kpis = useMemo(() => {
     const monthData = data?.[month];
     const dashboard = monthData?.dashboard || {};
@@ -610,9 +609,16 @@ export default function Home() {
 
     let caMois = 0;
     let totalBudgetCA = 0;
+    let limoCa = 0;
+    let limoCvts = 0;
     for (let day = 1; day <= daysInMonth; day += 1) {
       caMois += realisedDayCA(day);
       totalBudgetCA += budgetDayCA(day);
+      const limoRow = rowIndexForDay(day);
+      if (typeof limoRow === 'number') {
+        limoCa += dashboardValue(limoRow, 20);
+        limoCvts += dashboardValue(limoRow, 34);
+      }
     }
 
     const caJour = realisedDayCA(selectedDay);
@@ -639,18 +645,18 @@ export default function Home() {
       const monthData = data?.[statMonth];
       const dashboardForDate = monthData?.dashboard || {};
       const rowIndex = getDashboardRowIndices(statMonth, date.getFullYear())[date.getDate()];
-      if (date.getFullYear() !== year || typeof rowIndex !== 'number') return { ca: 0, budget: 0, restaurant: 0, couverts: 0 };
+      if (date.getFullYear() !== year || typeof rowIndex !== 'number') return { ca: 0, budget: 0, restaurant: 0, couverts: 0, limoCa: 0, limoCvts: 0 };
       const value = (colIndex: number) => parseDashboardValue(dashboardForDate[String(rowIndex) + '-' + String(colIndex)]);
       const ca = [17, 18, 19, 20].reduce((sum, col) => sum + value(col), 0);
       const savedBudget = value(3);
       const budget = savedBudget > 0 ? savedBudget : (value(0) || value(6) * value(7)) + (value(1) || value(8) * value(9)) + (value(2) || value(14) * value(15));
-      return { ca, budget, restaurant: value(18) + value(19), couverts: value(25) + value(27) };
+      return { ca, budget, restaurant: value(18) + value(19), couverts: value(25) + value(27), limoCa: value(20), limoCvts: value(34) };
     };
 
     const summarizeDates = (dates: Date[]) => dates.reduce((acc, date) => {
       const stats = statsForDate(date);
-      return { ca: acc.ca + stats.ca, budget: acc.budget + stats.budget, restaurant: acc.restaurant + stats.restaurant, couverts: acc.couverts + stats.couverts };
-    }, { ca: 0, budget: 0, restaurant: 0, couverts: 0 });
+      return { ca: acc.ca + stats.ca, budget: acc.budget + stats.budget, restaurant: acc.restaurant + stats.restaurant, couverts: acc.couverts + stats.couverts, limoCa: acc.limoCa + stats.limoCa, limoCvts: acc.limoCvts + stats.limoCvts };
+    }, { ca: 0, budget: 0, restaurant: 0, couverts: 0, limoCa: 0, limoCvts: 0 });
 
     const todayKey = toDateInputValue(today);
     const isDefaultView = homePeriod.mode === 'day' && homePeriod.start === todayKey && homePeriod.end === todayKey;
@@ -665,12 +671,12 @@ export default function Home() {
       const selectedTm = totals.couverts > 0 ? totals.restaurant / totals.couverts : 0;
       const selectedBudget = totals.budget > 0 ? (totals.ca / totals.budget) * 100 : 0;
 
-      if (homePeriod.mode === 'year') return { caMois: totals.ca, caJour: totals.ca / 12, tmJour: selectedTm, budgetCouvert: selectedBudget };
-      if (homePeriod.mode === 'day') return { caMois: totals.ca, caJour: totals.restaurant, tmJour: selectedTm, budgetCouvert: selectedBudget };
-      return { caMois: totals.ca, caJour: totals.ca / Math.max(1, safeDates.length), tmJour: selectedTm, budgetCouvert: selectedBudget };
+      if (homePeriod.mode === 'year') return { caMois: totals.ca, caJour: totals.ca / 12, tmJour: selectedTm, budgetCouvert: selectedBudget, limoCa: totals.limoCa, limoCvts: totals.limoCvts };
+      if (homePeriod.mode === 'day') return { caMois: totals.ca, caJour: totals.restaurant, tmJour: selectedTm, budgetCouvert: selectedBudget, limoCa: totals.limoCa, limoCvts: totals.limoCvts };
+      return { caMois: totals.ca, caJour: totals.ca / Math.max(1, safeDates.length), tmJour: selectedTm, budgetCouvert: selectedBudget, limoCa: totals.limoCa, limoCvts: totals.limoCvts };
     }
 
-    return { caMois, caJour, tmJour, budgetCouvert };
+    return { caMois, caJour, tmJour, budgetCouvert, limoCa, limoCvts };
   }, [data, month, year, dashboardRowIndices, homePeriod, today]);
 
 
@@ -1197,6 +1203,9 @@ export default function Home() {
                 <SummaryCard
                   label={homePeriod.mode === 'day' && homePeriod.start === toDateInputValue(today) && homePeriod.end === toDateInputValue(today) ? 'CA réalisé' : homePeriod.mode === 'month' ? 'CA mois' : homePeriod.mode === 'year' ? 'CA année' : homePeriod.mode === 'day' ? 'CA total jour' : 'CA période'}
                   value={fe(kpis.caMois)}
+                  secondary={siteHasLimonade(activeSiteId)
+                    ? `dont limonade : ${fe(kpis.limoCa)} · ${Math.round(kpis.limoCvts)} cvts · TM ${fe(kpis.limoCvts > 0 ? kpis.limoCa / kpis.limoCvts : 0)}`
+                    : undefined}
                   description="Performance du mois en cours versus budget"
                   icon={TrendingUp}
                   accentGradient={sidebarTheme.kpiGradient1}
@@ -1224,7 +1233,6 @@ export default function Home() {
                 />
               </div>
             </section>
-            <div className="shrink-0 empty:hidden"><LimonadeSection rows={[{ label: `${MONTH_NAMES[month]} ${year}`, ref: limonadeMonthStats.budget, actual: limonadeMonthStats.realise }]} /></div>
 
             <section className="shrink-0">
               <div

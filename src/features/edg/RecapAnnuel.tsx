@@ -3,10 +3,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 import { sectionChrome, tint } from '@/lib/tableChrome';
+import { useHasLimonade } from '@/lib/useHasLimonade';
 import { useRecapAnnuelData } from './useRecapAnnuelData';
 import { getPurchaseLabelOverrides } from '@/features/parametres/purchaseLabels';
-import LimonadeSection from '@/features/edg/LimonadeSection';
-import { buildLimonadeRows } from '@/features/edg/limonadeRows';
 
 const MONTHS_FULL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const MONTHS_SHORT_LABELS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -44,14 +43,16 @@ const fmtHeures = (val: number): string => {
 };
 
 // threshold: rouge si valeur > value, vert sinon | invertSign: négatif=vert, positif=rouge, zéro=noir
-type ColDef = { g: string; l: string; bg: string; w: number; threshold?: number; invertSign?: boolean; signColor?: boolean };
+// limo : colonne limonade, affichée uniquement pour un site avec limonade (jamais pour Hippo).
+type ColDef = { g: string; l: string; bg: string; w: number; threshold?: number; invertSign?: boolean; signColor?: boolean; limo?: boolean };
 
 // ─── Colonnes statiques ──────────────────────────────────────────────────────
 
 const COLS_BUDGET: ColDef[] = [
-  // 13 colonnes — CA Limo (col 2) + groupe LIMONADE (cols 14-16) + VAE exclus
+  // 15 colonnes (+ 4 limonade : CA Limo col 2 et groupe LIMONADE col 14) — VAE exclu
   { g: 'CA',            l: 'CA HT MIDI',        bg: BG_BUDG,  w: 70 }, // col 0
   { g: 'CA',            l: 'CA HT SOIR',        bg: BG_BUDG,  w: 70 }, // col 1
+  { g: 'CA',            l: 'CA HT\nLIMONADE',    bg: BG_BUDG,  w: 75, limo: true }, // col 2
   { g: 'CA',            l: 'CA HT JOUR',        bg: BG_BUDG,  w: 75 }, // col 3
   { g: 'CA',            l: 'CUMUL DEPUIS LE 01', bg: BG_BUDG,  w: 80 }, // col 4 (last day)
   { g: 'CA',            l: 'VS Budget\nN-1',    bg: BG_HATCH, w: 65 }, // calc local
@@ -65,15 +66,20 @@ const COLS_BUDGET: ColDef[] = [
   { g: 'COUVERT JOUR',  l: 'CVTS CUMUL',        bg: BG_BUDG,  w: 75 }, // col 12 (last day)
   { g: 'COUVERT JOUR',  l: 'VS Budget\nN-1',    bg: BG_HATCH, w: 65 }, // calc local
   { g: 'COUVERT JOUR',  l: 'VS Réalisé\nN-1',   bg: BG_HATCH, w: 65 }, // calc local
+  { g: 'LIMONADE',      l: 'NB CVTS',           bg: BG_BUDG,  w: 65, limo: true }, // col 14
+  { g: 'LIMONADE',      l: 'CVTS MOY HT',       bg: BG_BUDG,  w: 75, limo: true }, // CA Limo / NB Limo
+  { g: 'LIMONADE',      l: 'VS Réalisé\nN-1',   bg: BG_HATCH, w: 65, limo: true }, // cvts limo budget vs réalisé N-1
 ];
 
 const COLS_REALISE: ColDef[] = [
-  // CA HT — 10 colonnes
+  // CA HT — 11 colonnes (+ 2 limonade)
   { g: 'CA HT', l: 'CA HT\nVAE',                bg: BG_REAL2, w: 75, signColor: true }, // col 17
   { g: 'CA HT', l: 'CA HT\nMidi',               bg: BG_REAL2, w: 75 }, // col 18
   { g: 'CA HT', l: 'Ecart vs\nBudget Midi',      bg: '#fff',   w: 75, signColor: true }, // g(18)-g(0)
   { g: 'CA HT', l: 'CA HT\nSoir',               bg: BG_REAL2, w: 75 }, // col 19
   { g: 'CA HT', l: 'Ecart vs\nBudget Soir',      bg: '#fff',   w: 75, signColor: true }, // g(19)-g(1)
+  { g: 'CA HT', l: 'CA HT\nLimonade',           bg: BG_REAL2, w: 75, limo: true }, // col 20
+  { g: 'CA HT', l: 'Ecart vs\nBudget Limonade',  bg: '#fff',   w: 80, signColor: true, limo: true }, // écart jour par jour 20 vs 2
   { g: 'CA HT', l: 'CA HT\nJour',               bg: BG_REAL2, w: 80 }, // col 21
   { g: 'CA HT', l: 'Ecart Budget\nJour Valeur',  bg: '#fff',   w: 80, signColor: true }, // col 22
   { g: 'CA HT', l: 'Ecart Budget\nJour %',       bg: BG_HATCH, w: 70 }, // calc local
@@ -92,6 +98,13 @@ const COLS_REALISE: ColDef[] = [
   { g: 'COUVERTS\nRESTAURANT', l: 'Cumul\nAnnuel',          bg: BG_REAL2, w: 75 }, // sum col 29 jan→mois
   { g: 'COUVERTS\nRESTAURANT', l: 'Tendance\nAnnuel',       bg: '#fff',   w: 85 }, // progressive
   { g: 'COUVERTS\nRESTAURANT', l: 'VAR vs\nBudget %',      bg: BG_HATCH, w: 70 }, // tendanceCvts vs budgetCvtsAnnuel
+  // COUVERTS LIMONADE — 6 colonnes (sites avec limonade)
+  { g: 'COUVERTS\nLIMONADE', l: 'NB CVTS',                 bg: BG_REAL2, w: 65, limo: true }, // col 34
+  { g: 'COUVERTS\nLIMONADE', l: 'CVTS MOY',                bg: BG_REAL2, w: 65, limo: true }, // g(20) / g(34)
+  { g: 'COUVERTS\nLIMONADE', l: 'Cumul\nAnnuel',           bg: BG_REAL2, w: 75, limo: true }, // sum col 34 jan→mois
+  { g: 'COUVERTS\nLIMONADE', l: 'Ecart Budget\nCouverts',  bg: '#fff',   w: 75, signColor: true, limo: true }, // g(34)-g(14) jour par jour
+  { g: 'COUVERTS\nLIMONADE', l: 'Ecart Budget\nMoy',       bg: '#fff',   w: 75, signColor: true, limo: true }, // TM réalisé - TM budget
+  { g: 'COUVERTS\nLIMONADE', l: 'VAR vs\nN-1 %',           bg: BG_HATCH, w: 70, limo: true }, // col 34 vs col 34 de N-1
 ];
 
 const COLS_COUT_MATIERE: ColDef[] = [
@@ -222,6 +235,10 @@ interface RecapAnnuelProps { onBack: () => void; }
 export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   const { data, allData, selectedYear, setSelectedYear, loadYearFromCloud, companySettings } = useData();
   const YEAR = selectedYear;
+  const hasLimonade = useHasLimonade();
+  // Colonnes et valeurs limonade : retirées (même index) pour un site sans limonade.
+  const visibleCols = (cols: ColDef[]): ColDef[] => (hasLimonade ? cols : cols.filter(c => !c.limo));
+  const visibleVals = (cols: ColDef[], vals: string[]): string[] => (hasLimonade ? vals : vals.filter((_, i) => !cols[i]?.limo));
   const MONTHS_SHORT = MONTHS_SHORT_LABELS.map(m => `${m}-${YEAR.toString().slice(-2)}`);
   const [activeTab, setActiveTab] = useState<string>('budget');
 
@@ -238,7 +255,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     sumCol, sumHoursCol,
     getFgCategoryTotal, sumFgCategory,
     sumDayEcart,
-    caByMonth, totalCA, limonadeByMonth,
+    caByMonth, totalCA,
   } = useRecapAnnuelData(data, YEAR);
 
   // Données N-1 pour les frais personnel
@@ -250,14 +267,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   // CA et couverts réalisés N-1 du restaurant actif (données de l'année YEAR - 1)
   const CA_N1_BY_MONTH = caByMonthN1;
-  const todayRef = new Date();
-  const limonade = buildLimonadeRows({
-    statsByMonth: limonadeByMonth,
-    monthLabels: MONTHS_SHORT,
-    mode: 'vsBudget',
-    isMonthComplete: m => YEAR < todayRef.getFullYear() || (YEAR === todayRef.getFullYear() && m < todayRef.getMonth()),
-  });
-  const CA_N1 = CA_N1_BY_MONTH.reduce((a, b) => a + b, 0);
+    const CA_N1 = CA_N1_BY_MONTH.reduce((a, b) => a + b, 0);
   const CVTS_N1_BY_MONTH = Array.from({ length: 12 }, (_, mi) => Math.round(getValN1(mi, 29)));
   const CVTS_N1 = CVTS_N1_BY_MONTH.reduce((a, b) => a + b, 0);
 
@@ -307,16 +317,23 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   // Sections avec cols FP dynamiques selon schéma
   const SECTIONS = useMemo(() => [
-    { key: 'budget',          label: 'Budget',            icon: '🎯', accentBg: '#d97706', accentColor: '#fff', cols: COLS_BUDGET },
-    { key: 'realise',         label: 'Réalisé',           icon: '📊', accentBg: '#1e40af', accentColor: '#fff', cols: COLS_REALISE },
+    { key: 'budget',          label: 'Budget',            icon: '🎯', accentBg: '#d97706', accentColor: '#fff', cols: visibleCols(COLS_BUDGET) },
+    { key: 'realise',         label: 'Réalisé',           icon: '📊', accentBg: '#1e40af', accentColor: '#fff', cols: visibleCols(COLS_REALISE) },
     { key: 'cout_matiere',    label: 'Coût Matière',      icon: '🛒', accentBg: '#166534', accentColor: '#fff', cols: coutMatiereCols },
     { key: 'frais_personnel', label: 'Frais Personnel',   icon: '👥', accentBg: '#9333ea', accentColor: '#fff', cols: isGlobal ? COLS_FP_GLOBAL : COLS_FP_CUISINE_SALLE },
     { key: 'frais_generaux',  label: 'Frais Généraux',    icon: '📋', accentBg: '#78350f', accentColor: '#fff', cols: COLS_FRAIS_GENERAUX },
     { key: 'synthese',         label: 'Synthèse',          icon: '🏆', accentBg: '#1e3a5f', accentColor: '#fff', cols: COLS_SYNTHESE },
-  ], [isGlobal, coutMatiereCols]);
+  ], [isGlobal, coutMatiereCols, hasLimonade]);
 
   // ─── Valeurs par mois ─────────────────────────────────────────────────────
   const getSectionValues = (sectionKey: string, mi: number): string[] => {
+    const values = getSectionValuesFull(sectionKey, mi);
+    if (sectionKey === 'budget') return visibleVals(COLS_BUDGET, values);
+    if (sectionKey === 'realise') return visibleVals(COLS_REALISE, values);
+    return values;
+  };
+
+  const getSectionValuesFull = (sectionKey: string, mi: number): string[] => {
     const ca   = caByMonth[mi];
     const caN1 = CA_N1_BY_MONTH[mi] ?? 0;
     const varP = caN1 > 0 ? ((ca - caN1) / caN1) * 100 : 0;
@@ -335,9 +352,11 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const cvtsN1Budget = CVTS_N1_BUDGET_BY_MONTH[mi] ?? 0;
         const cumulCA   = Array.from({ length: mi + 1 }, (_, i) => getVal(i, 3)).reduce((a, b) => a + b, 0);
         const cumulCvts = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 10))).reduce((a, b) => a + b, 0);
+        const cvtsLimoN1 = getValN1(mi, 34);
         return [
           fe(g(0)),
           fe(g(1)),
+          fe(g(2)),
           fe(g(3)),
           fe(cumulCA),
           fp(caN1Budget > 0 ? ((g(3) - caN1Budget) / caN1Budget) * 100 : 0),
@@ -347,10 +366,14 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(g(8))),
           fe(g(8) > 0 ? g(1) / g(8) : 0),
           String(Math.round(g(10))),
-          fe(g(10) > 0 ? g(3) / g(10) : 0),
+          fe(g(10) > 0 ? (g(0) + g(1)) / g(10) : 0), // TM restaurant : sans VAE ni limonade
           String(cumulCvts),
           fp(cvtsN1Budget > 0 ? ((g(10) - cvtsN1Budget) / cvtsN1Budget) * 100 : 0),
           fp(cvtsN1Ref > 0 ? ((g(10) - cvtsN1Ref) / cvtsN1Ref) * 100 : 0),
+          // LIMONADE
+          String(Math.round(g(14))),
+          fe(g(14) > 0 ? g(2) / g(14) : 0),
+          fp(cvtsLimoN1 > 0 ? ((g(14) - cvtsLimoN1) / cvtsLimoN1) * 100 : 0),
         ];
       }
 
@@ -377,6 +400,13 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const cumulEcartCvts = Array.from({ length: mi + 1 }, (_, i) => caByMonth[i] > 0 ? sumDayEcart(i, 29, 10) : 0).reduce((a, b) => a + b, 0);
         const tendanceCA   = budgetAnnuel    + cumulEcartCA;
         const tendanceCvts = budgetCvtsAnnuel + cumulEcartCvts;
+        // Limonade : écarts jour par jour (jours saisis), TM réalisé vs TM budget, cumul des couverts, vs N-1
+        const ecartCaLimo   = sumDayEcart(mi, 20, 2);
+        const ecartCvtsLimo = sumDayEcart(mi, 34, 14);
+        const tmLimoReal    = g(34) > 0 ? g(20) / g(34) : 0;
+        const tmLimoBudget  = g(14) > 0 ? g(2) / g(14) : 0;
+        const cumulCvtsLimo = Array.from({ length: mi + 1 }, (_, i) => Math.round(getVal(i, 34))).reduce((a, b) => a + b, 0);
+        const cvtsLimoN1    = getValN1(mi, 34);
         return [
           // CA HT — 10 valeurs
           isEmpty ? '—' : fe(g(17)),
@@ -384,6 +414,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           isEmpty ? '—' : fe(ecartCaMidi),
           isEmpty ? '—' : fe(g(19)),
           isEmpty ? '—' : fe(ecartCaSoir),
+          isEmpty ? '—' : fe(g(20)),
+          isEmpty ? '—' : fe(ecartCaLimo),
           isEmpty ? '—' : fe(g(21)),
           isEmpty ? '—' : fe(ecartCaJour),
           isEmpty ? '—' : fp(ecartCaJourPct),
@@ -402,6 +434,13 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           isEmpty ? '—' : String(cumulCvts),
           isEmpty ? '—' : String(Math.round(tendanceCvts)),
           isEmpty ? '—' : fp(budgetCvtsAnnuel > 0 ? (cumulEcartCvts / budgetCvtsAnnuel) * 100 : 0),
+          // COUVERTS LIMONADE — 6 valeurs
+          isEmpty ? '—' : String(Math.round(g(34))),
+          isEmpty ? '—' : fe(tmLimoReal),
+          isEmpty ? '—' : String(cumulCvtsLimo),
+          isEmpty ? '—' : String(Math.round(ecartCvtsLimo)),
+          isEmpty ? '—' : fe(g(34) > 0 && g(14) > 0 ? tmLimoReal - tmLimoBudget : 0),
+          isEmpty ? '—' : fp(cvtsLimoN1 > 0 ? ((g(34) - cvtsLimoN1) / cvtsLimoN1) * 100 : 0),
         ];
       }
 
@@ -530,6 +569,13 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   // ─── Totaux annuels ───────────────────────────────────────────────────────
   const getTotalValues = (sectionKey: string): string[] => {
+    const values = getTotalValuesFull(sectionKey);
+    if (sectionKey === 'budget') return visibleVals(COLS_BUDGET, values);
+    if (sectionKey === 'realise') return visibleVals(COLS_REALISE, values);
+    return values;
+  };
+
+  const getTotalValuesFull = (sectionKey: string): string[] => {
     const totalVarP = CA_N1 > 0 ? ((totalCA - CA_N1) / CA_N1) * 100 : 0;
     const s = sumCol;
     const totalFgt = Array.from({ length: 12 }, (_, mi) => getFgTotal(mi)).reduce((a, b) => a + b, 0);
@@ -546,11 +592,14 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const totalCvtsJour = s(10);
         const totalCumulCA   = totalCaJour;
         const totalCumulCvts = Math.round(totalCvtsJour);
+        const totalCvtsLimo = s(14);
+        const totalCvtsLimoN1 = Array.from({ length: 12 }, (_, mi) => getValN1(mi, 34)).reduce((a, b) => a + b, 0);
         const totalVarBudgetVsBudgetN1  = CA_N1_BUDGET > 0 ? ((totalCaJour - CA_N1_BUDGET) / CA_N1_BUDGET) * 100 : 0;
         const totalVarBudgetVsRealiseN1 = CA_N1_REF > 0 ? ((totalCaJour - CA_N1_REF) / CA_N1_REF) * 100 : 0;
         return [
           fe(totalCaMidi),
           fe(totalCaSoir),
+          fe(s(2)),
           fe(totalCaJour),
           fe(totalCumulCA),
           fp(totalVarBudgetVsBudgetN1),
@@ -564,6 +613,10 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(totalCumulCvts),
           fp(CVTS_N1_BUDGET > 0 ? ((totalCvtsJour - CVTS_N1_BUDGET) / CVTS_N1_BUDGET) * 100 : 0),
           fp(CVTS_N1_REF > 0 ? ((totalCvtsJour - CVTS_N1_REF) / CVTS_N1_REF) * 100 : 0),
+          // LIMONADE
+          String(Math.round(totalCvtsLimo)),
+          fe(totalCvtsLimo > 0 ? s(2) / totalCvtsLimo : 0),
+          fp(totalCvtsLimoN1 > 0 ? ((totalCvtsLimo - totalCvtsLimoN1) / totalCvtsLimoN1) * 100 : 0),
         ];
       }
 
@@ -599,6 +652,16 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         const tCumulEcartCvts = ecartCvtsJourYtd;
         const tTendanceCA   = tBudgetAnnuel   + tCumulEcartCA;
         const tTendanceCvts = tBudgetCvtsAnnuel + tCumulEcartCvts;
+        // Limonade à date (mois avec réalisé uniquement, comme les colonnes restaurant)
+        const totalCaLimo    = s(20);
+        const totalCvtsLimo  = s(34);
+        const ecartCaLimoYtd   = ecartYtd(20, 2);
+        const ecartCvtsLimoYtd = ecartYtd(34, 14);
+        const tmLimoReal       = totalCvtsLimo > 0 ? totalCaLimo / totalCvtsLimo : 0;
+        const budCaLimoYtd     = totalCaLimo - ecartCaLimoYtd;
+        const budCvtsLimoYtd   = totalCvtsLimo - ecartCvtsLimoYtd;
+        const tmLimoBudget     = budCvtsLimoYtd > 0 ? budCaLimoYtd / budCvtsLimoYtd : 0;
+        const totalCvtsLimoN1  = Array.from({ length: 12 }, (_, mi) => hasData(mi) ? getValN1(mi, 34) : 0).reduce((a, b) => a + b, 0);
         return [
           // CA HT — 10 valeurs
           fe(s(17)),
@@ -606,6 +669,8 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           fe(ecartCaMidiYtd),
           fe(totalCaSoir),
           fe(ecartCaSoirYtd),
+          fe(totalCaLimo),
+          fe(ecartCaLimoYtd),
           fe(totalCaJour),
           fe(ecartCaJourYtd),                  // écart vs budget à date
           fp(ecartCaJourPct),                  // % vs budget à date
@@ -624,6 +689,13 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
           String(Math.round(totalCvtsJour)),
           String(Math.round(tTendanceCvts)),
           fp(tBudgetCvtsAnnuel > 0 ? (tCumulEcartCvts / tBudgetCvtsAnnuel) * 100 : 0),
+          // COUVERTS LIMONADE — 6 totaux
+          String(Math.round(totalCvtsLimo)),
+          fe(tmLimoReal),
+          String(Math.round(totalCvtsLimo)),
+          String(Math.round(ecartCvtsLimoYtd)),
+          fe(totalCvtsLimo > 0 && budCvtsLimoYtd > 0 ? tmLimoReal - tmLimoBudget : 0),
+          fp(totalCvtsLimoN1 > 0 ? ((totalCvtsLimo - totalCvtsLimoN1) / totalCvtsLimoN1) * 100 : 0),
         ];
       }
 
@@ -997,17 +1069,19 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
           if (activeTab === 'realise') {
             const totals = getTotalValues('realise');
+            const realiseCols = visibleCols(COLS_REALISE);
+            const nbCaCols = realiseCols.filter(c => c.g === 'CA HT').length;
             return (
               <>
                 {renderTable(
-                  COLS_REALISE.slice(0, 11), 'CA HT', '📊', '#1e40af', '#fff',
-                  (mi) => getSectionValues('realise', mi).slice(0, 11),
-                  totals.slice(0, 11),
+                  realiseCols.slice(0, nbCaCols), 'CA HT', '📊', '#1e40af', '#fff',
+                  (mi) => getSectionValues('realise', mi).slice(0, nbCaCols),
+                  totals.slice(0, nbCaCols),
                 )}
                 {renderTable(
-                  COLS_REALISE.slice(11), 'Couverts Restaurant', '📊', '#1e40af', '#fff',
-                  (mi) => getSectionValues('realise', mi).slice(11),
-                  totals.slice(11),
+                  realiseCols.slice(nbCaCols), hasLimonade ? 'Couverts' : 'Couverts Restaurant', '📊', '#1e40af', '#fff',
+                  (mi) => getSectionValues('realise', mi).slice(nbCaCols),
+                  totals.slice(nbCaCols),
                 )}
               </>
             );
@@ -1018,7 +1092,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
             getTotalValues(activeSection.key),
           );
         })()}
-        <LimonadeSection rows={limonade.rows} total={limonade.total} />
       </div>
 
       <footer style={{ padding: '10px 24px', borderTop: '1px solid #E7E5E4', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
