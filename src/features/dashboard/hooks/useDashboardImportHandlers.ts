@@ -543,8 +543,9 @@ export function useDashboardImportHandlers({
         writeCell(monthIndex, `${key}-3`, entry.montant.toFixed(2));
       });
       contrats.forEach(contrat => {
-        const rowIndex = dayRows[contrat.dIdx]?.index;
-        if (rowIndex === undefined) return;
+        // Une ligne jour du mois importé par contrat (jours 1, 2, 3…), jamais une ligne de total de semaine.
+        const rowIndex = getDashboardRowIndexForDay(year, monthIndex, contrat.dIdx + 1);
+        if (rowIndex < 0) return;
         writeCell(monthIndex, `${rowIndex}-106`, contrat.nom);
         writeCell(monthIndex, `${rowIndex}-107`, contrat.montant.toFixed(2));
       });
@@ -778,8 +779,9 @@ export function useDashboardImportHandlers({
         writeCell(monthIndex, `${key}-3`, entry.montant.toFixed(2));
       });
       contrats.forEach(contrat => {
-        const rowIndex = dayRows[contrat.dIdx]?.index;
-        if (rowIndex === undefined) return;
+        // Une ligne jour du mois importé par contrat (jours 1, 2, 3…), jamais une ligne de total de semaine.
+        const rowIndex = getDashboardRowIndexForDay(year, monthIndex, contrat.dIdx + 1);
+        if (rowIndex < 0) return;
         writeCell(monthIndex, `${rowIndex}-106`, contrat.nom);
         writeCell(monthIndex, `${rowIndex}-107`, contrat.montant.toFixed(2));
       });

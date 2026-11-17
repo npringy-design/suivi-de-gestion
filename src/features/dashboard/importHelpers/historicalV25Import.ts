@@ -38,10 +38,13 @@ export const V25_CVTS_SOIR_COL = 44;
 export const V25_CVTS_LIMO_COL = 52;
 
 // Coût matière : mapping fixe source col → app col (cols 71+72 s'additionnent vers 50)
+// EPISAVEUR : 5,5 % (col 74) → 53 et 20 % (col 75) → 52, comme l'import V26 (findHistoricalCostMatterTargetColumn).
+// UNILEVER (col 76) et BAR SOLUTION (col 77) n'ont pas de colonne dans l'appli : comptés avec METRO / DÉPANNAGE (56)
+// pour que le total achats reste celui de l'Excel.
 export const V25_COST_MATTER_MAP: Record<number, number> = {
   67: 45, 68: 46, 69: 47, 70: 49,
-  71: 50, 72: 50, 73: 51, 74: 52,
-  75: 53, 78: 56, 79: 57,
+  71: 50, 72: 50, 73: 51, 74: 53,
+  75: 52, 76: 56, 77: 56, 78: 56, 79: 57,
 };
 
 // Démarques — colonnes déjà correctes

@@ -5,6 +5,12 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Contrôle des imports Excel V25 / V26 Hippo Thillois)
+
+- Contrôle des helpers d'import sur HIP THILL V25 (12 mois) et V26 (version de juin, 12 onglets) contre les lignes TOTAL de l'Excel : CA budget, CA réalisé VAE/midi/soir, couverts, achats, heures projection et réalisé, démarques identiques, sauf écarts dus à l'Excel (heures saisies en texte non additionnées par Excel en janvier 2026, formules de total qui oublient les derniers jours pour les démarques de mars 2026 / mars, juin, août 2025, facture DOMAFRAIS de 589,66 € saisie sur la ligne du 29/09 dans l'onglet OCT 25). Cloud Thillois 2026 : janvier à avril identiques à l'Excel.
+- Fix contrats mensualisés (imports budget et V25) : ligne cible = jour 1, 2, 3… du mois importé (`getDashboardRowIndexForDay`), au lieu des lignes du mois affiché à l'écran (pouvaient tomber sur une ligne de total de semaine). Contrats absents du cloud Thillois : à réimporter.
+- Fix V25_COST_MATTER_MAP : EPISAVEUR 5,5 % → col 53 et 20 % → col 52 comme l'import V26 (inversés) ; UNILEVER et BAR SOLUTION (sans colonne dans l'appli) comptés avec METRO / DÉPANNAGE pour garder le total achats de l'Excel. tsc OK, build OK.
+
 ## 17/11/2026 (Lot 6 — Colonnes nommées et test de cohérence entre pages)
 
 - `features/dashboard/dashboardColumnIndex.ts` : index nommés des colonnes du Suivi quotidien (`COL.REALISE_CA_JOUR`, `COL.ACHAT_TOTAL`, `COL.COUT_REALISE`, heures par catégorie…). Utilisés par les calculs partagés entre pages : edgRealtimeSources.ts, monthlyResults.ts, personnelSchema.ts, Reporting.tsx, appairage N-1 de dashboardCalculations.ts. `dashboardColumnIndex.test.ts` vérifie chaque nom contre les en-têtes de dashboardColumns.ts : une colonne insérée ou déplacée casse le test au lieu de fausser un calcul. Règle : toute nouvelle lecture de colonne passe par `COL` ; les index en chiffres restants (dashboardCalculations.ts, composants du Suivi) se convertissent quand on les touche.
