@@ -6,6 +6,7 @@ import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 import { MONTH_NAMES_SHORT } from '@/lib/constants';
 
+import { buildEdgAutoContext } from '@/features/edg/edgFgMapping';
 import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
 
 interface VsN1Props {
@@ -16,7 +17,7 @@ interface VsN1Props {
 
 
 export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
-  const { data, allData, selectedYear, loadYearFromCloud } = useData();
+  const { data, allData, selectedYear, loadYearFromCloud, edgChargesConfig, companySettings } = useData();
   const hasLimonade = useHasLimonade();
   const YEAR = selectedYear;
 
@@ -41,8 +42,8 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
     [data, YEAR, hasLimonade],
   );
   const autoRealiseByMonth = useMemo(
-    () => computedMonths.map((cm, i) => getAutoRealiseValues(cm, i, YEAR)),
-    [computedMonths, YEAR],
+    () => computedMonths.map((cm, i) => getAutoRealiseValues(cm, i, YEAR, buildEdgAutoContext(data[i], edgChargesConfig, companySettings))),
+    [computedMonths, YEAR, data, edgChargesConfig, companySettings],
   );
 
   const computedMonthsN1 = useMemo(
@@ -50,8 +51,8 @@ export default function VsN1({ onBack, hideHeader = false }: VsN1Props) {
     [dataN1, YEAR, hasLimonade],
   );
   const autoRealiseByMonthN1 = useMemo(
-    () => computedMonthsN1.map((cm, i) => getAutoRealiseValues(cm, i, YEAR - 1)),
-    [computedMonthsN1, YEAR],
+    () => computedMonthsN1.map((cm, i) => getAutoRealiseValues(cm, i, YEAR - 1, buildEdgAutoContext(dataN1[i], edgChargesConfig, companySettings))),
+    [computedMonthsN1, YEAR, dataN1, edgChargesConfig, companySettings],
   );
 
   const getCaMonth = (m: number) => getCaRealiseMonth(computedMonths[m], m, YEAR);

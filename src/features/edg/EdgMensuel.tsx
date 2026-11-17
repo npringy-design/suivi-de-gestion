@@ -7,6 +7,7 @@ import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 import { MONTH_NAMES, MONTH_NAMES_SHORT } from '@/lib/constants';
 
+import { buildEdgAutoContext } from '@/features/edg/edgFgMapping';
 import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth, getMonthProgress } from '@/features/edg/edgRealtimeSources';
 
 interface EdgMensuelProps {
@@ -19,7 +20,7 @@ interface EdgMensuelProps {
 
 
 export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false }: EdgMensuelProps) {
-  const { data, updateEdgMensuel, updateEdgMensuelRealise, selectedYear, edgChargesConfig } = useData();
+  const { data, updateEdgMensuel, updateEdgMensuelRealise, selectedYear, edgChargesConfig, companySettings } = useData();
   const hasLimonade = useHasLimonade();
   const YEAR = selectedYear;
   const MONTHS_SHORT = MONTH_NAMES_SHORT.map(m => `${m}-${YEAR.toString().slice(-2)}`);
@@ -49,33 +50,11 @@ export default function EdgMensuel({ month, setMonth, onBack, hideHeader = false
     [dashboardData, month, YEAR],
   );
 
-  // Valeurs auto calculées depuis le Suivi Quotidien, utilisées tant qu'aucune saisie manuelle ne les écrase
-  const autoRealiseValues = useMemo(
-    () => getAutoRealiseValues(dashboardData, month, YEAR),
-    [dashboardData, month, YEAR],
-  );
-
-  // Valeurs auto calculées pour les lignes sous Résultat Gestion pilotées par Paramètre EDG
-  // ('fixe' : recopie du budget saisi ce mois-ci ; 'pourcentage' : % du CA réalisé du mois).
-  // Les clés en mode 'manuel' ne produisent aucune valeur ici (comportement inchangé).
-  const chargeAutoRealiseValues = useMemo(() => {
-    const values: Record<string, number> = {};
-    Object.entries(edgChargesConfig).forEach(([key, cfg]) => {
-      if (cfg.mode === 'fixe') {
-        values[key] = parseMoneyValue(edgData[key]);
-      } else if (cfg.mode === 'pourcentage') {
-        values[key] = ((cfg.pourcentage ?? 0) / 100) * caTotalHtRealise;
-      }
-    });
-    return values;
-  }, [edgChargesConfig, edgData, caTotalHtRealise]);
-
-  // Fusion des deux sources d'auto-remplissage réalisé : Suivi Quotidien (CA, Achats Food,
-  // Coût salaires...) et Paramètre EDG (les 17 lignes sous Résultat Gestion). Aucun chevauchement
-  // de clés entre les deux, donc fusion directe.
+  // Valeurs auto (Suivi Quotidien, Frais Généraux rattachés, frais fixes, Paramètre EDG), utilisées tant
+  // qu'aucune saisie manuelle ne les écrase. Même calcul que les vues annuelles (getAutoRealiseValues).
   const combinedAutoRealiseValues = useMemo(
-    () => ({ ...autoRealiseValues, ...chargeAutoRealiseValues }),
-    [autoRealiseValues, chargeAutoRealiseValues],
+    () => getAutoRealiseValues(dashboardData, month, YEAR, buildEdgAutoContext(data[month], edgChargesConfig, companySettings)),
+    [dashboardData, month, YEAR, data, edgChargesConfig, companySettings],
   );
 
   const monthProgress = useMemo(

@@ -1,6 +1,7 @@
 import { getDashboardRowIndices } from '@/lib/utils';
 import { parseMoneyValue } from '@/lib/money';
-import type { MonthData } from '@/types/dataTypes';
+import type { FixedMonthlyCost, MonthData } from '@/types/dataTypes';
+import { DEFAULT_FIXED_COST_EDG_KEY, FG_CATEGORIES, resolveEdgFgMapping, type EdgAutoContext } from '@/features/edg/edgFgMapping';
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
 import { computeDashboardData } from '@/features/dashboard/dashboardCalculations';
@@ -97,12 +98,46 @@ export const getMonthProgress = (monthData: DashboardData, month: number, year: 
   return Math.min(1, Math.max(0, filledDayNumbers.length / numDays));
 };
 
+// Frais fixes mensuels du mois, par ligne EDG (montants positifs). Les contrats mensualisés importés
+// dans le Suivi quotidien (col 107) font foi pour leur mois ; sinon, la liste des frais fixes du site
+// s'applique aux mois ayant du CA réalisé (aucun frais projeté sur un mois pas encore commencé).
+export const getMonthFixedCosts = (
+  monthData: DashboardData,
+  month: number,
+  year: number,
+  fixedMonthlyCosts: readonly FixedMonthlyCost[] | undefined,
+): { byKey: Record<string, number>; total: number } => {
+  if (hasAnyRowColumnValue(monthData, month, year, 107)) {
+    const total = sumAnyRowColumn(monthData, month, year, 107);
+    return { byKey: { [DEFAULT_FIXED_COST_EDG_KEY]: total }, total };
+  }
+  const byKey: Record<string, number> = {};
+  if (!fixedMonthlyCosts?.length || getCaRealiseMonth(monthData, month, year) <= 0) return { byKey, total: 0 };
+  let total = 0;
+  fixedMonthlyCosts.forEach(cost => {
+    if (!(cost.montant > 0)) return;
+    const key = cost.edgKey || DEFAULT_FIXED_COST_EDG_KEY;
+    byKey[key] = (byKey[key] ?? 0) + cost.montant;
+    total += cost.montant;
+  });
+  return { byKey, total };
+};
+
+// Réalisé EDG automatique d'un mois, à partir du Suivi quotidien calculé (computeMonthDashboard) :
+// achats (col 58), coût salaires (col 87), Frais Généraux rattachés aux lignes EDG, frais fixes
+// mensuels, puis lignes pilotées par Paramètre EDG (« fixe » : budget du mois ; « pourcentage » :
+// % du CA réalisé). Source unique pour EDG mensuel et les vues annuelles.
 export const getAutoRealiseValues = (
   monthData: DashboardData,
   month: number,
   year: number,
+  context: EdgAutoContext = {},
 ): Record<string, number> => {
   const values: Record<string, number> = {};
+  const addCharge = (key: string, amount: number) => {
+    if (!key || amount === 0) return;
+    values[key] = (values[key] ?? 0) - amount;
+  };
 
   if (hasDayColumnValue(monthData, month, year, 58)) {
     values.achats_food = -sumDayColumn(monthData, month, year, 58);
@@ -110,17 +145,24 @@ export const getAutoRealiseValues = (
   if (hasDayColumnValue(monthData, month, year, 87)) {
     values.cout_salaires = -sumDayColumn(monthData, month, year, 87);
   }
-  if (hasAnyRowColumnValue(monthData, month, year, 97)) {
-    values.entretien_locaux = -sumAnyRowColumn(monthData, month, year, 97);
-  }
-  if (hasAnyRowColumnValue(monthData, month, year, 101)) {
-    values.produits_entretien = -sumAnyRowColumn(monthData, month, year, 101);
-  }
-  if (hasAnyRowColumnValue(monthData, month, year, 105)) {
-    values.pub_locale = -sumAnyRowColumn(monthData, month, year, 105);
-  }
-  if (hasAnyRowColumnValue(monthData, month, year, 107)) {
-    values.contrats_maintenance = -sumAnyRowColumn(monthData, month, year, 107);
+
+  const fgMapping = resolveEdgFgMapping(context.edgFgMapping);
+  FG_CATEGORIES.forEach(category => {
+    addCharge(fgMapping[category.key] ?? '', parseMoneyValue(monthData[`fg-total-${category.box}-${category.group}`]));
+  });
+
+  const fixedCosts = getMonthFixedCosts(monthData, month, year, context.fixedMonthlyCosts);
+  Object.entries(fixedCosts.byKey).forEach(([key, amount]) => addCharge(key, amount));
+
+  if (context.chargesConfig) {
+    const caRealise = getCaRealiseMonth(monthData, month, year);
+    Object.entries(context.chargesConfig).forEach(([key, cfg]) => {
+      if (cfg.mode === 'fixe') {
+        values[key] = parseMoneyValue(context.edgBudget?.[key]);
+      } else if (cfg.mode === 'pourcentage') {
+        values[key] = ((cfg.pourcentage ?? 0) / 100) * caRealise;
+      }
+    });
   }
 
   return values;

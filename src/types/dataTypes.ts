@@ -386,6 +386,14 @@ export type CaisseSysteme = {
   columns?: CaisseColumn[];
 };
 
+// Frais fixe mensuel d'un site (contrat, abonnement...) reporté chaque mois dans l'EDG réalisé.
+export type FixedMonthlyCost = {
+  id: string;
+  label: string;
+  montant: number;
+  edgKey: string;
+};
+
 export type CompanySettings = {
   companyName: string;
   locationName: string;
@@ -399,6 +407,10 @@ export type CompanySettings = {
   objectifFraisPersonnel: number;
   // Objectif de coût matière (food cost) en % du CA HT total ; absent = non renseigné.
   objectifFoodCost?: number;
+  // Rattachement des catégories Frais Généraux du Suivi quotidien (« box-groupe ») aux lignes EDG ;
+  // valeur vide = catégorie non reportée. Absent = rattachement par défaut (edgFgMapping.ts).
+  edgFgMapping?: Record<string, string>;
+  fixedMonthlyCosts?: FixedMonthlyCost[];
   // Productivité cible (CA HT / h travaillée).
   productiviteCible: number;
   // Coordonnées géographiques pour la météo.

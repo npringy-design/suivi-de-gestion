@@ -6,6 +6,8 @@ import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
 import { computeDashboardData, parsePayrollHourForCalculation } from '@/features/dashboard/dashboardCalculations';
 import { parseMoneyValue } from '@/lib/money';
 import { useHasLimonade } from '@/lib/useHasLimonade';
+import { useData } from '@/contexts/DataContext';
+import { getMonthFixedCosts } from '@/features/edg/edgRealtimeSources';
 
 // Colonnes par niveau (index 0-4 = Cadre, Maîtrise, NIV I-II, NIV III, Apprenti)
 // Mode global : une colonne par niveau (135-139 pour réel, 130-134 pour proj)
@@ -17,6 +19,8 @@ const PROJ_COLS_CS      = [[62, 63], [64, 65], [66, 67], [68, 69], [70, 71]];
 
 export function useRecapAnnuelData(data: Record<number, MonthData>, year: number) {
   const hasLimonade = useHasLimonade();
+  const { companySettings } = useData();
+  const fixedMonthlyCosts = companySettings.fixedMonthlyCosts;
   return useMemo(() => {
     const monthCalcData: Record<string, string>[] = [];
     const monthTotalIndices: number[] = [];
@@ -165,6 +169,9 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
     const sumFgCategory = (box: number, colGroup: number) =>
       Array.from({ length: 12 }, (_, mi) => getFgCategoryTotal(mi, box, colGroup)).reduce((a, b) => a + b, 0);
 
+    // Frais fixes mensuels du mois (contrats importés, sinon liste du site) : voir getMonthFixedCosts.
+    const getFixedCostsTotal = (mi: number): number => getMonthFixedCosts(monthCalcData[mi], mi, year, fixedMonthlyCosts).total;
+
     const caByMonth = Array.from({ length: 12 }, (_, mi) => getVal(mi, 21));
     const totalCA = caByMonth.reduce((s, v) => s + v, 0);
 
@@ -174,9 +181,9 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       getRealTotalHours, getProjTotalHours,
       sumRealLevel, sumProjLevel, sumRealTotal, sumProjTotal,
       sumCol, sumHoursCol,
-      getFgCategoryTotal, sumFgCategory,
+      getFgCategoryTotal, sumFgCategory, getFixedCostsTotal,
       sumDayEcart,
       caByMonth, totalCA,
     };
-  }, [data, year, hasLimonade]);
+  }, [data, year, hasLimonade, fixedMonthlyCosts]);
 }

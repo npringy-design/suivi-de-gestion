@@ -47,24 +47,47 @@ describe('edgRealtimeSources', () => {
     expect(auto.cout_salaires).toBe(-1200);
   });
 
-  it('somme les colonnes 97/101/105/107 sur les lignes de saisie, sans les lignes de totaux', () => {
-    // Janvier 2026 : lignes 12 et 20 = totaux semaine, 37 = total mois (remplies par computeDashboardData).
+  it('reporte les catégories Frais Généraux sur les lignes EDG rattachées (rattachement par défaut)', () => {
     const md: Record<string, string> = {
-      '11-97': '150',
-      '13-97': '50',
-      '12-97': '200',
-      '19-101': '80',
-      '20-101': '80',
-      '31-105': '300',
-      '37-105': '300',
-      '9-107': '900',
+      'fg-total-0-0': '150,00 €', // Entretien et réparation → entretien_locaux
+      'fg-total-0-1': '80,00 €', // Ecolab → nettoyage_locaux
+      'fg-total-1-1': '20,00 €', // HACCP → honoraires_divers
+      'fg-total-3-2': '30,00 €', // Divers → honoraires_divers
     };
-
     const auto = getAutoRealiseValues(md, MONTH, YEAR);
-    expect(auto.entretien_locaux).toBe(-200);
-    expect(auto.produits_entretien).toBe(-80);
-    expect(auto.pub_locale).toBe(-300);
-    expect(auto.contrats_maintenance).toBe(-900);
+    expect(auto.entretien_locaux).toBe(-150);
+    expect(auto.nettoyage_locaux).toBe(-80);
+    expect(auto.honoraires_divers).toBe(-50);
+  });
+
+  it('suit le rattachement du site, catégorie vide = non reportée', () => {
+    const md: Record<string, string> = { 'fg-total-0-0': '150,00 €', 'fg-total-2-2': '40,00 €' };
+    const auto = getAutoRealiseValues(md, MONTH, YEAR, { edgFgMapping: { '0-0': 'materiel_outillage', '2-2': '' } });
+    expect(auto.materiel_outillage).toBe(-150);
+    expect(auto.entretien_locaux).toBeUndefined();
+    expect(auto.energie).toBeUndefined();
+  });
+
+  it('contrats importés (col 107, lignes jour) prioritaires sur les frais fixes du site, totaux exclus', () => {
+    // Janvier 2026 : ligne 12 = total semaine (remplie par computeDashboardData), ignorée.
+    const md: Record<string, string> = { '9-107': '900', '11-107': '100', '12-107': '1000' };
+    const fixed = [{ id: 'a', label: 'Caisse', montant: 300, edgKey: 'ptt' }];
+    const auto = getAutoRealiseValues(md, MONTH, YEAR, { fixedMonthlyCosts: fixed });
+    expect(auto.contrats_maintenance).toBe(-1000);
+    expect(auto.ptt).toBeUndefined();
+  });
+
+  it('frais fixes du site appliqués seulement aux mois ayant du CA réalisé', () => {
+    const indices = getDashboardRowIndices(MONTH, YEAR);
+    const fixed = [
+      { id: 'a', label: 'Caisse', montant: 300, edgKey: 'ptt' },
+      { id: 'b', label: 'Maintenance', montant: 200, edgKey: 'contrats_maintenance' },
+    ];
+    expect(getAutoRealiseValues({}, MONTH, YEAR, { fixedMonthlyCosts: fixed })).toEqual({});
+    const md: Record<string, string> = { [`${indices[1]}-21`]: '5000' };
+    const auto = getAutoRealiseValues(md, MONTH, YEAR, { fixedMonthlyCosts: fixed });
+    expect(auto.ptt).toBe(-300);
+    expect(auto.contrats_maintenance).toBe(-200);
   });
 
   it("n'inclut pas une clé quand aucune donnée source n'est renseignée", () => {

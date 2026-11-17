@@ -5,6 +5,7 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
+import { buildEdgAutoContext } from '@/features/edg/edgFgMapping';
 import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
 
 const MONTH_INDICES = [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5];
@@ -17,7 +18,7 @@ interface RealiseEdgAnneeFiscaleProps {
 
 
 export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: RealiseEdgAnneeFiscaleProps) {
-  const { allData, selectedYear } = useData();
+  const { allData, selectedYear, edgChargesConfig, companySettings } = useData();
   const hasLimonade = useHasLimonade();
   const YEAR = selectedYear;
   const MONTHS_SHORT = ['juil', 'août', 'sept', 'oct', 'nov', 'déc', 'janv', 'févr', 'mars', 'avr', 'mai', 'juin'].map((m, i) => `${m}-${(i < 6 ? YEAR - 1 : YEAR).toString().slice(-2)}`);
@@ -37,10 +38,10 @@ export default function RealiseEdgAnneeFiscale({ onBack, hideHeader = false }: R
     const map: Record<number, Record<string, number>> = {};
     MONTH_INDICES.forEach(m => {
       const year = getYearForMonth(m);
-      map[m] = getAutoRealiseValues(computedByMonth[m], m, year);
+      map[m] = getAutoRealiseValues(computedByMonth[m], m, year, buildEdgAutoContext(allData[year]?.[m], edgChargesConfig, companySettings));
     });
     return map;
-  }, [computedByMonth, YEAR]);
+  }, [computedByMonth, YEAR, allData, edgChargesConfig, companySettings]);
 
   const getCaMonth = (m: number) => {
     const year = getYearForMonth(m);

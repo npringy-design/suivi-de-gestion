@@ -3,6 +3,8 @@ import { ArrowLeft, Settings } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import type { EdgChargeMode } from '@/types/dataTypes';
 import { EDG_CHARGE_ROWS } from '@/features/edg/edgChargesConfigDefaults';
+import EdgFgMappingSection from '@/features/edg/components/EdgFgMappingSection';
+import FixedMonthlyCostsSection from '@/features/edg/components/FixedMonthlyCostsSection';
 
 type ParametrageEdgProps = {
   onBack: () => void;
@@ -40,6 +42,9 @@ export default function ParametrageEdg({ onBack }: ParametrageEdgProps) {
             </div>
           </div>
         </header>
+
+        <EdgFgMappingSection />
+        <FixedMonthlyCostsSection />
 
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-1 border-b border-slate-200 bg-slate-50/80 p-4">

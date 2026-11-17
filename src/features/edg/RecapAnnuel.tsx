@@ -9,14 +9,6 @@ import { getPurchaseLabelOverrides } from '@/features/parametres/purchaseLabels'
 
 const MONTHS_FULL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const MONTHS_SHORT_LABELS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-const CONTRATS_FG = [
-  { label: 'PI Electronique',  montant: 3649.32 },
-  { label: 'Skello',           montant: 2465.75 },
-  { label: 'Au bureau',        montant: 2268.49 },
-  { label: 'Kertel nomotech',  montant: 1183.56 },
-  { label: 'Stelogy nomotech', montant: 986.30  },
-  { label: 'Eeworx',           montant: 437.92  },
-];
 
 const NAV    = '#1e293b';
 const BG_DATE  = '#1e293b';
@@ -168,7 +160,7 @@ const COLS_FP_PROJ = COLS_FP.slice(0, 8);
 const COLS_FP_REAL = COLS_FP.slice(8);
 
 const COLS_FRAIS_GENERAUX: ColDef[] = [
-  // 30 colonnes
+  // 12 catégories × 2 + total FG × 2 + frais fixes mensuels × 2 = 28 colonnes
   { g: 'Entretien &\nRéparation',     l: 'Montant HT', bg: BG_FG,  w: 80 },
   { g: 'Entretien &\nRéparation',     l: '% CA',       bg: BG_FP,  w: 55 },
   { g: 'Petit Matériel\n& Vaisselles', l: 'Montant HT', bg: BG_FG, w: 80 },
@@ -187,18 +179,16 @@ const COLS_FRAIS_GENERAUX: ColDef[] = [
   { g: 'Frais de\nTransports',        l: '% CA',       bg: BG_FP,  w: 55 },
   { g: 'Marketing\nLocal',            l: 'Montant HT', bg: BG_FG,  w: 75 },
   { g: 'Marketing\nLocal',            l: '% CA',       bg: BG_FP,  w: 55 },
+  { g: 'Autres\nfrais',               l: 'Montant HT', bg: BG_FG,  w: 75 },
+  { g: 'Autres\nfrais',               l: '% CA',       bg: BG_FP,  w: 55 },
   { g: 'Énergie',                     l: 'Montant HT', bg: BG_FG,  w: 80 },
   { g: 'Énergie',                     l: '% CA',       bg: BG_FP,  w: 55 },
   { g: 'Divers',                      l: 'Montant HT', bg: BG_FG,  w: 80 },
   { g: 'Divers',                      l: '% CA',       bg: BG_FP,  w: 55 },
   { g: 'TOTAL FG\n(Hors Contrat)',    l: 'Montant HT', bg: BG_CM2, w: 90 }, // getFgTotal
   { g: 'TOTAL FG\n(Hors Contrat)',    l: '% CA',       bg: BG_CM2, w: 55 },
-  { g: 'CONTRAT FG\nANNUEL',         l: 'PI Electronique',  bg: '#f0fdf4', w: 95 },
-  { g: 'CONTRAT FG\nANNUEL',         l: 'Skello',           bg: '#f0fdf4', w: 75 },
-  { g: 'CONTRAT FG\nANNUEL',         l: 'Au bureau',        bg: '#f0fdf4', w: 75 },
-  { g: 'CONTRAT FG\nANNUEL',         l: 'Kertel nomotech',  bg: '#f0fdf4', w: 90 },
-  { g: 'CONTRAT FG\nANNUEL',         l: 'Stelogy nomotech', bg: '#f0fdf4', w: 95 },
-  { g: 'CONTRAT FG\nANNUEL',         l: 'Eeworx',           bg: '#f0fdf4', w: 70 },
+  { g: 'FRAIS FIXES\nMENSUELS',       l: 'Montant HT', bg: '#f0fdf4', w: 90 },
+  { g: 'FRAIS FIXES\nMENSUELS',       l: '% CA',       bg: '#f0fdf4', w: 55 },
 ];
 
 const COLS_SYNTHESE: ColDef[] = [
@@ -253,7 +243,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     getRealTotalHours, getProjTotalHours,
     sumRealLevel, sumProjLevel, sumRealTotal, sumProjTotal,
     sumCol, sumHoursCol,
-    getFgCategoryTotal, sumFgCategory,
+    getFgCategoryTotal, sumFgCategory, getFixedCostsTotal,
     sumDayEcart,
     caByMonth, totalCA,
   } = useRecapAnnuelData(data, YEAR);
@@ -286,7 +276,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   const CVTS_N1_REF_BY_MONTH = Array.from({ length: 12 }, (_, mi) => CVTS_N1_BY_MONTH[mi] > 0 ? CVTS_N1_BY_MONTH[mi] : CVTS_N1_BUDGET_BY_MONTH[mi]);
   const CVTS_N1_REF = CVTS_N1_REF_BY_MONTH.reduce((a, b) => a + b, 0);
 
-  // Mapping ordonné des 11 catégories FG → [box, colGroup]
+  // Mapping ordonné des 12 catégories FG → [box, colGroup]
   const FG_MAPPING: [number, number][] = [
     [0, 0], // Entretien & Réparation
     [1, 0], // Petit Matériel & Vaisselles
@@ -297,6 +287,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     [2, 1], // Matériel Bureau
     [3, 1], // Frais de Transports
     [0, 2], // Marketing Local
+    [1, 2], // Autres frais
     [2, 2], // Énergie
     [3, 2], // Divers
   ];
@@ -338,7 +329,6 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     const ca   = caByMonth[mi];
     const caN1 = CA_N1_BY_MONTH[mi] ?? 0;
     const varP = caN1 > 0 ? ((ca - caN1) / caN1) * 100 : 0;
-    const isJan = mi === 0;
     const g = (col: number) => getVal(mi, col);
     const r = (col: number) => getRaw(mi, col);
     const fgt = getFgTotal(mi);
@@ -499,9 +489,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 30 valeurs ──────────────────────────────────────────────────────────
+      // ── 28 valeurs ──────────────────────────────────────────────────────────
       case 'frais_generaux': return [
-        // 11 catégories × 2 colonnes (Montant HT + % CA)
+        // 12 catégories × 2 colonnes (Montant HT + % CA)
         ...FG_MAPPING.flatMap(([box, colGroup]) => {
           const montant = getFgCategoryTotal(mi, box, colGroup);
           return [
@@ -511,7 +501,10 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         }),
         fgt > 0 ? fe(fgt) : '0,00 €',
         ca > 0 && fgt > 0 ? `${((fgt / ca) * 100).toFixed(2)} %` : '—',
-        ...CONTRATS_FG.map(c => isJan ? fe(c.montant) : ''),
+        ...(() => {
+          const fixe = getFixedCostsTotal(mi);
+          return [fixe > 0 ? fe(fixe) : '—', fixe > 0 && ca > 0 ? `${((fixe / ca) * 100).toFixed(2)} %` : '—'];
+        })(),
       ];
 
       // ── 18 valeurs synthèse ─────────────────────────────────────────────────
@@ -738,9 +731,9 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         ];
       }
 
-      // ── 30 totaux ───────────────────────────────────────────────────────────
+      // ── 28 totaux ───────────────────────────────────────────────────────────
       case 'frais_generaux': return [
-        // 11 catégories × 2 colonnes (Montant HT + % CA)
+        // 12 catégories × 2 colonnes (Montant HT + % CA)
         ...FG_MAPPING.flatMap(([box, colGroup]) => {
           const montant = sumFgCategory(box, colGroup);
           return [
@@ -750,7 +743,10 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
         }),
         totalFgt > 0 ? fe(totalFgt) : '0,00 €',
         totalCA > 0 && totalFgt > 0 ? `${((totalFgt / totalCA) * 100).toFixed(2)} %` : '—',
-        ...CONTRATS_FG.map(c => fe(c.montant)),
+        ...(() => {
+          const totalFixe = Array.from({ length: 12 }, (_, mi) => getFixedCostsTotal(mi)).reduce((a, b) => a + b, 0);
+          return [totalFixe > 0 ? fe(totalFixe) : '—', totalFixe > 0 && totalCA > 0 ? `${((totalFixe / totalCA) * 100).toFixed(2)} %` : '—'];
+        })(),
       ];
 
       // ── 12 totaux (YTD uniquement — mois avec données) ──────────────────────

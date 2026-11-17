@@ -5,6 +5,7 @@ import { useData } from '@/contexts/DataContext';
 import { parseMoneyValue } from '@/lib/money';
 import { formatEuro, formatPercent } from '@/lib/formatters';
 
+import { buildEdgAutoContext } from '@/features/edg/edgFgMapping';
 import { getLimonadeMonthStats, computeMonthDashboard, getAutoRealiseValues, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
 
 interface BudgetEdgAnnuelProps {
@@ -15,7 +16,7 @@ interface BudgetEdgAnnuelProps {
 
 
 export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEdgAnnuelProps) {
-  const { data, selectedYear } = useData();
+  const { data, selectedYear, edgChargesConfig, companySettings } = useData();
   const hasLimonade = useHasLimonade();
   const YEAR = selectedYear;
   const MONTHS_SHORT = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'].map(m => `${m}-${YEAR.toString().slice(-2)}`);
@@ -33,8 +34,8 @@ export default function BudgetEdgAnnuel({ onBack, hideHeader = false }: BudgetEd
     [data, YEAR, hasLimonade],
   );
   const autoRealiseByMonth = useMemo(
-    () => computedMonths.map((cm, i) => getAutoRealiseValues(cm, i, YEAR)),
-    [computedMonths, YEAR],
+    () => computedMonths.map((cm, i) => getAutoRealiseValues(cm, i, YEAR, buildEdgAutoContext(data[i], edgChargesConfig, companySettings))),
+    [computedMonths, YEAR, data, edgChargesConfig, companySettings],
   );
 
   const getCaMonth = (m: number) => getCaRealiseMonth(computedMonths[m], m, YEAR);
