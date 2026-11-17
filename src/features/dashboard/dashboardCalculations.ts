@@ -318,7 +318,6 @@ export function computeDashboardData(
           const budgetCvtsJourComplet = parseMoneyValue(data[`${rIdx}-10`]) + parseMoneyValue(data[`${rIdx}-14`]);
           if (budgetCvtsJourComplet > 0) {
             const ecartCvtsComplet = totalCvtsJourComplet - budgetCvtsJourComplet;
-            data[`${rIdx}-33`] = ecartCvtsComplet.toFixed(0);
             data[`${rIdx}-122`] = ((ecartCvtsComplet / budgetCvtsJourComplet) * 100).toFixed(2);
           }
         }

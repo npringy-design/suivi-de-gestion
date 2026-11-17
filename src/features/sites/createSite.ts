@@ -1,5 +1,5 @@
 import { createDefaultEdgChargesConfig } from '@/features/edg/edgChargesConfigDefaults';
-import { DEFAULT_COMPANY_SETTINGS } from '@/features/parametres/companySettingsDefaults';
+import { getDefaultCompanySettings } from '@/features/parametres/companySettingsDefaults';
 import { normalizePayrollCosts } from '@/features/masseSalariale/payrollDefaults';
 import {
   pickUniqueSiteSlug,
@@ -13,12 +13,12 @@ import { saveCloudAppState, type CloudAppState } from '@/services/supabaseAppSta
 import { fetchAllSiteIds, insertSite } from '@/services/supabaseSites';
 
 // État initial d'un nouveau site : valeurs par défaut et structures vides, aucune donnée d'un autre site.
-export const buildSiteBootstrapState = (label: string): CloudAppState => ({
+export const buildSiteBootstrapState = (label: string, brand: SiteBrand = 'hippo'): CloudAppState => ({
   allData: {},
   config2025: { mensuel: {}, hebdo: {} },
   customEvents: [],
   edgChargesConfig: createDefaultEdgChargesConfig(),
-  companySettings: { ...DEFAULT_COMPANY_SETTINGS, companyName: label, locationName: '' },
+  companySettings: { ...getDefaultCompanySettings(brand), companyName: label, locationName: '' },
   payrollCosts: normalizePayrollCosts({}),
 });
 
@@ -30,9 +30,10 @@ export const bootstrapSiteState = async (
   siteId: string,
   label: string,
   save: SaveAppState = saveCloudAppState,
+  brand: SiteBrand = 'hippo',
 ): Promise<void> => {
   if (!SITE_SLUG_PATTERN.test(siteId)) throw new Error(`Identifiant de site invalide : "${siteId}".`);
-  await save(siteId, buildSiteBootstrapState(label));
+  await save(siteId, buildSiteBootstrapState(label, brand));
 };
 
 export type CreateSiteInput = { label: string; brand: SiteBrand };
@@ -40,13 +41,13 @@ export type CreateSiteInput = { label: string; brand: SiteBrand };
 export type CreateSiteDeps = {
   fetchTakenIds: () => Promise<Set<string>>;
   insert: typeof insertSite;
-  bootstrap: (siteId: string, label: string) => Promise<void>;
+  bootstrap: (siteId: string, label: string, brand?: SiteBrand) => Promise<void>;
 };
 
 const defaultDeps: CreateSiteDeps = {
   fetchTakenIds: fetchAllSiteIds,
   insert: insertSite,
-  bootstrap: bootstrapSiteState,
+  bootstrap: (siteId, label, brand) => bootstrapSiteState(siteId, label, saveCloudAppState, brand),
 };
 
 // Crée le site (identifiant unique vérifié en base), initialise ses données, l'ajoute au registre.
@@ -62,7 +63,7 @@ export const createSite = async (
 
   const siteId = pickUniqueSiteSlug(baseSlug, await deps.fetchTakenIds());
   const site = await deps.insert({ siteId, label: cleanLabel, brand });
-  await deps.bootstrap(site.siteId, cleanLabel);
+  await deps.bootstrap(site.siteId, cleanLabel, brand);
   registerSite(site);
   return site;
 };

@@ -72,3 +72,21 @@ describe('agrégation limonade', () => {
     expect(total.actual).toEqual({ ca: 90, cvts: 9 });
   });
 });
+
+describe('écart couverts (col 33)', () => {
+  it('reste réalisé restaurant − budget restaurant, limonade exclue', () => {
+    const rIdx = getDashboardRowIndices(MONTH, YEAR)[5];
+    const md = {
+      dashboard: {
+        [`${rIdx}-6`]: '10', [`${rIdx}-7`]: '20',
+        [`${rIdx}-14`]: '4', [`${rIdx}-15`]: '5',
+        [`${rIdx}-18`]: '300', [`${rIdx}-25`]: '12',
+        [`${rIdx}-34`]: '3',
+      },
+    } as unknown as MonthData;
+    const computed = computeMonthDashboard(md, MONTH, YEAR, true);
+    expect(computed[`${rIdx}-33`]).toBe('2');
+    expect(computed[`${rIdx}-120`]).toBe('15');
+    expect(computed[`${rIdx}-122`]).toBe(((15 - 14) / 14 * 100).toFixed(2));
+  });
+});

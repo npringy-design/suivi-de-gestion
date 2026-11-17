@@ -1,6 +1,8 @@
 ﻿import type { Worksheet, Cell } from 'exceljs';
 
-export type XlRange = { rowCount: number; columnCount: number };
+import type { PurchaseSection } from '@/types/dataTypes';
+
+export type XlRange ={ rowCount: number; columnCount: number };
 
 export const getHistoricalBudgetCell = (sheet: Worksheet, rowIndex: number, colIndex: number): Cell | undefined => {
   const cell = sheet.getCell(rowIndex + 1, colIndex + 1);
@@ -461,4 +463,83 @@ export const getHistoricalLimonadeBudgetValues = (
     couvertsLimo: parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, colMap.couvertsLimo)),
     tmLimo: parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, colMap.tmLimo)),
   };
+};
+
+// ─── Fournisseurs reconnus d'après les réglages du site (Au Bureau) ──────────
+
+export type SupplierColumnMapResult = {
+  // colonne source (0-based) -> colonne cible (storeColumn 45–57)
+  map: Record<number, number>;
+  // libellés d'en-tête non vides reliés à aucune colonne : à signaler, jamais perdus en silence
+  unrecognized: string[];
+};
+
+const COST_MATTER_FIRST_STORE_COL = 45;
+const COST_MATTER_LAST_STORE_COL = 57;
+const SUPPLIER_GROUP_ROW = 5; // ligne 6 (1-based) : « ACHATS LIQUIDE HT » / « ACHATS SOLIDES HT » / « ACHAT HT »
+const SUPPLIER_HEADER_ROW = 7; // ligne 8 (1-based) : noms des fournisseurs
+const SUPPLIER_REGION_MAX_WIDTH = 20;
+
+// Alias propres aux libellés des classeurs Au Bureau (clé normalisée -> storeColumn visé).
+const AU_BUREAU_SUPPLIER_ALIASES: Record<string, number> = {
+  EPISAVEUR: 52,
+  UNILEVER: 56,
+  BARSOLUTION: 56,
+};
+
+const safeCellText = (sheet: Worksheet, rowIndex: number, colIndex: number): string => {
+  try {
+    const cell = getHistoricalBudgetCell(sheet, rowIndex, colIndex);
+    return cell ? String(cell.text ?? '').trim() : '';
+  } catch {
+    return '';
+  }
+};
+
+export const buildSupplierColumnMapFromSettings = (
+  sheet: Worksheet,
+  range: XlRange,
+  purchaseSections: readonly PurchaseSection[],
+): SupplierColumnMapResult => {
+  const suppliers = purchaseSections
+    .flatMap(section => section.suppliers)
+    .flatMap(s => (
+      s.storeColumn !== null && s.storeColumn >= COST_MATTER_FIRST_STORE_COL && s.storeColumn <= COST_MATTER_LAST_STORE_COL
+        ? [{ key: normalizeHistoricalSupplierName(s.name), storeColumn: s.storeColumn }]
+        : []
+    ))
+    .filter(s => s.key !== '');
+  const result: SupplierColumnMapResult = { map: {}, unrecognized: [] };
+  if (suppliers.length === 0) return result;
+
+  // Zone des fournisseurs : du premier groupe « ACHATS… » jusqu'au groupe « ACHAT HT » (total) exclu.
+  let start = -1;
+  let end = -1;
+  for (let col = 0; col < range.columnCount; col += 1) {
+    const group = normalizeHistoricalSupplierName(safeCellText(sheet, SUPPLIER_GROUP_ROW, col));
+    if (start < 0 && group.startsWith('ACHATS')) start = col;
+    else if (start >= 0 && group === 'ACHATHT') { end = col; break; }
+  }
+  if (start < 0) return result;
+  if (end < 0) end = Math.min(range.columnCount, start + SUPPLIER_REGION_MAX_WIDTH);
+
+  const storeColumns = new Set(suppliers.map(s => s.storeColumn));
+  for (let col = start; col < end; col += 1) {
+    const rawHeader = safeCellText(sheet, SUPPLIER_HEADER_ROW, col);
+    const header = normalizeHistoricalSupplierName(rawHeader);
+    if (!header) continue;
+
+    const exact = suppliers.find(s => s.key === header);
+    const included = suppliers
+      .filter(s => header.includes(s.key) || s.key.includes(header))
+      .sort((a, b) => b.key.length - a.key.length)[0];
+    const aliasTarget = AU_BUREAU_SUPPLIER_ALIASES[header] ?? Object.entries(AU_BUREAU_SUPPLIER_ALIASES).find(([alias]) => header.includes(alias))?.[1];
+    const target = exact?.storeColumn
+      ?? included?.storeColumn
+      ?? (aliasTarget !== undefined && storeColumns.has(aliasTarget) ? aliasTarget : undefined);
+
+    if (target === undefined) result.unrecognized.push(rawHeader);
+    else result.map[col] = target;
+  }
+  return result;
 };

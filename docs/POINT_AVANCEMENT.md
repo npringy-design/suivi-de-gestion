@@ -5,6 +5,14 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Au Bureau : corrections limonade + fournisseurs V25/V26)
+
+- Écart couverts : `dashboardCalculations.ts` n'écrase plus la col 33 (reste `29 − 10`, couverts restaurant) ; cols 120/121/122 inchangées. Test ajouté. tsc OK.
+- Import V25 limonade : constantes `V25_LIMO_CVTS_COL` 16, `V25_LIMO_TM_COL` 17, `V25_CVTS_LIMO_COL` 52 ; `couvertsLimo` / `tmLimo` / `realiseCouvertsLimo` dans `HistoricalV25RowValues` ; preview avec `caLimo = couvertsLimo × tmLimo`, ligne vide sautée seulement si limonade absente aussi ; application : `-14` / `-15` / `-34` écrits avec limonade, `''` sinon. Hippo inchangé. Vérifié sur le fichier réel BURO CORM V25 (oct. 2025) : CA limonade 5 527 €, 714 couverts. tsc OK.
+- Fournisseurs par site : `AU_BUREAU_PURCHASE_SECTIONS` et `getDefaultCompanySettings(brand)` (`companySettingsDefaults.ts`, utilisé par `DataContext` et la création de site quand aucun réglage n'est enregistré ; réglages existants jamais écrasés) ; `buildSupplierColumnMapFromSettings` (`historicalBudgetImport.ts`, en-têtes ligne 8, alias EPISAVEUR / UNILEVER / BAR SOLUTION) utilisé par les imports V26 et V25 pour un site avec limonade (Hippo : code actuel) ; fournisseur non reconnu signalé dans le statut d'import. Vérifié sur BURO CORM : V26 oct. 2026 = 32,8 k€ d'achats reconnus (10,1 k€ avec l'ancien code), C10 / Auribault / Sysco / SDV / Tête de chou non nuls, CA limonade 8 751 € et 1 073 couverts ; V25 oct. 2025 : Sysco séparé de Pomona. 4 tests. tsc OK.
+- Libellés fournisseurs : `getPurchaseLabelOverrides` (`parametres/purchaseLabels.ts`) donne les libellés / groupes des cols 45–57 d'après `companySettings.purchaseSections`, seulement quand ils diffèrent des réglages Hippo par défaut (en-têtes Hippo inchangés) ; utilisé par `Dashboard.tsx` (renommage local prioritaire) et `RecapAnnuel.tsx`. tsc OK, build OK.
+- Non vérifié : captures d'écran réelles (preview d'import, Suivi quotidien, Coût matière, Hippo Thillois), connexion Supabase requise. Un site Au Bureau déjà créé garde ses réglages cloud actuels (fournisseurs Hippo) : ajouter les fournisseurs dans Paramètres Entreprise, sinon l'import les signale comme non reconnus.
+
 ## 17/11/2026 (Limonade : budget + réalisé, sites Au Bureau uniquement)
 
 - Limonade, règle d'activation : `siteHasLimonade(siteId)` dans `@/lib/sites` (`getSiteBrand === 'au_bureau'`), seule source de vérité ; hook `useHasLimonade()` (`@/lib/useHasLimonade`) pour les composants. Aucun site Hippo modifié. tsc OK.

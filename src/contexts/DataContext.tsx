@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 
 import { useAuthSession } from '@/AuthGate';
-import { DEFAULT_SITE_ID, type SiteId } from '@/lib/sites';
+import { DEFAULT_SITE_ID, getSiteBrand, type SiteId } from '@/lib/sites';
 import { fetchCloudAppBootstrap, fetchCloudMonth, fetchCloudYearMonths, isCloudSyncConfigured, saveCloudAppState, type CloudAppState } from '@/services/supabaseAppState';
 import { mergeDashboardCellsData, mergeEdgMensuelBudgetData, mergeEdgMensuelRealiseData, normalizeMonthData, updateDailyChannelData, updateMonthlyStringRecordData, type DailyChannelKey, type DailyChannelValue } from './dataContextUpdateHelpers';
 import { parseMoneyValue } from '@/lib/money';
 import { createDefaultEdgChargesConfig } from '@/features/edg/edgChargesConfigDefaults';
-import { DEFAULT_COMPANY_SETTINGS, DEFAULT_CAISSE_SYSTEMS } from '@/features/parametres/companySettingsDefaults';
+import { getDefaultCompanySettings, DEFAULT_CAISSE_SYSTEMS } from '@/features/parametres/companySettingsDefaults';
 import { normalizePayrollCosts } from '@/features/masseSalariale/payrollDefaults';
 
 export type {
@@ -216,7 +216,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [customEvents, setCustomEvents] = useState<CustomEvent[]>(() => loadJson(CUSTOM_EVENTS_STORAGE_KEY(activeSiteId), []));
   const [edgChargesConfig, setEdgChargesConfig] = useState<EdgChargesConfig>(() => loadJson(EDG_CHARGES_CONFIG_STORAGE_KEY(activeSiteId), createDefaultEdgChargesConfig()));
   const [companySettings, setCompanySettings] = useState<CompanySettings>(() => {
-    const loaded = loadJson<CompanySettings>(COMPANY_SETTINGS_STORAGE_KEY(activeSiteId), DEFAULT_COMPANY_SETTINGS);
+    const loaded = loadJson<CompanySettings>(COMPANY_SETTINGS_STORAGE_KEY(activeSiteId), getDefaultCompanySettings(getSiteBrand(activeSiteId)));
     if (!loaded.caisseSystemes?.length) {
       return { ...loaded, caisseSystemes: DEFAULT_CAISSE_SYSTEMS };
     }
@@ -331,7 +331,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
     if (cloudState.companySettings && typeof cloudState.companySettings === 'object') {
       setCompanySettings(prev => {
-        const merged = { ...DEFAULT_COMPANY_SETTINGS, ...prev, ...(cloudState.companySettings as CompanySettings) };
+        const merged = { ...getDefaultCompanySettings(getSiteBrand(activeSiteId)), ...prev, ...(cloudState.companySettings as CompanySettings) };
         if (!merged.caisseSystemes?.length) {
           merged.caisseSystemes = DEFAULT_CAISSE_SYSTEMS;
         }
@@ -995,7 +995,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setConfig2025({ mensuel: {}, hebdo: {} });
     setCustomEvents([]);
     setEdgChargesConfig(createDefaultEdgChargesConfig());
-    setCompanySettings(DEFAULT_COMPANY_SETTINGS);
+    setCompanySettings(getDefaultCompanySettings(getSiteBrand(activeSiteId)));
     setPayrollCosts(normalizePayrollCosts({}));
   }, [activeSiteId]);
 

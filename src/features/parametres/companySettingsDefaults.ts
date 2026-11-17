@@ -1,4 +1,5 @@
-import type { CompanySettings, CaisseSysteme } from '@/types/dataTypes';
+import type { CompanySettings, CaisseSysteme, PurchaseSection } from '@/types/dataTypes';
+import type { SiteBrand } from '@/lib/sites';
 
 export const DEFAULT_CAISSE_SYSTEMS: CaisseSysteme[] = [
   { id: 'sys_saisie_theorique', name: 'Saisie Théorique', icon: 'FileText',   accentColor: '#06b6d4', route: '/saisie-theorique' },
@@ -91,3 +92,44 @@ export const PERSONNEL_RATE_LABELS: Record<string, string> = {
   niv3:     'Niveau III',
   apprenti: 'Apprenti',
 };
+
+// Fournisseurs Au Bureau : mêmes colonnes de stockage (45–57) que Hippo, libellés propres à l'enseigne.
+const AU_BUREAU_FRAIS_GENERAUX_SECTION = DEFAULT_COMPANY_SETTINGS.purchaseSections.find(s => s.id === 'frais_generaux');
+
+export const AU_BUREAU_PURCHASE_SECTIONS: PurchaseSection[] = [
+  {
+    id: 'liquides',
+    name: 'Achats liquides HT',
+    icon: 'Wine',
+    suppliers: [
+      { id: 'c10',          name: 'C10',          storeColumn: 45 },
+      { id: 'richard_vins', name: 'Richard Vins', storeColumn: 46 },
+      { id: 'cafe_richard', name: 'Café Richard', storeColumn: 47 },
+    ],
+  },
+  {
+    id: 'solides',
+    name: 'Achats solides HT',
+    icon: 'Beef',
+    suppliers: [
+      { id: 'auribault',   name: 'Auribault',        storeColumn: 48 },
+      { id: 'sysco',       name: 'Sysco',            storeColumn: 49 },
+      { id: 'pomona',      name: 'Pomona F&L',       storeColumn: 50 },
+      { id: 'socopa',      name: 'Socopa',           storeColumn: 51 },
+      { id: 'episaveurs',  name: 'Episaveurs',       storeColumn: 52 },
+      { id: 'sdv',         name: 'SDV',              storeColumn: 53 },
+      { id: 'tete_chou',   name: 'Tête de chou',     storeColumn: 54 },
+      { id: 'domafrais',   name: 'Domafrais',        storeColumn: 55 },
+      { id: 'metro',       name: 'Metro/Dépannage',  storeColumn: 56 },
+      { id: 'martel',      name: 'Martel',           storeColumn: 57 },
+    ],
+  },
+  ...(AU_BUREAU_FRAIS_GENERAUX_SECTION ? [AU_BUREAU_FRAIS_GENERAUX_SECTION] : []),
+];
+
+// Réglages par défaut d'un site selon son enseigne. Hippo : DEFAULT_COMPANY_SETTINGS inchangé.
+// À n'utiliser que pour un site sans réglages enregistrés : ne jamais écraser des réglages existants.
+export const getDefaultCompanySettings = (brand: SiteBrand): CompanySettings =>
+  brand === 'au_bureau'
+    ? { ...DEFAULT_COMPANY_SETTINGS, companyName: 'Au Bureau', purchaseSections: AU_BUREAU_PURCHASE_SECTIONS }
+    : DEFAULT_COMPANY_SETTINGS;

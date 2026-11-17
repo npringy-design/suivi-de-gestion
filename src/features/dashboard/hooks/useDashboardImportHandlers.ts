@@ -18,7 +18,7 @@ import {
   extractPayrollPageTotals,
   getPayrollTargetPeriodFromText,
 } from '@/features/dashboard/importHelpers/personnelSalaryImport';
-import type { SalaryImportPreview, SalaryImportPreviewRow } from '@/types/dataTypes';
+import type { PurchaseSection, SalaryImportPreview, SalaryImportPreviewRow } from '@/types/dataTypes';
 import { parseRecapPeriodeCaisse } from '@/features/caisse/caisseRecapPeriodeParser';
 import type {
   CaisseImportPreview,
@@ -44,6 +44,7 @@ import {
   detectLimonadeBudgetColumns,
   getHistoricalLimonadeBudgetValues,
   getHistoricalCostMatterColumnMap,
+  buildSupplierColumnMapFromSettings,
   getHistoricalCostMatterValues,
   getHistoricalRealiseRowValues,
   historicalCostMatterSupplierCols,
@@ -87,6 +88,7 @@ type UseDashboardImportHandlersParams = {
   setMonth: (month: number) => void;
   setSelectedMonth: (month: number) => void;
   globalData: Record<number, MonthData>;
+  purchaseSections: PurchaseSection[];
   monthNames: string[];
   historicalBudgetPreviews: HistoricalBudgetPreview[];
   historicalV25Previews: HistoricalBudgetPreview[];
@@ -135,6 +137,7 @@ export function useDashboardImportHandlers({
   setMonth,
   setSelectedMonth,
   globalData,
+  purchaseSections,
   monthNames,
   historicalBudgetPreviews,
   historicalV25Previews,
@@ -200,6 +203,8 @@ export function useDashboardImportHandlers({
       updateDashboard(monthIndex, `${rowIndex}-113`, '');
     }
   };
+  const formatSupplierWarnings = (names: ReadonlySet<string>) =>
+    [...names].map(name => ` Fournisseur non reconnu : ${name} — montant non importé.`).join('');
   const formatImportedNumber = (value: number, decimals = 2) => value !== 0 ? value.toFixed(decimals) : '';
   const formatImportedCurrencyLabel = (value: number, decimals = 2) => formatImportedNumber(value, decimals) || '-';
   const formatImportedIntegerLabel = (value: number) => formatImportedNumber(value, 0) || '-';
@@ -327,6 +332,7 @@ export function useDashboardImportHandlers({
       const previews: HistoricalBudgetPreview[] = [];
       const matchedSheets: string[] = [];
       let scannedDateRows = 0;
+      const unrecognizedSuppliers = new Set<string>();
   
       for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
         const sheetName = findBudgetSheetName(workbook, monthIndex, year);
@@ -335,7 +341,9 @@ export function useDashboardImportHandlers({
         const sheet = workbook.getWorksheet(sheetName);
         if (!sheet) continue;
         const range = { rowCount: sheet.rowCount, columnCount: sheet.columnCount };
-        const costMatterColumnMap = getHistoricalCostMatterColumnMap(sheet, range);
+        const supplierMapResult = hasLimonade ? buildSupplierColumnMapFromSettings(sheet, range, purchaseSections) : null;
+        supplierMapResult?.unrecognized.forEach(name => unrecognizedSuppliers.add(name));
+        const costMatterColumnMap = supplierMapResult ? supplierMapResult.map : getHistoricalCostMatterColumnMap(sheet, range);
         const payrollColumnMaps = getHistoricalPayrollColumnMaps(sheet, range);
         const budgetColMap = detectBudgetColumnMap(sheet);
         const limonadeColMap = hasLimonade ? detectLimonadeBudgetColumns(sheet) : null;
@@ -407,7 +415,7 @@ export function useDashboardImportHandlers({
       setCaisseImportPreviews([]);
       setInvoiceImportPreviews([]);
       setHistoricalBudgetStatus(previews.length > 0
-        ? `${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.`
+        ? `${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.${formatSupplierWarnings(unrecognizedSuppliers)}`
         : `Aucune prévision trouvée. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`);
 
       // Budget EDG annuel : feuille "ANNUEL BUDGET" indépendante du Suivi Quotidien,
@@ -463,7 +471,7 @@ export function useDashboardImportHandlers({
       updateDashboard(item.month, item.rowIndex + '-20', formatImportedNumber(item.realiseLimo));
       updateDashboard(item.month, item.rowIndex + '-25', formatImportedNumber(item.realiseCouvertsMidi, 0));
       updateDashboard(item.month, item.rowIndex + '-27', formatImportedNumber(item.realiseCouvertsSoir, 0));
-      updateDashboard(item.month, item.rowIndex + '-34', formatImportedNumber(item.realiseCouvertsLimo, 0));
+      updateDashboard(item.month, item.rowIndex + '-34', hasLimonade ? formatImportedNumber(item.realiseCouvertsLimo, 0) : '');
       historicalCostMatterSupplierCols.forEach(targetCol => {
         updateDashboard(item.month, item.rowIndex + '-' + targetCol, '');
       });
@@ -544,6 +552,7 @@ export function useDashboardImportHandlers({
       const previews: HistoricalBudgetPreview[] = [];
       const matchedSheets: string[] = [];
       let scannedDateRows = 0;
+      const unrecognizedSuppliers = new Set<string>();
 
       for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
         const sheetName = findBudgetSheetName(workbook, monthIndex, year);
@@ -553,6 +562,8 @@ export function useDashboardImportHandlers({
         if (!sheet) continue;
         const range = { rowCount: sheet.rowCount, columnCount: sheet.columnCount };
         const payrollColumnMaps = getV25PayrollColumnMaps(sheet, range);
+        const v25SupplierMapResult = hasLimonade ? buildSupplierColumnMapFromSettings(sheet, range, purchaseSections) : null;
+        v25SupplierMapResult?.unrecognized.forEach(name => unrecognizedSuppliers.add(name));
 
         for (let rowNumber = 0; rowNumber <= range.rowCount - 1; rowNumber += 1) {
           const dateCell = getHistoricalBudgetCell(sheet, rowNumber, 0);
@@ -564,11 +575,14 @@ export function useDashboardImportHandlers({
           const rowIndex = getDashboardRowIndexForDay(year, monthIndex, day);
           if (rowIndex < 0) continue;
 
-          const v25Values = getHistoricalV25RowValues(sheet, rowNumber, payrollColumnMaps);
+          const v25Values = getHistoricalV25RowValues(sheet, rowNumber, payrollColumnMaps, v25SupplierMapResult?.map);
           const caTotal = v25Values.realiseVae + v25Values.realiseMidi + v25Values.realiseSoir + v25Values.realiseLimo;
           const couvertsTotal = v25Values.couvertsMidi + v25Values.couvertsSoir;
+          const v25CouvertsLimo = hasLimonade ? v25Values.couvertsLimo : 0;
+          const v25TmLimo = hasLimonade ? v25Values.tmLimo : 0;
+          const v25RealiseCouvertsLimo = hasLimonade ? v25Values.realiseCouvertsLimo : 0;
 
-          if (caTotal === 0 && couvertsTotal === 0 && v25Values.costMatterTotal === 0 && v25Values.payrollTotalHours === 0) continue;
+          if (caTotal === 0 && couvertsTotal === 0 && v25CouvertsLimo === 0 && v25RealiseCouvertsLimo === 0 && v25Values.costMatterTotal === 0 && v25Values.payrollTotalHours === 0) continue;
 
           previews.push({
             id: sheetName + '-' + rowNumber + '-' + day,
@@ -584,16 +598,16 @@ export function useDashboardImportHandlers({
             couvertsSoir: v25Values.couvertsSoir,
             tmSoir: v25Values.tmSoir,
             couvertsTotal: v25Values.couvertsMidi + v25Values.couvertsSoir,
-            couvertsLimo: 0,
-            tmLimo: 0,
-            caLimo: 0,
+            couvertsLimo: v25CouvertsLimo,
+            tmLimo: v25TmLimo,
+            caLimo: v25CouvertsLimo * v25TmLimo,
             realiseVae: v25Values.realiseVae,
             realiseMidi: v25Values.realiseMidi,
             realiseSoir: v25Values.realiseSoir,
             realiseLimo: v25Values.realiseLimo,
             realiseCouvertsMidi: v25Values.realiseCouvertsMidi,
             realiseCouvertsSoir: v25Values.realiseCouvertsSoir,
-            realiseCouvertsLimo: 0,
+            realiseCouvertsLimo: v25RealiseCouvertsLimo,
             costMatterValues: v25Values.costMatterValues,
             costMatterTotal: v25Values.costMatterTotal,
             payrollValues: v25Values.payrollValues,
@@ -625,7 +639,7 @@ export function useDashboardImportHandlers({
         : 0;
 
       setHistoricalV25Status((previews.length > 0
-        ? `Budget V25 — ${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.`
+        ? `Budget V25 — ${previews.length} jour(s) trouvés sur ${matchedSheets.length} feuille(s) : ${matchedSheets.join(', ')}. Vérifiez puis validez.${formatSupplierWarnings(unrecognizedSuppliers)}`
         : `Budget V25 — Aucun réalisé trouvé. Feuilles détectées : ${matchedSheets.join(', ') || 'aucune'}. Lignes dates lues : ${scannedDateRows}.`)
         + (edgMonthsImported > 0 ? ` EDG mensuel : ${edgMonthsImported} mois importés.` : ''));
     } catch (error) {
@@ -649,7 +663,7 @@ export function useDashboardImportHandlers({
     resetHistoricalPayrollForMonths([...new Set(historicalV25Previews.map(item => item.month))]);
 
     // Reset complet de toutes les colonnes V25 pour chaque ligne importée (garantit l'idempotence)
-    const V25_REALISE_COLS = [6, 7, 8, 9, 17, 18, 19, 20, 25, 27, 34];
+    const V25_REALISE_COLS = [6, 7, 8, 9, 14, 15, 17, 18, 19, 20, 25, 27, 34];
     const V25_DEMARQUE_COLS = [39, 41, 44];
     historicalV25Previews.forEach(item => {
       V25_REALISE_COLS.forEach(col => {
@@ -672,6 +686,8 @@ export function useDashboardImportHandlers({
       updateDashboard(item.month, item.rowIndex + '-7',  formatImportedNumber(item.tmMidi));
       updateDashboard(item.month, item.rowIndex + '-8',  formatImportedNumber(item.couvertsSoir, 0));
       updateDashboard(item.month, item.rowIndex + '-9',  formatImportedNumber(item.tmSoir));
+      updateDashboard(item.month, item.rowIndex + '-14', hasLimonade ? formatImportedNumber(item.couvertsLimo, 0) : '');
+      updateDashboard(item.month, item.rowIndex + '-15', hasLimonade ? formatImportedNumber(item.tmLimo) : '');
       // Réalisé CA
       updateDashboard(item.month, item.rowIndex + '-17', formatImportedNumber(item.realiseVae));
       updateDashboard(item.month, item.rowIndex + '-18', formatImportedNumber(item.realiseMidi));
@@ -679,7 +695,7 @@ export function useDashboardImportHandlers({
       updateDashboard(item.month, item.rowIndex + '-20', formatImportedNumber(item.realiseLimo));
       updateDashboard(item.month, item.rowIndex + '-25', formatImportedNumber(item.realiseCouvertsMidi, 0));
       updateDashboard(item.month, item.rowIndex + '-27', formatImportedNumber(item.realiseCouvertsSoir, 0));
-      updateDashboard(item.month, item.rowIndex + '-34', formatImportedNumber(item.realiseCouvertsLimo, 0));
+      updateDashboard(item.month, item.rowIndex + '-34', hasLimonade ? formatImportedNumber(item.realiseCouvertsLimo, 0) : '');
       // Coût matière
       historicalCostMatterSupplierCols.forEach(targetCol => {
         updateDashboard(item.month, item.rowIndex + '-' + targetCol, '');

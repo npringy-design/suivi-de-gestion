@@ -4,6 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { formatEuroSymbol, formatPercentSigned } from '@/lib/formatters';
 import { sectionChrome, tint } from '@/lib/tableChrome';
 import { useRecapAnnuelData } from './useRecapAnnuelData';
+import { getPurchaseLabelOverrides } from '@/features/parametres/purchaseLabels';
 import LimonadeSection from '@/features/edg/LimonadeSection';
 import { buildLimonadeRows } from '@/features/edg/limonadeRows';
 
@@ -295,15 +296,24 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
   [data]);
   const isGlobal = personnelSchema === 'global';
 
+  // Colonnes fournisseurs (cols 45–57, index 5 à 17) : libellés et groupe issus des réglages du site, repli sur le libellé historique.
+  const coutMatiereCols = useMemo(() => {
+    const overrides = getPurchaseLabelOverrides(companySettings.purchaseSections);
+    return COLS_COUT_MATIERE.map((col, i) => {
+      const o = i >= 5 && i <= 17 ? overrides[40 + i] : undefined;
+      return o ? { ...col, l: o.label ?? col.l, g: o.group ?? col.g } : col;
+    });
+  }, [companySettings.purchaseSections]);
+
   // Sections avec cols FP dynamiques selon schéma
   const SECTIONS = useMemo(() => [
     { key: 'budget',          label: 'Budget',            icon: '🎯', accentBg: '#d97706', accentColor: '#fff', cols: COLS_BUDGET },
     { key: 'realise',         label: 'Réalisé',           icon: '📊', accentBg: '#1e40af', accentColor: '#fff', cols: COLS_REALISE },
-    { key: 'cout_matiere',    label: 'Coût Matière',      icon: '🛒', accentBg: '#166534', accentColor: '#fff', cols: COLS_COUT_MATIERE },
+    { key: 'cout_matiere',    label: 'Coût Matière',      icon: '🛒', accentBg: '#166534', accentColor: '#fff', cols: coutMatiereCols },
     { key: 'frais_personnel', label: 'Frais Personnel',   icon: '👥', accentBg: '#9333ea', accentColor: '#fff', cols: isGlobal ? COLS_FP_GLOBAL : COLS_FP_CUISINE_SALLE },
     { key: 'frais_generaux',  label: 'Frais Généraux',    icon: '📋', accentBg: '#78350f', accentColor: '#fff', cols: COLS_FRAIS_GENERAUX },
     { key: 'synthese',         label: 'Synthèse',          icon: '🏆', accentBg: '#1e3a5f', accentColor: '#fff', cols: COLS_SYNTHESE },
-  ], [isGlobal]);
+  ], [isGlobal, coutMatiereCols]);
 
   // ─── Valeurs par mois ─────────────────────────────────────────────────────
   const getSectionValues = (sectionKey: string, mi: number): string[] => {

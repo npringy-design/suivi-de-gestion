@@ -24,6 +24,9 @@ export const V25_COUVERTS_MIDI_COL = 8;
 export const V25_TM_MIDI_COL = 9;
 export const V25_COUVERTS_SOIR_COL = 10;
 export const V25_TM_SOIR_COL = 11;
+// Budget limonade (NB CVTS / CVTS MOY HT)
+export const V25_LIMO_CVTS_COL = 16;
+export const V25_LIMO_TM_COL = 17;
 
 // CA réalisé
 export const V25_CA_VAE_COL = 20;
@@ -32,6 +35,7 @@ export const V25_CA_SOIR_COL = 27;
 export const V25_CA_LIMO_COL = 29;
 export const V25_CVTS_MIDI_COL = 42;
 export const V25_CVTS_SOIR_COL = 44;
+export const V25_CVTS_LIMO_COL = 52;
 
 // Coût matière : mapping fixe source col → app col (cols 71+72 s'additionnent vers 50)
 export const V25_COST_MATTER_MAP: Record<number, number> = {
@@ -52,12 +56,15 @@ export type HistoricalV25RowValues = {
   tmMidi: number;
   couvertsSoir: number;
   tmSoir: number;
+  couvertsLimo: number;
+  tmLimo: number;
   realiseVae: number;
   realiseMidi: number;
   realiseSoir: number;
   realiseLimo: number;
   realiseCouvertsMidi: number;
   realiseCouvertsSoir: number;
+  realiseCouvertsLimo: number;
   costMatterValues: Record<number, number>;
   costMatterTotal: number;
   payrollValues: Record<number, string>;
@@ -70,12 +77,14 @@ export function getHistoricalV25RowValues(
   sheet: Worksheet,
   rowNumber: number,
   payrollColumnMaps: HistoricalPayrollColumnMap[],
+  costMatterMap: Record<number, number> = V25_COST_MATTER_MAP,
 ): HistoricalV25RowValues {
   if (rowNumber < 0 || isHistoricalBudgetTotalRow(sheet, rowNumber)) {
     return {
       couvertsMidi: 0, tmMidi: 0, couvertsSoir: 0, tmSoir: 0,
+      couvertsLimo: 0, tmLimo: 0,
       realiseVae: 0, realiseMidi: 0, realiseSoir: 0, realiseLimo: 0,
-      realiseCouvertsMidi: 0, realiseCouvertsSoir: 0,
+      realiseCouvertsMidi: 0, realiseCouvertsSoir: 0, realiseCouvertsLimo: 0,
       costMatterValues: {}, costMatterTotal: 0,
       payrollValues: {}, payrollTotalHours: 0,
     };
@@ -85,6 +94,8 @@ export function getHistoricalV25RowValues(
   const tmMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, V25_TM_MIDI_COL));
   const couvertsSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, V25_COUVERTS_SOIR_COL));
   const tmSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, V25_TM_SOIR_COL));
+  const couvertsLimo = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, V25_LIMO_CVTS_COL));
+  const tmLimo = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, V25_LIMO_TM_COL));
 
   const realiseVae = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, V25_CA_VAE_COL));
   const realiseMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, V25_CA_MIDI_COL));
@@ -92,10 +103,11 @@ export function getHistoricalV25RowValues(
   const realiseLimo = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, V25_CA_LIMO_COL));
   const realiseCouvertsMidi = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, V25_CVTS_MIDI_COL));
   const realiseCouvertsSoir = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, V25_CVTS_SOIR_COL));
+  const realiseCouvertsLimo = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, V25_CVTS_LIMO_COL));
 
   // Coût matière : mapping fixe, additionner si deux sources → même target
   const costMatterValues: Record<number, number> = {};
-  Object.entries(V25_COST_MATTER_MAP).forEach(([srcCol, targetCol]) => {
+  Object.entries(costMatterMap).forEach(([srcCol, targetCol]) => {
     const amount = parseHistoricalBudgetCellNumber(getHistoricalBudgetCell(sheet, rowNumber, Number(srcCol)));
     if (amount !== 0) costMatterValues[targetCol] = (costMatterValues[targetCol] || 0) + amount;
   });
@@ -106,8 +118,9 @@ export function getHistoricalV25RowValues(
 
   return {
     couvertsMidi, tmMidi, couvertsSoir, tmSoir,
+    couvertsLimo, tmLimo,
     realiseVae, realiseMidi, realiseSoir, realiseLimo,
-    realiseCouvertsMidi, realiseCouvertsSoir,
+    realiseCouvertsMidi, realiseCouvertsSoir, realiseCouvertsLimo,
     costMatterValues, costMatterTotal,
     payrollValues, payrollTotalHours,
   };

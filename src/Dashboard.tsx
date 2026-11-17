@@ -4,6 +4,7 @@ import DashboardAnalysisView from '@/pages/DashboardAnalysisView';
 import { useData, type SalarieRow } from '@/contexts/DataContext';
 import { useSiteBrandTheme } from '@/lib/siteBrandTheme';
 import { useHasLimonade } from '@/lib/useHasLimonade';
+import { getPurchaseLabelOverrides } from '@/features/parametres/purchaseLabels';
 import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import { parseMoneyValue } from '@/lib/money';
 import { tint } from '@/lib/tableChrome';
@@ -218,9 +219,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     dragState,
     setDragState,
   } = useDashboardUiState();
+  // Libellés fournisseurs par défaut issus des réglages du site ; le renommage local reste prioritaire.
+  const defaultPurchaseNames = useMemo(
+    () => Object.fromEntries(Object.entries(getPurchaseLabelOverrides(companySettings.purchaseSections)).flatMap(([col, o]) => (o.label ? [[col, o.label.toUpperCase()]] : []))),
+    [companySettings.purchaseSections],
+  );
   const dynamicColumns = useMemo(
-    () => buildDynamicColumns(globalData[month]?.salariesConfig?.categories, purchaseSupplierNames),
-    [C, globalData, month, purchaseSupplierNames],
+    () => buildDynamicColumns(globalData[month]?.salariesConfig?.categories, { ...defaultPurchaseNames, ...purchaseSupplierNames }),
+    [C, globalData, month, purchaseSupplierNames, defaultPurchaseNames],
   );
 
   useEffect(() => {
@@ -585,6 +591,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     setMonth,
     setSelectedMonth,
     globalData,
+    purchaseSections: companySettings.purchaseSections,
     monthNames,
     historicalBudgetPreviews,
     historicalV25Previews,
