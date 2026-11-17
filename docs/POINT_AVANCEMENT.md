@@ -5,6 +5,11 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Fournisseurs Hippo : liste reprise des noms de l'Excel à l'import)
+
+- Import Excel budget/réalisé de l'année en cours, sites Hippo : `getHistoricalCostMatterSupplierNames` (historicalBudgetImport.ts) lit les noms de fournisseurs de l'en-tête Excel par colonne de l'appli (plusieurs colonnes Excel rangées ensemble : « TERRE AZUR / POMONA F&L ») ; à la validation, `applyImportedSupplierNames` (purchaseLabels.ts) recrée les sections achats liquides (45–48) et solides (49–57) des réglages du site avec ces noms sur les colonnes où l'import écrit les montants (colonnes non utilisées : « Libre ») et retire les renommages d'en-tête 45–57. Avant : les fournisseurs des réglages pouvaient être rangés sur d'autres colonnes que l'import (Thillois : « Episaveurs 5,5 % » en 52 alors que l'import l'écrit en 53, d'où « Mammafiore » resté en 53). Récap annuel : renommages d'en-tête du Suivi pris en compte.
+- Réimport V25 + V26 Thillois vérifié en base : 11 contrats (1 834 €/mois) sur 2026, Episaveur 5,5 % en col 53 et 20 % en col 52 sur 2025 et 2026. tsc OK, build OK.
+
 ## 17/11/2026 (Contrôle des imports Excel V25 / V26 Hippo Thillois)
 
 - Contrôle des helpers d'import sur HIP THILL V25 (12 mois) et V26 (version de juin, 12 onglets) contre les lignes TOTAL de l'Excel : CA budget, CA réalisé VAE/midi/soir, couverts, achats, heures projection et réalisé, démarques identiques, sauf écarts dus à l'Excel (heures saisies en texte non additionnées par Excel en janvier 2026, formules de total qui oublient les derniers jours pour les démarques de mars 2026 / mars, juin, août 2025, facture DOMAFRAIS de 589,66 € saisie sur la ligne du 29/09 dans l'onglet OCT 25). Cloud Thillois 2026 : janvier à avril identiques à l'Excel.

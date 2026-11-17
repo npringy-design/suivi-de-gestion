@@ -44,6 +44,7 @@ import {
   detectLimonadeBudgetColumns,
   getHistoricalLimonadeBudgetValues,
   getHistoricalCostMatterColumnMap,
+  getHistoricalCostMatterSupplierNames,
   buildSupplierColumnMapFromSettings,
   findHistoricalDataStartRow,
   getHistoricalCostMatterValues,
@@ -73,6 +74,8 @@ import { parseEdgMonthlySheets } from '@/features/dashboard/importHelpers/edgMon
 import { useHasLimonade } from '@/lib/useHasLimonade';
 import { useAuthSession } from '@/AuthGate';
 import { foreignSiteWarning } from '@/lib/siteFileMatch';
+import { useData } from '@/contexts/DataContext';
+import { applyImportedSupplierNames } from '@/features/parametres/purchaseLabels';
 import {
   BUDGET_SHEET_TOKENS,
   isImportSheetName,
@@ -195,6 +198,9 @@ export function useDashboardImportHandlers({
 }: UseDashboardImportHandlersParams) {
   const hasLimonade = useHasLimonade();
   const { activeSiteId } = useAuthSession();
+  const { companySettings, updateCompanySettings } = useData();
+  // Noms des fournisseurs lus dans l'en-tête de l'Excel (sites Hippo), appliqués aux réglages à la validation.
+  const pendingSupplierNamesRef = React.useRef<Record<number, string>>({});
   // Fichier qui semble appartenir à un autre restaurant (nom du fichier ou texte du PDF) : confirmation.
   const confirmImportForActiveSite = (sources: string[]): boolean => {
     const warnings = sources.map(source => foreignSiteWarning(source, activeSiteId)).filter((w): w is string => w !== null);
@@ -361,6 +367,7 @@ export function useDashboardImportHandlers({
       const { workbook, warning: filterWarning } = await loadImportWorkbook(file, setHistoricalBudgetStatus, 'Budget');
       const allDemarques: typeof pendingDemarquesRef.current = [];
       pendingFgRef.current = [];
+      pendingSupplierNamesRef.current = {};
       for (let mi = 0; mi < 12; mi++) {
         await yieldToBrowser();
         const sheetNameDem = findBudgetSheetName(workbook, mi, year);
@@ -385,6 +392,7 @@ export function useDashboardImportHandlers({
         const supplierMapResult = hasLimonade ? buildSupplierColumnMapFromSettings(sheet, range, purchaseSections) : null;
         supplierMapResult?.unrecognized.forEach(name => unrecognizedSuppliers.add(name));
         const costMatterColumnMap = supplierMapResult ? supplierMapResult.map : getHistoricalCostMatterColumnMap(sheet, range);
+        if (!supplierMapResult) Object.assign(pendingSupplierNamesRef.current, getHistoricalCostMatterSupplierNames(sheet, range));
         const payrollColumnMaps = getHistoricalPayrollColumnMaps(sheet, range);
         const budgetColMap = detectBudgetColumnMap(sheet);
         const limonadeColMap = hasLimonade ? detectLimonadeBudgetColumns(sheet) : null;
@@ -564,6 +572,18 @@ export function useDashboardImportHandlers({
       if (dem.explication) writeCell(demMonthIndex, `${rowIndex}-44`, dem.explication);
     });
     pendingDemarquesRef.current = [];
+    // Liste des fournisseurs du site recréée avec les noms de l'Excel (import de l'année en cours, sites Hippo).
+    const importedSupplierNames = pendingSupplierNamesRef.current;
+    pendingSupplierNamesRef.current = {};
+    if (!hasLimonade && year >= new Date().getFullYear() && Object.keys(importedSupplierNames).length > 0) {
+      const keptColumnNames = Object.fromEntries(Object.entries(companySettings.purchaseColumnNames ?? {})
+        .filter(([col]) => Number(col) < 45 || Number(col) > 57));
+      updateCompanySettings({
+        ...companySettings,
+        purchaseSections: applyImportedSupplierNames(companySettings.purchaseSections, importedSupplierNames),
+        purchaseColumnNames: keptColumnNames,
+      });
+    }
     importBudgetPlan(year, patch);
     const importedMonths = [...new Set(historicalBudgetPreviews.map(item => item.month))];
     markMonthsAsLoaded(year, importedMonths);

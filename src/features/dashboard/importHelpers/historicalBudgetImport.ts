@@ -258,6 +258,28 @@ export const getHistoricalCostMatterColumnMap = (sheet: Worksheet, range: XlRang
   return map;
 };
 
+// Noms des fournisseurs tels qu'écrits dans l'en-tête de l'Excel, par colonne de l'appli (45–57). Plusieurs
+// colonnes Excel rangées dans la même colonne de l'appli sont réunies : « TERRE AZUR / POMONA F&L ».
+export const getHistoricalCostMatterSupplierNames = (sheet: Worksheet, range: XlRange): Record<number, string> => {
+  const namesByTarget = new Map<number, string[]>();
+  const seenSourceCols = new Set<number>();
+  const headerEndRow = Math.min(range.rowCount - 1, 80);
+  for (let rowNumber = 0; rowNumber <= headerEndRow; rowNumber += 1) {
+    for (let colIndex = 0; colIndex <= range.columnCount - 1; colIndex += 1) {
+      if (seenSourceCols.has(colIndex)) continue;
+      const cell = getHistoricalBudgetCell(sheet, rowNumber, colIndex);
+      const text = String(cell?.text || cell?.value || '').replace(/\s+/g, ' ').trim();
+      const targetCol = findHistoricalCostMatterTargetColumn(text);
+      if (!targetCol) continue;
+      seenSourceCols.add(colIndex);
+      const names = namesByTarget.get(targetCol) ?? [];
+      if (!names.some(name => normalizeHistoricalSupplierName(name) === normalizeHistoricalSupplierName(text))) names.push(text);
+      namesByTarget.set(targetCol, names);
+    }
+  }
+  return Object.fromEntries([...namesByTarget.entries()].map(([col, names]) => [col, names.join(' / ')]));
+};
+
 // Montant max plausible par fournisseur par jour — garde-fou contre les formules aberrantes
 // ou cellules date interprétées comme montant.
 const MAX_SUPPLIER_DAILY_AMOUNT = 500000;

@@ -304,9 +304,12 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
     const overrides = getPurchaseLabelOverrides(companySettings.purchaseSections);
     return COLS_COUT_MATIERE.map((col, i) => {
       const o = i >= 5 && i <= 17 ? overrides[40 + i] : undefined;
-      return o ? { ...col, l: o.label ?? col.l, g: o.group ?? col.g } : col;
+      // Renommage fait dans l'en-tête du Suivi quotidien : prioritaire, comme dans le Suivi.
+      const renamed = i >= 5 && i <= 17 ? companySettings.purchaseColumnNames?.[String(40 + i)]?.trim() : undefined;
+      const withOverride = o ? { ...col, l: o.label ?? col.l, g: o.group ?? col.g } : col;
+      return renamed ? { ...withOverride, l: renamed } : withOverride;
     });
-  }, [companySettings.purchaseSections]);
+  }, [companySettings.purchaseSections, companySettings.purchaseColumnNames]);
 
   // Sections avec cols FP dynamiques selon schéma
   const SECTIONS = useMemo(() => [

@@ -44,3 +44,30 @@ export const getPurchaseLabelOverrides = (
   });
   return overrides;
 };
+
+// Sites Hippo : la liste des fournisseurs (achats liquides 45–48, solides 49–57) est recréée à l'import
+// Excel de l'année en cours avec les noms de l'en-tête de l'Excel, rangés sur les colonnes où l'import
+// écrit les montants (colonnes non utilisées : « Libre »). Les autres sections (frais généraux…) sont conservées.
+const supplierSlug = (name: string, col: number) =>
+  `${name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'fournisseur'}_${col}`;
+
+export const applyImportedSupplierNames = (
+  sections: readonly PurchaseSection[],
+  namesByCol: Record<number, string>,
+): PurchaseSection[] => {
+  const cols = Object.keys(namesByCol).map(Number).filter(col => col >= FIRST_PURCHASE_COL && col <= LAST_PURCHASE_COL).sort((a, b) => a - b);
+  if (cols.length === 0) return [...sections];
+  // Colonne sans fournisseur dans l'Excel : « Libre », pour ne plus afficher un ancien nom sur une colonne vide.
+  const suppliersFor = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i)
+    .map(col => {
+      const name = namesByCol[col] ?? 'Libre';
+      return { id: supplierSlug(name, col), name, storeColumn: col };
+    });
+  const defaults = new Map(DEFAULT_COMPANY_SETTINGS.purchaseSections.map(section => [section.id, section]));
+  const rebuilt = (id: 'liquides' | 'solides', from: number, to: number): PurchaseSection => {
+    const current = sections.find(section => section.id === id) ?? defaults.get(id);
+    return { id, name: current?.name ?? id, icon: current?.icon, suppliers: suppliersFor(from, to) };
+  };
+  const others = sections.filter(section => section.id !== 'liquides' && section.id !== 'solides');
+  return [rebuilt('liquides', 45, 48), rebuilt('solides', 49, LAST_PURCHASE_COL), ...others];
+};
