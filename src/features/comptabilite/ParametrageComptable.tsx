@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Copy, Plus, RotateCcw, Save, Search, Trash2 } from 'lucide-react';
 
 import {
   ACCOUNTING_CATEGORIES,
   CAISSE_KEY_OPTIONS,
   DEFAULT_ACCOUNTING_MAPPINGS,
+  clearLegacyAccountingMappings,
   loadAccountingMappings,
-  saveAccountingMappings,
   type AccountingCaisseKey,
   type AccountingCategory,
   type AccountingMappingRow,
 } from '@/features/comptabilite/accountingConfig';
+import { useData } from '@/contexts/DataContext';
 
 type ParametrageComptableProps = {
   onBack: () => void;
@@ -38,13 +39,24 @@ const createEmptyRow = (): AccountingMappingRow => ({
 });
 
 export default function ParametrageComptable({ onBack }: ParametrageComptableProps) {
-  const [rows, setRows] = useState<AccountingMappingRow[]>(loadAccountingMappings);
+  const { companySettings, updateCompanySettings } = useData();
+  const [rows, setRows] = useState<AccountingMappingRow[]>(() => loadAccountingMappings(companySettings.accountingMappings));
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'Tous' | AccountingCategory>('Tous');
 
+  // Sauvegarde dans les réglages du site actif (cloud) à chaque modification faite ici ; jamais au montage,
+  // pour ne pas réécrire une version plus récente venue d'un autre poste.
+  const settingsRef = useRef(companySettings);
+  settingsRef.current = companySettings;
+  const isFirstRunRef = useRef(true);
   useEffect(() => {
-    saveAccountingMappings(rows);
-  }, [rows]);
+    if (isFirstRunRef.current) {
+      isFirstRunRef.current = false;
+      return;
+    }
+    updateCompanySettings({ ...settingsRef.current, accountingMappings: rows });
+    clearLegacyAccountingMappings();
+  }, [rows, updateCompanySettings]);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();

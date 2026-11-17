@@ -1,4 +1,4 @@
-import { getBrowserStorageItem, setBrowserStorageItem } from '@/lib/browserStorage';
+import { getBrowserStorageItem, removeBrowserStorageItem } from '@/lib/browserStorage';
 
 export type AccountingCategory = 'Chiffre d’affaires' | 'TVA' | 'Paiement' | 'Écart' | 'Ajustement';
 
@@ -85,16 +85,18 @@ export const normalizeAccountingMappings = (input: unknown): AccountingMappingRo
   return [...normalDefaults, ...customRows];
 };
 
-export const loadAccountingMappings = (): AccountingMappingRow[] => {
+// Paramétrage comptable propre à chaque site (companySettings.accountingMappings, synchronisé dans le
+// cloud). L'ancien réglage local unique (parametrage_comptable_v1, commun à tous les sites) sert une seule
+// fois de point de départ au site sur lequel on ouvre le paramétrage, puis il est supprimé.
+export const loadAccountingMappings = (siteMappings: unknown[] | undefined): AccountingMappingRow[] => {
+  if (Array.isArray(siteMappings)) return normalizeAccountingMappings(siteMappings);
   try {
-    const saved = getBrowserStorageItem(ACCOUNTING_STORAGE_KEY);
-    if (!saved) return DEFAULT_ACCOUNTING_MAPPINGS;
-    return normalizeAccountingMappings(JSON.parse(saved));
+    const legacy = getBrowserStorageItem(ACCOUNTING_STORAGE_KEY);
+    if (!legacy) return DEFAULT_ACCOUNTING_MAPPINGS;
+    return normalizeAccountingMappings(JSON.parse(legacy));
   } catch {
     return DEFAULT_ACCOUNTING_MAPPINGS;
   }
 };
 
-export const saveAccountingMappings = (rows: AccountingMappingRow[]) => {
-  setBrowserStorageItem(ACCOUNTING_STORAGE_KEY, JSON.stringify(rows));
-};
+export const clearLegacyAccountingMappings = () => removeBrowserStorageItem(ACCOUNTING_STORAGE_KEY);

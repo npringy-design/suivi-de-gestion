@@ -209,7 +209,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
     dailyRecapGoogleRatings,
     setDailyRecapGoogleRatings,
   } = useDashboardDailyRecapState();
-  const { purchaseSupplierNames, setPurchaseSupplierNames, resetPurchaseSupplierNames } = useDashboardPurchaseSuppliers();
+  const { purchaseSupplierNames, setPurchaseSupplierName, resetPurchaseSupplierNames } = useDashboardPurchaseSuppliers();
   const {
     isSidebarOpen,
     setIsSidebarOpen,
@@ -250,12 +250,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   }, [isDatePickerOpen]);
 
   const cellData = globalData[month]?.dashboard || {};
-  const updatePurchaseSupplierName = (col: number, value: string) => {
-    setPurchaseSupplierNames(prev => ({
-      ...prev,
-      [col]: value,
-    }));
-  };
+  const updatePurchaseSupplierName = setPurchaseSupplierName;
 
   const handleTemporaryResetLocalData = () => {
     const confirmed = window.confirm('RAZ provisoire : effacer toutes les donnees locales de test de cette application ?');

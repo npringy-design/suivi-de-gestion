@@ -1,26 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 
-import { loadJsonFromBrowserStorage, removeBrowserStorageItem, saveJsonToBrowserStorage } from '@/lib/browserStorage';
+import { useData } from '@/contexts/DataContext';
+import { removeBrowserStorageItem } from '@/lib/browserStorage';
 
-const PURCHASE_SUPPLIER_NAMES_KEY = 'dashboard_purchase_supplier_names_v1';
+// Ancien stockage local, commun à tous les sites et jamais synchronisé : supprimé au profit de
+// companySettings.purchaseColumnNames (propre au site, sauvegardé dans le cloud).
+const LEGACY_PURCHASE_SUPPLIER_NAMES_KEY = 'dashboard_purchase_supplier_names_v1';
 
 export function useDashboardPurchaseSuppliers() {
-  const [purchaseSupplierNames, setPurchaseSupplierNames] = useState<Record<number, string>>(() =>
-    loadJsonFromBrowserStorage<Record<number, string>>(PURCHASE_SUPPLIER_NAMES_KEY, {})
-  );
+  const { companySettings, updateCompanySettings } = useData();
 
   useEffect(() => {
-    saveJsonToBrowserStorage(PURCHASE_SUPPLIER_NAMES_KEY, purchaseSupplierNames);
-  }, [purchaseSupplierNames]);
+    removeBrowserStorageItem(LEGACY_PURCHASE_SUPPLIER_NAMES_KEY);
+  }, []);
 
-  const resetPurchaseSupplierNames = () => {
-    setPurchaseSupplierNames({});
-    removeBrowserStorageItem(PURCHASE_SUPPLIER_NAMES_KEY);
-  };
+  const purchaseSupplierNames: Record<number, string> = Object.fromEntries(
+    Object.entries(companySettings.purchaseColumnNames ?? {}).map(([col, name]) => [Number(col), name]),
+  );
+
+  const setPurchaseSupplierName = useCallback((col: number, name: string) => {
+    updateCompanySettings({
+      ...companySettings,
+      purchaseColumnNames: { ...(companySettings.purchaseColumnNames ?? {}), [String(col)]: name },
+    });
+  }, [companySettings, updateCompanySettings]);
+
+  const resetPurchaseSupplierNames = useCallback(() => {
+    removeBrowserStorageItem(LEGACY_PURCHASE_SUPPLIER_NAMES_KEY);
+  }, []);
 
   return {
     purchaseSupplierNames,
-    setPurchaseSupplierNames,
+    setPurchaseSupplierName,
     resetPurchaseSupplierNames,
   };
 }

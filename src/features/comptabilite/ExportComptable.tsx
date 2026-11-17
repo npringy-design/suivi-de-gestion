@@ -104,7 +104,7 @@ const computeDayTotals = (day: number, monthData: MonthData): DayTotalsWithInfo 
 const hasUsefulTotals = (totals: DayTotals) => Object.entries(totals).some(([key, value]) => key !== 'fondCaisse' && key !== 'especesRemise' && Math.abs(value) > 0.004);
 
 export default function ExportComptable({ onBack }: ExportComptableProps) {
-  const { allData, selectedYear, selectedMonth, setSelectedMonth, setSelectedYear } = useData();
+  const { allData, selectedYear, selectedMonth, setSelectedMonth, setSelectedYear, companySettings } = useData();
   const navigate = useNavigate();
   const [month, setMonth] = useState(selectedMonth);
   const [year, setYear] = useState(selectedYear);
@@ -121,7 +121,7 @@ export default function ExportComptable({ onBack }: ExportComptableProps) {
       setGenerated(true);
       return;
     }
-    const mappings = loadAccountingMappings();
+    const mappings = loadAccountingMappings(companySettings.accountingMappings);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const nextBlocks: DailyBlock[] = [];
     for (let day = 1; day <= daysInMonth; day += 1) {

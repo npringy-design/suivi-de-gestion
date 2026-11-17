@@ -411,6 +411,10 @@ export type CompanySettings = {
   // valeur vide = catégorie non reportée. Absent = rattachement par défaut (edgFgMapping.ts).
   edgFgMapping?: Record<string, string>;
   fixedMonthlyCosts?: FixedMonthlyCost[];
+  // Renommage local des colonnes d'achat 45-57 du Suivi quotidien (prioritaire sur purchaseSections).
+  purchaseColumnNames?: Record<string, string>;
+  // Paramétrage comptable du site (lignes normalisées par normalizeAccountingMappings).
+  accountingMappings?: unknown[];
   // Productivité cible (CA HT / h travaillée).
   productiviteCible: number;
   // Coordonnées géographiques pour la météo.

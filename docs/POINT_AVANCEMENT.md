@@ -5,6 +5,14 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ---
 
+## 17/11/2026 (Lot 5 — Isolement entre sites : réglages, imports, droits Supabase)
+
+- Noms de fournisseurs renommés dans l'en-tête du Suivi quotidien : stockés dans `companySettings.purchaseColumnNames` (propre au site, synchronisé) au lieu d'une clé locale commune à tous les sites et jamais envoyée au cloud (`useDashboardPurchaseSuppliers`, ancienne clé supprimée).
+- Paramétrage comptable : `companySettings.accountingMappings` (propre au site, synchronisé), lu par ParametrageComptable et ExportComptable ; l'ancien réglage local unique sert une fois de point de départ puis est supprimé ; sauvegarde seulement sur modification (jamais au montage).
+- Imports : `lib/siteFileMatch.ts` (`foreignSiteWarning`) reconnaît un autre restaurant dans le nom du fichier ou le texte du PDF (« HIP THILL », « BURO CORM », nom de ville, enseigne) et demande confirmation avant d'importer : Excel budget/réalisé, Excel V25, feuilles de caisse, PDF salaires (`useDashboardImportHandlers`).
+- `supabase/APP_STATE_SITE_RLS.sql` (à exécuter dans Supabase) : policies de suivi_gestion_app_state limitées par site (fonction `suivi_gestion_can_access_site` : super_admin et global_admin tous sites, utilisateur limité à suivi_gestion_user_site_access). Non exécuté : accès à la base non disponible ici.
+- tsc OK, build OK.
+
 ## 17/11/2026 (Lot 4 — Écarts N-1 « à date », couverts, TM de la Synthèse)
 
 - Suivi quotidien (dashboardCalculations.ts) : écarts N-1 réalisé jour (cols 118/119 CA, 123/124 couverts) calculés seulement sur un jour ayant du réalisé ; semaine et mois comparent donc le réalisé aux mêmes jours N-1 (avant : semaine entamée de 3 jours comparée à 7 jours N-1, ex. −53 % au lieu de +10 %). Col 143 (écart budget couverts cumulé) calculée même sans données N-1. Col 122 semaine et mois : couverts restaurant + limonade (col 120) vs budget 10 + 14 sur les jours réalisés, même périmètre que le jour.

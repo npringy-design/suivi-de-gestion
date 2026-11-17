@@ -71,6 +71,8 @@ import {
 import { parseEdgBudgetSheet } from '@/features/dashboard/importHelpers/edgBudgetImport';
 import { parseEdgMonthlySheets } from '@/features/dashboard/importHelpers/edgMonthlySheetsImport';
 import { useHasLimonade } from '@/lib/useHasLimonade';
+import { useAuthSession } from '@/AuthGate';
+import { foreignSiteWarning } from '@/lib/siteFileMatch';
 import {
   BUDGET_SHEET_TOKENS,
   isImportSheetName,
@@ -192,6 +194,13 @@ export function useDashboardImportHandlers({
   allData,
 }: UseDashboardImportHandlersParams) {
   const hasLimonade = useHasLimonade();
+  const { activeSiteId } = useAuthSession();
+  // Fichier qui semble appartenir à un autre restaurant (nom du fichier ou texte du PDF) : confirmation.
+  const confirmImportForActiveSite = (sources: string[]): boolean => {
+    const warnings = sources.map(source => foreignSiteWarning(source, activeSiteId)).filter((w): w is string => w !== null);
+    if (warnings.length === 0) return true;
+    return window.confirm(`${[...new Set(warnings)].join('\n')}\n\nImporter quand même sur ce restaurant ?`);
+  };
   const pendingDemarquesRef = React.useRef<Array<{
     date: string; personnel: number; operationnel: number; explication: string;
   }>>([]);
@@ -341,6 +350,11 @@ export function useDashboardImportHandlers({
   const handleHistoricalBudgetExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (!confirmImportForActiveSite([file.name])) {
+      setHistoricalBudgetStatus('Import annulé : fichier d\'un autre restaurant.');
+      event.target.value = '';
+      return;
+    }
     setHistoricalBudgetStatus('Préparation du fichier…');
   
     try {
@@ -562,6 +576,11 @@ export function useDashboardImportHandlers({
   const handleHistoricalV25ExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (!confirmImportForActiveSite([file.name])) {
+      setHistoricalV25Status('Import annulé : fichier d\'un autre restaurant.');
+      event.target.value = '';
+      return;
+    }
     setHistoricalV25Status('Préparation du fichier…');
 
     try {
@@ -1326,10 +1345,16 @@ export function useDashboardImportHandlers({
   
     try {
       const parsedImports: CaisseImportPreview[] = [];
+      const siteSources: string[] = [];
       for (const [index, currentFile] of files.entries()) {
         const isPdf = currentFile.type === 'application/pdf' || currentFile.name.toLowerCase().endsWith('.pdf');
         const text = isPdf ? await extractPdfText(currentFile) : await currentFile.text();
+        siteSources.push(`${currentFile.name} ${text}`);
         parsedImports.push(parseCaisseImport(text, currentFile.name, createCaisseImportId(currentFile.name, index)));
+      }
+      if (!confirmImportForActiveSite(siteSources)) {
+        setImportStatus('Import annulé : feuille(s) de caisse d\'un autre restaurant.');
+        return;
       }
   
       setImportPreview([]);
@@ -1529,6 +1554,10 @@ export function useDashboardImportHandlers({
         try {
           const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
           const text = isPdf ? await extractPdfLayoutText(file, undefined, false) : await file.text();
+          if (!confirmImportForActiveSite([`${file.name} ${text}`])) {
+            errors.push(`${file.name} : import annulé (fichier d'un autre restaurant)`);
+            continue;
+          }
           const payrollPeriod = getPayrollTargetPeriodFromText(text);
           if (!payrollPeriod) {
             errors.push(`${file.name} : mois non détecté`);
