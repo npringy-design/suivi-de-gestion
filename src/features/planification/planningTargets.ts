@@ -1,4 +1,4 @@
-import type { AnalyseDaySample, PlanDay, PlanServiceProposal } from '@/types/dataTypes';
+import type { AnalyseDaySample, PlanDay, PlanLimonadeDay, PlanServiceProposal } from '@/types/dataTypes';
 
 const mean = (values: number[]): number => values.reduce((acc, v) => acc + v, 0) / values.length;
 const round2 = (value: number): number => Math.round(value * 100) / 100;
@@ -218,4 +218,91 @@ export function enforceTmFloors(plan: PlanDay[], floors: TmFloors): PlanDay[] {
   const yearTm = tmOfDays(byMonth.flat());
   if (floors.year === null || yearTm <= 0 || yearTm >= floors.year) return byMonth.flat();
   return byMonth.flatMap(days => raiseTm(days, floors.year! / yearTm));
+}
+
+// --- Plancher de TM limonade (sites Au Bureau) : même règle que le restaurant, sur la limonade seule ---
+
+type LimonadeTmEntry = { real: TmTotals; budget: TmTotals };
+
+const emptyLimonadeEntry = (): LimonadeTmEntry => ({ real: { ca: 0, cv: 0 }, budget: { ca: 0, cv: 0 } });
+
+// Plancher de TM limonade de N-1 : le plus haut du TM réalisé (jours avec CA et couverts limonade > 0) et
+// du TM budgété (jours avec couverts limonade budget > 0), au total de l'année et par mois complet.
+export function limonadeTmFloors(samples: AnalyseDaySample[], previousYear: number): TmFloors {
+  const partialKey = partialMonthKey(samples);
+  const year = emptyLimonadeEntry();
+  const months = new Map<number, LimonadeTmEntry>();
+  const add = (target: LimonadeTmEntry, sample: AnalyseDaySample) => {
+    if (sample.reel.caLimo > 0 && sample.reel.cvLimo > 0) {
+      target.real.ca += sample.reel.caLimo;
+      target.real.cv += sample.reel.cvLimo;
+    }
+    if (sample.budget.cvLimo > 0) {
+      target.budget.ca += sample.budget.caLimo;
+      target.budget.cv += sample.budget.cvLimo;
+    }
+  };
+  const highest = (entry: LimonadeTmEntry): number | null => {
+    const values = [tmOfTotals(entry.real), tmOfTotals(entry.budget)].filter((v): v is number => v !== null);
+    return values.length > 0 ? Math.max(...values) : null;
+  };
+
+  samples.filter(sample => Number(sample.date.slice(0, 4)) === previousYear).forEach(sample => {
+    add(year, sample);
+    if (sample.date.slice(0, 7) === partialKey) return;
+    const month = Number(sample.date.slice(5, 7)) - 1;
+    const entry = months.get(month) ?? emptyLimonadeEntry();
+    add(entry, sample);
+    months.set(month, entry);
+  });
+
+  const byMonth: Record<number, number> = {};
+  months.forEach((entry, month) => {
+    const floor = highest(entry);
+    if (floor !== null) byMonth[month] = floor;
+  });
+  return { byMonth, year: highest(year) };
+}
+
+type LimonadeDayEntry = PlanLimonadeDay & { date: string };
+
+const limonadeTmOf = (days: LimonadeDayEntry[]): number => {
+  const cv = days.reduce((acc, day) => acc + day.cv, 0);
+  return cv > 0 ? days.reduce((acc, day) => acc + day.ca, 0) / cv : 0;
+};
+
+// Relève les TM de `factor` en gardant le CA : les couverts baissent, l'arrondi est reporté de jour en jour.
+function raiseLimonadeTm(days: LimonadeDayEntry[], factor: number): LimonadeDayEntry[] {
+  let carry = 0;
+  return days.map(day => {
+    if (day.cv <= 0 || day.tm <= 0) return day;
+    const tm = round2(day.tm * factor);
+    const wanted = day.ca + carry;
+    const cv = Math.max(0, Math.round(wanted / tm));
+    const ca = round2(cv * tm);
+    carry = wanted - ca;
+    return { ...day, cv, tm, ca };
+  });
+}
+
+// TM limonade mensuel puis annuel au moins égaux à ceux de N-1 : jamais de baisse de TM, seuls les
+// couverts diminuent, le CA limonade du mois (la cible) est conservé.
+export function enforceLimonadeTmFloors(
+  daysByDate: Record<string, PlanLimonadeDay>,
+  floors: TmFloors,
+): Record<string, PlanLimonadeDay> {
+  const entries: LimonadeDayEntry[] = Object.entries(daysByDate)
+    .map(([date, day]) => ({ date, ...day }))
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+  const byMonth = Array.from({ length: 12 }, (_, month) => {
+    const days = entries.filter(day => Number(day.date.slice(5, 7)) - 1 === month);
+    const floor = floors.byMonth[month];
+    const tm = limonadeTmOf(days);
+    return floor !== undefined && tm > 0 && tm < floor ? raiseLimonadeTm(days, floor / tm) : days;
+  });
+  const yearTm = limonadeTmOf(byMonth.flat());
+  const raised = floors.year !== null && yearTm > 0 && yearTm < floors.year
+    ? byMonth.flatMap(days => raiseLimonadeTm(days, floors.year! / yearTm))
+    : byMonth.flat();
+  return Object.fromEntries(raised.map(({ date, ...day }) => [date, day]));
 }

@@ -83,7 +83,7 @@ export default function Planification({ onBack }: PlanificationProps) {
 
         {planning.limonadeWithoutCovers.map(({ year, days }) => (
           <div key={year} role="alert" className="rounded-xl border border-amber-300/40 bg-amber-400/10 px-4 py-2 text-xs font-bold text-amber-200">
-            {days} jour(s) de {year} avec CA limonade mais sans couverts : exclus du calcul du TM limonade. Réimporter le fichier de {year} pour les récupérer.
+            Couverts limonade absents dans l&apos;appli pour {year} ({days} jours avec CA limonade sans couverts) : ces jours sont exclus du TM limonade. Réimportez le suivi de gestion {year}{year === 2025 ? ' (bouton Historique N-1 (V25) pour 2025)' : ''} pour les récupérer.
           </div>
         ))}
 

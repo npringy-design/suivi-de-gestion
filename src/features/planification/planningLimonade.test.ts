@@ -13,6 +13,7 @@ import {
   proposeAnnualLimonade,
   withLimonadeDays,
 } from './planningEngine';
+import { limonadeTmFloors } from './planningTargets';
 
 const noHolidays: SchoolHolidayCalendar = { zone: 'B', periods: [] };
 
@@ -72,7 +73,7 @@ describe('planLimonadeDays', () => {
   it('répartit le CA du mois sur les jours, à moins d\'un demi-TM de la cible', () => {
     const days = planLimonadeDays(samples, noHolidays, 2027, { 0: 8000 });
     const january = monthSum(days, '2027-01');
-    expect(Math.abs(january.ca - 8000)).toBeLessThan(5);
+    expect(Math.abs(january.ca - 8000)).toBeLessThan(12); // quelques TM : arrondis de couverts, plancher de TM compris
     expect(monthSum(days, '2027-03')).toEqual({ cv: 0, ca: 0 });
   });
 
@@ -80,10 +81,12 @@ describe('planLimonadeDays', () => {
     const days = planLimonadeDays(samples, noHolidays, 2027, { 0: 8000 });
     expect(days['2027-01-01'].ca).toBeGreaterThan(0);
     // 2027-01-08 est un vendredi (TM groupe 8 €), 2027-01-04 un lundi (TM groupe 10 €)
-    expect(days['2027-01-08'].tm).toBe(8);
-    expect(days['2027-01-04'].tm).toBe(10);
+    // Le plancher de TM de N-1 peut relever légèrement ces TM (jamais les baisser).
+    expect(days['2027-01-08'].tm).toBeGreaterThanOrEqual(8);
+    expect(days['2027-01-08'].tm).toBeLessThan(8.5);
+    expect(days['2027-01-04'].tm).toBeGreaterThanOrEqual(10);
     expect(days['2027-01-08'].ca).toBeGreaterThan(days['2027-01-04'].ca);
-    expect(days['2027-01-08'].ca).toBeCloseTo(days['2027-01-08'].cv * 8, 2);
+    expect(days['2027-01-08'].ca).toBeCloseTo(days['2027-01-08'].cv * days['2027-01-08'].tm, 2);
   });
 
   it('n\'influence jamais le plan restaurant', () => {
@@ -129,10 +132,46 @@ describe('TM limonade : jours sans couverts exclus', () => {
     ));
     const days = planLimonadeDays(samples, noHolidays, 2027, { 0: 8000 });
     // TM du vendredi (8 €) et du lundi (10 €) calculés sur 2026 seulement, jamais gonflés par 2025.
-    expect(days['2027-01-08'].tm).toBe(8);
-    expect(days['2027-01-04'].tm).toBe(10);
+    // 2025 sans couverts : ni le TM du groupe ni le plancher ne sont gonflés par ses jours.
+    expect(days['2027-01-08'].tm).toBeGreaterThanOrEqual(8);
+    expect(days['2027-01-08'].tm).toBeLessThan(8.5);
+    expect(days['2027-01-04'].tm).toBeGreaterThanOrEqual(10);
     const january = monthSum(days, '2027-01');
-    expect(Math.abs(january.ca - 8000)).toBeLessThan(5);
+    expect(Math.abs(january.ca - 8000)).toBeLessThan(12);
     expect(january.cv).toBeGreaterThan(800);
+  });
+});
+
+describe('plancher de TM limonade de N-1', () => {
+  // Réel 2026 à 8 €, budget 2026 à 9 € (plus haut) ; 2025 à 8 €.
+  const samples = buildSamples(true).map(sample => {
+    const cv = sample.reel.cvLimo;
+    return sample.date.startsWith('2026')
+      ? { ...sample, reel: { ...sample.reel, caLimo: cv * 8 }, budget: { ...sample.budget, cvLimo: cv, caLimo: cv * 9 } }
+      : { ...sample, reel: { ...sample.reel, caLimo: cv * 8 } };
+  });
+
+  it('prend le plus haut du TM réalisé et du TM budget de N-1, par mois et pour l\'année', () => {
+    const floors = limonadeTmFloors(samples, 2026);
+    expect(floors.byMonth[0]).toBeCloseTo(9, 5);
+    expect(floors.year).toBeCloseTo(9, 5);
+  });
+
+  it('remonte le TM au plancher en baissant les couverts, CA du mois conservé', () => {
+    const days = planLimonadeDays(samples, noHolidays, 2027, { 0: 8000, 1: 1000 });
+    const january = monthSum(days, '2027-01');
+    expect(january.ca / january.cv).toBeGreaterThanOrEqual(9 - 0.01);
+    expect(Math.abs(january.ca - 8000)).toBeLessThan(12);
+    // CA bas : le TM reste au plancher, seuls les couverts baissent
+    const february = monthSum(days, '2027-02');
+    expect(february.ca / february.cv).toBeGreaterThanOrEqual(9 - 0.01);
+    expect(february.cv).toBeLessThan(1000 / 8);
+  });
+
+  it('ignore le plancher des jours sans couverts réels et ne change pas le plan restaurant', () => {
+    const noCovers = samples.map(s => (s.date.startsWith('2026') ? { ...s, reel: { ...s.reel, cvLimo: 0 } } : s));
+    expect(limonadeTmFloors(noCovers, 2026).byMonth[0]).toBeCloseTo(9, 5); // le budget garde un plancher
+    const settings = DEFAULT_PLAN_SETTINGS(2027);
+    expect(JSON.stringify(generatePlan(samples, noHolidays, settings))).toBe(JSON.stringify(generatePlan(buildSamples(false), noHolidays, settings)));
   });
 });

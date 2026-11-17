@@ -20,7 +20,7 @@ import type {
 import { toIsoDate } from '../analyse/ecartsAnalysis';
 
 import {
-  applyMonthTarget, enforceTmFloors, monthlyWeights, normalizedDayWeights, planMonthlyLimonade, planMonthlyVae, proposeAnnualCA, proposeAnnualLimonade,
+  applyMonthTarget, enforceLimonadeTmFloors, enforceTmFloors, limonadeTmFloors, monthlyWeights, normalizedDayWeights, planMonthlyLimonade, planMonthlyVae, proposeAnnualCA, proposeAnnualLimonade,
   proposeAnnualVAE, tmFloors,
   type TmFloors,
 } from './planningTargets';
@@ -548,7 +548,8 @@ export function planLimonadeDays(
       result[day.date] = { cv, tm: day.tm, ca };
     });
   }
-  return result;
+  // Plancher de TM de N-1 (mensuel puis annuel), comme le restaurant : couverts réduits, CA conservé.
+  return enforceLimonadeTmFloors(result, limonadeTmFloors(samples, targetYear - 1));
 }
 
 // Ajoute la prévision limonade à chaque jour du plan (sites avec limonade uniquement).
