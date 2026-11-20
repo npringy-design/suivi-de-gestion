@@ -7,6 +7,7 @@ import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
 import type { PlanManualOverride, PlanService, PlanSettings, PlanWriteMode } from '@/types/dataTypes';
 
 import { collectDailySamples, toIsoDate } from '../../analyse/ecartsAnalysis';
+import { excelMonthSheetName, fillExcelPasteSheet } from '../excelPasteSheet';
 import {
   applyOverrides,
   buildBudgetWrites,
@@ -225,6 +226,12 @@ export function usePlanification() {
     daily.getColumn('F').numFmt = '#,##0.00 €';
     daily.getColumn('G').numFmt = '#,##0.00 €';
     if (withLimonade) ['N', 'O'].forEach(col => { daily.getColumn(col).numFmt = '#,##0.00 €'; });
+
+    for (let month = 0; month < 12; month += 1) {
+      const days = plan.filter(day => day.month === month);
+      if (days.length === 0) continue;
+      fillExcelPasteSheet(workbook.addWorksheet(excelMonthSheetName(targetYear, month)), targetYear, month, days, withLimonade);
+    }
 
     const buffer = await workbook.xlsx.writeBuffer();
     downloadBlob(`planification-${targetYear}.xlsx`, new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
