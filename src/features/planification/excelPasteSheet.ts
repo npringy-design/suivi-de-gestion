@@ -1,8 +1,8 @@
 import type { Worksheet } from 'exceljs';
 import type { PlanDay } from '@/types/dataTypes';
 
-// Grille des onglets mensuels du suivi de gestion Excel (V26/V27) :
-// ligne 10 = lundi de la semaine du 1er du mois, semaines lundi→dimanche, une ligne de total (formules) après chaque semaine.
+// Grille des onglets mensuels du suivi de gestion Excel V27 :
+// ligne 10 = lundi de la semaine du 1er du mois, semaines lundi→dimanche, une ligne de total (verrouillée) après chaque semaine.
 const GRID_FIRST_ROW = 10;
 const GRID_WEEK_STRIDE = 8; // 7 jours + 1 ligne de total
 const TOTAL_ROWS = [17, 25, 33, 41, 49, 52];
@@ -26,11 +26,13 @@ export function isExcelTotalRow(row: number): boolean {
   return TOTAL_ROWS.includes(row);
 }
 
+// Seules cellules déverrouillées du suivi : J, K (midi), L, M (soir), R, S (limonade). B (CA VAE) et les formules ne sont jamais écrites.
 function fillInputCell(sheet: Worksheet, address: string, value: number, numFmt: string): void {
   const cell = sheet.getCell(address);
   cell.value = value;
   cell.numFmt = numFmt;
   cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: INPUT_FILL_ARGB } };
+  cell.protection = { locked: false };
 }
 
 export function fillExcelPasteSheet(
@@ -41,21 +43,20 @@ export function fillExcelPasteSheet(
   withLimonade: boolean,
 ): void {
   const name = excelMonthSheetName(year, month);
-  const copyRange = withLimonade ? 'L10:AB51' : 'L10:Q51';
+  const lastCol = withLimonade ? 'S' : 'M';
 
-  sheet.getCell('A1').value = `Budget ${name} — à coller dans l'onglet du même nom du suivi de gestion`;
+  sheet.getCell('A1').value = `Budget ${name} — à coller dans l'onglet du même nom du suivi de gestion V27`;
   sheet.getCell('A1').font = { bold: true };
-  sheet.getCell('A2').value = `1. Copier ${copyRange} de cet onglet.`;
-  sheet.getCell('A3').value = '2. Dans le suivi, Révision › Ôter la protection de la feuille (pas de mot de passe).';
-  sheet.getCell('A4').value = '3. Sélectionner L10 › Collage spécial › cocher « Valeurs » ET « Blancs non compris » › OK.';
-  sheet.getCell('A5').value = '4. Révision › Protéger la feuille.';
+  sheet.getCell('A2').value = `Méthode 1 (feuille protégée, 6 collages) : copier J10:M16 puis Collage spécial › Valeurs en J10 du suivi ; idem J18:M24, J26:M32, J34:M40, J42:M48, J50:M51${withLimonade ? ' (et R:S de la même façon pour la limonade)' : ''}.`;
+  sheet.getCell('A3').value = `Méthode 2 (1 seul collage) : Révision › Ôter la protection de la feuille (sans mot de passe) ; copier J10:${lastCol}51 ; en J10 : Collage spécial › cocher Valeurs ET Blancs non compris › OK ; puis Révision › Protéger la feuille.`;
+  sheet.getCell('A4').value = 'Ne jamais coller en colonne B à H : ce sont des formules (CA calculé = couverts × TM).';
 
   const headers: Array<[string, string]> = [
     ['A9', 'DATE'],
-    ['L9', 'Couverts midi'], ['M9', 'TM HT midi'],
-    ['P9', 'Couverts soir'], ['Q9', 'TM HT soir'],
+    ['J9', 'NB CVTS MIDI'], ['K9', 'CVTS MOY HT MIDI'],
+    ['L9', 'NB CVTS SOIR'], ['M9', 'CVTS MOY HT SOIR'],
   ];
-  if (withLimonade) headers.push(['AA9', 'Couverts limonade'], ['AB9', 'TM HT limonade']);
+  if (withLimonade) headers.push(['R9', 'NB CVTS LIMONADE'], ['S9', 'CVTS MOY HT LIMONADE']);
   headers.forEach(([address, label]) => {
     const cell = sheet.getCell(address);
     cell.value = label;
@@ -64,7 +65,7 @@ export function fillExcelPasteSheet(
 
   TOTAL_ROWS.forEach(row => {
     const cell = sheet.getCell(`A${row}`);
-    cell.value = row === 52 ? 'Sous-total' : 'Total semaine (formules, ne rien saisir)';
+    cell.value = 'Total semaine — ne rien coller';
     cell.font = { italic: true, color: { argb: 'FF808080' } };
   });
 
@@ -73,16 +74,18 @@ export function fillExcelPasteSheet(
     const dateCell = sheet.getCell(`A${row}`);
     dateCell.value = new Date(Date.UTC(year, month, d.day));
     dateCell.numFmt = 'ddd dd/mm/yyyy';
-    fillInputCell(sheet, `L${row}`, d.midi.cv, '0');
-    fillInputCell(sheet, `M${row}`, d.midi.tm, '0.00');
-    fillInputCell(sheet, `P${row}`, d.soir.cv, '0');
-    fillInputCell(sheet, `Q${row}`, d.soir.tm, '0.00');
+    fillInputCell(sheet, `J${row}`, d.midi.cv, '0');
+    fillInputCell(sheet, `K${row}`, d.midi.tm, '0.00');
+    fillInputCell(sheet, `L${row}`, d.soir.cv, '0');
+    fillInputCell(sheet, `M${row}`, d.soir.tm, '0.00');
     if (withLimonade) {
-      fillInputCell(sheet, `AA${row}`, d.limonade?.cv ?? 0, '0');
-      fillInputCell(sheet, `AB${row}`, d.limonade?.tm ?? 0, '0.00');
+      fillInputCell(sheet, `R${row}`, d.limonade?.cv ?? 0, '0');
+      fillInputCell(sheet, `S${row}`, d.limonade?.tm ?? 0, '0.00');
     }
   });
 
-  sheet.getColumn('A').width = 42;
+  sheet.getColumn('A').width = 18;
+  const inputCols = withLimonade ? ['J', 'K', 'L', 'M', 'R', 'S'] : ['J', 'K', 'L', 'M'];
+  inputCols.forEach(col => { sheet.getColumn(col).width = 14; });
   sheet.views = [{ state: 'frozen', ySplit: 9 }];
 }

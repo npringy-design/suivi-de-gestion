@@ -65,7 +65,7 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 
 ## 20/11/2026 (Planification : export Excel collable dans le suivi de gestion)
 
-- Planification, export Excel : `excelPasteSheet.ts` (`excelMonthSheetName`, `excelRowForDay`, `fillExcelPasteSheet`) ajoute un onglet par mois (« JANV 27 »…) à `exportXlsx`, après « Jour par jour » : couverts / TM midi, soir (+ limonade) écrits aux lignes de la grille du suivi (colonnes L, M, P, Q, AA, AB ; jamais les formules ni les lignes de total), mode opératoire en A1:A5. Vérifié par script temporaire (supprimé) : 2026-2028, aucun jour sur une ligne de total ni au-delà de la ligne 51 ; fichier relu : aucune cellule hors A/L/M/P/Q/AA/AB. Non vérifié : collage dans l'Excel réel, rendu dans Excel. tsc OK, build OK.
+- Planification, export Excel collable dans le suivi V27 : `excelPasteSheet.ts` (`excelMonthSheetName`, `excelRowForDay`, `fillExcelPasteSheet`) ajoute un onglet par mois (« JANV 27 »…) à `exportXlsx`, après « Jour par jour » : couverts / TM midi en J-K, soir en L-M, limonade en R-S (cellules déverrouillées du suivi, `locked: false`, fond jaune ; jamais B ni les formules ni les lignes de total), mode opératoire en A1:A4. Vérifié par script temporaire (supprimé) : 2026-2028, aucun jour sur une ligne de total ni après la ligne 51, contrôles 1er janv./févr./mars/mai 2027 = 14/10/10/15 ; fichier relu : rien hors A/J/K/L/M/R/S. Non vérifié : collage dans l'Excel réel. tsc OK, build OK.
 
 ## 17/11/2026 (Lot 1 bis — Sauvegarde cloud : saisie pendant la sauvegarde et base de fusion inconnue)
 
