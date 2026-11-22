@@ -235,6 +235,7 @@ export default function RecapAnnuel({ onBack }: RecapAnnuelProps) {
 
   // Charge les mois N-1 depuis Supabase si l'autre utilisateur ne les a pas en local
   useEffect(() => {
+    void loadYearFromCloud(YEAR - 2);
     void loadYearFromCloud(YEAR - 1);
   }, [YEAR, loadYearFromCloud]);
 

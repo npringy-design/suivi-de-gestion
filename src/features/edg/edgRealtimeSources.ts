@@ -7,6 +7,7 @@ import { DEFAULT_FIXED_COST_EDG_KEY, FG_CATEGORIES, resolveEdgFgMapping, type Ed
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
 import { computeDashboardData } from '@/features/dashboard/dashboardCalculations';
+import type { BudgetVaeLookup } from '@/features/dashboard/budgetVae';
 
 type DashboardData = Record<string, string>;
 
@@ -20,6 +21,7 @@ export const computeMonthDashboard = (
   month: number,
   year: number,
   hasLimonade = false,
+  budgetVae?: BudgetVaeLookup,
 ): DashboardData => {
   const cellData = monthData?.dashboard;
   if (!cellData || Object.keys(cellData).length === 0) return {};
@@ -36,6 +38,7 @@ export const computeMonthDashboard = (
     undefined,
     monthData?.salariesConfig?.tauxCibles,
     hasLimonade,
+    budgetVae,
   );
 };
 

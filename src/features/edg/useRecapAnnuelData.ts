@@ -8,6 +8,7 @@ import { computeDashboardData, parsePayrollHourForCalculation } from '@/features
 import { parseMoneyValue } from '@/lib/money';
 import { useHasLimonade } from '@/lib/useHasLimonade';
 import { useData } from '@/contexts/DataContext';
+import { createBudgetVaeLookup } from '@/features/dashboard/budgetVae';
 import { getMonthFixedCosts } from '@/features/edg/edgRealtimeSources';
 
 // Colonnes par niveau (index 0-4 = Cadre, Maîtrise, NIV I-II, NIV III, Apprenti)
@@ -20,9 +21,10 @@ const PROJ_COLS_CS      = [[62, 63], [64, 65], [66, 67], [68, 69], [70, 71]];
 
 export function useRecapAnnuelData(data: Record<number, MonthData>, year: number) {
   const hasLimonade = useHasLimonade();
-  const { companySettings } = useData();
+  const { companySettings, allData } = useData();
   const fixedMonthlyCosts = companySettings.fixedMonthlyCosts;
   return useMemo(() => {
+    const budgetVae = createBudgetVaeLookup(allData, year);
     const monthCalcData: Record<string, string>[] = [];
     const monthTotalIndices: number[] = [];
     const monthLastDayIndices: number[] = [];
@@ -48,6 +50,7 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
         undefined,
         monthData?.salariesConfig?.tauxCibles,
         hasLimonade,
+        budgetVae,
       );
       monthCalcData.push(calculatedData);
       monthTotalIndices.push(rows.findIndex(r => r.type === 'month_total'));

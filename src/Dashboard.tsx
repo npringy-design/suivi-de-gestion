@@ -5,6 +5,7 @@ import DashboardAnalysisView from '@/pages/DashboardAnalysisView';
 import { useData, type SalarieRow } from '@/contexts/DataContext';
 import { useSiteBrandTheme } from '@/lib/siteBrandTheme';
 import { useHasLimonade } from '@/lib/useHasLimonade';
+import { createBudgetVaeLookup } from '@/features/dashboard/budgetVae';
 import { computeMonthDashboard, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
 import { getPurchaseLabelOverrides } from '@/features/parametres/purchaseLabels';
 import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
@@ -323,7 +324,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
   const calculatedData = useMemo(() => {
     // N-1 : mois N-1 plus les jours voisins nécessaires à l'appairage par semaine ISO.
     const nMinus1Data = buildNMinus1Data(allData, year, month);
-    return computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, personnelSchema, nMinus1Data, globalData[month]?.salariesConfig?.tauxCibles, hasLimonade);
+    return computeDashboardData(cellData, rows, dynamicColumns, globalData[month]?.salariesConfig?.categories, personnelSchema, nMinus1Data, globalData[month]?.salariesConfig?.tauxCibles, hasLimonade, createBudgetVaeLookup(allData, year));
   }, [hasLimonade, cellData, globalData[month]?.salariesConfig, personnelSchema, allData, year, month]);
 
   const todayMarker = useMemo(() => {

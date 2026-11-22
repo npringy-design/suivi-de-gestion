@@ -53,6 +53,7 @@ import { getDashboardRowIndices } from '@/lib/utils';
 import { MONTH_NAMES } from '@/lib/constants';
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
+import { createBudgetVaeLookup } from '@/features/dashboard/budgetVae';
 import { computeDashboardData } from '@/features/dashboard/dashboardCalculations';
 
 type IconComponent = ComponentType<{ className?: string }>;
@@ -224,7 +225,7 @@ const formatHomePeriodLabel = (period: HomePeriodSelection) => {
 };
 
 export default function Home() {
-  const { data, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, companySettings } = useData();
+  const { data, allData, loadYearFromCloud, selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, companySettings } = useData();
   const navigate = useNavigate();
   const { session, signOut, accessProfile, activeSiteId } = useAuthSession();
   const sidebarTheme = useSiteBrandTheme();
@@ -583,6 +584,10 @@ export default function Home() {
 
   const { moisIndex, jourIndex } = indices;
 
+  // VAE budget = VAE réalisée N-1 de la même semaine : l'année N-1 doit être chargée.
+  useEffect(() => { void loadYearFromCloud(year - 1); }, [year, loadYearFromCloud]);
+  const budgetVae = useMemo(() => createBudgetVaeLookup(allData, year), [allData, year]);
+
   const kpis = useMemo(() => {
     const monthData = data?.[month];
     const dashboard = monthData?.dashboard || {};
@@ -607,6 +612,7 @@ export default function Home() {
       const caLimo = dashboardValue(rowIndex, 2) || dashboardValue(rowIndex, 14) * dashboardValue(rowIndex, 15);
       return caMidi + caSoir + caLimo;
     };
+    const budgetDayCAWithVae = (day: number) => budgetDayCA(day) + budgetVae(new Date(year, month, day));
 
     let caMois = 0;
     let totalBudgetCA = 0;
@@ -614,7 +620,7 @@ export default function Home() {
     let limoCvts = 0;
     for (let day = 1; day <= daysInMonth; day += 1) {
       caMois += realisedDayCA(day);
-      totalBudgetCA += budgetDayCA(day);
+      totalBudgetCA += budgetDayCAWithVae(day);
       const limoRow = rowIndexForDay(day);
       if (typeof limoRow === 'number') {
         limoCa += dashboardValue(limoRow, 20);
@@ -650,7 +656,7 @@ export default function Home() {
       const value = (colIndex: number) => parseDashboardValue(dashboardForDate[String(rowIndex) + '-' + String(colIndex)]);
       const ca = [17, 18, 19, 20].reduce((sum, col) => sum + value(col), 0);
       const savedBudget = value(3);
-      const budget = savedBudget > 0 ? savedBudget : (value(0) || value(6) * value(7)) + (value(1) || value(8) * value(9)) + (value(2) || value(14) * value(15));
+      const budget = (savedBudget > 0 ? savedBudget : (value(0) || value(6) * value(7)) + (value(1) || value(8) * value(9)) + (value(2) || value(14) * value(15))) + budgetVae(date);
       return { ca, budget, restaurant: value(18) + value(19), couverts: value(25) + value(27), limoCa: value(20), limoCvts: value(34) };
     };
 
@@ -678,7 +684,7 @@ export default function Home() {
     }
 
     return { caMois, caJour, tmJour, budgetCouvert, limoCa, limoCvts };
-  }, [data, month, year, dashboardRowIndices, homePeriod, today]);
+  }, [data, month, year, dashboardRowIndices, homePeriod, today, budgetVae]);
 
 
   const payrollCostBubble = useMemo(() => {
@@ -783,16 +789,17 @@ export default function Home() {
       if (typeof rowIndex !== 'number') continue;
       const caReal = [17, 18, 19, 20].reduce((sum, col) => sum + dashboardValue(rowIndex, col), 0);
       const savedBudget = dashboardValue(rowIndex, 3);
-      const caBudget = savedBudget > 0
+      const caBudget = (savedBudget > 0
         ? savedBudget
         : (dashboardValue(rowIndex, 0) || dashboardValue(rowIndex, 6) * dashboardValue(rowIndex, 7))
           + (dashboardValue(rowIndex, 1) || dashboardValue(rowIndex, 8) * dashboardValue(rowIndex, 9))
-          + (dashboardValue(rowIndex, 2) || dashboardValue(rowIndex, 14) * dashboardValue(rowIndex, 15));
+          + (dashboardValue(rowIndex, 2) || dashboardValue(rowIndex, 14) * dashboardValue(rowIndex, 15)))
+        + budgetVae(new Date(year, month, day));
       rows.push({ name: String(day), CA_Realise: caReal, CA_Budget: caBudget });
     }
 
     return rows;
-  }, [data, month, year, dashboardRowIndices]);
+  }, [data, month, year, dashboardRowIndices, budgetVae]);
 
   const chartDataFG = useMemo(() => {
     if (!Array.isArray(data) || data.length === 0 || moisIndex < 0) return [];

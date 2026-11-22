@@ -3,6 +3,7 @@ import { getDashboardRowIndices, getISOWeekAndYear, parseHourInputToDecimal } fr
 import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
 import type { SalarieRow, PersonnelSchema } from '@/contexts/DataContext';
 import type { DashboardColumn, DashboardRow } from './dashboardTypes';
+import type { BudgetVaeLookup } from './budgetVae';
 import { COL } from './dashboardColumnIndex';
 
 
@@ -192,6 +193,8 @@ export function computeDashboardData(
   nMinus1Data?: { cellData: Record<string, string>; rows: DashboardRow[] },
   tauxCibles?: Record<string, number>,
   hasLimonade = false,
+  // VAE budget du jour (VAE réalisée N-1 de la même semaine) : le CA budget englobe tout le CA, VAE comprise.
+  budgetVae?: BudgetVaeLookup,
 ): Record<string, string> {
     const data: Record<string, string> = { ...cellData };
     const isGlobalSchema = personnelSchema === 'global';
@@ -263,7 +266,8 @@ export function computeDashboardData(
         const budgetRestaurantTotal = budgetMidi + budgetSoir;
         if (budgetRestaurantTotal > 0 || data[`${rIdx}-0`] || data[`${rIdx}-1`]) data[`${rIdx}-125`] = budgetRestaurantTotal.toFixed(2);
 
-        const totalJour = budgetRestaurantTotal + budgetLimo;
+        const budgetVaeJour = budgetVae && row.dateObj ? budgetVae(row.dateObj) : 0;
+        const totalJour = budgetRestaurantTotal + budgetLimo + budgetVaeJour;
         if (totalJour > 0 || data[`${rIdx}-0`] || data[`${rIdx}-1`] || data[`${rIdx}-2`]) {
           data[`${rIdx}-3`] = totalJour.toFixed(2);
           cumulCA += totalJour;

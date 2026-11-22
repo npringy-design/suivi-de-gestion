@@ -6,6 +6,7 @@ import { MONTH_NAMES } from '@/lib/constants';
 import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
 import type { CompanySettings, PlanDraft, PlanManualOverride, PlanService, PlanSettings, PlanWriteMode } from '@/types/dataTypes';
 
+import { getBudgetVaeMonth } from '../../dashboard/budgetVae';
 import { collectDailySamples, toIsoDate } from '../../analyse/ecartsAnalysis';
 import { excelMonthSheetName, fillExcelPasteSheet } from '../excelPasteSheet';
 import {
@@ -120,11 +121,11 @@ export function usePlanification() {
     return hasLimonade ? withLimonadeDays(restaurantPlan, limonadeDays) : restaurantPlan;
   }, [basePlan, overrides, hasLimonade, limonadeDays]);
   const annualProposal = useMemo(() => proposeAnnualCA(samples), [samples]);
-  // VAE saisie à la main (reprise du suivi Excel), 0 par défaut : aucune proposition automatique.
+  // VAE du mois : saisie manuelle si renseignée, sinon VAE réalisée N-1 de la même semaine (règle du budget du suivi).
   const vaeByMonth = useMemo(() => Object.fromEntries(ALL_MONTHS.map(month => {
     const value = settings.targetMonthlyVAE[month];
-    return [month, typeof value === 'number' ? value : 0];
-  })) as Record<number, number>, [settings.targetMonthlyVAE]);
+    return [month, typeof value === 'number' ? value : getBudgetVaeMonth(allData, targetYear, month)];
+  })) as Record<number, number>, [settings.targetMonthlyVAE, allData, targetYear]);
   const monthSummaries = useMemo(() => summarizeByMonth(plan), [plan]);
   const limonadeSummary = useMemo(() => summarizeLimonade(plan), [plan]);
   // CA restaurant de chaque mois avant croissance : base du CA cible saisi dans le tableau mensuel.

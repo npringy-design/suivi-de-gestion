@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useHasLimonade } from '@/lib/useHasLimonade';
 import { ArrowLeft, Users, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react';
 
@@ -8,6 +8,7 @@ import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
 import { formatEuro } from '@/lib/formatters';
 import { parseMoneyValue } from '@/lib/money';
 import { getDashboardRowIndices } from '@/lib/utils';
+import { createBudgetVaeLookup } from '@/features/dashboard/budgetVae';
 import { computeMonthDashboard, getCaRealiseMonth, getCaBudgetMonth } from '@/features/edg/edgRealtimeSources';
 import { buildMonthRows } from '@/features/dashboard/dashboardRows';
 import TabCA from '@/features/dashboard/components/SuiviV2TabCA';
@@ -227,11 +228,13 @@ function TabFrais({ computed }: { computed: Record<string, string> }) {
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function SuiviQuotidienV2({ month, year: _year, onBack }: Props) {
-  const { data, allData, updateDashboard, companySettings, selectedYear } = useData();
+  const { data, allData, updateDashboard, companySettings, selectedYear, loadYearFromCloud } = useData();
   const hasLimonade = useHasLimonade();
   const [activeMonth, setActiveMonth] = useState(month);
   const [activeTab, setActiveTab] = useState<ActiveTab>('ca');
   const YEAR = selectedYear;
+  // La VAE budget reprend la VAE réalisée N-1 : l'année N-1 doit être chargée.
+  useEffect(() => { void loadYearFromCloud(YEAR - 1); }, [YEAR, loadYearFromCloud]);
   const publicHolidays = useMemo(() => getPublicHolidays(YEAR), [YEAR]);
   const schoolHolidays = useMemo(
     () => getSchoolHolidayCalendar(companySettings.schoolZone).periods,
@@ -242,8 +245,8 @@ export default function SuiviQuotidienV2({ month, year: _year, onBack }: Props) 
   const rawDashboard = monthData?.dashboard ?? {};
 
   const computed = useMemo(
-    () => computeMonthDashboard(monthData, activeMonth, YEAR, hasLimonade),
-    [monthData, activeMonth, YEAR, hasLimonade],
+    () => computeMonthDashboard(monthData, activeMonth, YEAR, hasLimonade, createBudgetVaeLookup(allData, YEAR)),
+    [monthData, activeMonth, YEAR, hasLimonade, allData],
   );
 
   const lastYearMonthData = allData[YEAR - 1]?.[activeMonth];

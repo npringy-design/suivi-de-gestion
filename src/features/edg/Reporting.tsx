@@ -10,6 +10,7 @@ import { formatDecimal, formatEuroSymbol, formatPercentSigned } from '@/lib/form
 import { useHasLimonade } from '@/lib/useHasLimonade';
 import { buildDynamicColumns } from '@/features/dashboard/dashboardColumns';
 import { parsePayrollHourForCalculation } from '@/features/dashboard/dashboardCalculations';
+import { createBudgetVaeLookup } from '@/features/dashboard/budgetVae';
 import { computeMonthDashboard } from '@/features/edg/edgRealtimeSources';
 
 const NAV = '#1e293b';
@@ -52,6 +53,7 @@ export default function Reporting({ onBack, hideHeader = false }: ReportingProps
   // Semaines ISO de l'année : la semaine 1 peut commencer fin décembre N-1 et la semaine 53 finir début
   // janvier N+1 (ex. 2026) : on lit donc aussi les années voisines.
   useEffect(() => {
+    void loadYearFromCloud(YEAR - 2);
     void loadYearFromCloud(YEAR - 1);
     void loadYearFromCloud(YEAR + 1);
   }, [YEAR, loadYearFromCloud]);
@@ -82,7 +84,7 @@ export default function Reporting({ onBack, hideHeader = false }: ReportingProps
     ];
     sources.forEach(({ y, m }) => {
       const monthData = y === YEAR ? data[m] : allData[y]?.[m];
-      const computed = computeMonthDashboard(monthData, m, y, hasLimonade);
+      const computed = computeMonthDashboard(monthData, m, y, hasLimonade, createBudgetVaeLookup(allData, y));
       if (Object.keys(computed).length === 0) return;
       const monthIsCuisineSalle = resolvePersonnelSchema(monthData) === 'cuisine_salle';
       const indices = getDashboardRowIndices(m, y);
