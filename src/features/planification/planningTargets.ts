@@ -53,18 +53,87 @@ function averageMonthlyCa(samples: AnalyseDaySample[], pick: CaPicker = restaura
   });
 }
 
-// Proposition de CA annuel : moyenne des CA annuels réalisés des années d'historique, sans
-// extrapolation de tendance (= somme des CA mensuels moyens ; un mois manquant ou partiel d'une
-// année, typiquement l'année en cours, est repris de l'autre année).
-export function proposeAnnualCA(samples: AnalyseDaySample[]): number {
-  return Math.round(averageMonthlyCa(samples).reduce((acc, ca) => acc + ca, 0));
+// --- CA mensuel proposé : niveau du même mois en N-1 corrigé du calendrier de l'année cible ---
+
+type SchoolStatus = 'hors_vacances' | 'vacances' | 'ete';
+
+// Lecture du calendrier fournie par le moteur (statuts scolaires, fériés) : planningTargets reste pur.
+export type CalendarModel = {
+  describe: (isoDate: string) => { weekday: number; baseStatus: SchoolStatus; holiday: boolean };
+  // Ratio de CA (couverts × TM) d'un jour férié par rapport à un jour normal du même jour de semaine.
+  holidayFactor: (weekday: number) => number;
+};
+
+const typeKey = (weekday: number, status: SchoolStatus): string => `${weekday}|${status}`;
+
+type LearnedWeights = { byMonth: Map<string, number[]>; overall: Map<string, number[]> };
+
+// Ratios « CA moyen du type de jour (jour de semaine × statut scolaire) / CA journalier moyen », par année puis
+// moyennés sur les années d'historique : par mois, et tous mois confondus (repli). Fériés exclus (ratio à part).
+function learnTypeWeights(samples: AnalyseDaySample[], model: CalendarModel): LearnedWeights {
+  const partialKey = partialMonthKey(samples);
+  const learned: LearnedWeights = { byMonth: new Map(), overall: new Map() };
+  const push = (map: Map<string, number[]>, key: string, ratio: number) => map.set(key, [...(map.get(key) ?? []), ratio]);
+
+  const ratiosOf = (group: AnalyseDaySample[]): Map<string, number> => {
+    const dailyMean = mean(group.map(restaurantCa));
+    const byType = new Map<string, number[]>();
+    group.forEach(sample => {
+      const day = model.describe(sample.date);
+      if (day.holiday) return;
+      const key = typeKey(day.weekday, day.baseStatus);
+      byType.set(key, [...(byType.get(key) ?? []), restaurantCa(sample)]);
+    });
+    return new Map(dailyMean > 0 ? [...byType.entries()].map(([key, values]) => [key, mean(values) / dailyMean] as [string, number]) : []);
+  };
+
+  const byYear = new Map<string, AnalyseDaySample[]>();
+  const byYearMonth = new Map<string, AnalyseDaySample[]>();
+  samples.forEach(sample => {
+    if (sample.date.slice(0, 7) === partialKey) return;
+    byYear.set(sample.date.slice(0, 4), [...(byYear.get(sample.date.slice(0, 4)) ?? []), sample]);
+    byYearMonth.set(sample.date.slice(0, 7), [...(byYearMonth.get(sample.date.slice(0, 7)) ?? []), sample]);
+  });
+  byYear.forEach(group => ratiosOf(group).forEach((ratio, key) => push(learned.overall, key, ratio)));
+  byYearMonth.forEach((group, yearMonth) => {
+    const month = String(Number(yearMonth.slice(5, 7)) - 1);
+    ratiosOf(group).forEach((ratio, key) => push(learned.byMonth, `${month}|${key}`, ratio));
+  });
+  return learned;
 }
 
-// Poids de chaque mois (0-11) dans le CA annuel, moyenné sur les années d'historique.
-export function monthlyWeights(samples: AnalyseDaySample[]): Record<number, number> {
-  const averages = averageMonthlyCa(samples);
-  const total = averages.reduce((acc, ca) => acc + ca, 0);
-  return Object.fromEntries(averages.map((ca, month) => [month, total > 0 ? ca / total : 0]));
+// Somme des poids de type de jour des jours d'un mois (jour férié : poids du jour normal × ratio férié).
+function monthWeightSum(learned: LearnedWeights, model: CalendarModel, year: number, month: number): number {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  let total = 0;
+  for (let day = 1; day <= daysInMonth(year, month); day += 1) {
+    const info = model.describe(`${year}-${pad(month + 1)}-${pad(day)}`);
+    const key = typeKey(info.weekday, info.baseStatus);
+    const ratios = learned.byMonth.get(`${month}|${key}`) ?? learned.overall.get(key);
+    const weight = ratios && ratios.length > 0 ? mean(ratios) : 1;
+    total += info.holiday ? weight * model.holidayFactor(info.weekday) : weight;
+  }
+  return total;
+}
+
+// CA restaurant proposé de chaque mois (0-11) de l'année cible : CA (réalisé, sinon budget) du même mois de la
+// dernière année d'historique qui en a, × (poids des jours du mois cible / poids des jours du mois de cette année).
+// Un mois sans aucun historique vaut 0 (il garde alors sa proposition jour par jour).
+export function proposeMonthlyCa(samples: AnalyseDaySample[], targetYear: number, model: CalendarModel): number[] {
+  const learned = learnTypeWeights(samples, model);
+  const partialKey = partialMonthKey(samples);
+  const years = [...new Set(samples.map(sample => Number(sample.date.slice(0, 4))))].filter(year => year < targetYear).sort((a, b) => b - a);
+  return Array.from({ length: 12 }, (_, month) => {
+    for (const year of years) {
+      const key = `${year}-${String(month + 1).padStart(2, '0')}`;
+      if (key === partialKey) continue;
+      const base = samples.filter(sample => sample.date.slice(0, 7) === key).reduce((acc, sample) => acc + restaurantCa(sample), 0);
+      if (base <= 0) continue;
+      const previous = monthWeightSum(learned, model, year, month);
+      return previous > 0 ? base * (monthWeightSum(learned, model, targetYear, month) / previous) : base;
+    }
+    return 0;
+  });
 }
 
 // CA à part (limonade) de chaque mois (0-11) : CA mensuel saisi, sinon CA annuel × poids

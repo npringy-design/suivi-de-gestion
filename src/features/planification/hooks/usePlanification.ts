@@ -120,7 +120,7 @@ export function usePlanification() {
     const restaurantPlan = applyOverrides(basePlan, overrides);
     return hasLimonade ? withLimonadeDays(restaurantPlan, limonadeDays) : restaurantPlan;
   }, [basePlan, overrides, hasLimonade, limonadeDays]);
-  const annualProposal = useMemo(() => proposeAnnualCA(samples), [samples]);
+  const annualProposal = useMemo(() => proposeAnnualCA(samples, holidayCalendar, targetYear), [samples, holidayCalendar, targetYear]);
   // VAE du mois : saisie manuelle si renseignée, sinon VAE réalisée N-1 de la même semaine (règle du budget du suivi).
   const vaeByMonth = useMemo(() => Object.fromEntries(ALL_MONTHS.map(month => {
     const value = settings.targetMonthlyVAE[month];

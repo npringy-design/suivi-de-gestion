@@ -14,9 +14,9 @@ import {
   estimateEntries,
   generatePlan,
   holidayRatio,
-  monthlyWeights,
   planToCsv,
   proposeAnnualCA,
+  proposeMonthlyCaByMonth,
   summarizeByMonth,
   vacationStatusOf,
 } from './planningEngine';
@@ -92,6 +92,7 @@ describe('generatePlan', () => {
   const samples = [
     ...mondays2025.map(d => sample(d, 20, 20, 30, 30)),
     ...mondays2026.map(d => sample(d, 30, 25, 40, 35)),
+    sample('2026-12-28', 0, 0), // lundi fermé en fin d'année : l'historique ne s'arrête pas en cours de mois
   ];
 
   it('génère 365 jours pour 2027 avec le jour de semaine réel', () => {
@@ -99,9 +100,12 @@ describe('generatePlan', () => {
     expect(plan).toHaveLength(365);
     const jan4 = plan.find(d => d.date === '2027-01-04')!;
     expect(jan4.weekday).toBe(1);
-    expect(jan4.midi.cv).toBe(25); // moyenne à parts égales : (20 + 30) / 2
+    // janvier est calé sur son CA N-1 (4 lundis à 2 150 €, même calendrier) : couverts proportionnels au midi / soir historique
+    expect(jan4.midi.cv).toBe(29);
     expect(jan4.midi.tm).toBeCloseTo(25, 2); // moyenne 23, relevée au TM de N-1 (25)
-    expect(jan4.midi.ca).toBeCloseTo(25 * 25, 0);
+    expect(jan4.midi.ca).toBeCloseTo(29 * 25, 0);
+    const jan = summarizeByMonth(plan)[0];
+    expect(Math.abs(jan.caMidi + jan.caSoir - 4 * 2150)).toBeLessThan(40);
     expect(jan4.midi.n).toBe(8);
     expect(jan4.midi.confidence).toBe('fiable');
   });
@@ -111,14 +115,14 @@ describe('generatePlan', () => {
       cvGrowthPct: 10, tmIncreaseEur: 0.2, cvGrowthByMonth: { 0: 0 },
     }));
     const jan = plan.find(d => d.date === '2027-01-04')!;
-    expect(jan.midi.cv).toBe(25); // surcharge janvier : 0 %
+    expect(jan.midi.cv).toBe(29); // surcharge janvier : 0 %
     expect(jan.midi.tm).toBeCloseTo(25.2, 2); // plancher N-1 (25) + 0,20 €
     const feb = plan.find(d => d.date === '2027-02-01')!;
     expect(feb.midi.source).toBe('groupe');
   });
 
   it('signale un repli (rouge) quand le statut vacances n\'a pas d\'historique', () => {
-    const plan = generatePlan(samples, getSchoolHolidayCalendar('B'), settings());
+    const plan = generatePlan(samples.slice(0, -1), getSchoolHolidayCalendar('B'), settings());
     const vacancesMonday = plan.find(d => d.date === '2027-02-22')!; // lundi, vacances d'hiver zone B
     expect(vacancesMonday.status).toBe('vacances');
     expect(vacancesMonday.midi.source).toBe('repli');
@@ -181,12 +185,12 @@ describe('pilotage par CA', () => {
     ...february.map(d => sample(d, 50, 20)), // 1 000 € par lundi
   ];
 
-  it('propose la moyenne des CA annuels et les poids de mois', () => {
-    expect(proposeAnnualCA(history)).toBe(6000); // 2 000 + 4 000 par an
-    const weights = monthlyWeights(history);
-    expect(weights[0]).toBeCloseTo(1 / 3);
-    expect(weights[1]).toBeCloseTo(2 / 3);
-    expect(weights[5]).toBe(0);
+  it('propose le CA de chaque mois au niveau N-1, annuel = somme des mois', () => {
+    const months = proposeMonthlyCaByMonth(history, noHolidays, 2027);
+    expect(months[0]).toBeCloseTo(2000); // janvier 2026 : 4 lundis × 500 €
+    expect(months[1]).toBeCloseTo(4000); // février 2026 en cours de saisie : repli sur février 2025
+    expect(months[5]).toBe(0);
+    expect(proposeAnnualCA(history, noHolidays, 2027)).toBe(6000);
   });
 
   it('normalise les poids de jours à 1 sur le mois cible', () => {
@@ -199,8 +203,9 @@ describe('pilotage par CA', () => {
 
   it('sans objectif, la proposition reste historique', () => {
     const plan = generatePlan(history, noHolidays, settings());
-    // le groupe « lundi » mêle janvier et février : (25 + 50) / 2
-    expect(plan.find(d => d.date === '2027-01-04')!.midi.cv).toBe(38);
+    // chaque mois repart de son niveau N-1 : janvier 25 couverts par lundi (février : 50)
+    expect(plan.find(d => d.date === '2027-01-04')!.midi.cv).toBe(25);
+    expect(plan.find(d => d.date === '2027-02-01')!.midi.cv).toBe(50);
   });
 
   it('répartit le CA annuel en mois puis en jours, TM historique inchangé', () => {
@@ -237,6 +242,56 @@ describe('pilotage par CA', () => {
     const months = summarizeByMonth(plan);
     expect(Math.abs(months[0].caMidi - 2000)).toBeLessThan(20);
     expect(months[1]).toEqual(summarizeByMonth(generatePlan(history, noHolidays, settings()))[1]);
+  });
+});
+
+describe('prévision mensuelle : niveau N-1 corrigé du calendrier', () => {
+  const period = (start: string, end: string) => ({ name: 'Vacances', schoolYear: 'test', start, end });
+  // Février : jours de vacances à 1 000 €, autres jours à 500 € (tous les jours de la semaine présents).
+  const february = (year: number, vacations: [number, number], factor = 1) => Array.from({ length: 28 }, (_, i) => {
+    const day = i + 1;
+    const vacation = day >= vacations[0] && day <= vacations[1];
+    return sample(`${year}-02-${String(day).padStart(2, '0')}`, (vacation ? 40 : 20) * factor, 25);
+  });
+  const yearEnd = sample('2026-12-31', 0, 0); // l'historique ne s'arrête pas en cours de mois
+  const feb2026 = 14 * 1000 + 14 * 500;
+  const calendar = (vacations2027: [string, string]): SchoolHolidayCalendar => ({
+    zone: 'B',
+    periods: [period('2025-02-10', '2025-02-23'), period('2026-02-09', '2026-02-22'), period(...vacations2027)],
+  });
+  const feb = (samples: AnalyseDaySample[], cal: SchoolHolidayCalendar) => proposeMonthlyCaByMonth(samples, cal, 2027)[1];
+
+  it('calendrier identique : le CA proposé est le CA de N-1', () => {
+    const history = [...february(2025, [10, 23]), ...february(2026, [9, 22]), yearEnd];
+    expect(feb(history, calendar(['2027-02-08', '2027-02-21']))).toBeCloseTo(feb2026, 0);
+  });
+
+  it('moins de jours de vacances qu’en N-1 : le CA proposé est inférieur à N-1', () => {
+    const history = [...february(2025, [10, 23]), ...february(2026, [9, 22]), yearEnd];
+    const proposed = feb(history, calendar(['2027-02-15', '2027-02-21']));
+    expect(proposed).toBeLessThan(feb2026);
+    expect(proposed).toBeCloseTo(feb2026 * (7 / 28 * (4 / 3) + 21 / 28 * (2 / 3)), 0); // 7 jours de vacances au lieu de 14
+  });
+
+  it('N-2 très inférieure à N-1 : la proposition reste au niveau de N-1', () => {
+    const history = [...february(2025, [10, 23], 0.2), ...february(2026, [9, 22]), yearEnd];
+    expect(feb(history, calendar(['2027-02-08', '2027-02-21']))).toBeCloseTo(feb2026, 0);
+  });
+
+  it('sans objectif, le mois du plan est calé sur ce CA proposé', () => {
+    const history = [...february(2025, [10, 23]), ...february(2026, [9, 22]), yearEnd];
+    const cal = calendar(['2027-02-15', '2027-02-21']);
+    const plan = generatePlan(history, cal, settings());
+    const month = summarizeByMonth(plan)[1];
+    expect(Math.abs(month.caMidi + month.caSoir - feb(history, cal))).toBeLessThan(200);
+  });
+
+  it('avec objectif annuel, les mois sont mis à l’échelle des CA proposés', () => {
+    const history = [...february(2025, [10, 23]), ...february(2026, [9, 22]), yearEnd];
+    const cal = calendar(['2027-02-08', '2027-02-21']);
+    const plan = generatePlan(history, cal, settings({ targetAnnualCA: feb2026 * 2 })); // seul février a un historique
+    const month = summarizeByMonth(plan)[1];
+    expect(Math.abs(month.caMidi + month.caSoir - feb2026 * 2)).toBeLessThan(200);
   });
 });
 
