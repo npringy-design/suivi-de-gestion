@@ -9,6 +9,7 @@ import { parseMoneyValue } from '@/lib/money';
 import { useHasLimonade } from '@/lib/useHasLimonade';
 import { useData } from '@/contexts/DataContext';
 import { createBudgetVaeLookup } from '@/features/dashboard/budgetVae';
+import { COL } from '@/features/dashboard/dashboardColumnIndex';
 import { getMonthFixedCosts } from '@/features/edg/edgRealtimeSources';
 
 // Colonnes par niveau (index 0-4 = Cadre, Maîtrise, NIV I-II, NIV III, Apprenti)
@@ -66,7 +67,9 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
     const getVal = (mi: number, col: number): number => {
       const idx = monthTotalIndices[mi];
       if (idx < 0) return 0;
-      return parseMoneyValue(monthCalcData[mi][`${idx}-${col}`] ?? '0');
+      const total = parseMoneyValue(monthCalcData[mi][`${idx}-${col}`] ?? '0');
+      // CA budget : VAE budget (colonne à part) comprise, comme le réalisé.
+      return col === COL.BUDGET_CA_JOUR ? total + parseMoneyValue(monthCalcData[mi][`${idx}-${COL.BUDGET_VAE}`] ?? '0') : total;
     };
 
     const getFgTotal = (mi: number): number => {
@@ -162,7 +165,8 @@ export function useRecapAnnuelData(data: Record<number, MonthData>, year: number
       return days.reduce((sum, idx) => {
         const real = parseMoneyValue(monthCalcData[mi][`${idx}-${realCol}`] ?? '0');
         if (real <= 0) return sum;
-        const budget = parseMoneyValue(monthCalcData[mi][`${idx}-${budgetCol}`] ?? '0');
+        const vae = budgetCol === COL.BUDGET_CA_JOUR ? parseMoneyValue(monthCalcData[mi][`${idx}-${COL.BUDGET_VAE}`] ?? '0') : 0;
+        const budget = parseMoneyValue(monthCalcData[mi][`${idx}-${budgetCol}`] ?? '0') + vae;
         return sum + (real - budget);
       }, 0);
     };

@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { getDashboardRowIndices } from '@/lib/utils';
 
+import { buildDynamicColumns } from './dashboardColumns';
+import { computeDashboardData } from './dashboardCalculations';
+import { buildMonthRows } from './dashboardRows';
 import { getBudgetVaeDay, getBudgetVaeMonth, matchingPreviousYearDate, weekNumberMonday } from './budgetVae';
 import { COL } from './dashboardColumnIndex';
 
@@ -37,5 +40,17 @@ describe('VAE budget = VAE réalisée N-1 de la même semaine', () => {
       [`${getDashboardRowIndices(0, 2026)[9]}-${COL.REALISE_CA_VAE}`]: '50',
     } } } };
     expect(getBudgetVaeMonth(data, 2027, 0)).toBe(150);
+  });
+});
+
+describe('VAE budget dans le Suivi quotidien', () => {
+  it('reste hors TOTAL JOUR (col 3) et n’entre que dans l’écart au budget du réalisé', () => {
+    const rows = buildMonthRows(2027, 0);
+    const cells: Record<string, string> = { '0-6': '10', '0-7': '20', '0-17': '50', '0-18': '200' }; // budget 200 €, réalisé 250 € dont VAE 50
+    const data = computeDashboardData(cells, rows, buildDynamicColumns(undefined, {}), undefined, undefined, undefined, undefined, false, () => 35);
+    expect(data['0-3']).toBe('200.00'); // le jour n'est pas gonflé
+    expect(data['0-4']).toBe('200.00');
+    expect(data[`0-${COL.BUDGET_VAE}`]).toBe('35.00');
+    expect(data['0-22']).toBe('15.00'); // 250 − (200 + 35)
   });
 });

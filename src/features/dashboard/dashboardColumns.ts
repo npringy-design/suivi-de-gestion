@@ -151,6 +151,9 @@ export const dashboardColumns: DashboardColumn[] = [
   ['REALISE', 'CA HT LIMONADE', 'ECART AU BUDGET', 'bg-white'],
   ['REALISE', 'COUVERTS\nLIMONADE', 'Ecart au Budget Couverts', 'bg-white'],
   ['REALISE', 'COUVERTS\nLIMONADE', 'Ecart au Budget Moy CVTS', 'bg-white'],
+  // Index 147 : VAE budget du jour (VAE réalisée N-1 de la même semaine), calculée, jamais saisie ni stockée.
+  // Hors TOTAL JOUR (col 3) pour ne pas gonfler le jour ni fausser l'écart VS N-1 ; l'écart au budget du réalisé l'inclut.
+  ['CA', 'VAE BUDGET', 'CA HT VAE N-1', 'bg-[#ffe699]'],
 ];
 
 export function buildDynamicColumns(

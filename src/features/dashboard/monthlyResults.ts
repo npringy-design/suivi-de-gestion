@@ -29,7 +29,7 @@ export function computeMonthlyResults({
   const fg = (b: number, g: number) => parseMoneyValue(calculatedData[`fg-total-${b}-${g}`]);
 
   const caR = mt(COL.REALISE_CA_JOUR);
-  const caBudget = mt(COL.BUDGET_CA_JOUR);
+  const caBudget = mt(COL.BUDGET_CA_JOUR) + mt(COL.BUDGET_VAE);
   const cvtsResto = mt(COL.REALISE_CVTS_JOUR);
   const caResto = mt(COL.REALISE_CA_MIDI) + mt(COL.REALISE_CA_SOIR);
   const cvtsLimo = mt(COL.REALISE_CVTS_LIMONADE);

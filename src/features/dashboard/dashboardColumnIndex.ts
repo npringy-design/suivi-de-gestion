@@ -8,6 +8,7 @@ export const COL = {
   BUDGET_CA_LIMONADE: 2,
   BUDGET_CA_JOUR: 3,
   BUDGET_CA_CUMUL: 4,
+  BUDGET_VAE: 147, // calculée (VAE N-1 de la même semaine), hors BUDGET_CA_JOUR
   BUDGET_CVTS_MIDI: 6,
   BUDGET_TM_MIDI: 7,
   BUDGET_CVTS_SOIR: 8,

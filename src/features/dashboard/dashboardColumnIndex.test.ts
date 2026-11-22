@@ -20,6 +20,7 @@ describe('index nommés des colonnes du Suivi quotidien', () => {
     ['BUDGET_CA_LIMONADE', 'CA | Limonade Saisie | CA HT LIMONADE'],
     ['BUDGET_CA_JOUR', 'CA | TOTAL JOUR | CAHT JOUR'],
     ['BUDGET_CA_CUMUL', 'CA | CUMUL DEPUIS LE 01 | CAHTCUMUL'],
+    ['BUDGET_VAE', 'CA | VAE BUDGET | CA HT VAE N-1'],
     ['BUDGET_CVTS_MIDI', 'RESTAURANTS | MIDI Prevision Saisie | NB CVTS'],
     ['BUDGET_TM_MIDI', 'RESTAURANTS | MIDI Prevision Saisie | CVTS MOY HT'],
     ['BUDGET_CVTS_SOIR', 'RESTAURANTS | SOIR Prevision Saisie | NB CVTS'],

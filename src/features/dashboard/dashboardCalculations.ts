@@ -223,6 +223,8 @@ export function computeDashboardData(
       });
     }
     let cumulCA = 0;
+    let cumulBudgetWithVae = 0; // budget total (VAE comprise) : base de la tendance, comparée au réalisé qui inclut la VAE
+    const budgetWithVaeCumulByRow = new Map<number, number>();
     let cumulCvts = 0;
     let cumulRealiseCA = 0;
     let cumulCoutMatiere = 0;
@@ -266,13 +268,18 @@ export function computeDashboardData(
         const budgetRestaurantTotal = budgetMidi + budgetSoir;
         if (budgetRestaurantTotal > 0 || data[`${rIdx}-0`] || data[`${rIdx}-1`]) data[`${rIdx}-125`] = budgetRestaurantTotal.toFixed(2);
 
+        // VAE budget : colonne à part (147), hors TOTAL JOUR ; seul l'écart au budget du réalisé (VAE comprise) l'inclut.
         const budgetVaeJour = budgetVae && row.dateObj ? budgetVae(row.dateObj) : 0;
-        const totalJour = budgetRestaurantTotal + budgetLimo + budgetVaeJour;
+        const totalJour = budgetRestaurantTotal + budgetLimo;
+        const budgetTotalJour = totalJour + budgetVaeJour;
         if (totalJour > 0 || data[`${rIdx}-0`] || data[`${rIdx}-1`] || data[`${rIdx}-2`]) {
           data[`${rIdx}-3`] = totalJour.toFixed(2);
           cumulCA += totalJour;
           data[`${rIdx}-4`] = cumulCA.toFixed(2);
         }
+        if (budgetVaeJour > 0) data[`${rIdx}-${COL.BUDGET_VAE}`] = budgetVaeJour.toFixed(2);
+        cumulBudgetWithVae += budgetTotalJour;
+        budgetWithVaeCumulByRow.set(rIdx, cumulBudgetWithVae);
 
         const jourCvts = cvtsMidi + cvtsSoir;
         if (jourCvts > 0) {
@@ -306,9 +313,9 @@ export function computeDashboardData(
         const realiseTotalJour = realiseVae + realiseRestaurantTotal + realiseLimo;
         if (realiseTotalJour > 0 || data[`${rIdx}-17`] || data[`${rIdx}-18`] || data[`${rIdx}-19`] || data[`${rIdx}-20`]) {
           data[`${rIdx}-21`] = realiseTotalJour.toFixed(2);
-          const realiseEcartBudget = realiseTotalJour - totalJour;
+          const realiseEcartBudget = realiseTotalJour - budgetTotalJour;
           data[`${rIdx}-22`] = realiseEcartBudget.toFixed(2);
-          if (totalJour > 0) data[`${rIdx}-117`] = ((realiseEcartBudget / totalJour) * 100).toFixed(2);
+          if (budgetTotalJour > 0) data[`${rIdx}-117`] = ((realiseEcartBudget / budgetTotalJour) * 100).toFixed(2);
           cumulRealiseCA += realiseTotalJour;
           data[`${rIdx}-23`] = cumulRealiseCA.toFixed(2);
           // cols 140/141/142 (Tendance) calculés après le premier passage (totalBudgetMois requis)
@@ -552,12 +559,12 @@ export function computeDashboardData(
 
     // Mini-passage post-premier-passage : Tendance mensuelle (nécessite totalBudgetMois et totalN1Mois)
     {
-      const totalBudgetMois = cumulCA;
+      const totalBudgetMois = cumulBudgetWithVae;
       const totalN1Mois = cumulN1CA;
       rows.forEach((row, rIdx) => {
         if (row.type !== 'day') return;
         const cR = parseMoneyValue(data[`${rIdx}-23`]); // cumul réalisé CA
-        const cB = parseMoneyValue(data[`${rIdx}-4`]);  // cumul budget CA
+        const cB = budgetWithVaeCumulByRow.get(rIdx) ?? 0;  // cumul budget CA, VAE comprise
         if (cR === 0 || cB === 0) return;
         const tendance = cR * totalBudgetMois / cB;
         data[`${rIdx}-140`] = tendance.toFixed(2);
@@ -637,14 +644,14 @@ export function computeDashboardData(
         const caSoirWr = parseMoneyValue(data[`${rIdx}-19`]);
         if (nbMidiW > 0 && caMidiWr > 0) data[`${rIdx}-26`] = (caMidiWr / nbMidiW).toFixed(2);
         if (nbSoirW > 0 && caSoirWr > 0) data[`${rIdx}-28`] = (caSoirWr / nbSoirW).toFixed(2);
-        const budgetCaW = parseMoneyValue(data[`${rIdx}-3`]);
+        const budgetCaW = parseMoneyValue(data[`${rIdx}-3`]) + parseMoneyValue(data[`${rIdx}-${COL.BUDGET_VAE}`]);
         // Écart au budget "à date" : uniquement les jours ayant du réalisé CA — comparer le
         // réalisé partiel au budget de la semaine complète (jours futurs inclus) produirait
         // des écarts sans signification. budgetCaW (semaine complète) reste utilisé plus bas
         // pour les ratios Frais Personnel Projection (cols 73/74/75).
         const budgetCaAtDateW = weekDays.reduce((sum, day) => {
           const hasRealise = parseMoneyValue(data[`${day.originalIdx}-21`] || '') > 0;
-          return hasRealise ? sum + parseMoneyValue(data[`${day.originalIdx}-3`] || '') : sum;
+          return hasRealise ? sum + parseMoneyValue(data[`${day.originalIdx}-3`] || '') + parseMoneyValue(data[`${day.originalIdx}-${COL.BUDGET_VAE}`] || '') : sum;
         }, 0);
         if (budgetCaAtDateW > 0 || realiseCAW > 0) {
           const ecartCaBudgetW = realiseCAW - budgetCaAtDateW;
@@ -898,11 +905,11 @@ export function computeDashboardData(
       const caSoirMr = parseMoneyValue(data[`${monthTotalIdx}-19`]);
       if (nbMidiM > 0 && caMidiMr > 0) data[`${monthTotalIdx}-26`] = (caMidiMr / nbMidiM).toFixed(2);
       if (nbSoirM > 0 && caSoirMr > 0) data[`${monthTotalIdx}-28`] = (caSoirMr / nbSoirM).toFixed(2);
-      const budgetCaM = parseMoneyValue(data[`${monthTotalIdx}-3`]);
+      const budgetCaM = parseMoneyValue(data[`${monthTotalIdx}-3`]) + parseMoneyValue(data[`${monthTotalIdx}-${COL.BUDGET_VAE}`]);
       // Budget à date : uniquement les jours ayant du réalisé CA — même logique que les totaux semaine
       const budgetCaAtDateM = allDays.reduce((sum, day) => {
         const hasRealise = parseMoneyValue(data[`${day.originalIdx}-21`] || '') > 0;
-        return hasRealise ? sum + parseMoneyValue(data[`${day.originalIdx}-3`] || '') : sum;
+        return hasRealise ? sum + parseMoneyValue(data[`${day.originalIdx}-3`] || '') + parseMoneyValue(data[`${day.originalIdx}-${COL.BUDGET_VAE}`] || '') : sum;
       }, 0);
       if (budgetCaAtDateM > 0 || realiseCAM > 0) {
         const ecartCaBudgetM = realiseCAM - budgetCaAtDateM;

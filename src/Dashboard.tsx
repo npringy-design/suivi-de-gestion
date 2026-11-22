@@ -6,6 +6,7 @@ import { useData, type SalarieRow } from '@/contexts/DataContext';
 import { useSiteBrandTheme } from '@/lib/siteBrandTheme';
 import { useHasLimonade } from '@/lib/useHasLimonade';
 import { createBudgetVaeLookup } from '@/features/dashboard/budgetVae';
+import { COL } from '@/features/dashboard/dashboardColumnIndex';
 import { computeMonthDashboard, getCaRealiseMonth } from '@/features/edg/edgRealtimeSources';
 import { getPurchaseLabelOverrides } from '@/features/parametres/purchaseLabels';
 import { averagePayrollRate } from '@/features/dashboard/importHelpers/personnelSalaryImport';
@@ -411,6 +412,7 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
         buildColumn(2, 'CA HT', 'CA HT LIMONADE', 'TOTAL'),
         buildColumn(3, 'CA HT', '', 'TOTAL JOUR'),
         buildColumn(4, 'CA HT', '', 'CUMUL MOIS'),
+        buildColumn(COL.BUDGET_VAE, 'CA HT', 'VAE BUDGET', 'VAE N-1'),
         buildColumn(128, 'CA HT', 'ECART VS N-1', 'VALEUR', 'bg-white'),
         buildColumn(5, 'CA HT', 'ECART VS N-1', '%', 'bg-white'),
         buildColumn(6, 'COUVERTS', 'COUVERTS RESTAURANT', 'MIDI'),
@@ -428,7 +430,14 @@ export default function Dashboard({ initialMonth, year, onBack }: DashboardProps
       ].filter(Boolean) as VisibleDashboardColumn[];
     }
 
-    if (activeTab !== 'REALISE' || tableViewMode !== 'COMPLET') return visibleColumnsWithoutLimonade;
+    if (activeTab !== 'REALISE' || tableViewMode !== 'COMPLET') {
+      // VAE budget (index 147, en fin de grille) : affichée dans le bloc Budget, après CUMUL.
+      const vaeColumn = visibleColumnsWithoutLimonade.find(col => col.originalIndex === COL.BUDGET_VAE);
+      if (!vaeColumn) return visibleColumnsWithoutLimonade;
+      const others = visibleColumnsWithoutLimonade.filter(col => col !== vaeColumn);
+      const after = others.findIndex(col => col.originalIndex === COL.BUDGET_CA_CUMUL);
+      return after < 0 ? others : [...others.slice(0, after + 1), vaeColumn, ...others.slice(after + 1)];
+    }
 
     const limonadeCaColumns = hasLimonade
       ? [

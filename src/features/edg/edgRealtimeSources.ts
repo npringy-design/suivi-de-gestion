@@ -80,7 +80,7 @@ export const getCaRealiseMonth = (monthData: DashboardData, month: number, year:
   sumDayColumn(monthData, month, year, COL.REALISE_CA_JOUR);
 
 export const getCaBudgetMonth = (monthData: DashboardData, month: number, year: number): number =>
-  sumDayColumn(monthData, month, year, COL.BUDGET_CA_JOUR);
+  sumDayColumn(monthData, month, year, COL.BUDGET_CA_JOUR) + sumDayColumn(monthData, month, year, COL.BUDGET_VAE);
 
 export const getMonthProgress = (monthData: DashboardData, month: number, year: number): number => {
   const indices = getDashboardRowIndices(month, year);
