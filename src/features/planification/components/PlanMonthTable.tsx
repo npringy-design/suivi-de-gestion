@@ -62,7 +62,7 @@ export default function PlanMonthTable({
             <th className={th}>CA cible avant croissance (modifiable)</th>
             <th className={th}>CA restaurant prévu</th>
             <th className={th}>TM restaurant</th>
-            <th className={th}>VAE (modifiable)</th>
+            <th className={th}>VAE (saisie — reprendre B53 du suivi)</th>
             <th className={th}>TM avec VAE</th>
             {limonade && (
               <>
@@ -101,7 +101,7 @@ export default function PlanMonthTable({
                 <td className={td} onClick={event => event.stopPropagation()}>
                   <PlanNumberInput
                     ariaLabel={`VAE ${MONTH_NAMES[s.month]}`}
-                    value={vaeTargets[s.month] ?? Math.round(vae)}
+                    value={vaeTargets[s.month] ?? 0}
                     step={100}
                     allowEmpty
                     highlight={typeof vaeTargets[s.month] === 'number'}

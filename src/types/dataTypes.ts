@@ -422,6 +422,8 @@ export type CompanySettings = {
   weatherLon?: number;
   // Zone scolaire (A/B/C) du restaurant : pilote le calendrier des vacances (défaut B).
   schoolZone?: SchoolZone;
+  // Brouillon de la page Planification, par année cible (clé = année en texte).
+  planDrafts?: Record<string, PlanDraft>;
   caisseSystemes?: CaisseSysteme[];
 };
 
@@ -566,12 +568,18 @@ export type PlanSettings = {
   tmIncreaseEurByMonth: Record<number, number>;
   targetAnnualCA: number | null; // objectif de CA de l'année cible ; null = proposition purement historique
   targetMonthlyCA: Record<number, number | null>; // surcharge optionnelle du CA cible par mois (0-11)
-  // VAE : CA à part, jamais divisé par les couverts (n'entre pas dans le TM restaurant).
-  targetAnnualVAE: number | null; // null = VAE mensuel historique moyen
+  // VAE : CA à part, jamais divisé par les couverts ; saisie à la main par mois (0 par défaut).
   targetMonthlyVAE: Record<number, number | null>;
   // Limonade (sites Au Bureau) : CA à part, réparti en couverts × TM limonade, hors du plan restaurant.
   targetAnnualLimonade: number | null; // null = CA limonade mensuel historique moyen
   targetMonthlyLimonade: Record<number, number | null>;
+};
+
+// Brouillon de planification sauvegardé par site et par année cible.
+export type PlanDraft = {
+  settings: PlanSettings;
+  overrides: Record<string, PlanManualOverride>;
+  savedAt: string;
 };
 
 // Prévision limonade d'un jour (sites Au Bureau) : écrite en cols 14/15, le CA (col 2) est recalculé.

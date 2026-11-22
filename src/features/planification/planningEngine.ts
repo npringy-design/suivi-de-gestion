@@ -20,8 +20,8 @@ import type {
 import { toIsoDate } from '../analyse/ecartsAnalysis';
 
 import {
-  applyMonthTarget, enforceLimonadeTmFloors, enforceTmFloors, limonadeTmFloors, monthlyWeights, normalizedDayWeights, planMonthlyLimonade, planMonthlyVae, proposeAnnualCA, proposeAnnualLimonade,
-  proposeAnnualVAE, tmFloors,
+  applyMonthTarget, enforceLimonadeTmFloors, enforceTmFloors, limonadeTmFloors, monthlyWeights, normalizedDayWeights, planMonthlyLimonade, proposeAnnualCA, proposeAnnualLimonade,
+  tmFloors,
   type TmFloors,
 } from './planningTargets';
 
@@ -52,7 +52,6 @@ export const DEFAULT_PLAN_SETTINGS = (targetYear: number): PlanSettings => ({
   tmIncreaseEurByMonth: {},
   targetAnnualCA: null,
   targetMonthlyCA: {},
-  targetAnnualVAE: null,
   targetMonthlyVAE: {},
   targetAnnualLimonade: null,
   targetMonthlyLimonade: {},
@@ -329,7 +328,7 @@ function buildMonthDays(
 
 // --- Pilotage par CA annuel / mensuel (calculs purs dans planningTargets.ts) ---
 
-export { monthlyWeights, planMonthlyLimonade, planMonthlyVae, proposeAnnualCA, proposeAnnualLimonade, proposeAnnualVAE };
+export { monthlyWeights, planMonthlyLimonade, proposeAnnualCA, proposeAnnualLimonade };
 
 export function dailyWeights(
   samples: AnalyseDaySample[],

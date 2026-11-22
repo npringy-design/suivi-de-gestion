@@ -19,7 +19,6 @@ function partialMonthKey(samples: AnalyseDaySample[]): string | null {
 type CaPicker = (sample: AnalyseDaySample) => number;
 
 const restaurantCa: CaPicker = sample => sample.reel.caMidi + sample.reel.caSoir;
-const vaeCa: CaPicker = sample => sample.reel.vae;
 const limoCa: CaPicker = sample => sample.reel.caLimo;
 
 // CA (restaurant ou VAE) par mois de l'historique, hors mois partiel. Sans aucun mois complet,
@@ -68,14 +67,7 @@ export function monthlyWeights(samples: AnalyseDaySample[]): Record<number, numb
   return Object.fromEntries(averages.map((ca, month) => [month, total > 0 ? ca / total : 0]));
 }
 
-// --- VAE : même logique que le CA annuel, mais à part (aucun couvert, aucun TM) ---
-
-// Proposition de VAE annuel : moyenne des VAE annuels réalisés, mois manquants repris de l'autre année.
-export function proposeAnnualVAE(samples: AnalyseDaySample[]): number {
-  return Math.round(averageMonthlyCa(samples, vaeCa).reduce((acc, v) => acc + v, 0));
-}
-
-// CA à part (VAE, limonade) de chaque mois (0-11) : CA mensuel saisi, sinon CA annuel × poids
+// CA à part (limonade) de chaque mois (0-11) : CA mensuel saisi, sinon CA annuel × poids
 // historique du mois, sinon (sans objectif annuel) CA historique moyen du mois. Sans historique,
 // répartition égale.
 function planMonthlySeparate(
@@ -94,13 +86,7 @@ function planMonthlySeparate(
   }));
 }
 
-export const planMonthlyVae = (
-  samples: AnalyseDaySample[],
-  annual: number | null,
-  monthly: Record<number, number | null>,
-): Record<number, number> => planMonthlySeparate(samples, vaeCa, annual, monthly);
-
-// --- Limonade (sites Au Bureau) : même logique que la VAE, sur le CA limonade des échantillons ---
+// --- Limonade (sites Au Bureau) : CA à part, sur le CA limonade des échantillons ---
 
 export function proposeAnnualLimonade(samples: AnalyseDaySample[]): number {
   return Math.round(averageMonthlyCa(samples, limoCa).reduce((acc, v) => acc + v, 0));

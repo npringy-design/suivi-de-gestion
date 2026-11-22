@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Download, PenLine } from 'lucide-react';
+import { ArrowLeft, Download, PenLine, RotateCcw } from 'lucide-react';
 
 import PlanDayTable from './components/PlanDayTable';
 import PlanMonthTable from './components/PlanMonthTable';
@@ -39,7 +39,20 @@ export default function Planification({ onBack }: PlanificationProps) {
             <div className="text-base font-black uppercase tracking-[0.14em] text-amber-50">Planification {settings.targetYear}</div>
             <div className="text-xs font-semibold text-cyan-50/60">Proposition de prévisions à partir des réalisés {planning.baseYears.join(' et ')}</div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {planning.savedAt && (
+              <span className="text-[11px] font-semibold text-emerald-200/80">
+                Brouillon enregistré à {new Date(planning.savedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => { if (window.confirm(`Réinitialiser le brouillon ${settings.targetYear} (réglages, VAE et jours modifiés) ?`)) planning.resetDraft(); }}
+              className="flex items-center gap-2 rounded-lg border border-cyan-200/30 bg-white/[0.06] px-3 py-2 text-xs font-black uppercase tracking-wide text-cyan-50 hover:bg-white/15"
+            >
+              <RotateCcw size={14} />
+              Réinitialiser
+            </button>
             <button
               type="button"
               onClick={planning.exportCsv}
@@ -75,7 +88,6 @@ export default function Planification({ onBack }: PlanificationProps) {
           holidayZone={planning.holidayZone}
           sampleCount={planning.sampleCount}
           annualProposal={planning.annualProposal}
-          vaeProposal={planning.vaeProposal}
           limonadeProposal={planning.hasLimonade ? planning.limonadeProposal : undefined}
           onChange={planning.updateSettings}
           onMonthGrowth={planning.setMonthGrowth}

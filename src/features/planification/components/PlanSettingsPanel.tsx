@@ -13,7 +13,6 @@ type PlanSettingsPanelProps = {
   holidayZone: string;
   sampleCount: number;
   annualProposal: number;
-  vaeProposal: number;
   // Limonade (sites Au Bureau) : champ affiché seulement si la proposition est fournie.
   limonadeProposal?: number;
   onChange: (patch: Partial<PlanSettings>) => void;
@@ -21,13 +20,13 @@ type PlanSettingsPanelProps = {
 };
 
 export default function PlanSettingsPanel({
-  settings, targetYearOptions, baseYears, holidayZone, sampleCount, annualProposal, vaeProposal, limonadeProposal, onChange, onMonthGrowth,
+  settings, targetYearOptions, baseYears, holidayZone, sampleCount, annualProposal, limonadeProposal, onChange, onMonthGrowth,
 }: PlanSettingsPanelProps) {
   const [olderYear, recentYear] = baseYears;
   const hasCaTarget = settings.targetAnnualCA !== null || Object.values(settings.targetMonthlyCA).some(v => typeof v === 'number');
   return (
     <section className={`${analyseGlass} grid gap-4 p-4`}>
-      <div className={`grid gap-4 sm:grid-cols-2 ${limonadeProposal !== undefined ? 'lg:grid-cols-6' : 'lg:grid-cols-5'}`}>
+      <div className={`grid gap-4 sm:grid-cols-2 ${limonadeProposal !== undefined ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
         <label className="grid gap-1">
           <span className={analyseLabel}>Année cible</span>
           <select
@@ -45,14 +44,6 @@ export default function PlanSettingsPanel({
           value={settings.targetAnnualCA}
           proposal={annualProposal}
           onApply={value => onChange(value === null ? { targetAnnualCA: null, targetMonthlyCA: {} } : { targetAnnualCA: value })}
-        />
-
-        <PlanAnnualCaField
-          label="VAE annuel"
-          year={settings.targetYear}
-          value={settings.targetAnnualVAE}
-          proposal={vaeProposal}
-          onApply={value => onChange(value === null ? { targetAnnualVAE: null, targetMonthlyVAE: {} } : { targetAnnualVAE: value })}
         />
 
         {limonadeProposal !== undefined && (
@@ -115,7 +106,7 @@ export default function PlanSettingsPanel({
       </details>
 
       <p className="text-[11px] font-semibold text-cyan-50/50">
-        Zone scolaire du restaurant : {holidayZone} · {sampleCount} jour(s) réalisé(s) {olderYear}-{recentYear} analysé(s) · simulation en mémoire, rien n&apos;est enregistré tant que vous n&apos;avez pas cliqué sur « Écrire dans les Prévisions ».
+        Zone scolaire du restaurant : {holidayZone} · {sampleCount} jour(s) réalisé(s) {olderYear}-{recentYear} analysé(s) · brouillon enregistré automatiquement ; les Prévisions ne sont modifiées qu&apos;après « Écrire dans les Prévisions ».
       </p>
     </section>
   );

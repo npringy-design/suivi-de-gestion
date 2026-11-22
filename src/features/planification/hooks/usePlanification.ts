@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useData } from '@/contexts/DataContext';
 import { useHasLimonade } from '@/lib/useHasLimonade';
 import { MONTH_NAMES } from '@/lib/constants';
 import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
-import type { PlanManualOverride, PlanService, PlanSettings, PlanWriteMode } from '@/types/dataTypes';
+import type { CompanySettings, PlanDraft, PlanManualOverride, PlanService, PlanSettings, PlanWriteMode } from '@/types/dataTypes';
 
 import { collectDailySamples, toIsoDate } from '../../analyse/ecartsAnalysis';
 import { excelMonthSheetName, fillExcelPasteSheet } from '../excelPasteSheet';
@@ -17,14 +17,12 @@ import {
   planHasLimonade,
   planLimonadeDays,
   planMonthlyLimonade,
-  planMonthlyVae,
   planRows,
   planToCsv,
   PLAN_ROW_HEADER,
   PLAN_ROW_HEADER_LIMONADE,
   proposeAnnualCA,
   proposeAnnualLimonade,
-  proposeAnnualVAE,
   summarizeByMonth,
   summarizeLimonade,
   withLimonadeDays,
@@ -32,6 +30,18 @@ import {
 } from '../planningEngine';
 
 const ALL_MONTHS = Array.from({ length: 12 }, (_, month) => month);
+
+const DRAFT_SAVE_DELAY_MS = 800;
+
+type DraftState = { settings: PlanSettings; overrides: Record<string, PlanManualOverride> };
+
+// Brouillon stocké de l'année, fusionné sur les valeurs par défaut (anciens brouillons : champs manquants ou obsolètes).
+const draftStateFor = (drafts: CompanySettings['planDrafts'], year: number): DraftState => {
+  const draft = drafts?.[String(year)];
+  if (!draft) return { settings: DEFAULT_PLAN_SETTINGS(year), overrides: {} };
+  const { targetAnnualVAE: _obsolete, ...stored } = draft.settings as PlanSettings & { targetAnnualVAE?: unknown };
+  return { settings: { ...DEFAULT_PLAN_SETTINGS(year), ...stored, targetYear: year }, overrides: draft.overrides ?? {} };
+};
 
 const downloadBlob = (fileName: string, blob: Blob) => {
   const url = URL.createObjectURL(blob);
@@ -48,10 +58,12 @@ const downloadCsv = (fileName: string, content: string) => {
 
 // Tout le calcul est une simulation en mémoire : rien n'est écrit dans allData avant confirmWrite.
 export function usePlanification() {
-  const { allData, loadYearFromCloud, importBudgetPlan, saveNow, companySettings } = useData();
+  const { allData, loadYearFromCloud, importBudgetPlan, saveNow, companySettings, updateCompanySettings } = useData();
   const hasLimonade = useHasLimonade();
-  const [settings, setSettings] = useState<PlanSettings>(() => DEFAULT_PLAN_SETTINGS(new Date().getFullYear() + 1));
-  const [overrides, setOverrides] = useState<Record<string, PlanManualOverride>>({});
+  // État restauré : tant que settings/overrides en sont les mêmes objets, l'utilisateur n'a rien modifié (aucune écriture).
+  const restoredRef = useRef<DraftState>(draftStateFor(companySettings.planDrafts, new Date().getFullYear() + 1));
+  const [settings, setSettings] = useState<PlanSettings>(restoredRef.current.settings);
+  const [overrides, setOverrides] = useState<Record<string, PlanManualOverride>>(restoredRef.current.overrides);
   const [loadedYears, setLoadedYears] = useState<number[]>([]);
   const [status, setStatus] = useState('');
 
@@ -108,11 +120,11 @@ export function usePlanification() {
     return hasLimonade ? withLimonadeDays(restaurantPlan, limonadeDays) : restaurantPlan;
   }, [basePlan, overrides, hasLimonade, limonadeDays]);
   const annualProposal = useMemo(() => proposeAnnualCA(samples), [samples]);
-  const vaeProposal = useMemo(() => proposeAnnualVAE(samples), [samples]);
-  const vaeByMonth = useMemo(
-    () => planMonthlyVae(samples, settings.targetAnnualVAE, settings.targetMonthlyVAE),
-    [samples, settings.targetAnnualVAE, settings.targetMonthlyVAE],
-  );
+  // VAE saisie à la main (reprise du suivi Excel), 0 par défaut : aucune proposition automatique.
+  const vaeByMonth = useMemo(() => Object.fromEntries(ALL_MONTHS.map(month => {
+    const value = settings.targetMonthlyVAE[month];
+    return [month, typeof value === 'number' ? value : 0];
+  })) as Record<number, number>, [settings.targetMonthlyVAE]);
   const monthSummaries = useMemo(() => summarizeByMonth(plan), [plan]);
   const limonadeSummary = useMemo(() => summarizeLimonade(plan), [plan]);
   // CA restaurant de chaque mois avant croissance : base du CA cible saisi dans le tableau mensuel.
@@ -125,13 +137,76 @@ export function usePlanification() {
     Object.fromEntries(ALL_MONTHS.map(month => [month, allData[targetYear]?.[month]?.dashboard])),
   ), [allData, targetYear]);
 
+  // --- Brouillon cloud (companySettings.planDrafts), par année cible ---
+  const companySettingsRef = useRef(companySettings);
+  companySettingsRef.current = companySettings;
+  const pendingRef = useRef<{ year: number; draft: DraftState } | null>(null);
+  const timerRef = useRef<number | null>(null);
+
+  const writeDraft = useCallback((year: number, draft: DraftState) => {
+    const current = companySettingsRef.current;
+    const stored = current.planDrafts?.[String(year)];
+    if (stored && JSON.stringify({ settings: stored.settings, overrides: stored.overrides }) === JSON.stringify(draft)) return;
+    const next: PlanDraft = { ...draft, savedAt: new Date().toISOString() };
+    const planDrafts = { ...current.planDrafts, [String(year)]: next };
+    companySettingsRef.current = { ...current, planDrafts };
+    updateCompanySettings(companySettingsRef.current);
+  }, [updateCompanySettings]);
+
+  const flushDraft = useCallback(() => {
+    if (timerRef.current !== null) { window.clearTimeout(timerRef.current); timerRef.current = null; }
+    const pending = pendingRef.current;
+    pendingRef.current = null;
+    if (pending) writeDraft(pending.year, pending.draft);
+  }, [writeDraft]);
+
+  // Enregistrement automatique 800 ms après la dernière modification (jamais tant que rien n'a été modifié depuis la restauration).
+  useEffect(() => {
+    if (settings === restoredRef.current.settings && overrides === restoredRef.current.overrides) return;
+    pendingRef.current = { year: settings.targetYear, draft: { settings, overrides } };
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(flushDraft, DRAFT_SAVE_DELAY_MS);
+  }, [settings, overrides, flushDraft]);
+
+  // Sortie de la page : écrit ce qui est encore en attente.
+  useEffect(() => flushDraft, [flushDraft]);
+
+  // Brouillon arrivé après le montage (chargement cloud, autre appareil) : restauré tant que rien n'a été modifié.
+  const storedDraft = companySettings.planDrafts?.[String(targetYear)];
+  useEffect(() => {
+    if (settings !== restoredRef.current.settings || overrides !== restoredRef.current.overrides) return;
+    const next = draftStateFor(companySettings.planDrafts, targetYear);
+    if (JSON.stringify(next) === JSON.stringify(restoredRef.current)) return;
+    restoredRef.current = next;
+    setSettings(next.settings);
+    setOverrides(next.overrides);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seul un changement du brouillon stocké déclenche la restauration
+  }, [storedDraft]);
+
   const updateSettings = useCallback((patch: Partial<PlanSettings>) => {
-    setSettings(current => ({ ...current, ...patch }));
     if (patch.targetYear !== undefined) {
-      setOverrides({});
-      setSettings(current => ({ ...current, targetAnnualCA: null, targetMonthlyCA: {}, targetAnnualVAE: null, targetMonthlyVAE: {}, targetAnnualLimonade: null, targetMonthlyLimonade: {} }));
+      flushDraft();
+      const next = draftStateFor(companySettingsRef.current.planDrafts, patch.targetYear);
+      restoredRef.current = next;
+      setSettings(next.settings);
+      setOverrides(next.overrides);
+      return;
     }
-  }, []);
+    setSettings(current => ({ ...current, ...patch }));
+  }, [flushDraft]);
+
+  const resetDraft = useCallback(() => {
+    if (timerRef.current !== null) { window.clearTimeout(timerRef.current); timerRef.current = null; }
+    pendingRef.current = null;
+    const current = companySettingsRef.current;
+    const { [String(targetYear)]: _removed, ...rest } = current.planDrafts ?? {};
+    companySettingsRef.current = { ...current, planDrafts: rest };
+    updateCompanySettings(companySettingsRef.current);
+    const defaults = { settings: DEFAULT_PLAN_SETTINGS(targetYear), overrides: {} };
+    restoredRef.current = defaults;
+    setSettings(defaults.settings);
+    setOverrides(defaults.overrides);
+  }, [targetYear, updateCompanySettings]);
 
   // CA cible d'un mois : remplace la répartition automatique de ce mois seulement (null = retour à l'auto).
   const setMonthTarget = useCallback((month: number, value: number | null) => {
@@ -248,7 +323,8 @@ export function usePlanification() {
   }, [allData, plan, targetYear, importBudgetPlan, saveNow]);
 
   return {
-    settings, updateSettings, setMonthGrowth, setMonthTarget, annualProposal, baseCaByMonth, vaeProposal, vaeByMonth, setMonthVae,
+    settings, updateSettings, setMonthGrowth, setMonthTarget, annualProposal, baseCaByMonth, vaeByMonth, setMonthVae,
+    savedAt: storedDraft?.savedAt ?? null, resetDraft,
     limonadeProposal, limonadeByMonth, limonadeSummary, limonadeWithoutCovers, setMonthLimonade, hasLimonade,
     plan, monthSummaries, overrides, editService, clearOverride,
     existingByMonth, isLoading, status,

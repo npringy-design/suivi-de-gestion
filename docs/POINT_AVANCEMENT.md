@@ -63,6 +63,10 @@ Les détails fonctionnels sont dans les fichiers `docs/` dédiés.
 - EDG réalisé auto : `sumAnyRowColumn` ignore les lignes de totaux (semaine, box FG, mois), les contrats mensualisés (col 107) n'étaient plus comptés trois fois. Test mis à jour.
 - Vérifié sur un mois simulé : CA 3 600 €, TM 25 €, consommation 150 € (SI 1 800 + achats 350 − SF 2 000), contrats 150 € (au lieu de 450 €). tsc OK, build OK. Non vérifié : écran sur données réelles.
 
+## 22/11/2026 (Planification : VAE manuelle, brouillon sauvegardé)
+
+- Planification : VAE saisie à la main sans proposition (suppression de `proposeAnnualVAE`, `planMonthlyVae`, `targetAnnualVAE` et du champ « VAE annuel » ; `vaeByMonth` = `targetMonthlyVAE[mois]` ou 0 ; colonne « VAE (saisie — reprendre B53 du suivi) »). Brouillon (réglages + jours modifiés) sauvegardé par site et par année cible dans `companySettings.planDrafts` (auto 800 ms après la dernière modification, écriture à la sortie de la page, restauration au montage et au changement d'année, bouton « Réinitialiser », « Brouillon enregistré à HH:MM »). DataContext inchangé. tsc OK, 44 tests planification OK, build OK. Non vérifié : parcours à l'écran (connexion Supabase non configurée en local) et captures d'écran.
+
 ## 20/11/2026 (Planification : export Excel collable dans le suivi de gestion)
 
 - Planification, export Excel collable dans le suivi V27 : `excelPasteSheet.ts` (`excelMonthSheetName`, `excelRowForDay`, `fillExcelPasteSheet`) ajoute un onglet par mois (« JANV 27 »…) à `exportXlsx`, après « Jour par jour » : couverts / TM midi en J-K, soir en L-M, limonade en R-S (cellules déverrouillées du suivi, `locked: false`, fond jaune ; jamais B ni les formules ni les lignes de total), mode opératoire en A1:A4. Vérifié par script temporaire (supprimé) : 2026-2028, aucun jour sur une ligne de total ni après la ligne 51, contrôles 1er janv./févr./mars/mai 2027 = 14/10/10/15 ; fichier relu : rien hors A/J/K/L/M/R/S. Non vérifié : collage dans l'Excel réel. tsc OK, build OK.
