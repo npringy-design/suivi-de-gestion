@@ -295,6 +295,49 @@ describe('prévision mensuelle : niveau N-1 corrigé du calendrier', () => {
   });
 });
 
+describe('répartition jour par jour par mois', () => {
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // Janvier et juillet 2025 et 2026 : dimanche midi faible en janvier (20 cv), fort en juillet (60 cv), autres jours 30 cv.
+  const history = [2025, 2026].flatMap(year => [0, 6].flatMap(month => {
+    const days = new Date(year, month + 1, 0).getDate();
+    return Array.from({ length: days }, (_, i) => {
+      const date = new Date(year, month, i + 1);
+      const sunday = date.getDay() === 0;
+      return sample(iso(date), sunday ? (month === 0 ? 20 : 60) : 30, 20);
+    });
+  })).concat(sample('2026-12-31', 0, 0)); // l'historique ne s'arrête pas en cours de mois
+
+  it('un dimanche midi fort en juillet ne gonfle pas les dimanches de janvier', () => {
+    const plan = generatePlan(history, noHolidays, settings());
+    const sunday = plan.find(d => d.date === '2027-01-03')!;
+    const monday = plan.find(d => d.date === '2027-01-04')!;
+    expect(sunday.weekday).toBe(0);
+    expect(sunday.midi.cv).toBeGreaterThan(14);
+    expect(sunday.midi.cv).toBeLessThan(26); // moyenne tous mois confondus : 40
+    expect(sunday.midi.cv).toBeLessThan(monday.midi.cv);
+    expect(plan.find(d => d.date === '2027-07-04')!.midi.cv).toBeGreaterThan(50); // juillet garde son niveau
+  });
+
+  it('le total du mois reste le CA mensuel proposé', () => {
+    const plan = generatePlan(history, noHolidays, settings());
+    const january = summarizeByMonth(plan)[0];
+    const proposed = proposeMonthlyCaByMonth(history, noHolidays, 2027)[0];
+    expect(Math.abs(january.caMidi + january.caSoir - proposed)).toBeLessThan(60);
+  });
+
+  it('replie sur les mois voisins, puis sur tous les mois, quand le groupe du mois est trop mince', () => {
+    // Un seul dimanche de février dans l'historique (1 échantillon) : février prend janvier / février / mars (dimanches de janvier).
+    const thin = [
+      ...history.filter(h => !h.date.startsWith('2025-07') && !h.date.startsWith('2026-07')),
+      sample('2026-02-01', 40, 20),
+    ];
+    const plan = generatePlan(thin, noHolidays, settings());
+    const sunday = plan.find(d => d.date === '2027-02-07')!;
+    expect(sunday.midi.n).toBeGreaterThanOrEqual(2);
+    expect(sunday.midi.source).toBe('groupe');
+  });
+});
+
 describe('VAE à part du TM restaurant', () => {
   const withVae = (date: string, vae: number): AnalyseDaySample => {
     const base = sample(date, 25, 20);

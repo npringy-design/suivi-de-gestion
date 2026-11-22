@@ -76,6 +76,14 @@ type GroupData = { entries: ServiceEntry[]; days: number };
 const groupKey = (weekday: number, status: PlanVacationStatus | 'any', service: PlanService) =>
   `${weekday}|${status}|${service}`;
 
+// Groupe d'un mois précis (0-11) : les jours d'un mois se ressemblent plus que ceux de toute l'année
+// (un dimanche midi de juillet n'est pas un dimanche midi de janvier).
+const monthGroupKey = (month: number, weekday: number, status: PlanVacationStatus, service: PlanService) =>
+  `m${month}|${groupKey(weekday, status, service)}`;
+
+// En dessous, le groupe d'un mois est trop mince : repli sur les mois voisins puis sur tous les mois.
+const MIN_MONTH_GROUP_SAMPLES = 2;
+
 // Un service est ouvert un jour donné s'il y a eu des couverts ET du CA réalisés.
 const serviceEntryOf = (sample: AnalyseDaySample, service: PlanService): ServiceEntry | null => {
   const cv = service === 'midi' ? sample.reel.cvMidi : sample.reel.cvSoir;
@@ -97,9 +105,10 @@ export function buildGroups(samples: AnalyseDaySample[], calendar: SchoolHoliday
     PLAN_SERVICES.forEach(service => {
       const entry = serviceEntryOf(sample, service);
       // Un férié n'entre pas dans le groupe « tous statuts » (repli des jours normaux).
+      const month = Number(sample.date.slice(5, 7)) - 1;
       const keys = status === 'ferie'
         ? [groupKey(sample.weekday, status, service)]
-        : [groupKey(sample.weekday, status, service), groupKey(sample.weekday, 'any', service)];
+        : [groupKey(sample.weekday, status, service), groupKey(sample.weekday, 'any', service), monthGroupKey(month, sample.weekday, status, service)];
       keys.forEach(key => {
         const group = bucket(key);
         group.days += 1;
@@ -228,13 +237,47 @@ const latestYearTm = (entries: ServiceEntry[]): number => {
   return cv > 0 ? recent.reduce((acc, e) => acc + e.ca, 0) / cv : 0;
 };
 
+// Groupe du mois (jour de semaine × statut × service) ; à défaut de `MIN_MONTH_GROUP_SAMPLES` échantillons,
+// groupe cumulé des mois voisins (mois - 1, mois, mois + 1). Null : retour au groupe tous mois confondus.
+function monthScopedGroup(
+  groups: Map<string, GroupData>,
+  month: number,
+  weekday: number,
+  status: SchoolStatus,
+  service: PlanService,
+): GroupData | null {
+  const own = groups.get(monthGroupKey(month, weekday, status, service));
+  // Service fermé dans ce mois (au moins 2 jours observés, moins de la moitié ouverts) : information utile, pas un manque.
+  const isUsable = (group: GroupData | undefined): group is GroupData =>
+    group !== undefined && (group.entries.length >= MIN_MONTH_GROUP_SAMPLES || (group.days >= MIN_MONTH_GROUP_SAMPLES && group.entries.length < group.days * CLOSED_OPEN_RATIO));
+  if (isUsable(own)) return own;
+
+  const neighbours = [month - 1, month, month + 1]
+    .map(m => groups.get(monthGroupKey((m + 12) % 12, weekday, status, service)))
+    .filter((group): group is GroupData => group !== undefined);
+  const merged: GroupData = {
+    entries: neighbours.flatMap(group => group.entries),
+    days: neighbours.reduce((acc, group) => acc + group.days, 0),
+  };
+  return isUsable(merged) ? merged : null;
+}
+
 // Estimation du groupe avant ratio et croissance (cv/tm bruts, ca non calculé).
 function rawProposal(
   groups: Map<string, GroupData>,
   weekday: number,
   status: SchoolStatus,
   service: PlanService,
+  month?: number, // absent : groupes tous mois confondus (détection « fermé » de la limonade)
 ): PlanServiceProposal & { tmFloor: number } {
+  const scoped = month === undefined ? null : monthScopedGroup(groups, month, weekday, status, service);
+  if (scoped) {
+    if (scoped.entries.length < scoped.days * CLOSED_OPEN_RATIO) return { ...closedProposal(scoped.days), tmFloor: 0 };
+    const estimate = estimateEntries(scoped.entries);
+    const n = scoped.entries.length;
+    return { cv: estimate.cv, tm: estimate.tm, ca: 0, n, confidence: confidenceOf(n, 'groupe'), source: 'groupe', estimator: estimate.estimator, manual: false, tmFloor: latestYearTm(scoped.entries) };
+  }
+
   const exact = groups.get(groupKey(weekday, status, service));
   let source: PlanSource = 'groupe';
   let group = exact;
@@ -280,7 +323,7 @@ export function buildProposal(
   const context: HolidayContext | null = status === 'ferie'
     ? (holiday ?? { baseStatus: 'hors_vacances', ratio: NO_RATIO })
     : null;
-  const { tmFloor, ...raw } = rawProposal(groups, weekday, context ? context.baseStatus : (status as SchoolStatus), service);
+  const { tmFloor, ...raw } = rawProposal(groups, weekday, context ? context.baseStatus : (status as SchoolStatus), service, month);
   if (raw.source === 'ferme' || raw.source === 'aucune') return raw;
 
   const ratio = context?.ratio ?? NO_RATIO;
