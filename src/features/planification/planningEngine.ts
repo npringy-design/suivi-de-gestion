@@ -20,9 +20,12 @@ import type {
 import { toIsoDate } from '../analyse/ecartsAnalysis';
 
 import {
-  applyMonthTarget, enforceLimonadeTmFloors, enforceTmFloors, limonadeTmFloors, normalizedDayWeights, planMonthlyLimonade, proposeAnnualLimonade, proposeMonthlyCa,
+  comparableProposal, findComparableDay, levelRatios, monthLevels,
+  type ComparableContext,
+} from './comparableDays';
+import {
+  applyMonthTarget, enforceLimonadeTmFloors, enforceTmFloors, limonadeTmFloors, normalizedDayWeights, planMonthlyLimonade, proposeAnnualLimonade,
   tmFloors,
-  type CalendarModel,
   type TmFloors,
 } from './planningTargets';
 
@@ -331,33 +334,48 @@ function buildMonthDays(
 
 export { planMonthlyLimonade, proposeAnnualLimonade };
 
-// Calendrier vu par planningTargets : statut scolaire du jour, férié, et ratio de CA férié / jour normal
-// (couverts × TM, moyenne des deux services) tiré de holidayRatio.
-function calendarModel(samples: AnalyseDaySample[], calendar: SchoolHolidayCalendar): CalendarModel {
-  const factors = new Map<number, number>();
-  return {
-    describe: date => ({
-      weekday: new Date(`${date}T12:00:00`).getDay(),
-      baseStatus: schoolStatusOf(date, calendar),
-      holiday: Boolean(isPublicHoliday(date, Number(date.slice(0, 4)))),
-    }),
-    holidayFactor: weekday => {
-      let factor = factors.get(weekday);
-      if (factor === undefined) {
-        const ratios = PLAN_SERVICES.map(service => holidayRatio(samples, calendar, service, weekday));
-        factor = mean(ratios.map(ratio => ratio.cv * ratio.tm));
-        factors.set(weekday, factor);
-      }
-      return factor;
+// --- Méthode du jour comparable (comparableDays.ts) ---
+
+// Jours de l'année cible (sans croissance) : chaque jour reprend son jour équivalent N-1, avec N-2 comme second
+// exemple remis au niveau de N-1. Sans aucun exemple, repli sur la proposition par groupes, en confiance critique.
+function comparablePlan(samples: AnalyseDaySample[], calendar: SchoolHolidayCalendar, settings: PlanSettings): PlanDay[] {
+  const allMonths = Array.from({ length: 12 }, (_, month) => month);
+  const fallback = buildMonthDays(samples, calendar, withoutGrowth(settings), allMonths);
+  const holidayRatios = new Map<string, HolidayRatio>();
+  const ctx: ComparableContext = {
+    samplesByDate: new Map(samples.map(sample => [sample.date, sample])),
+    schoolStatusOf: date => schoolStatusOf(date, calendar),
+    holidayRatio: (service, weekday) => {
+      const key = `${service}|${weekday}`;
+      let ratio = holidayRatios.get(key);
+      if (!ratio) { ratio = holidayRatio(samples, calendar, service, weekday); holidayRatios.set(key, ratio); }
+      return ratio;
     },
   };
+  const levels = { midi: monthLevels(samples, 'midi'), soir: monthLevels(samples, 'soir') };
+
+  return fallback.map(day => {
+    const n1 = findComparableDay(ctx, day.date, 1);
+    const n2 = findComparableDay(ctx, day.date, 2);
+    const proposalOf = (service: PlanService): PlanServiceProposal => {
+      const ratios = levelRatios(levels[service], settings.targetYear, day.month);
+      return comparableProposal(service, n1, n2, ratios, ctx.holidayRatio(service, day.weekday))
+        ?? { ...day[service], confidence: 'critique' };
+    };
+    return { ...day, midi: proposalOf('midi'), soir: proposalOf('soir') };
+  });
 }
 
-// CA restaurant proposé de chaque mois de l'année cible : niveau N-1 du mois corrigé du calendrier.
-export const proposeMonthlyCaByMonth = (samples: AnalyseDaySample[], calendar: SchoolHolidayCalendar, targetYear: number): number[] =>
-  proposeMonthlyCa(samples, targetYear, calendarModel(samples, calendar));
+const monthCa = (days: PlanDay[], month: number): number =>
+  days.filter(day => day.month === month).reduce((acc, day) => acc + day.midi.ca + day.soir.ca, 0);
 
-// Proposition de CA annuel : somme des 12 CA mensuels proposés.
+// CA restaurant proposé de chaque mois de l'année cible : somme de ses jours comparables.
+export const proposeMonthlyCaByMonth = (samples: AnalyseDaySample[], calendar: SchoolHolidayCalendar, targetYear: number): number[] => {
+  const days = comparablePlan(samples, calendar, DEFAULT_PLAN_SETTINGS(targetYear));
+  return Array.from({ length: 12 }, (_, month) => monthCa(days, month));
+};
+
+// Proposition de CA annuel : somme des jours comparables de l'année.
 export const proposeAnnualCA = (samples: AnalyseDaySample[], calendar: SchoolHolidayCalendar, targetYear: number): number =>
   Math.round(proposeMonthlyCaByMonth(samples, calendar, targetYear).reduce((acc, ca) => acc + ca, 0));
 
@@ -391,10 +409,9 @@ function applyGrowth(days: PlanDay[], settings: PlanSettings): PlanDay[] {
   });
 }
 
-// CA d'un mois = CA mensuel saisi, sinon (objectif annuel) CA annuel réparti au prorata des CA mensuels proposés
-// (niveau N-1 du mois corrigé du calendrier), sinon (sans objectif) ce CA mensuel proposé ; un mois sans historique
-// garde sa proposition jour par jour. Les croissances couverts / TM s'ajoutent ensuite par-dessus. Dans tous les cas le TM mensuel et annuel reste au moins égal
-// à celui de N-1 (couverts réduits à CA constant, voir enforceTmFloors).
+// Jours comparables N-1 / N-2 tels quels. Objectif annuel : tous les mois sont ajustés du même ratio
+// (objectif / CA annuel proposé) ; CA mensuel saisi : prioritaire. Puis croissances couverts / TM, et TM mensuel
+// et annuel au moins égaux à ceux de N-1 (couverts réduits à CA constant, voir enforceTmFloors).
 export function generatePlan(
   samples: AnalyseDaySample[],
   calendar: SchoolHolidayCalendar,
@@ -403,16 +420,15 @@ export function generatePlan(
   const allMonths = Array.from({ length: 12 }, (_, month) => month);
   const floorsOf = (days: PlanDay[]) => floorsWithIncrease(tmFloors(samples, settings.targetYear - 1), days, settings);
 
-  const plan = buildMonthDays(samples, calendar, withoutGrowth(settings), allMonths);
-  const proposed = proposeMonthlyCaByMonth(samples, calendar, settings.targetYear);
-  const proposedTotal = proposed.reduce((acc, ca) => acc + ca, 0);
+  const plan = comparablePlan(samples, calendar, settings);
+  const proposedTotal = allMonths.reduce((acc, month) => acc + monthCa(plan, month), 0);
+  const annualRatio = settings.targetAnnualCA !== null && proposedTotal > 0 ? settings.targetAnnualCA / proposedTotal : null;
   const targeted = allMonths.flatMap(month => {
     const days = plan.filter(day => day.month === month);
     const monthly = settings.targetMonthlyCA[month];
-    let target: number | null = proposed[month] > 0 ? proposed[month] : null;
-    if (settings.targetAnnualCA !== null && proposedTotal > 0) target = target === null ? null : settings.targetAnnualCA * (proposed[month] / proposedTotal);
-    if (typeof monthly === 'number') target = monthly;
-    return target === null ? days : applyMonthTarget(days, target);
+    if (typeof monthly === 'number') return applyMonthTarget(days, monthly);
+    const proposed = monthCa(plan, month);
+    return annualRatio !== null && proposed > 0 ? applyMonthTarget(days, proposed * annualRatio) : days;
   });
   const grown = applyGrowth(targeted, settings);
   return enforceTmFloors(grown, floorsOf(grown));
