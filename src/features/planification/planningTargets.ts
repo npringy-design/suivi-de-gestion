@@ -53,6 +53,20 @@ function averageMonthlyCa(samples: AnalyseDaySample[], pick: CaPicker = restaura
   });
 }
 
+// Proposition de CA annuel : moyenne des CA annuels réalisés des années d'historique, sans
+// extrapolation de tendance (= somme des CA mensuels moyens ; un mois manquant ou partiel d'une
+// année, typiquement l'année en cours, est repris de l'autre année).
+export function proposeAnnualCA(samples: AnalyseDaySample[]): number {
+  return Math.round(averageMonthlyCa(samples).reduce((acc, ca) => acc + ca, 0));
+}
+
+// Poids de chaque mois (0-11) dans le CA annuel, moyenné sur les années d'historique.
+export function monthlyWeights(samples: AnalyseDaySample[]): Record<number, number> {
+  const averages = averageMonthlyCa(samples);
+  const total = averages.reduce((acc, ca) => acc + ca, 0);
+  return Object.fromEntries(averages.map((ca, month) => [month, total > 0 ? ca / total : 0]));
+}
+
 // CA à part (limonade) de chaque mois (0-11) : CA mensuel saisi, sinon CA annuel × poids
 // historique du mois, sinon (sans objectif annuel) CA historique moyen du mois. Sans historique,
 // répartition égale.

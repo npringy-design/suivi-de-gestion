@@ -4,7 +4,6 @@ import { getSchoolHolidayCalendar } from '@/lib/schoolHolidays';
 import { getDashboardRowIndices } from '@/lib/utils';
 import type { AnalyseDaySample, PlanSettings, SchoolHolidayCalendar } from '@/types/dataTypes';
 
-import { findComparableDay, type ComparableContext } from './comparableDays';
 import { enforceTmFloors, tmFloors } from './planningTargets';
 import {
   applyOverrides,
@@ -15,9 +14,9 @@ import {
   estimateEntries,
   generatePlan,
   holidayRatio,
+  monthlyWeights,
   planToCsv,
   proposeAnnualCA,
-  proposeMonthlyCaByMonth,
   summarizeByMonth,
   vacationStatusOf,
 } from './planningEngine';
@@ -93,7 +92,6 @@ describe('generatePlan', () => {
   const samples = [
     ...mondays2025.map(d => sample(d, 20, 20, 30, 30)),
     ...mondays2026.map(d => sample(d, 30, 25, 40, 35)),
-    sample('2026-12-28', 0, 0), // lundi fermé en fin d'année : l'historique ne s'arrête pas en cours de mois
   ];
 
   it('génère 365 jours pour 2027 avec le jour de semaine réel', () => {
@@ -101,11 +99,10 @@ describe('generatePlan', () => {
     expect(plan).toHaveLength(365);
     const jan4 = plan.find(d => d.date === '2027-01-04')!;
     expect(jan4.weekday).toBe(1);
-    // jour comparable : lundi 5/01/2026 (30 cv à 25 €) ; N-2 (20 cv à 20 €) remis au niveau de N-1 : même valeur
-    expect(jan4.midi.cv).toBe(30);
-    expect(jan4.midi.tm).toBeCloseTo(25, 0); // relevé au plancher annuel de TM (N-1)
-    expect(jan4.midi.ca).toBeCloseTo(30 * 25, -1);
-    expect(jan4.midi.n).toBe(2); // deux exemples : N-1 et N-2
+    expect(jan4.midi.cv).toBe(25); // moyenne à parts égales : (20 + 30) / 2
+    expect(jan4.midi.tm).toBeCloseTo(25, 2); // moyenne 23, relevée au TM de N-1 (25)
+    expect(jan4.midi.ca).toBeCloseTo(25 * 25, 0);
+    expect(jan4.midi.n).toBe(8);
     expect(jan4.midi.confidence).toBe('fiable');
   });
 
@@ -114,14 +111,14 @@ describe('generatePlan', () => {
       cvGrowthPct: 10, tmIncreaseEur: 0.2, cvGrowthByMonth: { 0: 0 },
     }));
     const jan = plan.find(d => d.date === '2027-01-04')!;
-    expect(jan.midi.cv).toBe(30); // surcharge janvier : 0 %
-    expect(jan.midi.tm).toBeCloseTo(25.2, 0); // plancher N-1 (25) + 0,20 €
+    expect(jan.midi.cv).toBe(25); // surcharge janvier : 0 %
+    expect(jan.midi.tm).toBeCloseTo(25.2, 2); // plancher N-1 (25) + 0,20 €
     const feb = plan.find(d => d.date === '2027-02-01')!;
     expect(feb.midi.source).toBe('groupe');
   });
 
   it('signale un repli (rouge) quand le statut vacances n\'a pas d\'historique', () => {
-    const plan = generatePlan(samples.slice(0, -1), getSchoolHolidayCalendar('B'), settings());
+    const plan = generatePlan(samples, getSchoolHolidayCalendar('B'), settings());
     const vacancesMonday = plan.find(d => d.date === '2027-02-22')!; // lundi, vacances d'hiver zone B
     expect(vacancesMonday.status).toBe('vacances');
     expect(vacancesMonday.midi.source).toBe('repli');
@@ -184,16 +181,12 @@ describe('pilotage par CA', () => {
     ...february.map(d => sample(d, 50, 20)), // 1 000 € par lundi
   ];
 
-  const annual = 2 * proposeAnnualCA(history, noHolidays, 2027); // objectif : le double du CA proposé, chaque mois double
-
-  it('le CA annuel proposé est la somme des jours, les mois la somme de leurs jours', () => {
-    const plan = generatePlan(history, noHolidays, settings());
-    const sum = plan.reduce((acc, d) => acc + d.midi.ca + d.soir.ca, 0);
-    expect(proposeAnnualCA(history, noHolidays, 2027)).toBe(Math.round(sum));
-    const months = proposeMonthlyCaByMonth(history, noHolidays, 2027);
-    expect(months[0]).toBeCloseTo(summarizeByMonth(plan)[0].caMidi, 0);
-    expect(months[0]).toBeCloseTo(2000); // 4 lundis de janvier 2027 repris de janvier 2026 : 25 cv × 20 €
-    expect(months[1]).toBeCloseTo(4000); // février : 50 cv × 20 € par lundi
+  it('propose la moyenne des CA annuels et les poids de mois', () => {
+    expect(proposeAnnualCA(history)).toBe(6000); // 2 000 + 4 000 par an
+    const weights = monthlyWeights(history);
+    expect(weights[0]).toBeCloseTo(1 / 3);
+    expect(weights[1]).toBeCloseTo(2 / 3);
+    expect(weights[5]).toBe(0);
   });
 
   it('normalise les poids de jours à 1 sur le mois cible', () => {
@@ -206,23 +199,22 @@ describe('pilotage par CA', () => {
 
   it('sans objectif, la proposition reste historique', () => {
     const plan = generatePlan(history, noHolidays, settings());
-    // chaque mois repart de son niveau N-1 : janvier 25 couverts par lundi (février : 50)
-    expect(plan.find(d => d.date === '2027-01-04')!.midi.cv).toBe(25);
-    expect(plan.find(d => d.date === '2027-02-01')!.midi.cv).toBe(50);
+    // le groupe « lundi » mêle janvier et février : (25 + 50) / 2
+    expect(plan.find(d => d.date === '2027-01-04')!.midi.cv).toBe(38);
   });
 
   it('répartit le CA annuel en mois puis en jours, TM historique inchangé', () => {
-    const plan = generatePlan(history, noHolidays, settings({ targetAnnualCA: annual }));
+    const plan = generatePlan(history, noHolidays, settings({ targetAnnualCA: 12000 }));
     const months = summarizeByMonth(plan);
-    expect(Math.abs(months[0].caMidi - 4000)).toBeLessThan(40); // même ratio sur tous les mois : janvier 2 × 2 000
-    expect(Math.abs(months[1].caMidi - 8000)).toBeLessThan(40);
+    expect(Math.abs(months[0].caMidi - 4000)).toBeLessThan(20); // 12 000 × 1/3, à moins d'un TM près
+    expect(Math.abs(months[1].caMidi - 8000)).toBeLessThan(20);
     const monday = plan.find(d => d.date === '2027-01-04')!;
     expect(monday.midi.tm).toBe(20);
     expect(monday.midi.cv).toBeGreaterThan(25);
   });
 
   it('la croissance couverts et la hausse de TM s\'ajoutent au CA cible', () => {
-    const target = { targetAnnualCA: annual };
+    const target = { targetAnnualCA: 12000 };
     const base = summarizeByMonth(generatePlan(history, noHolidays, settings(target)));
     const grown = summarizeByMonth(generatePlan(history, noHolidays, settings({ ...target, cvGrowthPct: 5 })));
     expect(grown[0].caMidi / base[0].caMidi).toBeCloseTo(1.05, 1); // arrondi des couverts par jour
@@ -233,8 +225,8 @@ describe('pilotage par CA', () => {
   });
 
   it('un CA mensuel saisi écrase ce mois sans toucher aux autres', () => {
-    const base = generatePlan(history, noHolidays, settings({ targetAnnualCA: annual }));
-    const plan = generatePlan(history, noHolidays, settings({ targetAnnualCA: annual, targetMonthlyCA: { 0: 2000 } }));
+    const base = generatePlan(history, noHolidays, settings({ targetAnnualCA: 12000 }));
+    const plan = generatePlan(history, noHolidays, settings({ targetAnnualCA: 12000, targetMonthlyCA: { 0: 2000 } }));
     const months = summarizeByMonth(plan);
     expect(Math.abs(months[0].caMidi - 2000)).toBeLessThan(20);
     expect(months[1]).toEqual(summarizeByMonth(base)[1]);
@@ -245,89 +237,6 @@ describe('pilotage par CA', () => {
     const months = summarizeByMonth(plan);
     expect(Math.abs(months[0].caMidi - 2000)).toBeLessThan(20);
     expect(months[1]).toEqual(summarizeByMonth(generatePlan(history, noHolidays, settings()))[1]);
-  });
-});
-
-describe('méthode du jour comparable', () => {
-  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const allDays = (year: number, month: number, cv: (date: Date) => number, tm = 25) => {
-    const count = new Date(year, month + 1, 0).getDate();
-    return Array.from({ length: count }, (_, i) => {
-      const date = new Date(year, month, i + 1);
-      return sample(iso(date), cv(date), tm);
-    });
-  };
-  // Vacances d'hiver 2026 (9 au 22 février) pour le statut scolaire ; tout le reste hors vacances.
-  const statusOf = (date: string) => (date >= '2026-02-09' && date <= '2026-02-22' ? 'vacances' as const : 'hors_vacances' as const);
-  const contextOf = (samples: AnalyseDaySample[], schoolStatusOf = statusOf): ComparableContext => ({
-    samplesByDate: new Map(samples.map(s => [s.date, s])),
-    schoolStatusOf,
-    holidayRatio: () => ({ cv: 1, tm: 1 }),
-  });
-  const feb2026 = allDays(2026, 1, () => 20);
-
-  it('le jour comparable est la date cible moins 364 jours (même jour de semaine)', () => {
-    const ctx = contextOf(allDays(2026, 0, () => 20));
-    const found = findComparableDay(ctx, '2027-01-22', 1);
-    expect(found?.sample.date).toBe('2026-01-23'); // vendredi → vendredi
-    expect(new Date('2027-01-22T12:00:00').getDay()).toBe(new Date('2026-01-23T12:00:00').getDay());
-  });
-
-  it('un candidat en vacances pour un jour hors vacances : jour hors vacances le plus proche', () => {
-    const ctx = contextOf(feb2026);
-    // 12/02/2027 (hors vacances) → candidat 13/02/2026 en vacances → 6/02/2026, le vendredi hors vacances le plus proche
-    expect(statusOf('2026-02-13')).toBe('vacances');
-    expect(findComparableDay(ctx, '2027-02-12', 1)?.sample.date).toBe('2026-02-06');
-  });
-
-  it('un férié mobile reprend le même férié de l\'an passé, un férié sans équivalent exact passe par le ratio férié', () => {
-    const may = [...allDays(2026, 4, () => 20), ...allDays(2026, 6, () => 20)];
-    const ctx = contextOf(may);
-    const ascension = findComparableDay(ctx, '2027-05-06', 1); // Ascension 2027 (jeudi) → Ascension 2026 (jeudi 14 mai)
-    expect(ascension?.sample.date).toBe('2026-05-14');
-    expect(ascension?.sameHoliday).toBe(true);
-    const bastille = findComparableDay(ctx, '2027-07-14', 1); // mercredi, le 14 juillet 2026 tombait un mardi
-    expect(bastille?.needsHolidayRatio).toBe(true);
-    expect(bastille?.sample.date).toBe('2026-07-15');
-  });
-
-  it('N-2 plus faible de 20 % : la proposition reste au niveau de N-1', () => {
-    const history = [...allDays(2025, 1, () => 16), ...allDays(2026, 1, () => 20), sample('2026-12-31', 0, 0)];
-    const plan = generatePlan(history, noHolidays, settings());
-    const day = plan.find(d => d.date === '2027-02-10')!;
-    expect(day.midi.cv).toBe(20);
-    expect(day.midi.tm).toBeCloseTo(25, 2);
-    expect(day.midi.confidence).toBe('fiable'); // remis au niveau de N-1 : écart nul
-  });
-
-  it('un seul exemple ou un écart de plus de 40 % : confiance faible', () => {
-    const single = generatePlan([...feb2026, sample('2026-12-31', 0, 0)], noHolidays, settings());
-    expect(single.find(d => d.date === '2027-02-10')!.midi.confidence).toBe('faible');
-    const apart = generatePlan([...allDays(2025, 1, d => (d.getDate() === 10 ? 5 : 20)), ...allDays(2026, 1, () => 20)], noHolidays, settings());
-    // N-2 du 10/02/2027 : le 12/02/2025, mais le niveau du mois est recalé ; le jour reste dans l'écart toléré s'il est proche
-    expect(['fiable', 'faible']).toContain(apart.find(d => d.date === '2027-02-10')!.midi.confidence);
-  });
-
-  it('un jour sans aucun historique est en confiance critique', () => {
-    const plan = generatePlan([...feb2026, sample('2026-12-31', 0, 0)], noHolidays, settings());
-    expect(plan.find(d => d.date === '2027-06-15')!.midi.confidence).toBe('critique');
-  });
-
-  it('un service fermé le jour comparable reste fermé', () => {
-    const history = [...allDays(2026, 1, d => (d.getDay() === 1 ? 0 : 20)), sample('2026-12-31', 0, 0)];
-    const monday = generatePlan(history, noHolidays, settings()).find(d => d.date === '2027-02-08')!;
-    expect(monday.midi.cv).toBe(0);
-    expect(monday.midi.source).toBe('ferme');
-  });
-
-  it('février 2027 avec moins de vacances que février 2026 reprend les jours hors vacances de N-1', () => {
-    // 2026 : vacances 9-22 février (CA 40 cv), le reste 20 cv ; 2027 : aucune vacance en calendrier cible vide.
-    const history = [...allDays(2026, 1, d => (d.getDate() >= 9 && d.getDate() <= 22 ? 40 : 20)), sample('2026-12-31', 0, 0)];
-    const calendar: SchoolHolidayCalendar = { zone: 'B', periods: [{ name: 'Hiver', schoolYear: 'test', start: '2026-02-09', end: '2026-02-22' }, { name: 'Hiver', schoolYear: 'test', start: '2027-02-15', end: '2027-02-21' }] };
-    const plan = generatePlan(history, calendar, settings());
-    const feb = summarizeByMonth(plan)[1];
-    expect(feb.caMidi).toBeLessThan(28 * 20 * 25 + 14 * 20 * 25); // inférieur à février 2026 (14 jours de vacances)
-    expect(feb.caMidi).toBeGreaterThan(28 * 20 * 25); // mais au moins le niveau d'un mois sans vacances
   });
 });
 
@@ -355,12 +264,13 @@ describe('plancher de TM (N-1)', () => {
 
   it('ne descend jamais sous le TM de N-1, même avec une croissance TM négative', () => {
     const plan = generatePlan(history, noHolidays, settings({ tmIncreaseEur: -2 }));
-    expect(plan.find(d => d.date === '2027-01-04')!.midi.tm).toBeGreaterThanOrEqual(24);
+    expect(plan.find(d => d.date === '2027-01-04')!.midi.tm).toBe(24);
   });
 
   it('ajoute la hausse en euros au TM de N-1, au global et par mois', () => {
     const plan = generatePlan(history, noHolidays, settings({ tmIncreaseEur: 0.25, tmIncreaseEurByMonth: { 1: 0.1 } }));
-    expect(plan.find(d => d.date === '2027-01-04')!.midi.tm).toBeGreaterThanOrEqual(24.25);
+    expect(plan.find(d => d.date === '2027-01-04')!.midi.tm).toBe(24.25);
+    expect(plan.find(d => d.date === '2027-02-01')!.midi.tm).toBe(24.1);
     const total = plan.reduce((acc, d) => ({ cv: acc.cv + d.midi.cv, ca: acc.ca + d.midi.ca }), { cv: 0, ca: 0 });
     expect(total.ca / total.cv).toBeGreaterThan(24.1); // le plancher ne l'absorbe pas
   });
@@ -369,7 +279,7 @@ describe('plancher de TM (N-1)', () => {
     const base = generatePlan(history, noHolidays, settings());
     const plan = generatePlan(history, noHolidays, settings({ targetMonthlyCA: { 0: 1000 } }));
     const monday = plan.find(d => d.date === '2027-01-04')!;
-    expect(monday.midi.tm).toBeGreaterThanOrEqual(24);
+    expect(monday.midi.tm).toBe(24);
     expect(monday.midi.cv).toBeLessThan(base.find(d => d.date === '2027-01-04')!.midi.cv);
   });
 });
@@ -403,7 +313,7 @@ describe('plancher de TM mensuel et annuel (N-1)', () => {
     const after = totals(enforceTmFloors(plan, { byMonth: {}, year: before.tm * 1.1 }));
     expect(after.tm).toBeGreaterThanOrEqual(before.tm * 1.1 - 0.01);
     expect(after.cv).toBeLessThan(before.cv);
-    expect(Math.abs(after.ca - before.ca)).toBeLessThan(before.ca * 0.005); // arrondi des couverts par jour
+    expect(Math.abs(after.ca - before.ca)).toBeLessThan(60);
   });
 
   it('ne touche à rien quand le TM dépasse déjà le plancher', () => {
